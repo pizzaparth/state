@@ -76,7 +76,7 @@ export function Sidebar() {
                 </div>
               )}
               {section.items.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
                 const Icon = item.icon;
                 return (
                   <Link
@@ -102,7 +102,7 @@ export function Sidebar() {
       {/* Footer / Settings */}
       <div className="pt-4 border-t border-black/5">
         <Link
-          href="/personal"
+          href="/settings"
           className="flex items-center space-x-3 px-3 py-2 text-sm font-medium text-[#5F5F5B] hover:text-[#171717] hover:bg-black/5 rounded-control transition-colors"
         >
           <Settings className="w-4 h-4" />
