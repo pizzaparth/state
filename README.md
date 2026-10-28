@@ -3,7 +3,7 @@
 > **Parent Company:** Ksan Relay  
 > **Domain:** `state.ksanrelay.in`  
 > **Category:** Quantitative execution system  
-> **Architecture:** Next.js App Router · Neon PostgreSQL · Drizzle ORM · Better Auth · Tailwind CSS · Restrained Neumorphism
+> **Architecture:** Next.js App Router · Neon PostgreSQL · Drizzle ORM · Better Auth · Tailwind CSS · Flat AMOLED UI
 
 ---
 
@@ -28,13 +28,14 @@ State features two visually unified yet deliberately distinct environments:
 1. **Dark Brand & Marketing Surfaces (`#050505`):**
    - High-contrast, technical, editorial, monochrome.
    - Used for the public landing page, pricing, manifesto/principles, and authentication.
-2. **Pale Neumorphic Product Environment (`#D9D9D5`):**
-   - Sculpted, tactile, calm, restrained neumorphism.
-   - Physical depth hierarchy:
-     - **Level 0 (Flat):** Base surface, tables, separators, graph labels.
-     - **Level 1 (Slightly Raised):** Columns, toolbars, metric panels.
-     - **Level 2 (Raised Control):** Buttons, draggable tasks, interactive cards.
-     - **Level -1 (Inset):** Search fields, inputs, progress rails, troughs.
+2. **AMOLED Black Product Environment (`#000000`):**
+   - Flat, calm, dense. No neumorphism and no shadows.
+   - Surfaces separated by 1px hairlines and small tonal steps (`styles/product.css`):
+     - **Page (`#000`):** Body, tables, ledger rows, separators, graph labels.
+     - **Panel (`#0A0A0A`):** Columns, toolbars, metric panels.
+     - **Card / Control (`#121212`):** Buttons, draggable tasks, menus.
+     - **Field (`#000` + hairline):** Search fields, inputs, progress rails, troughs.
+   - Near-white inverse (`#F2F2EF`) reserved for focal elements such as `+ COMMIT` and the Today instrument.
 
 ---
 
@@ -44,7 +45,7 @@ State features two visually unified yet deliberately distinct environments:
 | :--- | :--- | :--- |
 | **Framework** | Next.js 15 (App Router) | Full-stack server actions, route handlers, SSR, edge routing |
 | **Language** | TypeScript | End-to-end type safety (schema, validation, UI, server) |
-| **Styling** | Tailwind CSS + Custom Tokens | Restrained neumorphism, responsive layout, CSS variables |
+| **Styling** | Tailwind CSS + Custom Tokens | Flat AMOLED surfaces, responsive layout, CSS variables |
 | **UI Primitives** | Radix UI | Accessible keyboard navigation, dialogs, popovers, tooltips |
 | **Icons** | Lucide React | Unified 16px/18px/20px geometric icon set |
 | **Animation** | Motion / CSS | Restrained 120ms–220ms interaction physics |
@@ -71,7 +72,7 @@ state/
 │   ├── (auth)/                  # Dark inset authentication flows
 │   │   ├── login/page.tsx       # Email / OAuth authentication
 │   │   └── register/page.tsx    # Workspace registration
-│   ├── (app)/                   # Pale neumorphic logged-in workspace
+│   ├── (app)/                   # AMOLED black logged-in workspace
 │   │   ├── today/page.tsx       # Default daily work surface & targets
 │   │   ├── inbox/page.tsx       # Rapid capture & deterministic syntax triage
 │   │   ├── activity/page.tsx    # 90-day horizontal execution matrix
@@ -88,12 +89,9 @@ state/
 │   └── layout.tsx               # Root layout & font definitions
 │
 ├── components/
-│   ├── ui/                      # Tactile buttons, inset inputs, cards
-│   ├── board/                   # Kanban columns & card containers
-│   ├── commits/                 # Commit items & ledger entries
-│   ├── execution/               # Horizontal execution graph cells & matrix
-│   ├── metrics/                 # Quantitative metric cards
-│   └── navigation/              # Pale vertical side rail & minimal topbar
+│   ├── ui/                      # Shared button primitive
+│   ├── app/                     # Product shell, boards, ledger, graph, metrics views
+│   └── marketing/               # Landing page sections and particle field
 │
 ├── db/
 │   ├── schema/                  # Relational Drizzle schema definitions
@@ -118,16 +116,14 @@ state/
 ├── lib/
 │   ├── auth/                    # Better Auth server configuration
 │   ├── billing/                 # Razorpay & Stripe client instances
-│   ├── execution/               # Task weight constants & graph calculations
-│   ├── metrics/                 # Deterministic formulas (Velocity, Cycle Time, etc.)
 │   ├── validation/              # Zod input schemas & quick parser
 │   └── utils.ts                 # Classname merge utility (cn)
 │
 ├── middleware.ts                # Redirects signed-out requests on product routes to /login
 │
 ├── styles/
-│   ├── tokens.css               # Design system variables (colors, radii, shadows)
-│   ├── neumorphism.css          # Restrained neumorphic depth physics
+│   ├── tokens.css               # Design system variables (colors, radii, motion)
+│   ├── product.css              # Flat AMOLED product surfaces (app-panel, app-card, …)
 │   └── globals.css              # Tailwind base, tabular numbers, focus rings
 │
 └── docs/                        # Complete product specifications & inspiration
@@ -256,5 +252,5 @@ Configure plan and price IDs in `.env` (`RAZORPAY_PLAN_*`, `STRIPE_PRICE_*`). Di
 - **Zero AI Slop:** No generative text summaries, unsolicited suggestions, or LLM-generated chatter.
 - **Zero Surveillance:** No mouse tracking, keystroke counting, or forced team leaderboards.
 - **Deterministic First:** All metrics must be mathematically explainable.
-- **Restrained Neumorphism:** Strictly adhere to depth levels (0, 1, 2, -1). Never produce arbitrary heavy shadows.
+- **Flat AMOLED Product:** Use the surface classes in `styles/product.css`. No neumorphism, no shadows; hairlines and tonal steps only.
 - **Accessible & Keyboard First:** Full `⌘K` command palette support, visible focus rings, tabular numbers for comparative data.

@@ -143,18 +143,18 @@ Use custom CSS variables for the State design system.
 Example:
 
 ```css
---surface-base: #d9d9d5;
---surface-raised: #dededa;
---surface-inset: #d2d2ce;
+--app-bg: #000000;
+--app-panel: #0a0a0a;
+--app-raised: #121212;
+--app-line: rgba(255,255,255,.08);
+--app-line-strong: rgba(255,255,255,.14);
 
---text-primary: #171717;
---text-secondary: #5f5f5b;
-
---shadow-light: rgba(255,255,255,.70);
---shadow-dark: rgba(0,0,0,.10);
+--app-text-primary: #f2f2ef;
+--app-text-secondary: #9a9a96;
+--app-text-tertiary: #85857f;
 ```
 
-Neumorphism should be implemented deliberately rather than through arbitrary inline shadows.
+The product is flat AMOLED black: no neumorphism and no shadows. Use the surface classes in `styles/product.css` rather than arbitrary inline styles.
 
 ---
 
@@ -215,7 +215,7 @@ Use it for:
 - modal opening
 - command palette
 - sidebar transitions
-- neumorphic button press
+- button press (fill drops to page black)
 - small surface transitions
 
 Recommended animation range:
@@ -854,7 +854,7 @@ state/
 │
 ├── styles/
 │   ├── tokens.css
-│   ├── neumorphism.css
+│   ├── product.css
 │   └── globals.css
 │
 └── public/

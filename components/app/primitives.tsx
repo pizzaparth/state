@@ -5,10 +5,10 @@ import { cn } from "@/lib/utils";
 import type { DueState } from "@/lib/format";
 
 /**
- * Product-surface primitives on the restrained neumorphic depth scale:
- *   Level 1  Panel            slightly raised (columns, metric panels, toolbars)
- *   Level -1 Trough / Rail    inset (inputs, progress rails, segmented controls)
- *   Level 0  rows, labels     flat
+ * Product-surface primitives on the flat AMOLED surface scale (styles/product.css):
+ *   Panel           #0A0A0A + hairline (columns, metric panels, toolbars)
+ *   Field / Rail    #000 + stronger hairline (inputs, progress rails, segmented controls)
+ *   Rows, labels    directly on the page, no surface
  */
 
 export function PageHeader({

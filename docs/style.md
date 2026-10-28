@@ -3,7 +3,8 @@
 **Product:** State by Ksan Relay  
 **Domain:** `state.ksanrelay.in`  
 **Document:** Visual design system / style direction  
-**Design split:** Dark external brand surfaces + light neumorphic application  
+**Design split:** Near-black editorial brand surfaces + AMOLED black, flat application  
+**Revised:** 28 October 2026 — the product moved from pale neumorphism to AMOLED black. Neumorphism is no longer used anywhere.  
 **Core character:** Quantitative, tactile, restrained, technical, premium, fast
 
 ---
@@ -25,10 +26,9 @@ The visual language combines two related but deliberately different environments
    - almost cinematic
 
 2. **Logged-in product environment**
-   - pale monochrome
-   - soft neumorphism
-   - tactile
-   - sculpted
+   - AMOLED black (`#000000`)
+   - flat: no neumorphism, no decorative shadows
+   - depth from hairline borders and small tonal steps
    - calm
    - dense enough for serious work
    - visually closer to an instrument panel than a SaaS dashboard
@@ -83,7 +83,7 @@ It should **not** communicate:
 
 A useful visual description is:
 
-> **Soft industrial minimalism for the product, black editorial minimalism for the brand.**
+> **Flat AMOLED instrumentation for the product, black editorial minimalism for the brand.**
 
 Another useful description:
 
@@ -640,24 +640,21 @@ The paid nature of the product should feel intentional rather than aggressively 
 
 # 16. Logged-In Product Visual Language
 
-The application itself should switch into a **light monochrome neumorphic environment**.
-
-This is not classic exaggerated 2020-style neumorphism.
+The application uses an **AMOLED black, flat** environment.
 
 It should be:
 
-- flatter
-- cleaner
-- more precise
-- more architectural
-- more usable
-- less decorative
+- true black, so OLED pixels switch off and the interface recedes
+- flat: no neumorphism, no soft extruded shadows, no glow
+- precise: surfaces are separated by 1px hairlines and small tonal steps
+- dense and calm
+- monochrome, with near-white reserved for focus
 
 Use the term:
 
-> **restrained neumorphism**
+> **flat AMOLED instrumentation**
 
-The UI should look physically moulded from a continuous pale material.
+The marketing site stays near-black editorial (`#050505`). The product is a shade deeper (`#000000`) and flatter, so signing in still feels like entering the instrument.
 
 ---
 
@@ -666,151 +663,114 @@ The UI should look physically moulded from a continuous pale material.
 Primary product background:
 
 ```text
-#D8D8D4
-#DEDEDA
-#E3E3DF
+#000000
 ```
 
-The exact tone can vary slightly by surface.
-
-Avoid pure white as the application background.
-
-The product needs enough mid-grey material for shadows and highlights to be visible.
+Do not tint the page grey. Pure black is the point: it maximises contrast, saves power on OLED displays and lets hairlines do the structural work.
 
 ---
 
-# 18. Product Neumorphic Model
+# 18. Product Surface Model
 
-Every elevated object should use two opposing light cues:
-
-1. a lighter highlight
-2. a darker soft shadow
-
-Example concept:
+There are no shadows in the product. Every surface is defined by fill and border only.
 
 ```css
-box-shadow:
-  -8px -8px 20px rgba(255,255,255,.70),
-   8px  8px 20px rgba(0,0,0,.10);
+.app-panel   { background: #0A0A0A; border: 1px solid rgba(255,255,255,.08); }  /* columns, metric panels */
+.app-card    { background: #121212; border: 1px solid rgba(255,255,255,.14); }  /* cards, draggable tasks */
+.app-btn     { background: #121212; border: 1px solid rgba(255,255,255,.14); }  /* hover #1A1A1A, pressed #000 */
+.app-field   { background: #000000; border: 1px solid rgba(255,255,255,.14); }  /* inputs, rails, troughs */
+.app-inverse { background: #F2F2EF; color: #0A0A0A; }                           /* rare focal surface */
+.app-overlay { background: #0A0A0A; border: 1px solid rgba(255,255,255,.14); }  /* dialogs, palette, drawers */
 ```
 
-For smaller controls:
-
-```css
-box-shadow:
-  -3px -3px 8px rgba(255,255,255,.65),
-   3px  3px 8px rgba(0,0,0,.10);
-```
-
-For inset controls:
-
-```css
-box-shadow:
-  inset 3px 3px 8px rgba(0,0,0,.09),
-  inset -3px -3px 8px rgba(255,255,255,.70);
-```
-
-These are visual starting points, not mandatory values.
+Source of truth: `styles/product.css` and the `--app-*` variables in `styles/tokens.css`.
 
 ---
 
 # 19. Restraint Rule
 
-Do not apply strong neumorphic shadows to every object.
+Use as few surfaces as possible. Most content sits directly on the black page.
 
-Use depth levels.
-
-## Level 0 — Flat
-
-For:
+## Page (`#000`)
 
 - body background
-- tables
-- text rows
-- graph labels
-- separators
+- table rows, text rows, ledger entries
+- graph labels, separators
 
-## Level 1 — Slightly raised
+## Panel (`#0A0A0A` + hairline)
 
-For:
+- board columns
+- metric panels
+- grouped lists
+- toolbars
 
-- toolbar
-- board column
-- metric panel
-- navigation item group
+## Card / control (`#121212` + stronger hairline)
 
-## Level 2 — Raised control
+- task cards
+- buttons and toggles
+- menus
 
-For:
+## Field (`#000` + stronger hairline)
 
-- buttons
-- toggles
-- compact cards
-- draggable task items
-
-## Level -1 — Inset
-
-For:
-
-- search
-- input fields
-- selected troughs
+- search and text inputs
+- selects
 - progress rails
+- segmented-control troughs
 
-The product should never resemble a wall of inflated marshmallows.
+Pressed controls drop to the page colour (`#000`) — a tonal change, not a shadow.
+
+Never nest more than two surfaces. Never add a shadow to separate surfaces; use a hairline.
 
 ---
 
 # 20. Product Colour System
 
-## Application background
+## Surfaces
 
 ```text
---app-bg: #D9D9D5;
---app-bg-soft: #E1E1DD;
+--app-bg:          #000000
+--app-panel:       #0A0A0A
+--app-raised:      #121212
+--app-raised-hover:#1A1A1A
+--app-field:       #000000
 ```
 
-## Raised surfaces
+## Lines
 
 ```text
---surface-raised: #DEDEDA;
---surface-raised-light: #E6E6E2;
-```
-
-## Inset surfaces
-
-```text
---surface-inset: #D2D2CE;
+--app-line:        rgba(255,255,255,.08)
+--app-line-strong: rgba(255,255,255,.14)
+--app-line-focus:  rgba(255,255,255,.45)
 ```
 
 ## Text
 
 ```text
---app-text-primary: #171717;
---app-text-secondary: #5F5F5B;
---app-text-tertiary: #8B8B86;
+--app-text-primary:   #F2F2EF
+--app-text-secondary: #9A9A96
+--app-text-tertiary:  #85857F
+--app-danger:         #F0A39B
 ```
 
-## Dark inverse surface
+All three text tones meet WCAG AA on every product surface.
 
-The application may use selective black cards to create hierarchy.
+## Inverse focal surface
 
 ```text
---surface-inverse: #101010;
---surface-inverse-2: #171717;
---inverse-text: #F2F2EF;
+--app-inverse:      #F2F2EF
+--app-inverse-text: #0A0A0A
+secondary text on inverse: #55554F
 ```
 
-Dark cards should be exceptional.
+On a black product, the focal surface inverts to near-white. Use it rarely:
 
-Use them for:
+- `+ COMMIT`
+- the Today execution instrument
+- the headline metric (Execution)
+- the active navigation item
+- tooltips and toasts
 
-- selected project summary
-- active instrument
-- high-priority metric block
-- focus surface
-
-Do not turn half the application dark.
+Do not turn whole regions white.
 
 ---
 
@@ -894,7 +854,7 @@ letter-spacing: .08em–.14em
 
 # 23. Product Navigation
 
-The application should use a pale raised side rail or compact vertical navigation.
+The application should use a `#0A0A0A` side rail with a hairline border, or compact vertical navigation.
 
 Possible structure:
 
@@ -923,13 +883,13 @@ Navigation characteristics:
 - subtle embossing
 - compact icons
 - text labels
-- selected item can invert to near-black
+- selected item inverts to near-white
 
 Selected item:
 
 ```text
-background: #111
-color: #F4F4F1
+background: #F2F2EF
+color: #0A0A0A
 ```
 
 This provides a crisp focal point against the soft background.
@@ -950,7 +910,7 @@ It may include:
 - workspace switcher
 - profile
 
-Individual controls can be small raised pills.
+Individual controls can be small bordered pills (`app-btn`).
 
 Avoid one huge full-width white navbar.
 
@@ -960,35 +920,25 @@ Avoid one huge full-width white navbar.
 
 Three visual states:
 
-## Raised primary light
+## Bordered (default)
 
-For common non-destructive actions.
+`#121212` fill, `rgba(255,255,255,.14)` hairline. Hover lifts the fill to `#1A1A1A` and brightens the border.
 
-## Dark inverse
+## Inverse
 
-For strongest actions.
+Near-white `#F2F2EF` with black text. For the strongest action only, e.g. `+ COMMIT`.
 
-Example:
+## Quiet
 
-```text
-+ COMMIT
-```
+Text only, with a faint `white/5%` hover fill. For secondary toggles and row actions.
 
-## Inset / quiet
-
-For secondary toggles.
-
-Buttons should feel physically pressable.
-
-Pressed state should become visually inset.
+Pressed state drops the fill to the page colour (`#000`). No shadows, no lift.
 
 ---
 
 # 26. Inputs
 
-Inputs should appear inset into the material.
-
-Example visual:
+Inputs are black fields with a hairline border.
 
 ```text
 ╭──────────────────────────╮
@@ -996,13 +946,11 @@ Example visual:
 ╰──────────────────────────╯
 ```
 
-No obvious white rectangular field pasted on a grey page.
-
 Input states:
 
-- resting: inset
-- focus: slightly stronger inner border/shadow
-- invalid: subtle semantic outline
+- resting: `#000` fill, `white/14%` border
+- focus: border `white/45%` (plus the global focus ring for keyboard focus)
+- invalid: muted red border `#F0A39B` and an inline message
 - disabled: lower contrast
 
 ---
@@ -1041,7 +989,7 @@ The Kanban view should be highly usable and visually quieter than the marketing 
 
 ## Columns
 
-Columns should resemble softly raised trays.
+Columns are `#0A0A0A` panels with a hairline border.
 
 ```text
 BACKLOG
@@ -1058,7 +1006,7 @@ Column header:
 
 ## Tasks
 
-Task cards should be slightly raised from the column.
+Task cards are `#121212` with a stronger hairline, one tonal step above the column.
 
 Each task can display:
 
@@ -1080,13 +1028,13 @@ Use:
 
 Drag state:
 
-- stronger shadow
-- slight lift
+- brighter border (`white/40%`)
+- very small scale increase
 - very small scale increase
 
 Drop target:
 
-- inset area
+- the column drops to page black (`#000`)
 
 ---
 
@@ -1123,21 +1071,21 @@ The execution graph should be a signature component.
 
 - horizontal
 - monochrome
-- embedded into a softly raised or inset surface
+- embedded in a black field with a hairline border
 - tiny precise cells
-- light-to-dark intensity scale
+- dark-to-light intensity scale (more execution = brighter)
 
 Possible intensity:
 
 ```text
-0   #CCCCCA
-1   #B7B7B3
-2   #8D8D89
-3   #595956
-4   #191919
+0   #161616
+1   #2E2E2C
+2   #5C5C59
+3   #A3A39F
+4   #F2F2EF
 ```
 
-The darkest value should feel like a strong signal.
+The brightest value should feel like a strong signal.
 
 No GitHub green.
 
@@ -1304,24 +1252,15 @@ rgba(255,255,255,.08)
 
 # 36. Shadows
 
-Shadows are a major part of the product aesthetic.
-
-They must remain broad and soft.
+The product uses **no shadows**. Separation comes from hairlines (`white/8–14%`) and tonal steps (`#000` → `#0A0A0A` → `#121212`).
 
 Avoid:
 
-- sharp drop shadows
-- black 30% box shadows
-- large detached floating cards
+- drop shadows on cards or panels
+- glows
+- inset shadows to fake depth
 
-Light environment:
-
-```text
-dark shadow: rgba(0,0,0,.08–.14)
-light shadow: rgba(255,255,255,.55–.80)
-```
-
-Dark marketing environment:
+Dark marketing environment may still use deep, soft shadows for material renders:
 
 ```text
 rgba(0,0,0,.35–.65)
@@ -1372,15 +1311,15 @@ Use:
 - 120–220ms transitions
 - ease-out for appearance
 - soft spring for drag
-- tiny press depth
-- subtle shadow interpolation
+- tiny press feedback (fill drops to black)
+- border brightness transitions
 
 Examples:
 
 Task press:
 
 ```text
-raised → inset
+#121212 → #000 fill
 ```
 
 Task drag:
@@ -1463,7 +1402,7 @@ No illustration is necessary.
 
 Product modal:
 
-- pale raised surface
+- `#0A0A0A` overlay with a hairline border
 - large radius
 - strong surrounding depth
 - dark text
@@ -1530,19 +1469,17 @@ Do not rely on colour alone.
 
 ---
 
-# 47. Dark Inverse Modules Inside Product
+# 47. Inverse Modules Inside Product
 
-A limited number of black modules can be embedded inside the pale application.
-
-This provides a visual bridge back to the Ksan Relay brand.
+On the black product, a limited number of **near-white** modules create hierarchy and echo the brand's high-contrast type.
 
 Good uses:
 
-- selected metric panel
-- active project
-- compact execution summary
-- focused command palette
-- modal command interface
+- `+ COMMIT`
+- the Today execution instrument
+- the headline Execution metric
+- the active navigation item
+- tooltips and toasts
 
 Example:
 
@@ -1553,9 +1490,10 @@ Example:
 │ 67.4                 │
 │ +8.2%                │
 └──────────────────────┘
+(#F2F2EF fill, #0A0A0A text)
 ```
 
-Dark panels should feel intentional and rare.
+Inverse modules should feel intentional and rare.
 
 ---
 
@@ -1565,13 +1503,13 @@ The command palette can be one of the strongest visual elements.
 
 Recommended style:
 
-- dark inverse floating panel
+- dark `#0A0A0A` overlay panel with a hairline border
 - centered
-- strong blur behind
+- dimmed, lightly blurred backdrop
 - monochrome results
 - compact shortcut labels
 
-This creates a sharp contrast against the light neumorphic product.
+It sits above the black product as a focused layer.
 
 Example:
 
@@ -1621,7 +1559,7 @@ Prioritise:
 - history
 - activity graph
 
-Neumorphic depth should be reduced slightly on smaller screens.
+Keep hairlines at 1px on small screens; do not thicken borders to compensate.
 
 ---
 
@@ -1672,26 +1610,24 @@ Common values:
 
 ---
 
-# 52. Accessibility Constraint on Neumorphism
+# 52. Accessibility on Flat Dark Surfaces
 
-Neumorphism must never reduce usability.
+Flat black must never reduce usability.
 
 Critical rule:
 
-> **Depth may be subtle; interaction state may not be ambiguous.**
+> **Surfaces may be subtle; interaction state may not be ambiguous.**
 
 Interactive elements need:
 
-- readable text contrast
-- visible focus
+- readable text contrast (all product text tones pass WCAG AA)
+- visible focus (near-white focus ring)
 - obvious hit area
-- distinguishable pressed state
+- distinguishable hover and pressed states
 - semantic labels
 - keyboard navigation
 
-Do not use shadow alone to communicate whether something is clickable.
-
-Use shape, text, icons, placement, or subtle borders as necessary.
+Do not rely on a hairline alone to communicate that something is clickable. Use shape, text, icons or placement as well.
 
 ---
 
@@ -1833,7 +1769,7 @@ CTA:
 
 # 60. Onboarding Visual Style
 
-Onboarding belongs to the product, so it should use light neumorphism.
+Onboarding belongs to the product, so it uses the AMOLED black environment.
 
 Keep it compact.
 
@@ -1862,18 +1798,16 @@ Your first commit will be recorded.
 
 # 61. Login-to-Product Transition
 
-The visual shift from dark auth to pale product can be deliberate.
+The shift from near-black auth to the AMOLED black product is subtle but deliberate: the page deepens to true black and surfaces flatten.
 
 Sequence:
 
 ```text
-black authentication
+near-black authentication (#050505)
        ↓
 successful sign in
        ↓
-brief neutral transition
-       ↓
-pale State workspace
+AMOLED black State workspace (#000000)
 ```
 
 This creates the feeling of entering an instrument rather than staying on the marketing website.
@@ -2097,9 +2031,9 @@ Numeric columns:
 
 # 73. Tooltips
 
-Tooltips should be dark even inside the light app.
+Tooltips invert to near-white inside the black app.
 
-This improves legibility and creates brand continuity.
+This keeps them legible above dense dark content.
 
 Example:
 
@@ -2115,12 +2049,12 @@ Example:
 
 Dropdowns:
 
-- raised pale panel in light product
-- strong soft shadow
+- `#0A0A0A` overlay panel with a hairline border
+- no shadow
 - dark text
 - compact row height
 
-Command-like menus may instead use dark inverse styling.
+The command palette uses the same dark overlay.
 
 ---
 
@@ -2205,15 +2139,15 @@ Only overdue states need muted red emphasis.
 
 # 79. Progress
 
-Progress bars should appear inset into the surface.
+Progress bars are black fields with a hairline border.
 
 Track:
 
-- pale / grey inset groove
+- `#000` with `white/14%` border
 
 Fill:
 
-- dark graphite
+- near-white `#F2F2EF` (dark `#0A0A0A` when inside an inverse module)
 
 No colourful gradient.
 
@@ -2221,17 +2155,15 @@ No colourful gradient.
 
 # 80. Toggles
 
-Toggles should feel physical.
-
 Off:
 
-- inset grey trough
-- pale knob
+- black track with a hairline border
+- grey knob
 
 On:
 
-- dark trough
-- pale knob
+- near-white track
+- black knob
 
 No bright blue default switch.
 
@@ -2239,14 +2171,14 @@ No bright blue default switch.
 
 # 81. Checkbox
 
-Checkboxes can be slightly inset.
+Unchecked: black field with a hairline border.
 
 Completed:
 
-- filled dark
-- light checkmark
+- filled near-white
+- black checkmark
 
-This is one of the few places where full black can appear frequently.
+This is one of the few places where near-white appears frequently.
 
 ---
 
@@ -2254,12 +2186,10 @@ This is one of the few places where full black can appear frequently.
 
 Focus ring should match the system.
 
-Possible light-product focus:
+Product focus (AMOLED):
 
 ```text
-1px dark border
-+
-soft outer halo
+2px near-white outline (rgba(244,244,242,.85)), 2px offset
 ```
 
 Dark-marketing focus:
@@ -2280,7 +2210,7 @@ Skeletons should use the existing material.
 
 Product:
 
-- slightly darker/lighter bars within pale material
+- `#0A0A0A` / `#121212` bars on black
 
 Marketing:
 
@@ -2309,13 +2239,12 @@ Do not shrink the desktop composition until it becomes unreadable.
 
 On mobile:
 
-- reduce external shadows
 - simplify layers
 - make touch targets at least ~44px
 - use bottom actions where useful
 - prioritise lists over kanban columns
 
-The product can remain neumorphic without sacrificing compactness.
+The flat surface model needs no adjustment on mobile; keep hairlines at 1px.
 
 ---
 
@@ -2326,8 +2255,8 @@ The product can remain neumorphic without sacrificing compactness.
 - use monochrome aggressively
 - make typography carry hierarchy
 - use precise numerical formatting
-- use dark inverse surfaces selectively
-- use broad, soft shadows
+- use near-white inverse surfaces selectively
+- separate surfaces with hairlines, not shadows
 - use large smooth radii
 - make controls tactile
 - preserve information density
@@ -2354,7 +2283,8 @@ The product can remain neumorphic without sacrificing compactness.
 - use floating orbs as filler
 - make the product look like Notion
 - make the product look like Jira
-- make neumorphism reduce contrast
+- use neumorphism or soft extruded shadows
+- use grey tinted page backgrounds in the product
 
 ---
 
@@ -2362,7 +2292,9 @@ The product can remain neumorphic without sacrificing compactness.
 
 The supplied references translate into State as follows.
 
-## Reference characteristic: pale sculpted UI
+## Reference characteristic: pale sculpted UI (superseded)
+
+No longer adopted: the product is AMOLED black and flat. Kept for history.
 
 Adopt:
 
@@ -2456,7 +2388,7 @@ It should appear consistently in:
 
 ## 88.3 State Surface
 
-The logged-in app should use its pale sculpted material consistently enough that a cropped screenshot is recognisable as State.
+The logged-in app should use its flat AMOLED surfaces and hairlines consistently enough that a cropped screenshot is recognisable as State.
 
 ---
 
@@ -2485,13 +2417,13 @@ Use these terms when briefing designers or generation tools:
 
 ```text
 monochrome
-restrained neumorphism
-soft industrial
+AMOLED black
+flat
+hairline
 quantitative
 editorial black
 graphite
 matte
-tactile
 instrument panel
 high contrast
 technical
@@ -2519,13 +2451,15 @@ neon
 gamified
 cartoon
 glass everywhere
+neumorphism
+soft shadows
 ```
 
 ---
 
 # 91. One-Sentence Visual Brief
 
-> **State uses a near-black, high-contrast editorial identity on the public website and a pale, restrained neumorphic instrument-panel aesthetic inside the product, unified by monochrome materials, precise typography, tabular data, soft physical depth, and quantitative information design.**
+> **State uses a near-black, high-contrast editorial identity on the public website and a flat AMOLED-black instrument aesthetic inside the product, unified by monochrome surfaces, hairline structure, precise typography, tabular data and quantitative information design.**
 
 ---
 
@@ -2548,15 +2482,13 @@ Dark authentication and pricing.
 No bright colours.
 
 PRODUCT
-Pale warm-grey base.
-Restrained neumorphism.
-Soft opposing shadows.
-Inset inputs.
-Raised controls.
-Large smooth radii.
-Black inverse modules used sparingly.
+AMOLED black (#000).
+Flat: no neumorphism, no shadows.
+Hairline borders and small tonal steps.
+Black inputs with hairlines.
+Near-white inverse modules used sparingly.
 Tabular numerals.
-Monochrome execution graphs.
+Dark-to-light execution graphs.
 Compact technical labels.
 Dense but calm.
 No visual noise.

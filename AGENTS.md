@@ -29,23 +29,26 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 
 ---
 
-## Visual Design & Neumorphic Restraint
+## Visual Design: Flat AMOLED Product
 
 ### Dual Environment Split
 - MUST: Separate marketing and product surfaces into two distinct visual environments:
   - **Public Marketing Surfaces:** Dark monochrome (`#050505` to `#1C1C1C`), editorial, technical, high-contrast, graphite materials.
-  - **Logged-in Product Application:** Pale monochrome (`#D9D9D5` to `#DEDEDA`), restrained neumorphism, tactile, calm, dense.
-- NEVER: Mix the two environments arbitrarily (e.g., do not turn half of the product interface black). Inverse dark cards in the product are reserved strictly for high-focus focal elements (e.g., active instruments or primary action triggers like `+ COMMIT`).
+  - **Logged-in Product Application:** AMOLED black (`#000000`), flat, calm, dense. Depth comes from 1px hairlines and small tonal steps only.
+- NEVER: Use neumorphism (soft extruded or inset shadows) anywhere in the product.
+- NEVER: Tint the product page grey or turn large regions white. Near-white inverse surfaces (`#F2F2EF`, black text) are reserved for focal elements: `+ COMMIT`, the Today execution instrument, the headline metric, the active nav item, tooltips and toasts.
 
-### Restrained Neumorphism Hierarchy
-- MUST: Strictly adhere to depth levels:
-  - **Level 0 (Flat):** Base body background (`#D9D9D5`), tables, text rows, graph labels, separators. No shadows.
-  - **Level 1 (Slightly Raised):** Board columns, toolbars, metric panels (`#DEDEDA`, `box-shadow: var(--shadow-raised-sm)`).
-  - **Level 2 (Raised Control):** Buttons, toggles, compact draggable cards (`#DEDEDA`, `box-shadow: var(--shadow-raised-lg)`).
-  - **Level -1 (Inset):** Search inputs, form textareas, progress rails, selection troughs (`#D2D2CE`, `box-shadow: var(--shadow-inset-sm)`).
-- MUST: Ensure pressed buttons physically depress into an inset state (`:active` -> `neu-inset-sm`).
-- NEVER: Produce a "wall of inflated marshmallows." Neumorphism must remain architectural, restrained, and functional.
-- NEVER: Use arbitrary inline shadows or bright colorful brand gradients.
+### Flat Surface Hierarchy
+- MUST: Use the classes in `styles/product.css`; never hand-roll surface styles:
+  - **Page:** `#000000` body, tables, text rows, ledger rows, graph labels, separators. No surface.
+  - **Panel (`.app-panel`):** Board columns, toolbars, metric panels (`#0A0A0A`, 1px `rgba(255,255,255,.08)` border).
+  - **Card / Control (`.app-card`, `.app-btn`):** Task cards, buttons, toggles, menus (`#121212`, 1px `rgba(255,255,255,.14)` border; hover `#1A1A1A`).
+  - **Field (`.app-field`, `.app-input`):** Inputs, selects, progress rails, segmented troughs (`#000000`, 1px `rgba(255,255,255,.14)` border; focus border `rgba(255,255,255,.45)`).
+  - **Overlay (`.app-overlay`):** Dialogs, drawers, command palette, menus (`#0A0A0A` with a hairline).
+- MUST: Pressed controls drop to the page colour (`#000`); no shadows, no lift.
+- MUST: Product text uses `#F2F2EF` / `#9A9A96` / `#85857F` (all pass WCAG AA on every surface); on inverse surfaces use `#0A0A0A` / `#55554F`.
+- NEVER: Add box-shadows, glows or inset shadows to separate surfaces; use a hairline.
+- NEVER: Use bright colorful brand gradients.
 
 ---
 
@@ -215,10 +218,9 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 
 ## Design
 
-- SHOULD: Layered shadows (ambient + direct)
-- SHOULD: Crisp edges via semi-transparent borders + shadows
+- SHOULD: Product: crisp edges via semi-transparent hairline borders, no shadows (marketing may use layered shadows on material renders)
 - SHOULD: Nested radii: child ≤ parent; concentric
-- SHOULD: Hue consistency: tint borders/shadows/text toward bg hue
+- SHOULD: Hue consistency: keep borders and text neutral against the monochrome background
 - MUST: Accessible charts (color-blind-friendly palettes)
 - MUST: Meet contrast—prefer [APCA](https://apcacontrast.com/) over WCAG 2
 - MUST: Increase contrast on `:hover`/`:active`/`:focus`
