@@ -201,12 +201,20 @@ State calculations are completely deterministic and transparent:
    npm run db:studio
    ```
 
-5. **Start Development Server:**
+5. **Seed demo data (local only):**
+   ```bash
+   npm run db:seed
+   ```
+   Recreates three demo users with about 90 days of history. Sign in with
+   `demo@state.test` / `state-demo-2026` (teammates `aarav@state.test` and
+   `ishita@state.test` use the same password). Never run against production.
+
+6. **Start Development Server:**
    ```bash
    npm run dev
    ```
 
-6. **Checks:**
+7. **Checks:**
    ```bash
    npm run lint
    npm run typecheck
