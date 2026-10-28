@@ -4,6 +4,7 @@ import { Archivo } from "next/font/google";
 import { Button } from "@/components/ui/button";
 import { ParticleField } from "@/components/marketing/particle-field";
 import { Magnetic, MagneticLabel } from "@/components/marketing/magnetic";
+import { LEGAL_PAGES } from "@/lib/legal";
 
 // Expanded grotesk for display type; the wdth axis drives font-stretch
 const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
@@ -65,12 +66,23 @@ export default function MarketingLayout({
       </main>
 
       <footer className="relative z-10 border-t border-white/[0.08] px-5 py-12 text-sm text-[#6F6F6B] sm:px-8 lg:px-12">
-        <div className="mx-auto flex max-w-[1320px] flex-col justify-between gap-6 md:flex-row md:items-center">
-          <p>
-            <span className="font-semibold text-[#A9A9A6]" translate="no">State</span> is built by{" "}
-            <span translate="no">Ksan&nbsp;Relay</span>. No ads, no AI, no surveillance.
-          </p>
-          <div className="flex gap-6">
+        <div className="mx-auto grid max-w-[1320px] gap-10 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-16">
+          <div className="space-y-3">
+            <p>
+              <span className="font-semibold text-[#A9A9A6]" translate="no">State</span> is built by{" "}
+              <span translate="no">Ksan&nbsp;Relay</span>. No ads, no AI, no surveillance.
+            </p>
+            <p className="max-w-[56ch] text-xs leading-relaxed">
+              Graphs, histories and figures on this site are illustrative sample data. State’s metrics describe recorded work, not people,
+              and are not intended for employment decisions.{" "}
+              <Link href="/legal/disclaimer" className="underline underline-offset-4 transition-colors hover:text-white">
+                Read the disclaimer
+              </Link>
+              .
+            </p>
+            <p className="text-xs">© {new Date().getFullYear()} Ksan&nbsp;Relay</p>
+          </div>
+          <nav aria-label="Product" className="flex flex-col gap-2">
             <Link href="/principles" className="transition-colors hover:text-white">
               Principles
             </Link>
@@ -80,7 +92,14 @@ export default function MarketingLayout({
             <Link href="/login" className="transition-colors hover:text-white">
               Sign in
             </Link>
-          </div>
+          </nav>
+          <nav aria-label="Legal" className="flex flex-col gap-2">
+            {LEGAL_PAGES.map((page) => (
+              <Link key={page.href} href={page.href} className="transition-colors hover:text-white">
+                {page.title}
+              </Link>
+            ))}
+          </nav>
         </div>
       </footer>
     </div>

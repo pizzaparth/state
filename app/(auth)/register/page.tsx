@@ -23,6 +23,18 @@ export default async function RegisterPage({
 
       <CredentialsForm mode="sign-up" redirectTo={redirectTo} />
 
+      <p className="text-center text-[11px] leading-relaxed text-[#6F6F6B]">
+        By creating an account you agree to the{" "}
+        <Link href="/legal/terms" className="text-[#A9A9A6] underline underline-offset-2 hover:text-white">
+          terms of service
+        </Link>{" "}
+        and{" "}
+        <Link href="/legal/privacy" className="text-[#A9A9A6] underline underline-offset-2 hover:text-white">
+          privacy policy
+        </Link>
+        .
+      </p>
+
       <div className="pt-2 text-center text-xs text-[#A9A9A6]">
         <span>Already have an account? </span>
         <Link href="/login" className="text-white hover:underline font-medium">

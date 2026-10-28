@@ -1,5 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
+import { LEGAL_PAGES } from "@/lib/legal";
 
 export default function AuthLayout({
   children,
@@ -25,8 +26,15 @@ export default function AuthLayout({
         </div>
       </main>
 
-      <footer className="text-center pb-8 text-xs text-[#6F6F6B]">
-        <span>© {new Date().getFullYear()} Ksan Relay. All rights reserved.</span>
+      <footer className="pb-8 text-center text-xs text-[#6F6F6B]">
+        <nav aria-label="Legal" className="mb-3 flex flex-wrap justify-center gap-x-5 gap-y-2">
+          {LEGAL_PAGES.map((page) => (
+            <Link key={page.href} href={page.href} className="transition-colors hover:text-white">
+              {page.title}
+            </Link>
+          ))}
+        </nav>
+        <span>© {new Date().getFullYear()} Ksan&nbsp;Relay</span>
       </footer>
     </div>
   );
