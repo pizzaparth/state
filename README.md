@@ -205,9 +205,8 @@ State calculations are completely deterministic and transparent:
    ```bash
    npm run db:seed
    ```
-   Recreates three demo users with about 90 days of history. Sign in with
-   `demo@state.test` / `state-demo-2026` (teammates `aarav@state.test` and
-   `ishita@state.test` use the same password). Never run against production.
+   Recreates three demo users with about 90 days of history. See
+   [Demo credentials](#demo-credentials). Never run against production.
 
 6. **Start Development Server:**
    ```bash
@@ -221,6 +220,20 @@ State calculations are completely deterministic and transparent:
    npm run build
    ```
    Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+### Demo credentials
+
+Created by `npm run db:seed` in your local database. Sign in at
+[http://localhost:3000/login](http://localhost:3000/login).
+
+| User | Email | Password | Role in Ksan Relay |
+| :--- | :--- | :--- | :--- |
+| Parth (main demo account) | `demo@state.test` | `state-demo-2026` | Owner |
+| Aarav Kulkarni | `aarav@state.test` | `state-demo-2026` | Admin |
+| Ishita Sharma | `ishita@state.test` | `state-demo-2026` | Member |
+
+All three have an active subscription, so sign-in goes straight to Today. These accounts exist
+only in databases you seed yourself; never seed a production database.
 
 ---
 
