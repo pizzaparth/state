@@ -29,7 +29,6 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
   const firstWeekday = (new Date(`${days[0].day}T00:00:00Z`).getUTCDay() + 6) % 7;
   const cells: (DailyExecution | null)[] = [...Array(firstWeekday).fill(null), ...days];
   const weeks = Math.ceil(cells.length / 7);
-  const cell = weeks <= 6 ? 30 : weeks <= 14 ? 24 : weeks <= 27 ? 17 : 13;
   const [active, setActive] = React.useState<number | null>(null);
   const shown = active === null ? null : cells[active];
 
@@ -65,60 +64,69 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
   return (
     <div>
       <div className="overflow-x-auto overscroll-x-contain pb-2">
-        <div className="relative inline-block min-w-full pl-7 pt-5">
-          {/* Month labels */}
-          <div aria-hidden="true" className="absolute left-7 top-0 h-4 text-[10px] text-[#5F5F5B]">
+        {/* Fluid: cells are square and share the width; capped so short ranges stay compact */}
+        <div
+          className="relative pl-8 pt-5"
+          style={{ minWidth: `calc(${weeks} * 0.8rem + 2rem)`, maxWidth: `calc(${weeks} * 2rem + 2rem)` }}
+        >
+          <div aria-hidden="true" className="absolute left-8 right-0 top-0 h-4 text-[10px] text-[#5F5F5B]">
             {months.map((m) => (
-              <span key={`${m.week}-${m.text}`} className="absolute" style={{ left: m.week * (cell + gap) }}>
+              <span key={`${m.week}-${m.text}`} className="absolute" style={{ left: `${(m.week / weeks) * 100}%` }}>
                 {m.text}
               </span>
             ))}
           </div>
-          {/* Weekday labels */}
-          <div aria-hidden="true" className="absolute left-0 top-5 grid text-[10px] leading-none text-[#5F5F5B]" style={{ gridTemplateRows: `repeat(7, ${cell}px)`, rowGap: gap }}>
-            {["Mon", "", "Wed", "", "Fri", "", ""].map((d, i) => (
-              <span key={i} className="flex items-center">
-                {d}
-              </span>
-            ))}
-          </div>
 
-          <div
-            role="group"
-            tabIndex={0}
-            aria-label="Execution graph. Use arrow keys to read a day."
-            onKeyDown={move}
-            onFocus={() => setActive((i) => i ?? cells.length - 1)}
-            onBlur={() => setActive(null)}
-            onPointerLeave={() => setActive(null)}
-            className="neu-inset-sm relative grid w-max grid-flow-col rounded-[10px] p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#171717]/70"
-            style={{ gridTemplateRows: `repeat(7, ${cell}px)`, gridAutoColumns: `${cell}px`, gap }}
-          >
-            {cells.map((d, i) =>
-              d ? (
-                <span
-                  key={d.day}
-                  onPointerEnter={() => setActive(i)}
-                  className={cn("rounded-[3px] transition-transform duration-100", active === i && "scale-125 outline outline-1 outline-[#171717]")}
-                  style={{ backgroundColor: FILL[level(d.execution)] }}
-                />
-              ) : (
-                <span key={`pad-${i}`} />
-              )
-            )}
+          <div className="flex gap-2">
+            <div aria-hidden="true" className="-ml-8 grid w-6 py-2 text-[10px] leading-none text-[#5F5F5B]" style={{ gridTemplateRows: "repeat(7, 1fr)", rowGap: gap }}>
+              {["Mon", "", "Wed", "", "Fri", "", ""].map((d, i) => (
+                <span key={i} className="flex items-center">
+                  {d}
+                </span>
+              ))}
+            </div>
 
-            {shown && (
-              <div
-                aria-hidden="true"
-                className="neu-inverse pointer-events-none absolute z-10 w-max rounded-[12px] px-3 py-2 text-xs"
-                style={{ left: 8 + col * (cell + gap) + cell / 2, top: 8 + row * (cell + gap) - 8, transform: "translate(-50%, -100%)" }}
-              >
-                <p className="font-semibold">{label(shown.day, { weekday: "short", day: "numeric", month: "short" })}</p>
-                <p className="mt-1 tabular-nums text-[#C9C9C5]">
-                  {shown.execution} execution, {shown.commits} commits
-                </p>
-              </div>
-            )}
+            <div
+              role="group"
+              tabIndex={0}
+              aria-label="Execution graph. Use arrow keys to read a day."
+              onKeyDown={move}
+              onFocus={() => setActive((i) => i ?? cells.length - 1)}
+              onBlur={() => setActive(null)}
+              onPointerLeave={() => setActive(null)}
+              className="neu-inset-sm relative grid flex-1 grid-flow-col rounded-[10px] p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#171717]/70"
+              style={{ gridTemplateRows: "repeat(7, auto)", gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))`, gap }}
+            >
+              {cells.map((d, i) =>
+                d ? (
+                  <span
+                    key={d.day}
+                    onPointerEnter={() => setActive(i)}
+                    className={cn("aspect-square rounded-[3px] transition-transform duration-100", active === i && "scale-125 outline outline-1 outline-[#171717]")}
+                    style={{ backgroundColor: FILL[level(d.execution)] }}
+                  />
+                ) : (
+                  <span key={`pad-${i}`} className="aspect-square" />
+                )
+              )}
+
+              {shown && (
+                <div
+                  aria-hidden="true"
+                  className="neu-inverse pointer-events-none absolute z-10 w-max rounded-[12px] px-3 py-2 text-xs"
+                  style={{
+                    left: `calc(0.5rem + (100% - 1rem) * ${(col + 0.5) / weeks})`,
+                    top: `calc(0.5rem + (100% - 1rem) * ${row / 7} - 6px)`,
+                    transform: "translate(-50%, -100%)",
+                  }}
+                >
+                  <p className="font-semibold">{label(shown.day, { weekday: "short", day: "numeric", month: "short" })}</p>
+                  <p className="mt-1 tabular-nums text-[#C9C9C5]">
+                    {shown.execution} execution, {shown.commits} commits
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

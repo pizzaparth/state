@@ -138,7 +138,7 @@ export function Kanban({
       }}
     >
       <div
-        className={cn("grid gap-5 overflow-x-auto pb-4 md:grid-flow-col md:auto-cols-[minmax(17rem,1fr)]", dragging && "select-none")}
+        className={cn("grid gap-5 overflow-x-auto pb-4 md:grid-flow-col md:auto-cols-[minmax(15rem,1fr)]", dragging && "select-none")}
       >
         {columns.map((column) => {
           const columnCards = cards.filter((c) => c.columnId === column.id);
