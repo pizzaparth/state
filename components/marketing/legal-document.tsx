@@ -36,7 +36,7 @@ export function LegalDocument({
         ))}
       </nav>
 
-      <h1 className="mt-10 font-display text-[clamp(2rem,6vw,4.5rem)] font-extrabold uppercase leading-[0.95] tracking-[-0.02em] text-balance">
+      <h1 className="mt-10 font-display text-[clamp(2rem,6vw,4.5rem)] font-extrabold uppercase leading-[0.95] tracking-[-0.02em] [font-stretch:120%] text-balance">
         {title}
       </h1>
       <p className="mt-4 text-base text-[#6F6F6B]">Effective {LEGAL.effectiveDate}</p>

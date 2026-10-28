@@ -1,11 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { connection } from "next/server";
-import { Michroma } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "@/styles/globals.css";
-
-// Brand typeface for the whole product (single 400 weight; hierarchy comes from size)
-const michroma = Michroma({ subsets: ["latin"], weight: "400", variable: "--font-michroma", display: "swap" });
 
 export const metadata: Metadata = {
   title: "State — Execution, measured.",
@@ -31,7 +28,7 @@ export default async function RootLayout({
   await connection();
 
   return (
-    <html lang="en" className={`${michroma.variable} ${GeistMono.variable}`}>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="min-h-screen font-sans bg-[#D9D9D5] text-[#171717] antialiased selection:bg-black selection:text-white">
         {children}
       </body>

@@ -52,10 +52,9 @@ export function WorkspaceScope() {
       </div>
       <p className="mt-5 max-w-[52ch] text-base leading-relaxed text-[#A9A9A6]">{current.note}</p>
 
-      {/* Columns side by side from sm up; stacked on phones where the wide face would truncate */}
       <div
-        className="mt-10 grid gap-x-6 gap-y-8 sm:[grid-template-columns:var(--board-cols)]"
-        style={{ "--board-cols": `repeat(${current.columns.length}, minmax(0, 1fr))` } as React.CSSProperties}
+        className="mt-10 grid gap-x-6 gap-y-8"
+        style={{ gridTemplateColumns: `repeat(${current.columns.length}, minmax(0, 1fr))` }}
       >
         {current.columns.map((column) => (
           <div key={column.name} className="min-w-0">

@@ -46,7 +46,7 @@ export function PricingLedger() {
             <h3 className="text-lg font-semibold text-[#F4F4F2]">{plan.name}</h3>
             <p className="mt-1 text-base text-[#A9A9A6]">{plan.summary}</p>
             <p className="mt-8 flex items-baseline gap-2">
-              <span className="font-display text-[clamp(2.75rem,6vw,5rem)] font-extrabold leading-none tabular-nums tracking-[-0.03em] text-[#F4F4F2]">
+              <span className="font-display text-[clamp(3.5rem,8vw,6.5rem)] font-extrabold leading-none tabular-nums tracking-[-0.03em] [font-stretch:115%] text-[#F4F4F2]">
                 {formatInr(plan.priceInr[interval])}
               </span>
               <span className="text-base text-[#6F6F6B]">
