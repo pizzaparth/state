@@ -26,7 +26,7 @@ export default async function InboxPage({ searchParams }: { searchParams: PageSe
       />
 
       <Panel title="Capture">
-        <QuickCapture projects={projects.map((p) => ({ slug: p.slug, name: p.name }))} autoFocus />
+        <QuickCapture projects={projects.map((p) => ({ slug: p.slug, name: p.name }))} autoFocus showRecent={false} />
         <dl className="mt-3 grid gap-x-8 gap-y-1 px-2 text-sm text-[#9A9A96] sm:grid-cols-2">
           <div className="flex gap-2">
             <dt className="font-mono text-[#F2F2EF]">#relaydb</dt>

@@ -15,7 +15,8 @@
     "security:check": "node scripts/security-check.mjs",
     "bench": "node scripts/bench.mjs",
     "db:seed": "tsx --env-file=.env scripts/seed.ts",
-    "dev:webpack": "next dev"
+    "dev:webpack": "next dev",
+    "authz:check": "tsx scripts/authz-check.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

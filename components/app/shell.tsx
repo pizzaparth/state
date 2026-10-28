@@ -13,6 +13,7 @@ import {
   FolderKanban,
   History,
   Inbox,
+  Loader2,
   LogOut,
   Menu as MenuIcon,
   Plus,
@@ -24,13 +25,14 @@ import {
 } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
-import { NoticeProvider, useLocalOnlyNotice } from "./notice";
+import { createCommitAction } from "@/app/(app)/actions";
+import { NoticeProvider, useNotice } from "./notice";
 
 export interface ShellData {
   user: { name: string; email: string; initials: string };
   inboxCount: number;
   orgs: { name: string; slug: string }[];
-  projects: { name: string; href: string }[];
+  projects: { id: string; name: string; href: string }[];
   dateLabel: string;
 }
 
@@ -443,8 +445,9 @@ function CommitDialog({
   onOpenChange: (open: boolean) => void;
   projects: ShellData["projects"];
 }) {
-  const notify = useLocalOnlyNotice();
+  const notify = useNotice();
   const [error, setError] = React.useState<string | null>(null);
+  const [pending, startTransition] = React.useTransition();
 
   return (
     <Dialog.Root open={open} onOpenChange={(o) => (setError(null), onOpenChange(o))}>
@@ -462,13 +465,24 @@ function CommitDialog({
               e.preventDefault();
               const form = new FormData(e.currentTarget);
               const message = String(form.get("message") ?? "").trim();
+              const textarea = e.currentTarget.querySelector<HTMLTextAreaElement>("textarea");
               if (!message) {
                 setError("Describe what you did.");
-                e.currentTarget.querySelector<HTMLTextAreaElement>("textarea")?.focus();
+                textarea?.focus();
                 return;
               }
-              onOpenChange(false);
-              notify(`Commit drafted: “${message}” +${form.get("weight")}.`);
+              if (pending) return;
+              const weight = Number(form.get("weight"));
+              startTransition(async () => {
+                const result = await createCommitAction({ message, projectId: String(form.get("project") ?? "") || null, weight });
+                if (!result.ok) {
+                  setError(result.error);
+                  textarea?.focus();
+                  return;
+                }
+                onOpenChange(false);
+                notify(`Commit recorded: “${message}” +${weight}.`);
+              });
             }}
           >
             <div className="space-y-1.5">
@@ -479,6 +493,7 @@ function CommitDialog({
                 id="commit-message"
                 name="message"
                 rows={3}
+                maxLength={500}
                 aria-invalid={Boolean(error)}
                 aria-describedby={error ? "commit-message-error" : undefined}
                 placeholder="Reviewed pull request #38…"
@@ -501,7 +516,7 @@ function CommitDialog({
                 <select id="commit-project" name="project" className={selectClass} defaultValue="">
                   <option value="">None</option>
                   {projects.map((p) => (
-                    <option key={p.href} value={p.href}>
+                    <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
                   ))}
@@ -525,7 +540,12 @@ function CommitDialog({
               </p>
               <div className="flex gap-2">
                 <Dialog.Close className="app-btn h-10 rounded-[12px] px-4 text-base font-medium">Cancel</Dialog.Close>
-                <button type="submit" className="app-inverse h-10 rounded-[12px] px-4 text-base font-semibold">
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="app-inverse inline-flex h-10 items-center gap-1.5 rounded-[12px] px-4 text-base font-semibold disabled:opacity-70"
+                >
+                  {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
                   Commit
                 </button>
               </div>

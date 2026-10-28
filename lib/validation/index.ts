@@ -11,7 +11,7 @@ export const RECURRENCE_RULES = /^(daily|weekdays|weekly|monthly|interval:[1-9]\
 // Only title is required; omitting boardId/columnId places the task in the Inbox
 export const taskSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(255),
-  description: z.string().trim().optional(),
+  description: z.string().trim().max(10_000).optional(),
   projectId: z.string().optional().nullable(),
   boardId: z.string().min(1).optional().nullable(),
   columnId: z.string().min(1).optional().nullable(),
@@ -51,12 +51,36 @@ export const commitUpdateSchema = z.strictObject({
 export type CommitUpdateInput = z.infer<typeof commitUpdateSchema>;
 
 /**
+ * Product mutations (Server Actions). Only ids and user-editable fields are accepted;
+ * workspace, author, timestamps and execution value are always derived on the server.
+ * strictObject rejects unknown keys, so extra fields like userId or workspaceId fail.
+ */
+export const objectId = z.string().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/, "Invalid id");
+
+export const moveTaskSchema = z.strictObject({
+  taskId: objectId,
+  columnId: objectId,
+  /** Card directly above the drop position in the target column; null = top. */
+  afterTaskId: objectId.nullable(),
+});
+
+export const captureTaskSchema = z.strictObject({
+  text: z.string().trim().min(1, "Type a task first.").max(500),
+});
+
+export const manualCommitSchema = z.strictObject({
+  message: z.string().trim().min(1, "Describe what you did.").max(500),
+  projectId: objectId.nullable(),
+  weight: z.union([z.literal(1), z.literal(2), z.literal(4), z.literal(8)]),
+});
+
+/**
  * Project creation schema
  */
 export const projectSchema = z.object({
   name: z.string().trim().min(1, "Project name is required").max(100),
   slug: z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens").max(100),
-  description: z.string().trim().optional(),
+  description: z.string().trim().max(2_000).optional(),
   workspaceId: z.string().min(1),
   status: z.enum(["planned", "active", "paused", "completed", "archived"]).default("active"),
 });

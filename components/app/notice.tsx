@@ -32,21 +32,3 @@ export function NoticeProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useNotice = () => React.useContext(NoticeContext);
-
-/** Shown once per session the first time a local-only change is made. */
-export function useLocalOnlyNotice() {
-  const notify = useNotice();
-  return React.useCallback(
-    (text: string) => {
-      let seen = false;
-      try {
-        seen = sessionStorage.getItem("state:local-only-seen") === "1";
-        sessionStorage.setItem("state:local-only-seen", "1");
-      } catch {
-        // storage unavailable: show the full message every time
-      }
-      notify(seen ? text : `${text} Not saved yet: editing is not connected to the server.`);
-    },
-    [notify]
-  );
-}

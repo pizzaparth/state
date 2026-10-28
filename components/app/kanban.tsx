@@ -24,7 +24,8 @@ import { MoreHorizontal } from "lucide-react";
 import type { DueState } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Avatar, DueLabel, PriorityMark, WeightMark } from "./primitives";
-import { useLocalOnlyNotice } from "./notice";
+import { moveTaskAction } from "@/app/(app)/actions";
+import { useNotice } from "./notice";
 
 export interface BoardCard {
   id: string;
@@ -47,9 +48,9 @@ export interface BoardColumn {
 }
 
 /**
- * Kanban with optimistic local moves (drag, keyboard drag via space + arrows, or the
- * per-card "Move to" menu). Columns are Level 1 trays, cards Level 2 raised controls,
- * the hovered drop target turns inset.
+ * Kanban with optimistic moves (drag, keyboard drag via space + arrows, or the per-card
+ * "Move to" menu). The card moves at once; the server then checks access, places it and
+ * records the commit for Done. A rejected move snaps the board back.
  */
 export function Kanban({
   columns,
@@ -65,6 +66,8 @@ export function Kanban({
   doneWindowDays: number;
 }) {
   const [cards, setCards] = React.useState(initial);
+  // Fresh server data (after a save or a refresh) replaces the optimistic copy
+  React.useEffect(() => setCards(initial), [initial]);
   const [dragging, setDragging] = React.useState<BoardCard | null>(null);
   const [overColumn, setOverColumn] = React.useState<string | null>(null);
   // Card that just reached Done: a brief flash acknowledges the recorded commit
@@ -73,7 +76,7 @@ export function Kanban({
   const startColumn = React.useRef<string | null>(null);
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
-  const notify = useLocalOnlyNotice();
+  const notify = useNotice();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -83,26 +86,39 @@ export function Kanban({
   const columnOf = (id: string) => (columns.some((c) => c.id === id) ? id : cards.find((c) => c.id === id)?.columnId);
   const doneId = columns.find((c) => c.stateType === "done")?.id;
 
-  const announceMove = (card: BoardCard, toColumn: string) => {
+  /** Persists a move already shown on screen; restores `before` if the server refuses it. */
+  const persist = async (card: BoardCard, fromColumn: string | null, toColumn: string, next: BoardCard[], before: BoardCard[]) => {
+    const inColumn = next.filter((c) => c.columnId === toColumn);
+    const index = inColumn.findIndex((c) => c.id === card.id);
+    const result = await moveTaskAction({ taskId: card.id, columnId: toColumn, afterTaskId: inColumn[index - 1]?.id ?? null });
+    if (!result.ok) {
+      setCards(before);
+      notify(result.error);
+      return;
+    }
     const name = columns.find((c) => c.id === toColumn)?.name ?? "column";
-    if (toColumn === doneId) {
+    if (result.data.committed > 0) {
       window.clearTimeout(flashTimer.current);
       setFlashId(card.id);
       flashTimer.current = window.setTimeout(() => setFlashId(null), 950);
-      notify(`“${card.title}” moved to Done. A commit of +${card.weight} would be recorded.`);
-    }
-    else notify(`“${card.title}” moved to ${name}.`);
+      notify(`“${card.title}” done. Commit recorded, +${result.data.committed}.`);
+    } else if (result.data.reopened) notify(`“${card.title}” reopened. Its commit was withdrawn.`);
+    else if (toColumn !== fromColumn) notify(`“${card.title}” moved to ${name}.`);
   };
 
   const moveTo = (cardId: string, toColumn: string) => {
     const card = cards.find((c) => c.id === cardId);
     if (!card || card.columnId === toColumn) return;
-    setCards((prev) => [...prev.filter((c) => c.id !== cardId), { ...card, columnId: toColumn }]);
-    announceMove(card, toColumn);
+    const next = [...cards.filter((c) => c.id !== cardId), { ...card, columnId: toColumn }];
+    setCards(next);
+    void persist(card, card.columnId, toColumn, next, cards);
   };
+
+  const beforeDrag = React.useRef<BoardCard[]>(initial);
 
   const onDragStart = ({ active }: DragStartEvent) => {
     const card = cards.find((c) => c.id === active.id) ?? null;
+    beforeDrag.current = cards;
     setDragging(card);
     startColumn.current = card?.columnId ?? null;
   };
@@ -122,17 +138,21 @@ export function Kanban({
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     setDragging(null);
     setOverColumn(null);
-    if (!over) return;
     const card = cards.find((c) => c.id === active.id);
-    if (!card) return;
-    if (active.id !== over.id && cards.some((c) => c.id === over.id)) {
-      setCards((prev) => {
-        const from = prev.findIndex((c) => c.id === active.id);
-        const to = prev.findIndex((c) => c.id === over.id);
-        return arrayMove(prev, from, to);
-      });
+    if (!over || !card) {
+      setCards(beforeDrag.current);
+      return;
     }
-    if (startColumn.current && startColumn.current !== card.columnId) announceMove(card, card.columnId);
+    let next = cards;
+    if (active.id !== over.id && cards.some((c) => c.id === over.id)) {
+      next = arrayMove(cards, cards.findIndex((c) => c.id === active.id), cards.findIndex((c) => c.id === over.id));
+      setCards(next);
+    }
+    const before = beforeDrag.current;
+    // Nothing changed: same column, same neighbours
+    const order = (list: BoardCard[]) => list.filter((c) => c.columnId === card.columnId).map((c) => c.id).join();
+    if (startColumn.current === card.columnId && order(next) === order(before)) return;
+    void persist(card, startColumn.current, card.columnId, next, before);
   };
 
   return (
@@ -145,7 +165,7 @@ export function Kanban({
       onDragCancel={() => {
         setDragging(null);
         setOverColumn(null);
-        setCards(initial);
+        setCards(beforeDrag.current);
       }}
     >
       <div

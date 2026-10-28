@@ -77,7 +77,8 @@ export async function getDailyExecution(scope: Scope, tz: string, days: number):
         .groupBy(sql`1`);
 
   const byDay = new Map(rows.map((r) => [r.day, r]));
-  const [{ today }] = (await db.execute<{ today: string }>(sql`select to_char(now() at time zone ${tz}, 'YYYY-MM-DD') as today`)).rows;
+  // en-CA formats as YYYY-MM-DD
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   const out: DailyExecution[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(`${today}T00:00:00Z`);
@@ -227,6 +228,9 @@ export interface BoardData {
   doneWindowDays: number;
 }
 
+/** Upper bound on cards sent to one board view; keeps payloads bounded on huge boards. */
+const BOARD_CARD_LIMIT = 1000;
+
 /** Board with open tasks and Done tasks from the last `doneWindowDays` days. */
 export async function getBoard(boardId: string, workspaceIds: string[], doneWindowDays = 14): Promise<BoardData | null> {
   if (workspaceIds.length === 0) return null;
@@ -261,17 +265,26 @@ export async function getBoard(boardId: string, workspaceIds: string[], doneWind
         sql`(${tasks.completedAt} is null or ${tasks.completedAt} >= now() - make_interval(days => ${doneWindowDays}))`
       )
     )
-    .orderBy(asc(tasks.position));
+    // Bytewise order matches the fractional keys written by lib/position.ts
+    .orderBy(sql`${tasks.position} collate "C"`, asc(tasks.id))
+    .limit(BOARD_CARD_LIMIT);
 
   return { ...board, columns: cols, tasks: await withTags(rows), doneWindowDays };
 }
 
-export async function getInbox(personalWorkspaceId: string | null): Promise<TaskCard[]> {
+const inboxWhere = (personalWorkspaceId: string) =>
+  and(eq(tasks.workspaceId, personalWorkspaceId), isNull(tasks.boardId), isNull(tasks.deletedAt), isNull(tasks.completedAt));
+
+export async function getInbox(personalWorkspaceId: string | null, limit = 200): Promise<TaskCard[]> {
   if (!personalWorkspaceId) return [];
-  const rows = await selectTaskCards()
-    .where(and(eq(tasks.workspaceId, personalWorkspaceId), isNull(tasks.boardId), isNull(tasks.deletedAt), isNull(tasks.completedAt)))
-    .orderBy(desc(tasks.createdAt));
+  const rows = await selectTaskCards().where(inboxWhere(personalWorkspaceId)).orderBy(desc(tasks.createdAt)).limit(limit);
   return withTags(rows);
+}
+
+export async function getInboxCount(personalWorkspaceId: string | null): Promise<number> {
+  if (!personalWorkspaceId) return 0;
+  const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(tasks).where(inboxWhere(personalWorkspaceId));
+  return row.n;
 }
 
 export async function getTaskDetail(taskId: string, workspaceIds: string[]) {
@@ -439,7 +452,7 @@ export async function getProjects(workspaceIds: string[]): Promise<ProjectSummar
       done: sql<number>`count(${tasks.completedAt})::int`.as("done"),
     })
     .from(tasks)
-    .where(isNull(tasks.deletedAt))
+    .where(and(inArray(tasks.workspaceId, workspaceIds), isNull(tasks.deletedAt)))
     .groupBy(tasks.projectId)
     .as("tc");
   const commitStats = db
@@ -450,7 +463,7 @@ export async function getProjects(workspaceIds: string[]): Promise<ProjectSummar
       last: sql<Date>`max(${commits.createdAt})`.as("last"),
     })
     .from(commits)
-    .where(isNull(commits.deletedAt))
+    .where(and(inArray(commits.workspaceId, workspaceIds), isNull(commits.deletedAt)))
     .groupBy(commits.projectId)
     .as("cs");
 
@@ -494,7 +507,8 @@ export async function getOpenTasks(scope: Scope): Promise<(TaskCard & { columnNa
     .leftJoin(users, eq(users.id, tasks.assigneeId))
     .leftJoin(columns, eq(columns.id, tasks.columnId))
     .where(and(...taskWhere(scope), isNull(tasks.completedAt), isNull(tasks.archivedAt)))
-    .orderBy(asc(columns.position), asc(PRIORITY_RANK));
+    .orderBy(asc(columns.position), asc(PRIORITY_RANK))
+    .limit(500);
   return withTags(rows);
 }
 
