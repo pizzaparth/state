@@ -1350,7 +1350,7 @@ All product motion uses `transform` and `opacity` only, lasts 100–220ms (data 
 
 | Element | Motion |
 |---|---|
-| Route change | content fades in and rises 6px, once per route (`app/(app)/template.tsx`) |
+| Route change | content fades from 50% opacity and rises 4px in 140ms, once per route (`app/(app)/template.tsx`) |
 | Sidebar, segmented controls, section tabs | active indicator slides to the new item (shared layout, spring) |
 | Task / commit drawer | slides in from the right; animates out before the URL updates |
 | Dialogs, command palette | fade and scale up from 98%; reverse on close |
@@ -1390,6 +1390,14 @@ Preferred:
 - skeleton rows
 - faint pulse
 - tiny progress indicator
+
+## Product navigation (implemented)
+
+Every product route has a `loading.tsx` skeleton (`components/app/skeletons.tsx`) that mirrors the final layout: header, measure row and panels, or board columns and cards. A click responds immediately (the nav highlight moves and the skeleton appears) and content swaps in without layout shift.
+
+- Skeleton bars: `white/6%` on the product surfaces, faint pulse, static under reduced motion
+- Sidebar links prefetch the full page on hover or focus
+- Recently visited pages are reused from the client router cache for 30 seconds (`staleTimes.dynamic` in `next.config.ts`)
 
 Avoid:
 
