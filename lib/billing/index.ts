@@ -12,6 +12,6 @@ export const razorpay = process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_
 // Stripe client (International subscriptions)
 export const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: "2025-02-24.acacia" as any,
+      apiVersion: "2025-02-24.acacia",
     })
   : null;

@@ -16,7 +16,10 @@ export async function POST(req: NextRequest) {
       .update(rawBody)
       .digest("hex");
 
-    if (expectedSignature !== signature) {
+    // Constant-time comparison to avoid leaking signature bytes via timing
+    const expected = Buffer.from(expectedSignature, "utf8");
+    const received = Buffer.from(signature, "utf8");
+    if (expected.length !== received.length || !crypto.timingSafeEqual(expected, received)) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
