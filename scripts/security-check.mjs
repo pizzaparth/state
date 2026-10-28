@@ -254,6 +254,112 @@ async function checkAuth() {
   record("I1", "Malformed request does not leak stack traces", broken.status < 500 && !leak, `${broken.status}${leak ? " stack leaked" : ""}`);
 }
 
+// ---------------------------------------------------------------- product Server Actions
+// Server Actions are public POST endpoints addressed by an id embedded in client chunks.
+// These checks replay them directly, the way an attacker would, bypassing the UI.
+const DEMO_PASSWORD = "state-demo-2026";
+
+async function signIn(email, password = DEMO_PASSWORD) {
+  const res = await authPost("/sign-in/email", { email, password });
+  return sessionCookie(res);
+}
+
+async function findActionIds(cookie) {
+  const chunks = [];
+  for (const path of ["/personal", "/inbox"]) {
+    const page = await req(path, { headers: { cookie } });
+    chunks.push(...[...page.text.matchAll(/<script[^>]+src="([^"]+\.js)"/g)].map((m) => m[1]));
+  }
+  const ids = {};
+  for (const src of new Set(chunks)) {
+    const js = (await req(src.startsWith("http") ? new URL(src).pathname : src)).text;
+    for (const m of js.matchAll(/"([0-9a-f]{40,42})",[^"]{0,120}?"(moveTaskAction|captureTaskAction|createCommitAction)"/g)) ids[m[2]] = m[1];
+  }
+  return ids;
+}
+
+async function callAction(id, args, { cookie, origin = ORIGIN, path = "/personal" } = {}) {
+  const headers = { "next-action": id, "content-type": "text/plain;charset=UTF-8", accept: "text/x-component" };
+  if (cookie) headers.cookie = cookie;
+  if (origin) headers.origin = origin;
+  const res = await req(path, { method: "POST", body: JSON.stringify(args), raw: true, headers });
+  const ok = /"ok":true/.test(res.text);
+  const error = res.text.match(/"error":"([^"]*)"/)?.[1] ?? null;
+  return { status: res.status, ok, error, text: res.text };
+}
+
+async function checkServerActions() {
+  if (!db) {
+    record("SA0", "Server Action checks need DATABASE_URL (seeded test database)", false);
+    return;
+  }
+  const owner = await signIn("demo@state.test");
+  const other = await signIn("aarav@state.test");
+  if (!owner || !other) {
+    record("SA0", "Demo accounts sign in (run the seed on the test database)", false);
+    return;
+  }
+  const ids = await findActionIds(owner);
+  const found = ["moveTaskAction", "captureTaskAction", "createCommitAction"].filter((k) => ids[k]);
+  record("SA0", "Server Action ids discovered from client chunks", found.length === 3, found.join(", "));
+  if (found.length < 3) return;
+
+  const { rows: [victim] } = await db.query(
+    `select t.id, t.column_id, t.position, t.completed_at from tasks t join boards b on b.id = t.board_id
+     where b.id = 'seed-board-parth' and t.completed_at is null and t.deleted_at is null limit 1`
+  );
+  const { rows: [done] } = await db.query(`select id from columns where board_id = 'seed-board-parth' and state_type = 'done'`);
+  const { rows: [active] } = await db.query(`select id from columns where board_id = 'seed-board-parth' and state_type = 'active'`);
+  const state = async () => (await db.query("select column_id, position, completed_at from tasks where id = $1", [victim.id])).rows[0];
+  const commitCount = async () => Number((await db.query("select count(*) from commits")).rows[0].count);
+  const move = { taskId: victim.id, columnId: done.id, afterTaskId: null };
+  const before = JSON.stringify(await state());
+  const commitsBefore = await commitCount();
+
+  // Posting to a public page skips the middleware's cookie gate; product actions must
+  // not run there. On product routes the gate redirects, and SA1b covers the action's
+  // own session check for requests that get past the gate.
+  const anonPublic = await callAction(ids.moveTaskAction, [move], { path: "/" });
+  const anonProduct = await callAction(ids.moveTaskAction, [move]);
+  record(
+    "SA1",
+    "Anonymous Server Action call is refused (public and product routes)",
+    !anonPublic.ok && !anonProduct.ok && JSON.stringify(await state()) === before,
+    `public ${anonPublic.status} ${anonPublic.error ?? anonPublic.text.slice(0, 20)}, product ${anonProduct.status}`
+  );
+
+  const forgedCookie = await callAction(ids.moveTaskAction, [move], { cookie: "better-auth.session_token=forged.forged" });
+  record("SA1b", "Forged session cookie on a Server Action is refused", !forgedCookie.ok && JSON.stringify(await state()) === before, forgedCookie.error ?? `${forgedCookie.status}`);
+
+  const idor = await callAction(ids.moveTaskAction, [move], { cookie: other });
+  record("SA2", "User B moves User A's task through the raw action (IDOR)", !idor.ok && JSON.stringify(await state()) === before, idor.error ?? `${idor.status}`);
+
+  const csrf = await callAction(ids.moveTaskAction, [move], { cookie: owner, origin: "https://evil.example" });
+  record("SA3", "Cross-site Server Action call is refused (CSRF)", !csrf.ok && JSON.stringify(await state()) === before, `${csrf.status}`);
+
+  const forgedCommit = await callAction(ids.createCommitAction, [{ message: "forged", projectId: null, weight: 2, userId: "demo-parth", source: "imported" }], { cookie: other });
+  record("SA4", "Extra fields (userId, source) refused on commit", !forgedCommit.ok && (await commitCount()) === commitsBefore, forgedCommit.error ?? "");
+
+  const pricey = await callAction(ids.createCommitAction, [{ message: "inflate", projectId: null, weight: 1_000_000 }], { cookie: other });
+  record("SA5", "Inflated execution value refused", !pricey.ok && (await commitCount()) === commitsBefore, pricey.error ?? "");
+
+  // Unpaid account: signs up fine, then every write is refused
+  const email = uniqueEmail("unpaid");
+  const signup = await authPost("/sign-up/email", { name: "Unpaid", email, password: "correct-horse-battery" });
+  const unpaid = sessionCookie(signup);
+  const free = await callAction(ids.createCommitAction, [{ message: "free ride", projectId: null, weight: 8 }], { cookie: unpaid });
+  record("SA6", "Unpaid account cannot write through the raw action", !free.ok && (await commitCount()) === commitsBefore, free.error ?? `${free.status}`);
+
+  const legit = await callAction(ids.moveTaskAction, [{ taskId: victim.id, columnId: active.id, afterTaskId: null }], { cookie: owner });
+  const after = await state();
+  record("SA7", "Owner's own move succeeds and persists", legit.ok && after.column_id === active.id, legit.error ?? "");
+
+  // Write budget: 60 per user per minute, shared across instances. Invalid calls count too.
+  const burst = await Promise.all(Array.from({ length: 70 }, () => callAction(ids.moveTaskAction, [{}], { cookie: other })));
+  const limited = burst.filter((r) => /Too many changes/.test(r.error ?? "")).length;
+  record("SA8", "Write burst is rate limited per user", limited >= 10, `${limited} of 70 limited`);
+}
+
 async function main() {
   if (db) await db.connect();
   await checkHeaders();
@@ -262,11 +368,12 @@ async function main() {
   await checkAccessControl();
   await checkWebhooks();
   await checkAuth();
+  await checkServerActions();
   if (db) await db.end();
 
   const failed = results.filter((r) => !r.pass);
   for (const r of results) {
-    console.log(`${r.pass ? "PASS" : "FAIL"}  ${r.id.padEnd(3)} ${r.name}${r.detail && !r.pass ? `  — ${r.detail}` : ""}`);
+    console.log(`${r.pass ? "PASS" : "FAIL"}  ${r.id.padEnd(3)} ${r.name}${r.detail && (!r.pass || process.env.VERBOSE) ? `  — ${r.detail}` : ""}`);
   }
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
   process.exit(failed.length ? 1 : 0);
