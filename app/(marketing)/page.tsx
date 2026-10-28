@@ -168,6 +168,10 @@ export default function LandingPage() {
         <h2 id="scope-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           Personal or organisational.
         </h2>
+        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">
+          Use State on your own or with your team. Either way, tasks move across a board and every finished task becomes a
+          commit.
+        </p>
         <div className="mt-12">
           <WorkspaceScope />
         </div>
