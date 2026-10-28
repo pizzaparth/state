@@ -1,65 +1,247 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle2, BarChart2, GitCommit } from "lucide-react";
+import { LifecycleSequence } from "@/components/marketing/lifecycle-sequence";
+import { ExecutionMatrix } from "@/components/marketing/execution-matrix";
+import { WorkspaceScope } from "@/components/marketing/workspace-scope";
+import { PricingLedger } from "@/components/marketing/pricing-ledger";
+import { DEMO_DAYS, formatNumber } from "@/components/marketing/demo-data";
+import { PLANS, formatInr } from "@/lib/billing/plans";
+
+const silver = "bg-gradient-to-b from-white via-[#D9D9D5] to-[#6F6F6B] bg-clip-text text-transparent";
+const displayHeading =
+  "font-display font-extrabold uppercase leading-[0.92] tracking-[-0.03em] [font-stretch:125%] text-balance";
+const sectionPad = "mx-auto w-full max-w-[1320px] px-5 sm:px-8 lg:px-12";
+
+// Worked metric examples, computed from the same seeded history the graph shows
+const last30 = DEMO_DAYS.slice(-30);
+const execution = last30.reduce((s, d) => s + d.execution, 0);
+const tasks = last30.reduce((s, d) => s + d.tasks, 0);
+const planned = tasks + 31;
+const activeDays = last30.filter((d) => d.commits > 0).length;
+
+const METRICS = [
+  {
+    name: "Execution",
+    value: formatNumber(execution),
+    formula: "Σ completed task weights + manual commit weights",
+    worked: "Small 1, normal 2, major 4, milestone 8",
+  },
+  {
+    name: "Velocity",
+    value: `${formatNumber(execution / 30, 2)}/day`,
+    formula: "Execution ÷ days in period",
+    worked: `${execution} ÷ 30`,
+  },
+  {
+    name: "Throughput",
+    value: `${formatNumber(tasks / 30, 2)}/day`,
+    formula: "Completed tasks ÷ days in period",
+    worked: `${tasks} ÷ 30`,
+  },
+  {
+    name: "Completion",
+    value: `${formatNumber((tasks / planned) * 100, 1)}%`,
+    formula: "Completed planned tasks ÷ planned tasks",
+    worked: `${tasks} ÷ ${planned}`,
+  },
+  {
+    name: "Cycle time",
+    value: "1.8d",
+    formula: "Median of completed_at − started_at",
+    worked: `Median of ${tasks} durations`,
+  },
+  {
+    name: "Consistency",
+    value: `${formatNumber((activeDays / 30) * 100)}%`,
+    formula: "Days with at least one commit ÷ eligible days",
+    worked: `${activeDays} ÷ 30`,
+  },
+];
+
+const REFUSALS = [
+  "Advertising",
+  "AI summaries and chat sidebars",
+  "Badges, XP and streak pressure",
+  "Keystroke and hours-online tracking",
+  "Team leaderboards",
+  "An unexplained productivity score",
+];
+
+const HERO_LEDGER = [
+  { time: "18:42", message: "Implemented temporal indexing", value: 4 },
+  { time: "17:51", message: "Finished market microstructure notes", value: 2 },
+  { time: "16:08", message: "Fixed auth middleware", value: 2 },
+];
 
 export default function LandingPage() {
   return (
-    <div className="max-w-6xl mx-auto px-6 py-20 md:py-28 space-y-32">
-      {/* Hero Section */}
-      <section className="space-y-8 max-w-3xl">
-        <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.1] text-xs font-mono uppercase tracking-widest text-[#A9A9A6]">
-          KSAN RELAY / STATE
-        </div>
-
-        <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-[#F4F4F2] uppercase leading-[1.05]">
-          Execution,
-          <br />
-          Measured.
+    <>
+      {/* Hero: type is the graphic; the particle field sits behind */}
+      <section className={`${sectionPad} flex min-h-[100svh] flex-col justify-end pb-[10vh] pt-32`}>
+        <h1 className={`${displayHeading} ${silver} text-[clamp(2.25rem,10vw,9.5rem)] leading-[0.86]`}>
+          <span className="block overflow-hidden pb-[0.04em]">
+            <span className="block animate-line-rise">Execution,</span>
+          </span>
+          <span className="block overflow-hidden pb-[0.06em]">
+            <span className="block animate-line-rise [animation-delay:120ms]">measured.</span>
+          </span>
         </h1>
 
-        <p className="text-lg md:text-xl text-[#A9A9A6] leading-relaxed max-w-2xl">
-          A quantitative execution system that turns tasks, projects, and completed work into a measurable history of output. No feeds. No AI summaries. No productivity theatre.
+        <div className="mt-10 grid animate-fade-in gap-10 [animation-delay:500ms] lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-end">
+          <div>
+            <p className="max-w-[44ch] text-lg leading-relaxed text-[#A9A9A6] text-pretty sm:text-xl">
+              Tasks are what you intend. Commits are what you actually did. State keeps both and measures the
+              difference, day after day.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Button asChild variant="dark-cta" size="lg" className="rounded-full px-7">
+                <Link href="/register">Subscribe</Link>
+              </Button>
+              <Button asChild variant="dark-secondary" size="lg" className="rounded-full px-7">
+                <Link href="#how-it-works">See how it works</Link>
+              </Button>
+            </div>
+          </div>
+
+          <div className="text-sm">
+            <p className="sr-only">Example commit history</p>
+            <ul>
+              {HERO_LEDGER.map((row, i) => (
+                <li
+                  key={row.time}
+                  className="grid grid-cols-[3.25rem_1rem_minmax(0,1fr)_2rem] items-center border-t border-white/[0.08] py-2.5"
+                  style={{ opacity: 1 - i * 0.28 }}
+                >
+                  <span className="font-mono text-xs tabular-nums text-[#6F6F6B]">{row.time}</span>
+                  <span aria-hidden="true" className="size-1.5 rounded-full bg-[#F4F4F2]" />
+                  <span className="truncate text-[#F4F4F2]">{row.message}</span>
+                  <span className="text-right font-mono text-xs tabular-nums text-[#A9A9A6]">+{row.value}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 hidden text-xs text-[#6F6F6B] [@media(pointer:fine)]:block">
+              Move your pointer across the page. Scattered points fall into line.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <LifecycleSequence />
+
+      {/* History */}
+      <section aria-labelledby="history-title" className={`${sectionPad} py-[16vh]`}>
+        <div className="max-w-3xl">
+          <h2 id="history-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
+            Your work has a history.
+          </h2>
+          <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">
+            Every completed task becomes a commit, and every commit lands on one day of the graph. Hover a day, or focus the
+            graph and use the arrow keys.
+          </p>
+        </div>
+        <div className="mt-16">
+          <ExecutionMatrix />
+        </div>
+      </section>
+
+      {/* Metrics */}
+      <section aria-labelledby="metrics-title" className={`${sectionPad} py-[16vh]`}>
+        <h2 id="metrics-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
+          Measure throughput, not busyness.
+        </h2>
+        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">
+          Six numbers, each with its formula beside it. No score to take on trust. Worked here for the last 30 days of the
+          graph above.
         </p>
 
-        <div className="flex flex-wrap gap-4 pt-4">
-          <Button asChild variant="dark-cta" size="lg" className="group">
-            <Link href="/register">
-              <span>Start State</span>
-              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
-            </Link>
-          </Button>
-          <Button asChild variant="dark-secondary" size="lg">
-            <Link href="/principles">Read Principles</Link>
-          </Button>
+        <table className="mt-16 w-full border-collapse text-left">
+          <caption className="sr-only">State metrics with their formulas, last 30 days</caption>
+          <thead className="max-md:sr-only">
+            <tr className="text-xs text-[#6F6F6B]">
+              <th scope="col" className="pb-3 font-normal">Metric</th>
+              <th scope="col" className="pb-3 pr-12 text-right font-normal">Value</th>
+              <th scope="col" className="pb-3 font-normal">Formula</th>
+              <th scope="col" className="pb-3 font-normal">Worked</th>
+            </tr>
+          </thead>
+          <tbody>
+            {METRICS.map((metric) => (
+              <tr
+                key={metric.name}
+                className="group border-t border-white/[0.08] transition-colors hover:border-white/25 max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:py-4"
+              >
+                <th scope="row" className="py-5 text-base font-medium text-[#F4F4F2] max-md:py-0">
+                  {metric.name}
+                </th>
+                <td className="py-5 pr-12 text-right font-display text-[clamp(1.75rem,3.5vw,3rem)] font-bold leading-none tabular-nums [font-stretch:110%] text-[#F4F4F2] max-md:row-span-2 max-md:self-center max-md:py-0 max-md:pr-0">
+                  {metric.value}
+                </td>
+                <td className="py-5 text-sm text-[#A9A9A6] max-md:py-0">{metric.formula}</td>
+                <td className="py-5 font-mono text-xs tabular-nums text-[#6F6F6B] transition-colors group-hover:text-[#A9A9A6] max-md:col-span-2 max-md:py-0 max-md:pt-1">
+                  {metric.worked}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      {/* Personal / organisation */}
+      <section aria-labelledby="scope-title" className={`${sectionPad} py-[16vh]`}>
+        <h2 id="scope-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
+          Personal or organisational.
+        </h2>
+        <div className="mt-12">
+          <WorkspaceScope />
         </div>
       </section>
 
-      {/* Philosophy Matrix */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-8 rounded-card bg-white/[0.02] border border-white/[0.08] space-y-4">
-          <CheckCircle2 className="w-6 h-6 text-[#F4F4F2]" />
-          <h2 className="text-lg font-semibold text-[#F4F4F2]">Execution over planning</h2>
-          <p className="text-sm text-[#A9A9A6] leading-relaxed">
-            Tasks represent intent. Commits represent executed work. State records what actually happened rather than endless planning.
-          </p>
-        </div>
+      {/* Refusals */}
+      <section aria-labelledby="refusals-title" className={`${sectionPad} py-[16vh]`}>
+        <h2 id="refusals-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
+          No ads. No AI noise.
+        </h2>
+        <p className="mt-6 text-lg text-[#A9A9A6]">What State will never ship:</p>
+        <ul className="mt-10 space-y-1">
+          {REFUSALS.map((item) => (
+            <li
+              key={item}
+              className="font-display text-[clamp(1.5rem,4.2vw,3.5rem)] font-bold uppercase leading-[1.1] tracking-[-0.02em] [font-stretch:112%] text-[#4A4A47] line-through decoration-[#8B8B86] decoration-2"
+            >
+              {item}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-14 max-w-[40ch] text-xl leading-relaxed text-[#F4F4F2] text-pretty sm:text-2xl">
+          State records what needed to happen, what happened, and how consistently you execute. That is the whole product.
+        </p>
+      </section>
 
-        <div className="p-8 rounded-card bg-white/[0.02] border border-white/[0.08] space-y-4">
-          <BarChart2 className="w-6 h-6 text-[#F4F4F2]" />
-          <h2 className="text-lg font-semibold text-[#F4F4F2]">Deterministic metrics</h2>
-          <p className="text-sm text-[#A9A9A6] leading-relaxed">
-            Velocity, throughput, cycle time, and consistency calculated transparently. Zero arbitrary scores, XP, or gamification spam.
-          </p>
+      {/* Pricing */}
+      <section id="pricing" aria-labelledby="pricing-title" className={`${sectionPad} scroll-mt-24 py-[16vh]`}>
+        <h2 id="pricing-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
+          Paid from day one.
+        </h2>
+        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">
+          Subscriptions are the only revenue, so the product answers to you and nobody else.
+        </p>
+        <div className="mt-14">
+          <PricingLedger />
         </div>
+      </section>
 
-        <div className="p-8 rounded-card bg-white/[0.02] border border-white/[0.08] space-y-4">
-          <GitCommit className="w-6 h-6 text-[#F4F4F2]" />
-          <h2 className="text-lg font-semibold text-[#F4F4F2]">Commit ledger</h2>
-          <p className="text-sm text-[#A9A9A6] leading-relaxed">
-            Every completed unit of work produces a verifiable commit, forming a continuous execution ledger across individuals and teams.
+      {/* Closing */}
+      <section className={`${sectionPad} flex min-h-[80svh] flex-col justify-center py-[12vh]`}>
+        <h2 className={`${displayHeading} ${silver} text-[clamp(2.25rem,10vw,9.5rem)] leading-[0.88]`}>Start measuring.</h2>
+        <div className="mt-10 flex flex-wrap items-center gap-6">
+          <Button asChild variant="dark-cta" size="lg" className="rounded-full px-8">
+            <Link href="/register">Subscribe</Link>
+          </Button>
+          <p className="text-sm text-[#6F6F6B]">
+            From {formatInr(PLANS.individual.priceInr.monthly)} a month. Your workspace opens as soon as payment clears.
           </p>
         </div>
       </section>
-    </div>
+    </>
   );
 }

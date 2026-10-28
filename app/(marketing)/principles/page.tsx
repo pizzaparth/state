@@ -33,7 +33,7 @@ export default function PrinciplesPage() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-20 md:py-28 space-y-16">
+    <div className="max-w-4xl mx-auto px-6 pt-40 pb-20 md:pb-28 space-y-16">
       <div className="space-y-4">
         <span className="text-xs font-mono uppercase tracking-widest text-[#A9A9A6]">
           Manifesto

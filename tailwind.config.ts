@@ -88,6 +88,7 @@ const config: Config = {
           "Roboto",
           "sans-serif",
         ],
+        display: ["var(--font-archivo)", "var(--font-geist-sans)", "system-ui", "sans-serif"],
         mono: [
           "var(--font-geist-mono)",
           "ui-monospace",
@@ -97,6 +98,20 @@ const config: Config = {
           "Consolas",
           "monospace",
         ],
+      },
+      keyframes: {
+        "line-rise": {
+          from: { transform: "translateY(105%)" },
+          to: { transform: "translateY(0)" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+      },
+      animation: {
+        "line-rise": "line-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "fade-in": "fade-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both",
       },
       letterSpacing: {
         display: "-0.03em",
