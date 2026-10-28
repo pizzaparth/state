@@ -36,8 +36,7 @@ export function TaskDetail({ task, tz, now }: { task: Task; tz: string; now: Dat
         <Field label="Assignee">{task.assigneeName ?? "Unassigned"}</Field>
         <Field label="Creator">{task.creatorName}</Field>
         <Field label="Priority">
-          {task.priority === "none" ? "None" : <PriorityMark priority={task.priority} />}{" "}
-          <span className="text-[#9A9A96]">{task.priority !== "none" && task.priority}</span>
+          {task.priority === "none" ? "None" : <PriorityMark priority={task.priority} />}
         </Field>
         <Field label="Weight">
           {WEIGHT[task.weight]} <span className="tabular-nums text-[#9A9A96]">({task.weight} execution)</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import type { Route } from "next";
 import {
@@ -70,6 +71,8 @@ export function Kanban({
   const [flashId, setFlashId] = React.useState<string | null>(null);
   const flashTimer = React.useRef<number | undefined>(undefined);
   const startColumn = React.useRef<string | null>(null);
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
   const notify = useLocalOnlyNotice();
 
   const sensors = useSensors(
@@ -184,9 +187,15 @@ export function Kanban({
           );
         })}
       </div>
-      <DragOverlay dropAnimation={{ duration: 160, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}>
-        {dragging ? <CardFace card={dragging} done={false} showAssignee={showAssignee} lifted /> : null}
-      </DragOverlay>
+      {/* Portalled to <body>: a transformed ancestor (the page-enter animation) would otherwise
+          become the containing block for the fixed overlay and offset it from the pointer */}
+      {mounted &&
+        createPortal(
+          <DragOverlay dropAnimation={{ duration: 160, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}>
+            {dragging ? <CardFace card={dragging} done={false} showAssignee={showAssignee} lifted /> : null}
+          </DragOverlay>,
+          document.body
+        )}
     </DndContext>
   );
 }
@@ -288,7 +297,7 @@ function CardFace({
     <div
       className={cn(
         "relative rounded-[16px] p-3.5",
-        lifted ? "scale-[1.02] border border-white/40" : "app-card"
+        lifted ? "app-card scale-[1.02] cursor-grabbing border-white/40 bg-[#1A1A1A]" : "app-card"
       )}
     >
       {flash && <span aria-hidden="true" className="pointer-events-none absolute inset-0 animate-flash rounded-[16px] bg-white/[0.14]" />}

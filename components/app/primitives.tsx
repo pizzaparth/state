@@ -92,18 +92,29 @@ export function Chip({ children }: { children: React.ReactNode }) {
   );
 }
 
-const PRIORITY: Record<string, string> = { critical: "P0", high: "P1", medium: "P2", low: "P3" };
+const PRIORITY: Record<string, { label: string; bars: number }> = {
+  critical: { label: "Critical", bars: 3 },
+  high: { label: "High", bars: 3 },
+  medium: { label: "Medium", bars: 2 },
+  low: { label: "Low", bars: 1 },
+};
 
-/** Compact muted priority, P0–P3; nothing for "none". */
+/** Priority as a signal-bars glyph plus its name; nothing for "none". */
 export function PriorityMark({ priority }: { priority: string }) {
-  const code = PRIORITY[priority];
-  if (!code) return null;
+  const p = PRIORITY[priority];
+  if (!p) return null;
+  const critical = priority === "critical";
   return (
     <span
-      title={`${priority[0].toUpperCase()}${priority.slice(1)} priority`}
-      className={cn("font-mono text-[11px] tabular-nums", priority === "critical" ? "font-semibold text-[#F0A39B]" : "text-[#9A9A96]")}
+      title={`${p.label} priority`}
+      className={cn("inline-flex items-center gap-1 text-[11px]", critical ? "font-semibold text-[#F0A39B]" : "text-[#9A9A96]")}
     >
-      {code}
+      <svg viewBox="0 0 12 12" aria-hidden="true" className="size-3">
+        {[0, 1, 2].map((i) => (
+          <rect key={i} x={1 + i * 4} y={8 - i * 3} width="2.5" height={3 + i * 3} rx="0.6" fill="currentColor" opacity={i < p.bars ? 1 : 0.25} />
+        ))}
+      </svg>
+      {p.label}
       <span className="sr-only"> priority</span>
     </span>
   );
@@ -111,11 +122,11 @@ export function PriorityMark({ priority }: { priority: string }) {
 
 const WEIGHT: Record<number, string> = { 1: "Small", 2: "Normal", 4: "Major", 8: "Milestone" };
 
+/** Task weight: the execution it adds when done. */
 export function WeightMark({ weight }: { weight: number }) {
   return (
-    <span title={`${WEIGHT[weight] ?? "Weight"} task, ${weight} execution`} className="font-mono text-[11px] tabular-nums text-[#9A9A96]">
-      ×{weight}
-      <span className="sr-only"> weight</span>
+    <span title={`${WEIGHT[weight] ?? "Custom"} task: adds ${weight} execution when done`} className="text-[11px] tabular-nums text-[#9A9A96]">
+      Weight {weight}
     </span>
   );
 }
