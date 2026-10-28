@@ -22,17 +22,15 @@ export default function LandingPage() {
         </p>
 
         <div className="flex flex-wrap gap-4 pt-4">
-          <Link href="/register">
-            <Button variant="dark-cta" size="lg" className="group">
+          <Button asChild variant="dark-cta" size="lg" className="group">
+            <Link href="/register">
               <span>Start State</span>
-              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </Link>
-          <Link href="/principles">
-            <Button variant="raised" size="lg" className="bg-[#161616] text-[#F4F4F2] border border-white/10 hover:bg-[#202020]">
-              Read Principles
-            </Button>
-          </Link>
+              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
+            </Link>
+          </Button>
+          <Button asChild variant="dark-secondary" size="lg">
+            <Link href="/principles">Read Principles</Link>
+          </Button>
         </div>
       </section>
 

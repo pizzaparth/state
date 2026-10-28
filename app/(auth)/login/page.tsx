@@ -28,7 +28,7 @@ export default function LoginPage() {
             autoComplete="email"
             required
             placeholder="you@domain.com…"
-            className="w-full h-11 px-4 text-sm bg-[#151515] text-[#F4F4F2] rounded-input border border-white/[0.1] focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40 placeholder:text-[#6F6F6B] transition-all touch-manipulation"
+            className="w-full h-11 px-4 text-sm bg-[#151515] text-[#F4F4F2] rounded-input border border-white/[0.1] focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40 placeholder:text-[#6F6F6B] transition-[border-color,box-shadow] touch-manipulation"
           />
         </div>
 
@@ -48,7 +48,7 @@ export default function LoginPage() {
             autoComplete="current-password"
             required
             placeholder="••••••••…"
-            className="w-full h-11 px-4 text-sm bg-[#151515] text-[#F4F4F2] rounded-input border border-white/[0.1] focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40 placeholder:text-[#6F6F6B] transition-all touch-manipulation"
+            className="w-full h-11 px-4 text-sm bg-[#151515] text-[#F4F4F2] rounded-input border border-white/[0.1] focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40 placeholder:text-[#6F6F6B] transition-[border-color,box-shadow] touch-manipulation"
           />
         </div>
 

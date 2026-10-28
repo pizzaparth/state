@@ -31,11 +31,9 @@ export default function MarketingLayout({
             <Link href="/login" className="text-sm text-[#A9A9A6] hover:text-white transition-colors">
               Sign in
             </Link>
-            <Link href="/register">
-              <Button variant="dark-cta" size="sm">
-                Start State
-              </Button>
-            </Link>
+            <Button asChild variant="dark-cta" size="sm">
+              <Link href="/register">Start State</Link>
+            </Button>
           </div>
         </div>
       </header>

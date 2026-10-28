@@ -45,7 +45,7 @@ export default function TodayPage() {
         <input
           type="text"
           placeholder="Capture task for today… (e.g. Implement caching #relaydb !high)"
-          className="w-full h-12 pl-4 pr-24 text-sm bg-[#D2D2CE] text-[#171717] rounded-input shadow-neu-inset-sm placeholder:text-[#8B8B86] border border-transparent focus:border-black/20 focus:outline-none focus:ring-1 focus:ring-black/20 transition-all touch-manipulation"
+          className="w-full h-12 pl-4 pr-24 text-sm bg-[#D2D2CE] text-[#171717] rounded-input shadow-neu-inset-sm placeholder:text-[#8B8B86] border border-transparent focus:border-black/20 focus:outline-none focus:ring-1 focus:ring-black/20 transition-[border-color,box-shadow] touch-manipulation"
         />
         <div className="absolute right-2 top-2">
           <Button variant="raised" size="sm" className="h-8 px-3 text-xs">

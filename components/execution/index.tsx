@@ -36,7 +36,7 @@ export function ExecutionGraph({ cells, title = "Execution Graph" }: ExecutionGr
           <div
             key={cell.date}
             title={`${cell.date}: ${cell.executionValue} execution (${cell.commitsCount} commits)`}
-            className={`w-3.5 h-3.5 rounded-sm transition-all hover:scale-125 cursor-pointer shrink-0 ${
+            className={`w-3.5 h-3.5 rounded-sm transition-transform hover:scale-125 cursor-pointer shrink-0 ${
               intensityBg[cell.intensity]
             }`}
           />

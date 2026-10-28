@@ -16,7 +16,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             "w-full h-11 px-4 text-sm bg-[#D2D2CE] text-[#171717] rounded-input",
             "shadow-neu-inset-sm placeholder:text-[#8B8B86]",
             "border border-transparent focus:border-black/20 focus:outline-none focus:ring-1 focus:ring-black/20",
-            "transition-all touch-manipulation",
+            "transition-[border-color,box-shadow] touch-manipulation",
             error && "border-red-500/50 focus:border-red-500",
             className
           )}

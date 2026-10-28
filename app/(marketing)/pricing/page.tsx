@@ -51,11 +51,11 @@ export default function PricingPage() {
             </ul>
           </div>
 
-          <Link href="/register" className="block pt-6">
-            <Button variant="dark-cta" size="md" className="w-full">
-              Get Started
+          <div className="pt-6">
+            <Button asChild variant="dark-cta" size="md" className="w-full">
+              <Link href="/register">Get Started</Link>
             </Button>
-          </Link>
+          </div>
         </div>
 
         {/* Organisation Plan */}
@@ -94,11 +94,11 @@ export default function PricingPage() {
             </ul>
           </div>
 
-          <Link href="/register" className="block pt-6">
-            <Button variant="dark-cta" size="md" className="w-full">
-              Start Team Trial
+          <div className="pt-6">
+            <Button asChild variant="dark-cta" size="md" className="w-full">
+              <Link href="/register">Start Team Trial</Link>
             </Button>
-          </Link>
+          </div>
         </div>
       </div>
     </div>
