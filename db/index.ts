@@ -1,10 +1,10 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { Pool } from "@neondatabase/serverless";
 import * as schema from "./schema";
 
-const connectionString = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/state_db";
+// WebSocket Pool (not neon-http) so db.transaction() works: task completion and its
+// auto-generated commit must be written atomically. Uses the global WebSocket (Node 22+).
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-const sql = neon(connectionString);
-
-export const db = drizzle(sql, { schema });
+export const db = drizzle({ client: pool, schema });
 export type DB = typeof db;

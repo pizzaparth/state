@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -8,10 +8,11 @@ export const users = pgTable("users", {
   image: text("image"),
   username: text("username").unique(),
   timezone: text("timezone").default("UTC").notNull(),
-  subscriptionStatus: text("subscription_status").default("trialing"), // trialing, active, past_due, canceled
+  subscriptionStatus: text("subscription_status").default("trialing"), // trialing, active, past_due, canceled, expired (denormalised from subscriptions)
   subscriptionPlan: text("subscription_plan"), // individual, organisation
   theme: text("theme").default("light").notNull(), // light neumorphic (product) vs dark (marketing/settings)
   defaultWorkspaceId: text("default_workspace_id"),
+  dailyExecutionTarget: integer("daily_execution_target"), // Today view target; null = no target shown
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
