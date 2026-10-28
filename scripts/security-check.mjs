@@ -10,6 +10,7 @@
  * Exits non-zero if any check fails. Never point it at production: it creates
  * accounts and deliberately triggers rate limits.
  */
+import { readFileSync } from "node:fs";
 import pg from "pg";
 import { isSafeRedirectPath } from "../lib/auth/redirect.ts";
 
@@ -360,6 +361,90 @@ async function checkServerActions() {
   record("SA8", "Write burst is rate limited per user", limited >= 10, `${limited} of 70 limited`);
 }
 
+// ---------------------------------------------------------------- exposure surface
+function readEnvFile() {
+  try {
+    const text = readFileSync(new URL("../.env", import.meta.url), "utf8");
+    return Object.fromEntries([...text.matchAll(/^([A-Z0-9_]+)="?([^"\n]*)"?/gm)].map((m) => [m[1], m[2]]));
+  } catch {
+    return {};
+  }
+}
+
+async function checkSurface() {
+  const owner = await signIn("demo@state.test");
+
+  // Client bundles: no secrets, no server-only modules (client/server boundary)
+  const chunks = new Set();
+  for (const path of ["/", "/login", "/pricing", "/today", "/personal", "/inbox", "/settings/billing"]) {
+    const page = await req(path, { headers: owner ? { cookie: owner } : {} });
+    for (const m of page.text.matchAll(/<script[^>]+src="([^"]+\.js)"/g)) chunks.add(m[1]);
+  }
+  const leaks = [];
+  const patterns = [
+    [/postgres(ql)?:\/\/[^"'\s]+/, "database URL"],
+    [/sk_(live|test)_[0-9A-Za-z]{10,}/, "Stripe secret key"],
+    [/drizzle-orm|pg-pool|@neondatabase|better-auth\/adapters/, "server-only module"],
+  ];
+  // The real secret values this deployment was configured with (names alone are harmless:
+  // auth libraries reference them and read undefined in the browser)
+  const secretValues = Object.entries(readEnvFile())
+    .filter(([k, v]) => !k.startsWith("NEXT_PUBLIC_") && /SECRET|KEY|PASSWORD|TOKEN|DATABASE_URL/.test(k) && v.length >= 8)
+    .map(([k, v]) => [k, v]);
+  let mapsServed = 0;
+  for (const src of chunks) {
+    const path = src.startsWith("http") ? new URL(src).pathname : src;
+    const js = (await req(path)).text;
+    for (const [re, label] of patterns) if (re.test(js)) leaks.push(`${label} in ${path}`);
+    for (const [k, v] of secretValues) if (js.includes(v)) leaks.push(`value of ${k} in ${path}`);
+    if ((await req(`${path}.map`)).status === 200) mapsServed++;
+  }
+  record("F1", `No secrets or server modules in ${chunks.size} client chunks`, chunks.size > 0 && leaks.length === 0, leaks.slice(0, 3).join("; "));
+  record("F2", "Production source maps are not served", mapsServed === 0, `${mapsServed} maps`);
+
+  // CORS: the API never reflects a foreign Origin with credentials
+  const cors = [];
+  for (const path of ["/api/health", "/api/auth/get-session", "/api/billing/checkout"]) {
+    const res = await req(path, { method: "OPTIONS", headers: { origin: "https://evil.example", "access-control-request-method": "POST" } });
+    const acao = res.headers.get("access-control-allow-origin");
+    if (acao === "*" && res.headers.get("access-control-allow-credentials") === "true") cors.push(`${path} wildcard+credentials`);
+    if (acao === "https://evil.example") cors.push(`${path} reflects origin`);
+  }
+  record("CO1", "CORS does not trust foreign origins", cors.length === 0, cors.join("; "));
+
+  // Authenticated pages must not be stored by shared caches (cache deception)
+  if (owner) {
+    const today = await req("/today", { headers: { cookie: owner } });
+    const cc = today.headers.get("cache-control") || "";
+    record("CA1", "Authenticated pages are private, no-store", /no-store/.test(cc) && !/public/.test(cc), cc);
+    const deception = await req("/today/style.css", { headers: { cookie: owner } });
+    record("CA2", "Static-looking suffix on a private page is not served as a cacheable asset", deception.status !== 200 || /no-store/.test(deception.headers.get("cache-control") || ""), `${deception.status}`);
+  }
+
+  // Better Auth endpoints that would let a user rewrite privileged fields or the account
+  if (owner && db) {
+    const snap = async () =>
+      JSON.stringify((await db.query("select id, email, email_verified, subscription_status, subscription_plan from users where id = 'demo-parth'")).rows[0]);
+    await db.query("update users set subscription_status = 'none', subscription_plan = null where id = 'demo-parth'");
+    const before = await snap();
+    const res = await req("/api/auth/update-user", {
+      method: "POST",
+      body: { name: "Parth", subscriptionStatus: "active", subscriptionPlan: "organisation", emailVerified: true, id: "demo-aarav", email: "x@example.test" },
+      headers: { cookie: owner, origin: ORIGIN },
+    });
+    const after = await snap();
+    record("M2", "update-user ignores privileged fields (mass assignment)", before === after, `${res.status} ${after}`);
+  }
+  const hidden = [];
+  for (const path of ["/api/auth/delete-user", "/api/auth/change-email", "/api/auth/admin/list-users", "/api/auth/admin/set-role", "/api/admin", "/api/debug", "/graphql", "/api/graphql", "/swagger", "/openapi.json", "/.env", "/.git/config"]) {
+    const res = await req(path, { method: path.startsWith("/api/auth") ? "POST" : "GET", body: path.startsWith("/api/auth") ? {} : undefined, headers: { origin: ORIGIN, ...(owner ? { cookie: owner } : {}) } });
+    if (res.status === 200) hidden.push(`${path} ${res.status}`);
+  }
+  record("E1", "No admin, debug, schema or dotfile endpoints answer", hidden.length === 0, hidden.join("; "));
+  const health = await req("/api/health");
+  record("E2", "Health check discloses no versions or internals", !/version|node|next|postgres|uptime/i.test(health.text), health.text);
+}
+
 async function main() {
   if (db) await db.connect();
   await checkHeaders();
@@ -369,6 +454,7 @@ async function main() {
   await checkWebhooks();
   await checkAuth();
   await checkServerActions();
+  await checkSurface();
   if (db) await db.end();
 
   const failed = results.filter((r) => !r.pass);
