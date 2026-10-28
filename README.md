@@ -216,7 +216,21 @@ State calculations are completely deterministic and transparent:
 
 ---
 
-## 7. Quality & Architecture Rules
+## 7. Billing (paid from day one)
+
+State has no free plan and no trial. The flow is:
+
+1. `/register` creates the account, then forwards to `/subscribe` (plan and interval carry over from the pricing CTA).
+2. `POST /api/billing/checkout` opens Razorpay Checkout for India (`x-vercel-ip-country: IN`, also the local default) or a Stripe Checkout session elsewhere.
+3. Razorpay success is signature-checked at `POST /api/billing/razorpay/verify`; both providers' webhooks (`/api/webhooks/*`) upsert the `subscriptions` row.
+4. First activation provisions the personal workspace, board and columns.
+5. The `(app)` layout checks session and paid access server-side; unpaid users are sent to `/subscribe`.
+
+Configure plan and price IDs in `.env` (`RAZORPAY_PLAN_*`, `STRIPE_PRICE_*`). Display prices live in `lib/billing/plans.ts`; keep them in sync with the provider dashboards.
+
+---
+
+## 8. Quality & Architecture Rules
 
 - **Zero AI Slop:** No generative text summaries, unsolicited suggestions, or LLM-generated chatter.
 - **Zero Surveillance:** No mouse tracking, keystroke counting, or forced team leaderboards.
