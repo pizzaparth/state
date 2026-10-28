@@ -24,7 +24,7 @@ export default async function BillingSettingsPage() {
           <dl>
             <Row label="Plan">
               {plan.name}
-              {plan.perSeat && <span className="text-[#5F5F5B]"> for {formatNumber(sub.seats)} members</span>}
+              {plan.perSeat && <span className="text-[#9A9A96]"> for {formatNumber(sub.seats)} members</span>}
             </Row>
             <Row label="Status">
               <Chip>{sub.status.replace("_", " ")}</Chip>

@@ -42,7 +42,7 @@ export default async function PreferencesSettingsPage() {
               <span className="flex flex-wrap gap-x-4 gap-y-1 tabular-nums">
                 {WEIGHTS.map(([name, w]) => (
                   <span key={name}>
-                    {name} <span className="text-[#5F5F5B]">{w}</span>
+                    {name} <span className="text-[#9A9A96]">{w}</span>
                   </span>
                 ))}
               </span>
@@ -54,9 +54,9 @@ export default async function PreferencesSettingsPage() {
             {SHORTCUTS.map(([keys, action]) => (
               <React.Fragment key={keys}>
                 <dt>
-                  <kbd className="neu-raised-sm inline-block rounded-[8px] px-2 py-0.5 font-mono text-xs">{keys.replace(" ", " ")}</kbd>
+                  <kbd className="app-btn inline-block rounded-[8px] px-2 py-0.5 font-mono text-xs">{keys.replace(" ", " ")}</kbd>
                 </dt>
-                <dd className="text-[#3A3A38]">{action}</dd>
+                <dd className="text-[#D4D4D0]">{action}</dd>
               </React.Fragment>
             ))}
           </dl>

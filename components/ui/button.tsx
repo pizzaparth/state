@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "raised" | "inverse" | "inset" | "flat" | "dark-cta" | "dark-secondary";
+  variant?: "dark-cta" | "dark-secondary";
   size?: "sm" | "md" | "lg";
   isLoading?: boolean;
   /** Render the single child (e.g. a <Link>) with button styling instead of a <button>. */
@@ -12,19 +12,11 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "raised", size = "md", isLoading, asChild, children, disabled, ...props }, ref) => {
+  ({ className, variant = "dark-secondary", size = "md", isLoading, asChild, children, disabled, ...props }, ref) => {
     const baseClasses =
       "inline-flex items-center justify-center font-medium transition-[background-color,border-color,box-shadow,color,transform] select-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.99] touch-manipulation";
 
     const variantClasses = {
-      raised:
-        "neu-btn-raised bg-[#DEDEDA] text-[#171717] hover:bg-[#E6E6E2]",
-      inverse:
-        "neu-inverse bg-[#101010] text-[#F2F2EF] hover:bg-[#171717] border border-white/10 shadow-lg",
-      inset:
-        "neu-inset-sm bg-[#D2D2CE] text-[#171717]",
-      flat:
-        "bg-transparent text-[#171717] hover:bg-black/5",
       "dark-cta":
         "bg-[#F1F1EE] text-[#090909] hover:bg-white border border-white/20 font-semibold shadow-dark-glow",
       "dark-secondary":

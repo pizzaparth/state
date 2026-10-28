@@ -18,7 +18,7 @@ export default async function OrganisationMembersPage({ params }: { params: Prom
         <div className="-mx-2 overflow-x-auto">
           <table className="w-full min-w-[36rem] border-collapse text-sm">
             <thead>
-              <tr className="text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5F5F5B]">
+              <tr className="text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">
                 <th scope="col" className="px-2 pb-2 font-semibold">Member</th>
                 <th scope="col" className="px-2 pb-2 font-semibold">Role</th>
                 <th scope="col" className="px-2 pb-2 font-semibold">Joined</th>
@@ -27,20 +27,20 @@ export default async function OrganisationMembersPage({ params }: { params: Prom
             </thead>
             <tbody>
               {members.map((m) => (
-                <tr key={m.id} className="border-t border-black/[0.06]">
+                <tr key={m.id} className="border-t border-white/[0.08]">
                   <th scope="row" className="px-2 py-3 text-left font-normal">
                     <span className="flex items-center gap-3">
                       <Avatar name={m.name} initials={initials(m.name)} className="size-8 text-[11px]" />
                       <span className="min-w-0">
                         <span className="block truncate font-medium">{m.name}</span>
-                        <span className="block truncate text-xs text-[#62625E]">{m.email}</span>
+                        <span className="block truncate text-xs text-[#85857F]">{m.email}</span>
                       </span>
                     </span>
                   </th>
                   <td className="px-2 py-3">
                     <Chip>{m.role}</Chip>
                   </td>
-                  <td className="px-2 py-3 tabular-nums text-[#5F5F5B]">{formatDate(m.joinedAt, viewer.tz, { day: "numeric", month: "short", year: "numeric" })}</td>
+                  <td className="px-2 py-3 tabular-nums text-[#9A9A96]">{formatDate(m.joinedAt, viewer.tz, { day: "numeric", month: "short", year: "numeric" })}</td>
                   <td className="px-2 py-3 text-right tabular-nums">{m.openTasks}</td>
                 </tr>
               ))}
@@ -52,11 +52,11 @@ export default async function OrganisationMembersPage({ params }: { params: Prom
         {invitations.length === 0 ? (
           <EmptyState title="None pending" />
         ) : (
-          <ul className="divide-y divide-black/[0.06]">
+          <ul className="divide-y divide-white/[0.08]">
             {invitations.map((i) => (
               <li key={i.email} className="flex items-center justify-between gap-4 py-3 text-sm first:pt-0 last:pb-0">
                 <span className="truncate">{i.email}</span>
-                <span className="flex shrink-0 items-center gap-3 text-xs text-[#5F5F5B]">
+                <span className="flex shrink-0 items-center gap-3 text-xs text-[#9A9A96]">
                   <Chip>{i.role}</Chip>
                   expires {formatDate(i.expiresAt, viewer.tz)}
                 </span>

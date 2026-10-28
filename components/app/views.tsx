@@ -57,9 +57,9 @@ export async function MetricsView({
           formula="Σ task weights + manual commit weights"
           delta={
             delta === null ? (
-              <span className="text-[#A9A9A6]">No previous period to compare</span>
+              <span className="text-[#55554F]">No previous period to compare</span>
             ) : (
-              <span className="text-[#C9C9C5]">
+              <span className="text-[#2A2A27]">
                 {delta >= 0 ? "+" : "−"}
                 {formatNumber(Math.abs(delta), 1)}% vs previous {days}d ({m.previousExecution})
               </span>
@@ -91,8 +91,8 @@ export async function MetricsView({
               ["Average", avg],
               ["75th pct", p75],
             ].map(([label, v]) => (
-              <div key={label as string} className="neu-inset-sm rounded-[14px] px-3 py-2.5">
-                <dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5F5F5B]">{label as string}</dt>
+              <div key={label as string} className="app-field rounded-[14px] px-3 py-2.5">
+                <dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{label as string}</dt>
                 <dd className="mt-1 text-lg font-semibold tabular-nums">{formatDuration(v as number | null)}</dd>
               </div>
             ))}
@@ -106,14 +106,14 @@ export async function MetricsView({
 
       {objectives.length > 0 && (
         <Panel title="Objectives">
-          <ul className="divide-y divide-black/[0.06]">
+          <ul className="divide-y divide-white/[0.08]">
             {objectives.map((o) => {
               const pos = objectivePosition(o, now);
               return (
                 <li key={o.id} className="grid gap-4 py-4 first:pt-0 last:pb-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{o.name}</p>
-                    <p className="mt-0.5 text-xs text-[#62625E] tabular-nums">
+                    <p className="mt-0.5 text-xs text-[#85857F] tabular-nums">
                       {formatNumber(o.currentValue)} / {formatNumber(o.targetValue)} {o.unit}
                       {o.deadlineAt && `, due ${formatDate(o.deadlineAt, tz, { day: "numeric", month: "short", year: "numeric" })}`}
                     </p>
@@ -121,7 +121,7 @@ export async function MetricsView({
                       <ProgressRail value={o.currentValue} max={o.targetValue} label={`${o.name} progress`} />
                     </div>
                   </div>
-                  <p className="font-mono text-xs leading-relaxed tabular-nums text-[#5F5F5B]">
+                  <p className="font-mono text-xs leading-relaxed tabular-nums text-[#9A9A96]">
                     velocity {formatNumber(pos.velocity, 2)}/d
                     <br />
                     required {pos.required === null ? "—" : pos.required === Infinity ? "past deadline" : `${formatNumber(pos.required, 2)}/d`}
@@ -129,7 +129,7 @@ export async function MetricsView({
                   <span
                     className={cn(
                       "justify-self-start rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] md:justify-self-end",
-                      pos.status === "behind" ? "neu-inverse" : "neu-inset-sm text-[#3A3A38]"
+                      pos.status === "behind" ? "app-inverse" : "app-field text-[#D4D4D0]"
                     )}
                   >
                     {pos.status}
@@ -229,7 +229,7 @@ export function ProjectTable({
     <div className="-mx-2 overflow-x-auto">
       <table className="w-full min-w-[40rem] border-collapse text-sm">
         <thead>
-          <tr className="text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5F5F5B]">
+          <tr className="text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">
             <th scope="col" className="px-2 pb-2 font-semibold">Project</th>
             <th scope="col" className="px-2 pb-2 font-semibold">Status</th>
             <th scope="col" className="px-2 pb-2 text-right font-semibold">Open</th>
@@ -241,7 +241,7 @@ export function ProjectTable({
         </thead>
         <tbody>
           {sorted.map((p) => (
-            <tr key={p.id} className="border-t border-black/[0.06] transition-colors hover:bg-black/[0.03]">
+            <tr key={p.id} className="border-t border-white/[0.08] transition-colors hover:bg-white/[0.03]">
               <th scope="row" className="px-2 py-3 text-left font-medium">
                 <Link href={hrefFor(p.slug) as Route} className="rounded-[6px] hover:underline">
                   {p.name}
@@ -254,7 +254,7 @@ export function ProjectTable({
               <td className="px-2 py-3 text-right tabular-nums">{p.completedTasks}</td>
               <td className="px-2 py-3 text-right tabular-nums">{p.commits7d}</td>
               <td className="px-2 py-3 text-right font-semibold tabular-nums">{p.execution30d}</td>
-              <td className="px-2 py-3 text-right text-[#5F5F5B] tabular-nums">{p.lastCommitAt ? formatDate(p.lastCommitAt, tz) : "—"}</td>
+              <td className="px-2 py-3 text-right text-[#9A9A96] tabular-nums">{p.lastCommitAt ? formatDate(p.lastCommitAt, tz) : "—"}</td>
             </tr>
           ))}
         </tbody>

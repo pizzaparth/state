@@ -28,14 +28,14 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
       <PageHeader label={formatDate(now, viewer.tz, { weekday: "long", day: "numeric", month: "long" })} title="Today" />
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        {/* Focal instrument: the one dark surface on this page */}
-        <section aria-labelledby="execution-today" className="neu-inverse rounded-[28px] p-6">
-          <h2 id="execution-today" className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#A9A9A6]">
+        {/* Focal instrument: the one inverse (near-white) surface on this page */}
+        <section aria-labelledby="execution-today" className="app-inverse rounded-[28px] p-6">
+          <h2 id="execution-today" className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#55554F]">
             Execution today
           </h2>
           <p className="mt-4 flex items-baseline gap-2">
             <span className="text-6xl font-semibold leading-none tracking-[-0.03em] tabular-nums">{done}</span>
-            {target && <span className="text-xl tabular-nums text-[#8B8B86]">/ {target}</span>}
+            {target && <span className="text-xl tabular-nums text-[#55554F]">/ {target}</span>}
           </p>
           {target ? (
             <>
@@ -45,23 +45,23 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
                 aria-valuemin={0}
                 aria-valuemax={target}
                 aria-valuenow={done}
-                className="mt-5 h-2.5 overflow-hidden rounded-full bg-white/10 shadow-[inset_2px_2px_4px_rgba(0,0,0,.5)]"
+                className="mt-5 h-2.5 overflow-hidden rounded-full bg-black/10"
               >
-                <div className="h-full origin-left rounded-full bg-[#F2F2EF]" style={{ transform: `scaleX(${pct / 100})` }} />
+                <div className="h-full origin-left rounded-full bg-[#0A0A0A]" style={{ transform: `scaleX(${pct / 100})` }} />
               </div>
-              <p className="mt-3 text-sm text-[#A9A9A6]">
+              <p className="mt-3 text-sm text-[#55554F]">
                 {done >= target ? "Target reached." : `${formatNumber(target - done)} to today’s target.`}{" "}
                 {today.commits.length} {today.commits.length === 1 ? "commit" : "commits"}, {today.completed.length} tasks completed.
               </p>
             </>
           ) : (
-            <p className="mt-3 text-sm text-[#A9A9A6]">Set a daily target in Settings to track progress here.</p>
+            <p className="mt-3 text-sm text-[#55554F]">Set a daily target in Settings to track progress here.</p>
           )}
         </section>
 
         <Panel title="Capture">
           <QuickCapture projects={projects.map((p) => ({ slug: p.slug, name: p.name }))} />
-          <p className="mt-1 px-2 text-xs text-[#62625E]">
+          <p className="mt-1 px-2 text-xs text-[#85857F]">
             Press <kbd className="font-mono">C</kbd> to record a commit, <kbd className="font-mono">⌘&nbsp;K</kbd> for everything else.
           </p>
         </Panel>

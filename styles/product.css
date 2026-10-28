@@ -1,0 +1,73 @@
+/* ==========================================================================
+   State product surfaces: AMOLED black, flat.
+   Depth comes from tonal steps and 1px hairlines, never from shadows.
+     .app-panel    Level 1: board columns, metric panels, toolbars
+     .app-card     Level 2: cards and draggable tasks
+     .app-btn      Level 2: secondary controls; pressed sinks to the page
+     .app-field    Inputs, rails, segmented troughs
+     .app-inverse  Rare near-white focal surface (+ COMMIT, Today instrument)
+     .app-overlay  Dialogs, palette, drawers, menus
+   ========================================================================== */
+
+.app-panel {
+  background-color: var(--app-panel);
+  border: 1px solid var(--app-line);
+  border-radius: var(--radius-card);
+}
+
+.app-card {
+  background-color: var(--app-raised);
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--radius-task);
+  transition: border-color var(--duration-fast) var(--ease-restrained), background-color var(--duration-fast) var(--ease-restrained);
+}
+
+.app-btn {
+  background-color: var(--app-raised);
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--radius-control);
+  color: var(--app-text-primary);
+  transition: border-color var(--duration-fast) var(--ease-restrained), background-color var(--duration-fast) var(--ease-restrained);
+}
+
+.app-btn:hover {
+  background-color: var(--app-raised-hover);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.app-btn:active {
+  background-color: var(--app-bg);
+}
+
+.app-field {
+  background-color: var(--app-field);
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--radius-control);
+}
+
+.app-input {
+  background-color: var(--app-field);
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--radius-input);
+  color: var(--app-text-primary);
+  transition: border-color var(--duration-fast) var(--ease-restrained);
+}
+
+.app-input:focus-visible {
+  outline: none;
+  border-color: var(--app-line-focus);
+}
+
+.app-input::placeholder {
+  color: var(--app-text-tertiary);
+}
+
+.app-inverse {
+  background-color: var(--app-inverse);
+  color: var(--app-inverse-text);
+}
+
+.app-overlay {
+  background-color: var(--app-panel);
+  border: 1px solid var(--app-line-strong);
+}

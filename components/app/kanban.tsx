@@ -146,8 +146,8 @@ export function Kanban({
           return (
             <Column key={column.id} column={column} highlighted={overColumn === column.id && dragging?.columnId !== startColumn.current}>
               <div className="mb-3 flex items-baseline justify-between px-1">
-                <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5F5F5B]">{column.name}</h2>
-                <span className="font-mono text-[11px] tabular-nums text-[#5F5F5B]">
+                <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{column.name}</h2>
+                <span className="font-mono text-[11px] tabular-nums text-[#9A9A96]">
                   {isDone ? `${columnCards.length} in ${doneWindowDays}d` : columnCards.length}
                 </span>
               </div>
@@ -165,7 +165,7 @@ export function Kanban({
                     />
                   ))}
                   {columnCards.length === 0 && (
-                    <li className="rounded-[14px] border border-dashed border-black/10 px-3 py-6 text-center text-xs text-[#5F5F5B]">
+                    <li className="rounded-[14px] border border-dashed border-white/10 px-3 py-6 text-center text-xs text-[#9A9A96]">
                       Drop a task here
                     </li>
                   )}
@@ -190,7 +190,7 @@ function Column({ column, highlighted, children }: { column: BoardColumn; highli
       aria-label={column.name}
       className={cn(
         "rounded-[24px] p-3 transition-[box-shadow,background-color] duration-150",
-        highlighted ? "neu-inset bg-[#D2D2CE]" : "neu-panel"
+        highlighted ? "app-field bg-[#000000]" : "app-panel"
       )}
     >
       {children}
@@ -228,20 +228,20 @@ function SortableCard({
       <Menu.Root>
         <Menu.Trigger
           aria-label={`Move “${card.title}” to another column`}
-          className="absolute right-2 top-2 grid size-7 place-items-center rounded-full text-[#5F5F5B] transition-colors hover:bg-black/[0.06] hover:text-[#171717] data-[state=open]:bg-black/[0.06]"
+          className="absolute right-2 top-2 grid size-7 place-items-center rounded-full text-[#9A9A96] transition-colors hover:bg-white/[0.06] hover:text-[#F2F2EF] data-[state=open]:bg-white/[0.06]"
         >
           <MoreHorizontal className="size-4" aria-hidden="true" />
         </Menu.Trigger>
         <Menu.Portal>
-          <Menu.Content align="end" sideOffset={6} className="neu-raised z-50 min-w-44 rounded-[16px] p-1.5 text-sm">
-            <Menu.Label className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5F5F5B]">Move to…</Menu.Label>
+          <Menu.Content align="end" sideOffset={6} className="app-card z-50 min-w-44 rounded-[16px] p-1.5 text-sm">
+            <Menu.Label className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">Move to…</Menu.Label>
             {columns
               .filter((c) => c.id !== card.columnId)
               .map((c) => (
                 <Menu.Item
                   key={c.id}
                   onSelect={() => onMove(c.id)}
-                  className="cursor-pointer rounded-[10px] px-3 py-2 text-[#171717] outline-none data-[highlighted]:bg-black/[0.06]"
+                  className="cursor-pointer rounded-[10px] px-3 py-2 text-[#F2F2EF] outline-none data-[highlighted]:bg-white/[0.06]"
                 >
                   {c.name}
                 </Menu.Item>
@@ -267,15 +267,15 @@ function CardFace({
   lifted?: boolean;
 }) {
   const title = (
-    <span className={cn("block pr-8 text-sm font-medium leading-snug", done ? "text-[#5F5F5B] line-through decoration-black/20" : "text-[#171717]")}>
+    <span className={cn("block pr-8 text-sm font-medium leading-snug", done ? "text-[#9A9A96] line-through decoration-white/30" : "text-[#F2F2EF]")}>
       {card.title}
     </span>
   );
   return (
     <div
       className={cn(
-        "rounded-[16px] bg-[#DEDEDA] p-3.5",
-        lifted ? "scale-[1.02] shadow-[-10px_-10px_24px_rgba(255,255,255,.75),12px_14px_28px_rgba(0,0,0,.16)]" : "neu-raised"
+        "rounded-[16px] p-3.5",
+        lifted ? "scale-[1.02] border border-white/40" : "app-card"
       )}
     >
       {href ? (
@@ -285,7 +285,7 @@ function CardFace({
       ) : (
         title
       )}
-      {card.projectName && <p className="mt-1 truncate text-xs text-[#62625E]">{card.projectName}</p>}
+      {card.projectName && <p className="mt-1 truncate text-xs text-[#85857F]">{card.projectName}</p>}
       <div className="mt-3 flex items-center gap-3">
         {card.due && !done && <DueLabel due={card.due} />}
         <PriorityMark priority={card.priority} />

@@ -25,11 +25,11 @@ export function PageHeader({
   return (
     <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div className="min-w-0">
-        {label && <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5F5F5B]">{label}</p>}
-        <h1 className="mt-1 scroll-mt-24 text-[clamp(2rem,4vw,2.75rem)] font-bold leading-none tracking-[-0.03em] text-[#171717]">
+        {label && <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{label}</p>}
+        <h1 className="mt-1 scroll-mt-24 text-[clamp(2rem,4vw,2.75rem)] font-bold leading-none tracking-[-0.03em] text-[#F2F2EF]">
           {title}
         </h1>
-        {description && <p className="mt-2 max-w-[62ch] text-sm leading-relaxed text-[#5F5F5B]">{description}</p>}
+        {description && <p className="mt-2 max-w-[62ch] text-sm leading-relaxed text-[#9A9A96]">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </header>
@@ -51,11 +51,11 @@ export function Panel({
   as?: "section" | "div";
 }) {
   return (
-    <Tag className={cn("neu-panel min-w-0 p-5", className)}>
+    <Tag className={cn("app-panel min-w-0 p-5", className)}>
       {(title || aside) && (
         <div className="mb-4 flex items-baseline justify-between gap-4">
-          {title && <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5F5F5B]">{title}</h2>}
-          {aside && <div className="text-xs text-[#8B8B86]">{aside}</div>}
+          {title && <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{title}</h2>}
+          {aside && <div className="text-xs text-[#85857F]">{aside}</div>}
         </div>
       )}
       {children}
@@ -73,9 +73,9 @@ export function ProgressRail({ value, max, label }: { value: number; max: number
       aria-valuemin={0}
       aria-valuemax={max}
       aria-valuenow={value}
-      className="neu-inset-sm h-2.5 w-full overflow-hidden rounded-full"
+      className="app-field h-2.5 w-full overflow-hidden rounded-full"
     >
-      <div className="h-full origin-left rounded-full bg-[#191919] transition-transform duration-300" style={{ transform: `scaleX(${pct / 100})` }} />
+      <div className="h-full origin-left rounded-full bg-[#F2F2EF] transition-transform duration-300" style={{ transform: `scaleX(${pct / 100})` }} />
     </div>
   );
 }
@@ -83,7 +83,7 @@ export function ProgressRail({ value, max, label }: { value: number; max: number
 /** URL-driven segmented control: an inset trough with a raised active segment. */
 export function SegmentedLinks({ label, items }: { label: string; items: { href: string; label: string; active: boolean }[] }) {
   return (
-    <nav aria-label={label} className="neu-inset-sm inline-flex rounded-[12px] p-1">
+    <nav aria-label={label} className="app-field inline-flex rounded-[12px] p-1">
       {items.map((item) => (
         <Link
           key={item.href}
@@ -92,7 +92,7 @@ export function SegmentedLinks({ label, items }: { label: string; items: { href:
           scroll={false}
           className={cn(
             "rounded-[9px] px-3 py-1.5 text-xs font-medium transition-[background-color,box-shadow,color]",
-            item.active ? "neu-raised-sm bg-[#DEDEDA] text-[#171717]" : "text-[#5F5F5B] hover:text-[#171717]"
+            item.active ? "bg-white/[0.12] text-[#F2F2EF]" : "text-[#9A9A96] hover:text-[#F2F2EF]"
           )}
         >
           {item.label}
@@ -104,7 +104,7 @@ export function SegmentedLinks({ label, items }: { label: string; items: { href:
 
 export function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="neu-inset-sm inline-flex max-w-full items-center truncate rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#5F5F5B]">
+    <span className="app-field inline-flex max-w-full items-center truncate rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9A9A96]">
       {children}
     </span>
   );
@@ -119,7 +119,7 @@ export function PriorityMark({ priority }: { priority: string }) {
   return (
     <span
       title={`${priority[0].toUpperCase()}${priority.slice(1)} priority`}
-      className={cn("font-mono text-[11px] tabular-nums", priority === "critical" ? "font-semibold text-[#8A3B35]" : "text-[#5F5F5B]")}
+      className={cn("font-mono text-[11px] tabular-nums", priority === "critical" ? "font-semibold text-[#F0A39B]" : "text-[#9A9A96]")}
     >
       {code}
       <span className="sr-only"> priority</span>
@@ -131,7 +131,7 @@ const WEIGHT: Record<number, string> = { 1: "Small", 2: "Normal", 4: "Major", 8:
 
 export function WeightMark({ weight }: { weight: number }) {
   return (
-    <span title={`${WEIGHT[weight] ?? "Weight"} task, ${weight} execution`} className="font-mono text-[11px] tabular-nums text-[#5F5F5B]">
+    <span title={`${WEIGHT[weight] ?? "Weight"} task, ${weight} execution`} className="font-mono text-[11px] tabular-nums text-[#9A9A96]">
       ×{weight}
       <span className="sr-only"> weight</span>
     </span>
@@ -143,7 +143,7 @@ export function DueLabel({ due }: { due: DueState }) {
     <span
       className={cn(
         "inline-flex items-center gap-1 text-[11px] tabular-nums",
-        due.tone === "overdue" ? "font-semibold text-[#8A3B35]" : due.tone === "today" ? "font-semibold text-[#171717]" : "text-[#5F5F5B]"
+        due.tone === "overdue" ? "font-semibold text-[#F0A39B]" : due.tone === "today" ? "font-semibold text-[#F2F2EF]" : "text-[#9A9A96]"
       )}
     >
       {due.tone === "overdue" && (
@@ -162,7 +162,7 @@ export function Avatar({ name, initials, className }: { name: string; initials: 
     <span
       title={name}
       className={cn(
-        "grid size-6 shrink-0 place-items-center rounded-full bg-[#CFCFCB] text-[10px] font-semibold text-[#3A3A38] shadow-neu-raised-xs",
+        "grid size-6 shrink-0 place-items-center rounded-full bg-[#1F1F1F] text-[10px] font-semibold text-[#D4D4D0] border border-white/15",
         className
       )}
     >
@@ -175,8 +175,8 @@ export function Avatar({ name, initials, className }: { name: string; initials: 
 export function EmptyState({ title, children, action }: { title: string; children?: React.ReactNode; action?: React.ReactNode }) {
   return (
     <div className="px-4 py-10 text-center">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5F5F5B]">{title}</p>
-      {children && <p className="mx-auto mt-2 max-w-[44ch] text-sm leading-relaxed text-[#5F5F5B]">{children}</p>}
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{title}</p>
+      {children && <p className="mx-auto mt-2 max-w-[44ch] text-sm leading-relaxed text-[#9A9A96]">{children}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
   );
@@ -199,17 +199,17 @@ export function Measure({
   inverse?: boolean;
 }) {
   return (
-    <div className={cn("min-w-0 p-5", inverse ? "neu-inverse rounded-[24px]" : "neu-panel")}>
-      <p className={cn("text-[11px] font-semibold uppercase tracking-[0.12em]", inverse ? "text-[#A9A9A6]" : "text-[#5F5F5B]")}>{label}</p>
+    <div className={cn("min-w-0 p-5", inverse ? "app-inverse rounded-[24px]" : "app-panel")}>
+      <p className={cn("text-[11px] font-semibold uppercase tracking-[0.12em]", inverse ? "text-[#55554F]" : "text-[#9A9A96]")}>{label}</p>
       <p className="mt-3 flex items-baseline gap-1.5">
-        <span className={cn("text-[2rem] font-semibold leading-none tracking-[-0.02em] tabular-nums", inverse ? "text-[#F2F2EF]" : "text-[#171717]")}>
+        <span className={cn("text-[2rem] font-semibold leading-none tracking-[-0.02em] tabular-nums", inverse ? "text-[#0A0A0A]" : "text-[#F2F2EF]")}>
           {value}
         </span>
-        {unit && <span className={cn("text-sm", inverse ? "text-[#A9A9A6]" : "text-[#5F5F5B]")}>{unit}</span>}
+        {unit && <span className={cn("text-sm", inverse ? "text-[#55554F]" : "text-[#9A9A96]")}>{unit}</span>}
       </p>
       {delta && <p className="mt-1.5 text-xs tabular-nums">{delta}</p>}
       {formula && (
-        <p className={cn("mt-3 font-mono text-[11px] leading-relaxed", inverse ? "text-[#A9A9A6]" : "text-[#62625E]")}>{formula}</p>
+        <p className={cn("mt-3 font-mono text-[11px] leading-relaxed", inverse ? "text-[#55554F]" : "text-[#85857F]")}>{formula}</p>
       )}
     </div>
   );

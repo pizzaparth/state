@@ -26,18 +26,18 @@ export function TaskRow({
       <Link
         href={href as Route}
         scroll={false}
-        className="group flex min-w-0 items-center gap-3 rounded-[12px] px-3 py-2.5 transition-colors hover:bg-black/[0.04]"
+        className="group flex min-w-0 items-center gap-3 rounded-[12px] px-3 py-2.5 transition-colors hover:bg-white/[0.04]"
       >
         <span
           aria-hidden="true"
-          className={cn("size-3 shrink-0 rounded-full", done ? "bg-[#191919]" : "neu-inset-sm border border-black/10")}
+          className={cn("size-3 shrink-0 rounded-full", done ? "bg-[#F2F2EF]" : "app-field border border-white/10")}
         />
         <span className="min-w-0 flex-1">
-          <span className={cn("block truncate text-sm font-medium", done ? "text-[#5F5F5B]" : "text-[#171717]")}>
+          <span className={cn("block truncate text-sm font-medium", done ? "text-[#9A9A96]" : "text-[#F2F2EF]")}>
             {task.title}
             {done && <span className="sr-only"> (done)</span>}
           </span>
-          {task.projectName && <span className="block truncate text-xs text-[#62625E]">{task.projectName}</span>}
+          {task.projectName && <span className="block truncate text-xs text-[#85857F]">{task.projectName}</span>}
         </span>
         <span className="flex shrink-0 items-center gap-3">
           {task.dueAt && !done && <DueLabel due={dueState(task.dueAt, now, tz)} />}

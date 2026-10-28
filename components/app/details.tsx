@@ -8,9 +8,9 @@ type Commit = NonNullable<Awaited<ReturnType<typeof getCommitDetail>>>;
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[8.5rem_minmax(0,1fr)] gap-3 border-t border-black/[0.06] py-2.5 text-sm">
-      <dt className="text-[#5F5F5B]">{label}</dt>
-      <dd className="min-w-0 break-words text-[#171717]">{children}</dd>
+    <div className="grid grid-cols-[8.5rem_minmax(0,1fr)] gap-3 border-t border-white/[0.08] py-2.5 text-sm">
+      <dt className="text-[#9A9A96]">{label}</dt>
+      <dd className="min-w-0 break-words text-[#F2F2EF]">{children}</dd>
     </div>
   );
 }
@@ -21,14 +21,14 @@ export function TaskDetail({ task, tz, now }: { task: Task; tz: string; now: Dat
   const state = task.completedAt ? "Done" : (task.columnName ?? "Inbox");
   return (
     <div>
-      <h2 className="text-xl font-semibold leading-snug tracking-[-0.01em] text-[#171717]">{task.title}</h2>
+      <h2 className="text-xl font-semibold leading-snug tracking-[-0.01em] text-[#F2F2EF]">{task.title}</h2>
       <p className="mt-2 flex flex-wrap items-center gap-2">
         <Chip>{state}</Chip>
         {task.tags.map((t) => (
           <Chip key={t}>{t}</Chip>
         ))}
       </p>
-      {task.description && <p className="neu-inset mt-5 rounded-[16px] p-4 text-sm leading-relaxed text-[#3A3A38]">{task.description}</p>}
+      {task.description && <p className="app-field mt-5 rounded-[16px] p-4 text-sm leading-relaxed text-[#D4D4D0]">{task.description}</p>}
 
       <dl className="mt-6">
         <Field label="Project">{task.projectName ?? "None"}</Field>
@@ -37,10 +37,10 @@ export function TaskDetail({ task, tz, now }: { task: Task; tz: string; now: Dat
         <Field label="Creator">{task.creatorName}</Field>
         <Field label="Priority">
           {task.priority === "none" ? "None" : <PriorityMark priority={task.priority} />}{" "}
-          <span className="text-[#5F5F5B]">{task.priority !== "none" && task.priority}</span>
+          <span className="text-[#9A9A96]">{task.priority !== "none" && task.priority}</span>
         </Field>
         <Field label="Weight">
-          {WEIGHT[task.weight]} <span className="tabular-nums text-[#5F5F5B]">({task.weight} execution)</span>
+          {WEIGHT[task.weight]} <span className="tabular-nums text-[#9A9A96]">({task.weight} execution)</span>
         </Field>
         <Field label="Due">{task.dueAt ? <DueLabel due={dueState(task.dueAt, now, tz)} /> : "No due date"}</Field>
         <Field label="Created">{formatDateTime(task.createdAt, tz)}</Field>
@@ -54,15 +54,15 @@ export function TaskDetail({ task, tz, now }: { task: Task; tz: string; now: Dat
       </dl>
 
       <div className="mt-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5F5F5B]">Linked commit</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">Linked commit</p>
         {task.commit ? (
           <p className="mt-3 flex items-center gap-3 text-sm">
-            <span aria-hidden="true" className="size-2 rounded-full bg-[#191919]" />
+            <span aria-hidden="true" className="size-2 rounded-full bg-[#F2F2EF]" />
             <span className="min-w-0 flex-1 truncate">{task.commit.message}</span>
             <span className="font-mono text-xs tabular-nums">+{task.commit.executionValue}</span>
           </p>
         ) : (
-          <p className="mt-2 text-sm text-[#5F5F5B]">A commit is recorded when this task reaches Done.</p>
+          <p className="mt-2 text-sm text-[#9A9A96]">A commit is recorded when this task reaches Done.</p>
         )}
       </div>
     </div>
@@ -80,12 +80,12 @@ export function CommitDetail({ commit, tz }: { commit: Commit; tz: string }) {
   return (
     <div>
       <p className="flex items-center gap-3">
-        <span aria-hidden="true" className="size-2.5 rounded-full bg-[#191919]" />
-        <span className="font-mono text-xs tabular-nums text-[#5F5F5B]">{formatDateTime(commit.createdAt, tz)}</span>
+        <span aria-hidden="true" className="size-2.5 rounded-full bg-[#F2F2EF]" />
+        <span className="font-mono text-xs tabular-nums text-[#9A9A96]">{formatDateTime(commit.createdAt, tz)}</span>
       </p>
-      <h2 className="mt-3 text-xl font-semibold leading-snug tracking-[-0.01em] text-[#171717]">{commit.message}</h2>
-      <div className="neu-inverse mt-5 flex items-baseline justify-between rounded-[20px] px-5 py-4">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#A9A9A6]">Execution</span>
+      <h2 className="mt-3 text-xl font-semibold leading-snug tracking-[-0.01em] text-[#F2F2EF]">{commit.message}</h2>
+      <div className="app-inverse mt-5 flex items-baseline justify-between rounded-[20px] px-5 py-4">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#55554F]">Execution</span>
         <span className="text-3xl font-semibold tabular-nums">+{commit.executionValue}</span>
       </div>
       {commit.tags.length > 0 && (
@@ -108,7 +108,7 @@ export function CommitDetail({ commit, tz }: { commit: Commit; tz: string }) {
           </Field>
         )}
       </dl>
-      <p className="mt-6 text-xs leading-relaxed text-[#5F5F5B]">
+      <p className="mt-6 text-xs leading-relaxed text-[#9A9A96]">
         Commit time and execution value are permanent. Message, project and tags can be corrected.
       </p>
     </div>

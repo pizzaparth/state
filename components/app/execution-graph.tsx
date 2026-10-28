@@ -4,8 +4,8 @@ import * as React from "react";
 import type { DailyExecution } from "@/db/queries";
 import { cn } from "@/lib/utils";
 
-// docs/style.md §30 intensity ramp: lightness only, readable without colour vision
-const FILL = ["#CCCCCA", "#B7B7B3", "#8D8D89", "#595956", "#191919"] as const;
+// Lightness-only ramp from near-black to near-white: readable without colour vision
+const FILL = ["#161616", "#2E2E2C", "#5C5C59", "#A3A39F", "#F2F2EF"] as const;
 
 function level(execution: number): 0 | 1 | 2 | 3 | 4 {
   if (execution === 0) return 0;
@@ -69,7 +69,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
           className="relative pl-8 pt-5"
           style={{ minWidth: `calc(${weeks} * 0.8rem + 2rem)`, maxWidth: `calc(${weeks} * 2rem + 2rem)` }}
         >
-          <div aria-hidden="true" className="absolute left-8 right-0 top-0 h-4 text-[10px] text-[#5F5F5B]">
+          <div aria-hidden="true" className="absolute left-8 right-0 top-0 h-4 text-[10px] text-[#9A9A96]">
             {months.map((m) => (
               <span key={`${m.week}-${m.text}`} className="absolute" style={{ left: `${(m.week / weeks) * 100}%` }}>
                 {m.text}
@@ -78,7 +78,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
           </div>
 
           <div className="flex gap-2">
-            <div aria-hidden="true" className="-ml-8 grid w-6 py-2 text-[10px] leading-none text-[#5F5F5B]" style={{ gridTemplateRows: "repeat(7, 1fr)", rowGap: gap }}>
+            <div aria-hidden="true" className="-ml-8 grid w-6 py-2 text-[10px] leading-none text-[#9A9A96]" style={{ gridTemplateRows: "repeat(7, 1fr)", rowGap: gap }}>
               {["Mon", "", "Wed", "", "Fri", "", ""].map((d, i) => (
                 <span key={i} className="flex items-center">
                   {d}
@@ -94,7 +94,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
               onFocus={() => setActive((i) => i ?? cells.length - 1)}
               onBlur={() => setActive(null)}
               onPointerLeave={() => setActive(null)}
-              className="neu-inset-sm relative grid flex-1 grid-flow-col rounded-[10px] p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#171717]/70"
+              className="app-field relative grid flex-1 grid-flow-col rounded-[10px] p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2F2EF]/70"
               style={{ gridTemplateRows: "repeat(7, auto)", gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))`, gap }}
             >
               {cells.map((d, i) =>
@@ -102,7 +102,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
                   <span
                     key={d.day}
                     onPointerEnter={() => setActive(i)}
-                    className={cn("aspect-square rounded-[3px] transition-transform duration-100", active === i && "scale-125 outline outline-1 outline-[#171717]")}
+                    className={cn("aspect-square rounded-[3px] transition-transform duration-100", active === i && "scale-125 outline outline-1 outline-white")}
                     style={{ backgroundColor: FILL[level(d.execution)] }}
                   />
                 ) : (
@@ -113,7 +113,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
               {shown && (
                 <div
                   aria-hidden="true"
-                  className="neu-inverse pointer-events-none absolute z-10 w-max rounded-[12px] px-3 py-2 text-xs"
+                  className="app-inverse pointer-events-none absolute z-10 w-max rounded-[12px] px-3 py-2 text-xs"
                   style={{
                     left: `calc(0.5rem + (100% - 1rem) * ${(col + 0.5) / weeks})`,
                     top: `calc(0.5rem + (100% - 1rem) * ${row / 7} - 6px)`,
@@ -121,7 +121,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
                   }}
                 >
                   <p className="font-semibold">{label(shown.day, { weekday: "short", day: "numeric", month: "short" })}</p>
-                  <p className="mt-1 tabular-nums text-[#C9C9C5]">
+                  <p className="mt-1 tabular-nums text-[#55554F]">
                     {shown.execution} execution, {shown.commits} commits
                   </p>
                 </div>
@@ -132,17 +132,17 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
       </div>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <p aria-live="polite" className="tabular-nums text-[#5F5F5B]">
+        <p aria-live="polite" className="tabular-nums text-[#9A9A96]">
           {shown ? (
             <>
-              <span className="font-semibold text-[#171717]">{label(shown.day, { weekday: "long", day: "numeric", month: "long" })}</span>
+              <span className="font-semibold text-[#F2F2EF]">{label(shown.day, { weekday: "long", day: "numeric", month: "long" })}</span>
               {`: ${shown.commits} commits, ${shown.tasks} tasks completed, ${shown.execution} execution, ${shown.projects} projects touched`}
             </>
           ) : (
             "Hover a day, or focus the graph and use the arrow keys."
           )}
         </p>
-        <span className="flex items-center gap-1.5 text-[#5F5F5B]" aria-hidden="true">
+        <span className="flex items-center gap-1.5 text-[#9A9A96]" aria-hidden="true">
           0
           {FILL.map((f) => (
             <span key={f} className="size-2.5 rounded-[2px]" style={{ backgroundColor: f }} />

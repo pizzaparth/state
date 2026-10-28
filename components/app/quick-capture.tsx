@@ -42,7 +42,7 @@ export function QuickCapture({
           setValue("");
           notify(`Captured “${parsed.title}”.`);
         }}
-        className="neu-inset flex items-center gap-2 rounded-[18px] p-1.5 pl-4"
+        className="app-field flex items-center gap-2 rounded-[18px] p-1.5 pl-4"
       >
         <label htmlFor="quick-capture" className="sr-only">
           Capture a task
@@ -55,22 +55,22 @@ export function QuickCapture({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
-          className="h-10 min-w-0 flex-1 bg-transparent text-sm text-[#171717] placeholder:text-[#62625E] focus:outline-none max-md:text-base"
+          className="h-10 min-w-0 flex-1 bg-transparent text-sm text-[#F2F2EF] placeholder:text-[#85857F] focus:outline-none max-md:text-base"
         />
         <button
           type="submit"
           disabled={!parsed?.title}
-          className="neu-btn-raised inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[12px] px-4 text-sm font-medium disabled:opacity-50"
+          className="app-btn inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[12px] px-4 text-sm font-medium disabled:opacity-50"
         >
           <Plus className="size-4" aria-hidden="true" />
           Capture
         </button>
       </form>
 
-      <p aria-live="polite" className="mt-2 min-h-5 px-2 text-xs text-[#5F5F5B]">
+      <p aria-live="polite" className="mt-2 min-h-5 px-2 text-xs text-[#9A9A96]">
         {parsed?.title && (
           <>
-            Task <span className="font-medium text-[#171717]">“{parsed.title}”</span>
+            Task <span className="font-medium text-[#F2F2EF]">“{parsed.title}”</span>
             {parsed.projectSlug && (project ? `, project ${project.name}` : `, unknown project #${parsed.projectSlug}`)}
             {parsed.priority && `, ${parsed.priority} priority`}
           </>
@@ -81,10 +81,10 @@ export function QuickCapture({
         <ul className="mt-2 space-y-1">
           {captured.map((c, i) => (
             <li key={i} className="flex items-center gap-3 rounded-[12px] px-3 py-2 text-sm">
-              <span aria-hidden="true" className="neu-inset-sm size-3 rounded-full" />
+              <span aria-hidden="true" className="app-field size-3 rounded-full" />
               <span className="min-w-0 flex-1 truncate font-medium">{c.title}</span>
-              <span className="text-xs text-[#62625E]">{[c.project, c.priority].filter(Boolean).join(", ") || "Unsorted"}</span>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5F5F5B]">Unsaved</span>
+              <span className="text-xs text-[#85857F]">{[c.project, c.priority].filter(Boolean).join(", ") || "Unsorted"}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">Unsaved</span>
             </li>
           ))}
         </ul>

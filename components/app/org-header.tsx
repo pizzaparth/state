@@ -19,13 +19,13 @@ export function OrgHeader({ org, active, description }: { org: ViewerOrg; active
     <header className="space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5F5F5B]">Organisation</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">Organisation</p>
           <h1 className="mt-1 text-[clamp(2rem,4vw,2.75rem)] font-bold leading-none tracking-[-0.03em]">{org.name}</h1>
-          {description && <p className="mt-2 max-w-[62ch] text-sm leading-relaxed text-[#5F5F5B]">{description}</p>}
+          {description && <p className="mt-2 max-w-[62ch] text-sm leading-relaxed text-[#9A9A96]">{description}</p>}
         </div>
         <Chip>Your role: {org.role}</Chip>
       </div>
-      <nav aria-label={`${org.name} sections`} className="neu-inset-sm inline-flex max-w-full overflow-x-auto rounded-[14px] p-1">
+      <nav aria-label={`${org.name} sections`} className="app-field inline-flex max-w-full overflow-x-auto rounded-[14px] p-1">
         {TABS.map((tab) => (
           <Link
             key={tab.key}
@@ -33,7 +33,7 @@ export function OrgHeader({ org, active, description }: { org: ViewerOrg; active
             aria-current={tab.key === active ? "page" : undefined}
             className={cn(
               "shrink-0 rounded-[10px] px-4 py-2 text-sm font-medium transition-[background-color,box-shadow,color]",
-              tab.key === active ? "neu-raised-sm bg-[#DEDEDA] text-[#171717]" : "text-[#5F5F5B] hover:text-[#171717]"
+              tab.key === active ? "bg-white/[0.12] text-[#F2F2EF]" : "text-[#9A9A96] hover:text-[#F2F2EF]"
             )}
           >
             {tab.label}

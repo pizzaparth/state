@@ -39,34 +39,19 @@ const config: Config = {
             "primary-text": "#0A0A0A",
           },
         },
-        // Logged-in Product Pale Neumorphic Theme
+        // Logged-in product: AMOLED black, flat
         app: {
-          bg: {
-            DEFAULT: "#D9D9D5",
-            soft: "#E1E1DD",
-          },
-          surface: {
-            raised: "#DEDEDA",
-            "raised-light": "#E6E6E2",
-            inset: "#D2D2CE",
-            inverse: "#101010",
-            "inverse-2": "#171717",
-          },
+          bg: "#000000",
+          panel: "#0A0A0A",
+          raised: "#121212",
           text: {
-            primary: "#171717",
-            secondary: "#5F5F5B",
-            tertiary: "#8B8B86",
-            inverse: "#F2F2EF",
+            primary: "#F2F2EF",
+            secondary: "#9A9A96",
+            tertiary: "#85857F",
           },
         },
       },
       boxShadow: {
-        // Product Neumorphic Shadows
-        "neu-raised": "-8px -8px 20px rgba(255, 255, 255, 0.70), 8px 8px 20px rgba(0, 0, 0, 0.10)",
-        "neu-raised-sm": "-3px -3px 8px rgba(255, 255, 255, 0.65), 3px 3px 8px rgba(0, 0, 0, 0.10)",
-        "neu-raised-xs": "-2px -2px 5px rgba(255, 255, 255, 0.60), 2px 2px 5px rgba(0, 0, 0, 0.08)",
-        "neu-inset": "inset 3px 3px 8px rgba(0, 0, 0, 0.09), inset -3px -3px 8px rgba(255, 255, 255, 0.70)",
-        "neu-inset-sm": "inset 2px 2px 5px rgba(0, 0, 0, 0.08), inset -2px -2px 5px rgba(255, 255, 255, 0.65)",
         // Dark Theme Cards
         "dark-card": "0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 24px -4px rgba(0, 0, 0, 0.6)",
         "dark-glow": "0 0 20px rgba(255, 255, 255, 0.05)",

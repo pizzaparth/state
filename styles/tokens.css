@@ -25,32 +25,23 @@
   --action-primary: #F2F2EF;
   --action-primary-text: #0A0A0A;
 
-  /* Product Theme (Pale Neumorphic Application Environment) */
-  --app-bg: #D9D9D5;
-  --app-bg-soft: #E1E1DD;
-  --surface-base: #D9D9D5;
-  --surface-raised: #DEDEDA;
-  --surface-raised-light: #E6E6E2;
-  --surface-inset: #D2D2CE;
+  /* Product Theme (AMOLED black, flat: depth from hairline borders and tonal steps, never shadows) */
+  --app-bg: #000000;
+  --app-panel: #0A0A0A;
+  --app-raised: #121212;
+  --app-raised-hover: #1A1A1A;
+  --app-field: #000000;
+  --app-line: rgba(255, 255, 255, 0.08);
+  --app-line-strong: rgba(255, 255, 255, 0.14);
+  --app-line-focus: rgba(255, 255, 255, 0.45);
 
-  --surface-inverse: #101010;
-  --surface-inverse-2: #171717;
-  --inverse-text: #F2F2EF;
+  --app-inverse: #F2F2EF;
+  --app-inverse-text: #0A0A0A;
 
-  --app-text-primary: #171717;
-  --app-text-secondary: #5F5F5B;
-  --app-text-tertiary: #8B8B86;
-
-  /* Neumorphic Shadow Physics (Highlights & Shadows) */
-  --shadow-light: rgba(255, 255, 255, 0.70);
-  --shadow-dark: rgba(0, 0, 0, 0.10);
-  --shadow-dark-inset: rgba(0, 0, 0, 0.09);
-
-  --shadow-raised-lg: -8px -8px 20px var(--shadow-light), 8px 8px 20px var(--shadow-dark);
-  --shadow-raised-sm: -3px -3px 8px rgba(255, 255, 255, 0.65), 3px 3px 8px var(--shadow-dark);
-  --shadow-raised-xs: -2px -2px 5px rgba(255, 255, 255, 0.60), 2px 2px 5px rgba(0, 0, 0, 0.08);
-  --shadow-inset-lg: inset 3px 3px 8px var(--shadow-dark-inset), inset -3px -3px 8px var(--shadow-light);
-  --shadow-inset-sm: inset 2px 2px 5px rgba(0, 0, 0, 0.08), inset -2px -2px 5px rgba(255, 255, 255, 0.65);
+  --app-text-primary: #F2F2EF;
+  --app-text-secondary: #9A9A96;
+  --app-text-tertiary: #85857F;
+  --app-danger: #F0A39B;
 
   /* Corner Radii (Geometric Superellipses) */
   --radius-control: 12px;

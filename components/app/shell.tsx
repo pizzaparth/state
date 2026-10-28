@@ -140,9 +140,9 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
   return (
     <NoticeProvider>
       <ShellContext.Provider value={{ openPalette: () => setPaletteOpen(true), openCommit: () => setCommitOpen(true) }}>
-        <div className="flex h-[100dvh] w-full overflow-hidden bg-[#D9D9D5] text-[#171717]">
+        <div className="flex h-[100dvh] w-full overflow-hidden bg-[#000000] text-[#F2F2EF]">
           <aside className="hidden w-64 shrink-0 p-3 lg:block">
-            <div className="neu-panel flex h-full flex-col rounded-[28px]">
+            <div className="app-panel flex h-full flex-col rounded-[28px]">
               <SidebarContent data={data} pathname={pathname} />
             </div>
           </aside>
@@ -154,37 +154,37 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
                   type="button"
                   onClick={() => setNavOpen(true)}
                   aria-label="Open navigation"
-                  className="neu-btn-raised grid size-10 place-items-center rounded-[12px] lg:hidden"
+                  className="app-btn grid size-10 place-items-center rounded-[12px] lg:hidden"
                 >
                   <MenuIcon className="size-4" aria-hidden="true" />
                 </button>
-                <p className="truncate text-sm font-semibold text-[#171717]">
+                <p className="truncate text-sm font-semibold text-[#F2F2EF]">
                   {title}
-                  <span className="ml-3 hidden font-normal text-[#5F5F5B] sm:inline">{data.dateLabel}</span>
+                  <span className="ml-3 hidden font-normal text-[#9A9A96] sm:inline">{data.dateLabel}</span>
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setPaletteOpen(true)}
-                  className="neu-inset-sm hidden h-10 items-center gap-2 rounded-[12px] px-3 text-xs text-[#5F5F5B] transition-colors hover:text-[#171717] sm:flex"
+                  className="app-field hidden h-10 items-center gap-2 rounded-[12px] px-3 text-xs text-[#9A9A96] transition-colors hover:text-[#F2F2EF] sm:flex"
                 >
                   <Search className="size-3.5" aria-hidden="true" />
                   <span className="w-28 text-left">Search…</span>
-                  <kbd className="rounded-[6px] bg-black/[0.07] px-1.5 py-0.5 font-mono text-[10px]">⌘&nbsp;K</kbd>
+                  <kbd className="rounded-[6px] bg-white/[0.07] px-1.5 py-0.5 font-mono text-[10px]">⌘&nbsp;K</kbd>
                 </button>
                 <button
                   type="button"
                   onClick={() => setPaletteOpen(true)}
                   aria-label="Search and commands"
-                  className="neu-btn-raised grid size-10 place-items-center rounded-[12px] sm:hidden"
+                  className="app-btn grid size-10 place-items-center rounded-[12px] sm:hidden"
                 >
                   <Search className="size-4" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
                   onClick={() => setCommitOpen(true)}
-                  className="neu-inverse inline-flex h-10 items-center gap-1.5 rounded-[12px] px-4 text-xs font-semibold tracking-[0.06em] transition-[background-color,transform] hover:bg-[#1d1d1d] active:translate-y-px"
+                  className="app-inverse inline-flex h-10 items-center gap-1.5 rounded-[12px] px-4 text-xs font-semibold tracking-[0.06em] transition-[background-color,transform] hover:bg-white active:translate-y-px"
                 >
                   <Plus className="size-3.5" aria-hidden="true" />
                   COMMIT
@@ -201,13 +201,13 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
         {/* Mobile navigation drawer */}
         <Dialog.Root open={navOpen} onOpenChange={setNavOpen}>
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-50 bg-[#171717]/25 backdrop-blur-[2px] lg:hidden" />
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px] lg:hidden" />
             <Dialog.Content
               aria-describedby={undefined}
-              className="fixed inset-y-3 left-3 z-50 flex w-[17rem] flex-col overscroll-contain rounded-[28px] bg-[#DEDEDA] shadow-[16px_0_40px_rgba(0,0,0,0.15)] outline-none lg:hidden"
+              className="fixed inset-y-3 left-3 z-50 flex w-[17rem] flex-col overscroll-contain rounded-[28px] bg-[#0A0A0A] border border-white/10 outline-none lg:hidden"
             >
               <Dialog.Title className="sr-only">Navigation</Dialog.Title>
-              <Dialog.Close aria-label="Close navigation" className="neu-btn-raised absolute right-3 top-3 grid size-9 place-items-center rounded-full">
+              <Dialog.Close aria-label="Close navigation" className="app-btn absolute right-3 top-3 grid size-9 place-items-center rounded-full">
                 <X className="size-4" aria-hidden="true" />
               </Dialog.Close>
               <SidebarContent data={data} pathname={pathname} />
@@ -231,14 +231,14 @@ function SidebarContent({ data, pathname }: { data: ShellData; pathname: string 
     <>
       <div className="px-5 pb-4 pt-5">
         <Link href="/today" className="block rounded-[8px]">
-          <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5F5F5B]">Ksan Relay</span>
+          <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#9A9A96]">Ksan Relay</span>
           <span className="block text-xl font-bold tracking-[-0.03em]">STATE</span>
         </Link>
       </div>
       <nav aria-label="Main" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3">
         {navSections(data).map((section, i) => (
           <div key={i}>
-            {section.title && <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5F5F5B]">{section.title}</p>}
+            {section.title && <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#9A9A96]">{section.title}</p>}
             <ul className="space-y-0.5">
               {section.items.map((item) => {
                 const active = isActive(pathname, item.href);
@@ -250,13 +250,13 @@ function SidebarContent({ data, pathname }: { data: ShellData; pathname: string 
                       aria-current={active ? "page" : undefined}
                       className={cn(
                         "flex items-center gap-3 rounded-[12px] px-3 py-2 text-sm font-medium transition-[background-color,color,box-shadow]",
-                        active ? "bg-[#111] text-[#F4F4F1] shadow-[0_6px_14px_-4px_rgba(0,0,0,.35)]" : "text-[#4A4A47] hover:bg-black/[0.05] hover:text-[#171717]"
+                        active ? "bg-[#F2F2EF] text-[#0A0A0A]" : "text-[#BDBDB9] hover:bg-white/[0.05] hover:text-[#F2F2EF]"
                       )}
                     >
                       <Icon className="size-4 shrink-0" aria-hidden="true" />
                       <span className="min-w-0 flex-1 truncate">{item.name}</span>
                       {item.badge ? (
-                        <span className={cn("font-mono text-[11px] tabular-nums", active ? "text-[#C9C9C5]" : "text-[#5F5F5B]")}>{item.badge}</span>
+                        <span className={cn("font-mono text-[11px] tabular-nums", active ? "text-[#55554F]" : "text-[#9A9A96]")}>{item.badge}</span>
                       ) : null}
                     </Link>
                   </li>
@@ -266,25 +266,25 @@ function SidebarContent({ data, pathname }: { data: ShellData; pathname: string 
           </div>
         ))}
       </nav>
-      <div className="space-y-1 border-t border-black/[0.06] p-3">
+      <div className="space-y-1 border-t border-white/[0.08] p-3">
         <Link
           href="/settings"
           aria-current={isActive(pathname, "/settings") ? "page" : undefined}
           className={cn(
             "flex items-center gap-3 rounded-[12px] px-3 py-2 text-sm font-medium transition-colors",
-            isActive(pathname, "/settings") ? "bg-[#111] text-[#F4F4F1]" : "text-[#4A4A47] hover:bg-black/[0.05] hover:text-[#171717]"
+            isActive(pathname, "/settings") ? "bg-[#F2F2EF] text-[#0A0A0A]" : "text-[#BDBDB9] hover:bg-white/[0.05] hover:text-[#F2F2EF]"
           )}
         >
           <Settings className="size-4" aria-hidden="true" />
           Settings
         </Link>
         <div className="flex items-center gap-3 px-3 pt-2">
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#CFCFCB] text-[11px] font-semibold shadow-neu-raised-xs" aria-hidden="true">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#1F1F1F] text-[11px] font-semibold border border-white/15" aria-hidden="true">
             {data.user.initials}
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium">{data.user.name}</span>
-            <span className="block truncate text-xs text-[#5F5F5B]">{data.user.email}</span>
+            <span className="block truncate text-xs text-[#9A9A96]">{data.user.email}</span>
           </span>
           <button
             type="button"
@@ -296,7 +296,7 @@ function SidebarContent({ data, pathname }: { data: ShellData; pathname: string 
               router.refresh();
             }}
             aria-label="Sign out"
-            className="grid size-8 place-items-center rounded-full text-[#5F5F5B] transition-colors hover:bg-black/[0.06] hover:text-[#171717] disabled:opacity-50"
+            className="grid size-8 place-items-center rounded-full text-[#9A9A96] transition-colors hover:bg-white/[0.06] hover:text-[#F2F2EF] disabled:opacity-50"
           >
             <LogOut className="size-4" aria-hidden="true" />
           </button>
@@ -352,10 +352,10 @@ function CommandPalette({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#171717]/30 backdrop-blur-sm" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="neu-inverse fixed left-1/2 top-[12vh] z-50 w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[24px] outline-none"
+          className="app-overlay fixed left-1/2 top-[12vh] z-50 w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[24px] outline-none"
         >
           <Dialog.Title className="sr-only">Command palette</Dialog.Title>
           <div className="flex items-center gap-3 border-b border-white/10 px-5">
@@ -399,7 +399,7 @@ function CommandPalette({
               >
                 <span className="w-16 shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6F6F6B]">{c.group}</span>
                 <span className="min-w-0 flex-1 truncate">{c.label}</span>
-                {c.hint && <kbd className="font-mono text-[10px] text-[#8B8B86]">{c.hint}</kbd>}
+                {c.hint && <kbd className="font-mono text-[10px] text-[#85857F]">{c.hint}</kbd>}
               </li>
             ))}
           </ul>
@@ -411,7 +411,7 @@ function CommandPalette({
 
 // ------------------------------------------------------------------ manual commit
 const selectClass =
-  "neu-inset-sm h-11 w-full rounded-[14px] border border-transparent bg-[#D2D2CE] px-3 text-sm text-[#171717] focus:border-black/25 focus:outline-none";
+  "app-field h-11 w-full rounded-[14px] bg-[#000000] px-3 text-sm text-[#F2F2EF] focus:border-white/45 focus:outline-none";
 
 function CommitDialog({
   open,
@@ -428,10 +428,10 @@ function CommitDialog({
   return (
     <Dialog.Root open={open} onOpenChange={(o) => (setError(null), onOpenChange(o))}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#171717]/25 backdrop-blur-[2px]" />
-        <Dialog.Content className="fixed left-1/2 top-[14vh] z-50 w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 overscroll-contain rounded-[28px] bg-[#DEDEDA] p-6 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.3)] outline-none">
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px]" />
+        <Dialog.Content className="fixed left-1/2 top-[14vh] z-50 w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 overscroll-contain rounded-[28px] bg-[#0A0A0A] p-6 border border-white/10 outline-none">
           <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">Record a commit</Dialog.Title>
-          <Dialog.Description className="mt-1 text-sm text-[#5F5F5B]">
+          <Dialog.Description className="mt-1 text-sm text-[#9A9A96]">
             For executed work that never started as a task.
           </Dialog.Description>
           <form
@@ -451,7 +451,7 @@ function CommitDialog({
             }}
           >
             <div className="space-y-1.5">
-              <label htmlFor="commit-message" className="text-xs font-medium text-[#5F5F5B]">
+              <label htmlFor="commit-message" className="text-xs font-medium text-[#9A9A96]">
                 What did you do?
               </label>
               <textarea
@@ -464,17 +464,17 @@ function CommitDialog({
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit();
                 }}
-                className="neu-input w-full resize-none rounded-[16px] px-4 py-3 text-sm max-md:text-base"
+                className="app-input w-full resize-none rounded-[16px] px-4 py-3 text-sm max-md:text-base"
               />
               {error && (
-                <p id="commit-message-error" className="text-xs text-[#8A3B35]">
+                <p id="commit-message-error" className="text-xs text-[#F0A39B]">
                   {error}
                 </p>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label htmlFor="commit-project" className="text-xs font-medium text-[#5F5F5B]">
+                <label htmlFor="commit-project" className="text-xs font-medium text-[#9A9A96]">
                   Project
                 </label>
                 <select id="commit-project" name="project" className={selectClass} defaultValue="">
@@ -487,7 +487,7 @@ function CommitDialog({
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="commit-weight" className="text-xs font-medium text-[#5F5F5B]">
+                <label htmlFor="commit-weight" className="text-xs font-medium text-[#9A9A96]">
                   Execution
                 </label>
                 <select id="commit-weight" name="weight" className={selectClass} defaultValue="2">
@@ -499,12 +499,12 @@ function CommitDialog({
               </div>
             </div>
             <div className="flex items-center justify-between gap-3 pt-2">
-              <p className="text-xs text-[#5F5F5B]">
+              <p className="text-xs text-[#9A9A96]">
                 <kbd className="font-mono">⌘&nbsp;Enter</kbd> to commit
               </p>
               <div className="flex gap-2">
-                <Dialog.Close className="neu-btn-raised h-10 rounded-[12px] px-4 text-sm font-medium">Cancel</Dialog.Close>
-                <button type="submit" className="neu-inverse h-10 rounded-[12px] px-4 text-sm font-semibold">
+                <Dialog.Close className="app-btn h-10 rounded-[12px] px-4 text-sm font-medium">Cancel</Dialog.Close>
+                <button type="submit" className="app-inverse h-10 rounded-[12px] px-4 text-sm font-semibold">
                   Commit
                 </button>
               </div>

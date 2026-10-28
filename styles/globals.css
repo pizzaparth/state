@@ -1,5 +1,5 @@
 @import "./tokens.css";
-@import "./neumorphism.css";
+@import "./product.css";
 
 @tailwind base;
 @tailwind components;
@@ -12,7 +12,7 @@
   }
 
   html {
-    color-scheme: light;
+    color-scheme: dark;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -20,7 +20,7 @@
 
   /* Accessible focus indicators per AGENTS.md */
   :focus-visible {
-    outline: 2px solid rgba(23, 23, 23, 0.75);
+    outline: 2px solid rgba(244, 244, 242, 0.85);
     outline-offset: 2px;
   }
 

@@ -48,22 +48,22 @@ export default async function OrganisationOverviewPage({
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel title="Members" aside="Last 30 days, alphabetical">
-          <ul className="divide-y divide-black/[0.06]">
+          <ul className="divide-y divide-white/[0.08]">
             {members.map((m) => (
               <li key={m.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                 <Avatar name={m.name} initials={initials(m.name)} className="size-8 text-[11px]" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{m.name}</span>
-                  <span className="block text-xs text-[#62625E]">{m.openTasks} open tasks</span>
+                  <span className="block text-xs text-[#85857F]">{m.openTasks} open tasks</span>
                 </span>
-                <span className="text-right text-xs tabular-nums text-[#5F5F5B]">
-                  <span className="block font-semibold text-[#171717]">{m.execution30} execution</span>
+                <span className="text-right text-xs tabular-nums text-[#9A9A96]">
+                  <span className="block font-semibold text-[#F2F2EF]">{m.execution30} execution</span>
                   {m.commits30} commits
                 </span>
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-xs leading-relaxed text-[#5F5F5B]">
+          <p className="mt-4 text-xs leading-relaxed text-[#9A9A96]">
             Shown for context, not as a ranking. Execution depends on the weights people choose and the work they were assigned.
           </p>
         </Panel>
