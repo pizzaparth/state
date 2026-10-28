@@ -16,6 +16,7 @@ import {
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/brand/logo";
 
 interface NavItem {
   name: string;
@@ -56,13 +57,12 @@ export function Sidebar() {
       <div className="space-y-6">
         {/* Brand Header */}
         <div className="px-3 py-2">
-          <Link href="/today" className="block focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-black">
-            <span className="text-xs font-semibold tracking-eyebrow text-[#5F5F5B] uppercase block">
-              Ksan Relay
-            </span>
-            <span className="text-xl font-bold tracking-display text-[#171717] block">
-              STATE
-            </span>
+          <Link
+            href="/today"
+            aria-label="State, go to Today"
+            className="block text-lg text-[#171717] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-black"
+          >
+            <Logo markClassName="size-7" />
           </Link>
         </div>
 

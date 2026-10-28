@@ -80,7 +80,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: [
-          "var(--font-geist-sans)",
+          "var(--font-michroma)",
           "system-ui",
           "-apple-system",
           "BlinkMacSystemFont",
@@ -88,7 +88,7 @@ const config: Config = {
           "Roboto",
           "sans-serif",
         ],
-        display: ["var(--font-archivo)", "var(--font-geist-sans)", "system-ui", "sans-serif"],
+        display: ["var(--font-michroma)", "system-ui", "sans-serif"],
         mono: [
           "var(--font-geist-mono)",
           "ui-monospace",

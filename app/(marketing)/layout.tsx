@@ -1,13 +1,10 @@
 import * as React from "react";
 import Link from "next/link";
-import { Archivo } from "next/font/google";
 import { Button } from "@/components/ui/button";
 import { ParticleField } from "@/components/marketing/particle-field";
 import { Magnetic, MagneticLabel } from "@/components/marketing/magnetic";
 import { LEGAL_PAGES } from "@/lib/legal";
-
-// Expanded grotesk for display type; the wdth axis drives font-stretch
-const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
+import { Logo } from "@/components/brand/logo";
 
 export default function MarketingLayout({
   children,
@@ -16,7 +13,7 @@ export default function MarketingLayout({
 }) {
   return (
     <div
-      className={`${archivo.variable} dark relative min-h-screen bg-[#050505] text-[#F4F4F2] selection:bg-white selection:text-black`}
+      className={`dark relative min-h-screen bg-[#050505] text-[#F4F4F2] selection:bg-white selection:text-black`}
     >
       <a
         href="#content"
@@ -30,10 +27,10 @@ export default function MarketingLayout({
       <header className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <nav
           aria-label="Main"
-          className="flex h-12 w-full max-w-[44rem] items-center justify-between gap-2 rounded-full border border-white/[0.1] bg-[#050505]/70 pl-5 pr-1.5 backdrop-blur-md"
+          className="flex h-12 w-full max-w-[52rem] items-center justify-between gap-2 rounded-full border border-white/[0.1] bg-[#050505]/70 pl-5 pr-1.5 backdrop-blur-md"
         >
-          <Link href="/" className="font-display text-base font-extrabold uppercase tracking-[-0.01em] [font-stretch:125%]" translate="no">
-            State
+          <Link href="/" aria-label="State home" className="text-sm text-[#F4F4F2]">
+            <Logo markClassName="size-6" />
           </Link>
           <div className="hidden items-center gap-6 text-base text-[#A9A9A6] sm:flex">
             <Link href="/#history" className="transition-colors hover:text-white">
@@ -68,8 +65,9 @@ export default function MarketingLayout({
       <footer className="relative z-10 border-t border-white/[0.08] px-5 py-12 text-base text-[#6F6F6B] sm:px-8 lg:px-12">
         <div className="mx-auto grid max-w-[1320px] gap-10 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-16">
           <div className="space-y-3">
+            <Logo className="text-lg text-[#F4F4F2]" markClassName="size-9" />
             <p>
-              <span className="font-semibold text-[#A9A9A6]" translate="no">State</span> is built by{" "}
+              <span className="text-[#A9A9A6]" translate="no">State</span> is built by{" "}
               <span translate="no">Ksan&nbsp;Relay</span>. No ads, no AI, no surveillance.
             </p>
             <p className="max-w-[56ch] text-sm leading-relaxed">

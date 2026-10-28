@@ -1,6 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { LEGAL_PAGES } from "@/lib/legal";
+import { LogoMark } from "@/components/brand/logo";
 
 export default function AuthLayout({
   children,
@@ -10,12 +11,14 @@ export default function AuthLayout({
   return (
     <div className="dark min-h-screen bg-[#050505] text-[#F4F4F2] flex flex-col justify-between p-6">
       <header className="max-w-md mx-auto w-full pt-8 text-center">
-        <Link href="/" className="inline-block focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white">
-          <span className="text-xs font-semibold tracking-eyebrow text-[#6F6F6B] uppercase block">
-            Ksan Relay
-          </span>
-          <span className="text-2xl font-bold tracking-display text-[#F4F4F2]">
-            STATE
+        <Link
+          href="/"
+          aria-label="State home"
+          className="inline-flex flex-col items-center gap-3 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
+        >
+          <LogoMark className="size-12 text-[#F4F4F2]" />
+          <span className="font-display text-xl uppercase tracking-[0.04em] text-[#F4F4F2]" translate="no">
+            State
           </span>
         </Link>
       </header>

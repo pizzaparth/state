@@ -13,6 +13,8 @@
 
   html {
     color-scheme: light;
+    /* Michroma ships one weight; never fake bold or italic */
+    font-synthesis: none;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;

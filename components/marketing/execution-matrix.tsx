@@ -49,7 +49,7 @@ export function ExecutionMatrix() {
           ].map((stat) => (
             <div key={stat.label}>
               <dt className="text-sm text-[#6F6F6B]">{stat.label}</dt>
-              <dd className="font-display text-3xl font-bold tabular-nums [font-stretch:110%] text-[#F4F4F2]">
+              <dd className="font-display text-3xl font-bold tabular-nums text-[#F4F4F2]">
                 {typeof stat.value === "number" ? formatNumber(stat.value) : stat.value}
               </dd>
             </div>
