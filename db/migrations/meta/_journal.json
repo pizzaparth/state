@@ -15,6 +15,13 @@
       "when": 1793191074933,
       "tag": "0001_paid_only",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793192530519,
+      "tag": "0002_security",
+      "breakpoints": true
     }
   ]
 }

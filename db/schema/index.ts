@@ -11,3 +11,4 @@ export * from "./subscriptions";
 export * from "./metrics";
 export * from "./objectives";
 export * from "./events";
+export * from "./security";

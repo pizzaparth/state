@@ -6,11 +6,15 @@ import { subscriptions } from "@/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { syncSubscription } from "@/lib/billing/sync";
 import { razorpayVerifySchema } from "@/lib/validation";
+import { readJsonBody, rejectCrossOrigin } from "@/lib/security/request";
 import type { PlanId } from "@/lib/billing/plans";
 
 // Called by Razorpay Checkout's success handler. Grants access immediately after a
 // signature check; the webhook remains the source of truth for later state changes.
 export async function POST(req: NextRequest) {
+  const crossOrigin = rejectCrossOrigin(req);
+  if (crossOrigin) return crossOrigin;
+
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Sign in to continue." }, { status: 401 });
@@ -20,7 +24,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Razorpay is not configured." }, { status: 503 });
   }
 
-  const parsed = razorpayVerifySchema.safeParse(await req.json().catch(() => null));
+  const body = await readJsonBody(req, 4 * 1024);
+  if (!body.ok) return body.response;
+  const parsed = razorpayVerifySchema.safeParse(body.data);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid payment confirmation." }, { status: 400 });
   }

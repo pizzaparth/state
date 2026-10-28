@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { CredentialsForm } from "@/components/auth/credentials-form";
+import { isSafeRedirectPath } from "@/lib/auth/redirect";
 
 export const metadata = { title: "Sign in — State" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const { next } = await searchParams;
-  // Only allow same-site relative paths to avoid open redirects
-  const redirectTo = next && next.startsWith("/") && !next.startsWith("//") ? next : "/today";
+  const redirectTo = isSafeRedirectPath(next) ? next : "/today";
 
   return (
     <div className="space-y-6">
