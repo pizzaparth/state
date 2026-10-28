@@ -1,12 +1,20 @@
 import * as React from "react";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth/session";
+import { hasPaidAccess } from "@/lib/billing/access";
 import { Sidebar } from "@/components/navigation/sidebar";
 import { Topbar } from "@/components/navigation/topbar";
 
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Paid-only product: no session goes to sign in, no paid subscription goes to checkout
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (!(await hasPaidAccess(session.user.id))) redirect("/subscribe");
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#D9D9D5] text-[#171717]">
       {/* Left Vertical Rail */}

@@ -25,5 +25,6 @@ export const config = {
     "/org/:path*",
     "/projects/:path*",
     "/settings/:path*",
+    "/subscribe/:path*",
   ],
 };

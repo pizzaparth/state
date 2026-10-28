@@ -99,3 +99,25 @@ export function parseQuickCapture(input: string): {
     priority,
   };
 }
+
+/**
+ * Checkout request (paid-only access; no trial)
+ */
+export const checkoutSchema = z
+  .object({
+    plan: z.enum(["individual", "organisation"]),
+    interval: z.enum(["monthly", "yearly"]).default("monthly"),
+    seats: z.coerce.number().int().min(1).max(500).default(1),
+  })
+  .transform((input) => ({ ...input, seats: input.plan === "individual" ? 1 : input.seats }));
+
+export type CheckoutInput = z.infer<typeof checkoutSchema>;
+
+/**
+ * Razorpay Checkout handler payload, verified server-side before granting access
+ */
+export const razorpayVerifySchema = z.object({
+  razorpay_payment_id: z.string().min(1),
+  razorpay_subscription_id: z.string().min(1),
+  razorpay_signature: z.string().min(1),
+});

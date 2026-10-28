@@ -13,10 +13,9 @@ export const subscriptions = pgTable(
     // Unique so signed webhook deliveries upsert idempotently
     providerSubscriptionId: text("provider_subscription_id").unique(),
     plan: text("plan").notNull(), // "individual" | "organisation"
-    status: text("status").notNull(), // "trialing" | "active" | "past_due" | "canceled" | "expired"
+    status: text("status").notNull(), // "incomplete" | "active" | "past_due" | "canceled" | "expired"
     seats: integer("seats").notNull().default(1), // organisation plan is billed per member
     cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
-    trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
     currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
     currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

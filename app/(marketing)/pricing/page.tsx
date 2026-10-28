@@ -53,7 +53,7 @@ export default function PricingPage() {
 
           <div className="pt-6">
             <Button asChild variant="dark-cta" size="md" className="w-full">
-              <Link href="/register">Get Started</Link>
+              <Link href="/register?plan=individual">Subscribe</Link>
             </Button>
           </div>
         </div>
@@ -96,7 +96,7 @@ export default function PricingPage() {
 
           <div className="pt-6">
             <Button asChild variant="dark-cta" size="md" className="w-full">
-              <Link href="/register">Start Team Trial</Link>
+              <Link href="/register?plan=organisation">Subscribe</Link>
             </Button>
           </div>
         </div>

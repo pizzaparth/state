@@ -8,7 +8,8 @@ export const users = pgTable("users", {
   image: text("image"),
   username: text("username").unique(),
   timezone: text("timezone").default("UTC").notNull(),
-  subscriptionStatus: text("subscription_status").default("trialing"), // trialing, active, past_due, canceled, expired (denormalised from subscriptions)
+  // none | incomplete | active | past_due | canceled | expired (denormalised from subscriptions; no trial)
+  subscriptionStatus: text("subscription_status").default("none").notNull(),
   subscriptionPlan: text("subscription_plan"), // individual, organisation
   theme: text("theme").default("light").notNull(), // light neumorphic (product) vs dark (marketing/settings)
   defaultWorkspaceId: text("default_workspace_id"),
