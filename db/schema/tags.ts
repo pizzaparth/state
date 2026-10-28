@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, primaryKey, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, primaryKey, uniqueIndex, index } from "drizzle-orm/pg-core";
 import { workspaces } from "./workspaces";
 import { tasks } from "./tasks";
 import { commits } from "./commits";
@@ -24,6 +24,7 @@ export const taskTags = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.taskId, table.tagId] }),
+    index("task_tags_tag_idx").on(table.tagId),
   ]
 );
 
@@ -35,5 +36,6 @@ export const commitTags = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.commitId, table.tagId] }),
+    index("commit_tags_tag_idx").on(table.tagId),
   ]
 );

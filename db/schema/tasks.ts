@@ -45,6 +45,9 @@ export const tasks = pgTable(
       .where(sql`${table.boardId} is null and ${table.deletedAt} is null and ${table.completedAt} is null`),
     index("tasks_project_idx").on(table.projectId),
     index("tasks_assignee_idx").on(table.assigneeId),
+    // Foreign keys: deleting a column, user or task must not scan the whole table
+    index("tasks_column_idx").on(table.columnId),
+    index("tasks_creator_idx").on(table.creatorId),
     index("tasks_completed_at_idx").on(table.workspaceId, table.completedAt),
   ]
 );

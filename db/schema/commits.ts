@@ -25,6 +25,8 @@ export const commits = pgTable(
     index("commits_workspace_created_idx").on(table.workspaceId, table.createdAt),
     index("commits_user_created_idx").on(table.userId, table.createdAt),
     index("commits_project_created_idx").on(table.projectId, table.createdAt),
+    // Foreign key lookups (task deletion sets task_id null on every commit, live or not)
+    index("commits_task_idx").on(table.taskId),
     // Idempotent auto-commit: at most one live commit per completed task
     uniqueIndex("commits_task_live_uidx").on(table.taskId).where(sql`${table.taskId} is not null and ${table.deletedAt} is null`),
   ]

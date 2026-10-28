@@ -14,6 +14,7 @@ export const metricSnapshots = pgTable(
     recordedAt: timestamp("recorded_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
+    index("metric_snapshots_user_idx").on(table.userId),
     index("metric_snapshots_lookup_idx").on(table.workspaceId, table.metricType, table.period, table.recordedAt),
   ]
 );

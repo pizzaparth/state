@@ -355,6 +355,12 @@ async function checkServerActions() {
   const after = await state();
   record("SA7", "Owner's own move succeeds and persists", legit.ok && after.column_id === active.id, legit.error ?? "");
 
+  // Stored XSS: user text is rendered back to the same and other members
+  const payload = `<img src=x onerror=alert(1)><script>alert(2)</script>`;
+  const xssCapture = await callAction(ids.captureTaskAction, [{ text: payload }], { cookie: owner, path: "/inbox" });
+  const inboxHtml = (await req("/inbox", { headers: { cookie: owner } })).text;
+  record("X2", "Stored XSS in a captured task title is escaped", xssCapture.ok && !inboxHtml.includes("<img src=x onerror") && !inboxHtml.includes("<script>alert(2)"), xssCapture.error ?? "");
+
   // Write budget: 60 per user per minute, shared across instances. Invalid calls count too.
   const burst = await Promise.all(Array.from({ length: 70 }, () => callAction(ids.moveTaskAction, [{}], { cookie: other })));
   const limited = burst.filter((r) => /Too many changes/.test(r.error ?? "")).length;
@@ -435,6 +441,14 @@ async function checkSurface() {
     const after = await snap();
     record("M2", "update-user ignores privileged fields (mass assignment)", before === after, `${res.status} ${after}`);
   }
+  // Sign-out must kill the session server-side, not just clear the cookie
+  const temp = await signIn("ishita@state.test");
+  if (temp) {
+    await req("/api/auth/sign-out", { method: "POST", body: {}, headers: { cookie: temp, origin: ORIGIN } });
+    const reuse = await req("/today", { headers: { cookie: temp } });
+    record("K2", "Session token is invalid after sign-out (replay)", [303, 307, 308].includes(reuse.status) && /\/login/.test(reuse.headers.get("location") || ""), `${reuse.status}`);
+  }
+
   const hidden = [];
   for (const path of ["/api/auth/delete-user", "/api/auth/change-email", "/api/auth/admin/list-users", "/api/auth/admin/set-role", "/api/admin", "/api/debug", "/graphql", "/api/graphql", "/swagger", "/openapi.json", "/.env", "/.git/config"]) {
     const res = await req(path, { method: path.startsWith("/api/auth") ? "POST" : "GET", body: path.startsWith("/api/auth") ? {} : undefined, headers: { origin: ORIGIN, ...(owner ? { cookie: owner } : {}) } });

@@ -25,6 +25,7 @@ export const objectives = pgTable(
   },
   (table) => [
     index("objectives_workspace_idx").on(table.workspaceId),
+    index("objectives_owner_idx").on(table.ownerId),
   ]
 );
 
@@ -36,6 +37,7 @@ export const objectiveProjects = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.objectiveId, table.projectId] }),
+    index("objective_projects_project_idx").on(table.projectId),
   ]
 );
 
@@ -47,5 +49,6 @@ export const objectiveTasks = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.objectiveId, table.taskId] }),
+    index("objective_tasks_task_idx").on(table.taskId),
   ]
 );

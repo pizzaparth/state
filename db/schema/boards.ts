@@ -15,5 +15,6 @@ export const boards = pgTable(
   },
   (table) => [
     index("boards_workspace_idx").on(table.workspaceId),
+    index("boards_project_idx").on(table.projectId),
   ]
 );

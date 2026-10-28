@@ -23,6 +23,12 @@ export const auth = betterAuth({
     // Bounds hashing cost per request (scrypt on multi-kilobyte input is a cheap DoS)
     maxPasswordLength: 128,
   },
+  account: {
+    // Stated explicitly so an upgrade cannot loosen them: an OAuth sign-in links to an
+    // existing account only when both the provider and the local account verified the
+    // email; no provider is trusted blindly and emails must match
+    accountLinking: { enabled: true, trustedProviders: [], allowDifferentEmails: false },
+  },
   session: {
     expiresIn: 60 * 60 * 24 * 14,
     updateAge: 60 * 60 * 24,

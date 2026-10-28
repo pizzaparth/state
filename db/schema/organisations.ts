@@ -2,17 +2,21 @@ import { pgTable, text, timestamp, primaryKey, index } from "drizzle-orm/pg-core
 import { workspaces } from "./workspaces";
 import { users } from "./users";
 
-export const organisations = pgTable("organisations", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  workspaceId: text("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
-  logo: text("logo"),
-  description: text("description"),
-  timezone: text("timezone").default("UTC").notNull(), // organisation-level metric day boundaries
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull().$onUpdate(() => new Date()),
-});
+export const organisations = pgTable(
+  "organisations",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    workspaceId: text("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    slug: text("slug").notNull().unique(),
+    logo: text("logo"),
+    description: text("description"),
+    timezone: text("timezone").default("UTC").notNull(), // organisation-level metric day boundaries
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull().$onUpdate(() => new Date()),
+  },
+  (table) => [index("organisations_workspace_idx").on(table.workspaceId)]
+);
 
 export const organisationMembers = pgTable(
   "organisation_members",
@@ -44,5 +48,6 @@ export const organisationInvitations = pgTable(
   (table) => [
     index("organisation_invitations_org_idx").on(table.organisationId),
     index("organisation_invitations_email_idx").on(table.email),
+    index("organisation_invitations_invited_by_idx").on(table.invitedById),
   ]
 );
