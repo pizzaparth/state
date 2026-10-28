@@ -1,0 +1,44 @@
+"use client";
+
+import * as React from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import type { Route } from "next";
+import { X } from "lucide-react";
+
+/**
+ * Right-hand detail panel whose open state lives in the URL (?task= / ?commit=), so it
+ * deep-links and Back closes it. Content is rendered on the server and passed in.
+ */
+export function DetailDrawer({ param, title, children }: { param: string; title: string; children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const close = () => {
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete(param);
+    const query = next.toString();
+    router.replace(`${pathname}${query ? `?${query}` : ""}` as Route, { scroll: false });
+  };
+
+  return (
+    <Dialog.Root open onOpenChange={(open) => !open && close()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 animate-fade-in bg-[#171717]/20 backdrop-blur-[2px]" />
+        <Dialog.Content
+          className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[30rem] flex-col overscroll-contain bg-[#DEDEDA] shadow-[-16px_0_40px_rgba(0,0,0,0.12)] outline-none sm:inset-y-3 sm:right-3 sm:rounded-[28px]"
+          aria-describedby={undefined}
+        >
+          <div className="flex items-center justify-between gap-4 px-6 pb-2 pt-6">
+            <Dialog.Title className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5F5F5B]">{title}</Dialog.Title>
+            <Dialog.Close className="neu-btn-raised grid size-9 place-items-center rounded-full" aria-label="Close">
+              <X className="size-4" aria-hidden="true" />
+            </Dialog.Close>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-8">{children}</div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}

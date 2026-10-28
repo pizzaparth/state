@@ -1,21 +1,70 @@
 import * as React from "react";
+import { getOrgMembers, getPendingInvitations } from "@/db/queries";
+import { getViewerOrg } from "@/lib/viewer";
+import { formatDate, initials } from "@/lib/format";
+import { Avatar, Chip, EmptyState, Panel } from "@/components/app/primitives";
+import { OrgHeader } from "@/components/app/org-header";
 
 export default async function OrganisationMembersPage({ params }: { params: Promise<{ orgSlug: string }> }) {
   const { orgSlug } = await params;
+  const { viewer, org } = await getViewerOrg(orgSlug);
+  const [members, invitations] = await Promise.all([getOrgMembers(org.id, org.workspaceId), getPendingInvitations(org.id)]);
 
   return (
-    <div className="space-y-8">
-      <div className="pb-4 border-b border-black/5">
-        <span className="text-xs font-semibold tracking-eyebrow text-[#5F5F5B] uppercase block">
-          {orgSlug}
-        </span>
-        <h1 className="text-3xl font-bold tracking-tight text-[#171717]">
-          Members
-        </h1>
-        <p className="text-xs text-[#5F5F5B] mt-1">
-          Members, roles, and pending invitations.
-        </p>
-      </div>
-    </div>
+    <>
+      <title>{`${org.name} members — State`}</title>
+      <OrgHeader org={org} active="members" />
+      <Panel title="Members" aside={`${members.length}`}>
+        <div className="-mx-2 overflow-x-auto">
+          <table className="w-full min-w-[36rem] border-collapse text-sm">
+            <thead>
+              <tr className="text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5F5F5B]">
+                <th scope="col" className="px-2 pb-2 font-semibold">Member</th>
+                <th scope="col" className="px-2 pb-2 font-semibold">Role</th>
+                <th scope="col" className="px-2 pb-2 font-semibold">Joined</th>
+                <th scope="col" className="px-2 pb-2 text-right font-semibold">Open tasks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {members.map((m) => (
+                <tr key={m.id} className="border-t border-black/[0.06]">
+                  <th scope="row" className="px-2 py-3 text-left font-normal">
+                    <span className="flex items-center gap-3">
+                      <Avatar name={m.name} initials={initials(m.name)} className="size-8 text-[11px]" />
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium">{m.name}</span>
+                        <span className="block truncate text-xs text-[#62625E]">{m.email}</span>
+                      </span>
+                    </span>
+                  </th>
+                  <td className="px-2 py-3">
+                    <Chip>{m.role}</Chip>
+                  </td>
+                  <td className="px-2 py-3 tabular-nums text-[#5F5F5B]">{formatDate(m.joinedAt, viewer.tz, { day: "numeric", month: "short", year: "numeric" })}</td>
+                  <td className="px-2 py-3 text-right tabular-nums">{m.openTasks}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+      <Panel title="Pending invitations" aside={`${invitations.length}`}>
+        {invitations.length === 0 ? (
+          <EmptyState title="None pending" />
+        ) : (
+          <ul className="divide-y divide-black/[0.06]">
+            {invitations.map((i) => (
+              <li key={i.email} className="flex items-center justify-between gap-4 py-3 text-sm first:pt-0 last:pb-0">
+                <span className="truncate">{i.email}</span>
+                <span className="flex shrink-0 items-center gap-3 text-xs text-[#5F5F5B]">
+                  <Chip>{i.role}</Chip>
+                  expires {formatDate(i.expiresAt, viewer.tz)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+    </>
   );
 }

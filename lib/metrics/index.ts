@@ -59,3 +59,43 @@ export function calculateMedianCycleTimeHours(durationsMs: number[]): number {
   const medianMs = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
   return Number((medianMs / (1000 * 60 * 60)).toFixed(1));
 }
+
+/** Percentile (0–100) of a numeric sample using nearest-rank; null for empty input. */
+export function percentile(values: number[], p: number): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const rank = Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1));
+  return sorted[rank];
+}
+
+export function mean(values: number[]): number | null {
+  return values.length === 0 ? null : values.reduce((s, v) => s + v, 0) / values.length;
+}
+
+export type ObjectiveStatus = "completed" | "ahead" | "on track" | "behind";
+
+/**
+ * Objective position (docs/state_desc.md §24): current velocity since start versus the
+ * velocity required to reach the target by the deadline. Status bands are ±10%.
+ */
+export function objectivePosition(
+  o: { currentValue: number; targetValue: number; startAt: Date; deadlineAt: Date | null; completedAt: Date | null },
+  now: Date
+) {
+  const DAY = 86_400_000;
+  const remaining = Math.max(0, o.targetValue - o.currentValue);
+  const elapsedDays = Math.max(1, (now.getTime() - o.startAt.getTime()) / DAY);
+  const velocity = o.currentValue / elapsedDays;
+  const daysLeft = o.deadlineAt ? Math.max(0, (o.deadlineAt.getTime() - now.getTime()) / DAY) : null;
+  const required = daysLeft === null ? null : daysLeft === 0 ? Infinity : remaining / daysLeft;
+  const projected = velocity > 0 ? new Date(now.getTime() + (remaining / velocity) * DAY) : null;
+
+  let status: ObjectiveStatus;
+  if (o.completedAt || remaining === 0) status = "completed";
+  else if (required === null) status = "on track";
+  else if (velocity >= required * 1.1) status = "ahead";
+  else if (velocity >= required * 0.9) status = "on track";
+  else status = "behind";
+
+  return { velocity, required, projected, daysLeft, remaining, status };
+}

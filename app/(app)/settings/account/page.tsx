@@ -1,19 +1,36 @@
 import * as React from "react";
+import { getAccount } from "@/db/queries";
+import { getViewer } from "@/lib/viewer";
+import { formatDate } from "@/lib/format";
+import { PageHeader, Panel } from "@/components/app/primitives";
+import { Row, SettingsNav } from "@/components/app/settings-nav";
 
-export default function AccountSettingsPage() {
+export const metadata = { title: "Account — State" };
+
+export default async function AccountSettingsPage() {
+  const viewer = await getViewer();
+  const account = await getAccount(viewer.id);
   return (
-    <div className="space-y-8">
-      <div className="pb-4 border-b border-black/5">
-        <span className="text-xs font-semibold tracking-eyebrow text-[#5F5F5B] uppercase block">
-          Settings
-        </span>
-        <h1 className="text-3xl font-bold tracking-tight text-[#171717]">
-          Account
-        </h1>
-        <p className="text-xs text-[#5F5F5B] mt-1">
-          Name, email, username, timezone, and data export.
+    <>
+      <PageHeader label="Settings" title="Account" />
+      <SettingsNav active="/settings/account" />
+      <Panel title="Profile">
+        <dl>
+          <Row label="Name">{account?.name}</Row>
+          <Row label="Email">{account?.email}</Row>
+          <Row label="Username">{account?.username ?? "Not set"}</Row>
+          <Row label="Timezone" hint="Days in graphs and history start at midnight in this timezone.">
+            {account?.timezone}
+          </Row>
+          <Row label="Member since">{account ? formatDate(account.createdAt, viewer.tz, { day: "numeric", month: "long", year: "numeric" }) : ""}</Row>
+        </dl>
+      </Panel>
+      <Panel title="Your data">
+        <p className="max-w-[62ch] text-sm leading-relaxed text-[#5F5F5B]">
+          Tasks, commits, projects, tags and metrics are yours. Export as CSV or JSON is part of the plan and stays available for
+          90 days after cancellation.
         </p>
-      </div>
-    </div>
+      </Panel>
+    </>
   );
 }

@@ -1,47 +1,93 @@
 import * as React from "react";
-import { Filter, Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import type { Route } from "next";
+import { getCommits, getProjects } from "@/db/queries";
+import { getViewer } from "@/lib/viewer";
+import { EmptyState, PageHeader, Panel, SegmentedLinks } from "@/components/app/primitives";
+import { CommitLedger } from "@/components/app/commit-ledger";
+import { withParam } from "@/components/app/task-row";
+import { Drawers, type PageSearchParams } from "@/components/app/drawers";
+import { cn } from "@/lib/utils";
 
-export default function HistoryPage() {
+export const metadata = { title: "History — State" };
+
+export default async function HistoryPage({ searchParams }: { searchParams: PageSearchParams }) {
+  const params = await searchParams;
+  const viewer = await getViewer();
+
+  // Scope: all of your commits, your personal workspace, or one organisation (whole team)
+  const org = viewer.orgs.find((o) => o.slug === params.scope);
+  const scopeKey = org ? org.slug : params.scope === "personal" ? "personal" : "all";
+  const workspaceIds = org ? [org.workspaceId] : scopeKey === "personal" && viewer.personalWorkspaceId ? [viewer.personalWorkspaceId] : viewer.workspaceIds;
+  const userId = org ? undefined : viewer.id;
+
+  const orgNames = new Map(viewer.orgs.map((o) => [o.workspaceId, o.name]));
+  const projects = (await getProjects(workspaceIds)).map((p) => ({
+    ...p,
+    label: orgNames.has(p.workspaceId) && !org ? `${p.name} (${orgNames.get(p.workspaceId)})` : p.name,
+  }));
+  const project = projects.find((p) => p.id === params.project);
+  const commits = await getCommits({ workspaceIds, userId, projectId: project?.id }, { limit: 250 });
+
+  const scopeHref = (scope: string) => (scope === "all" ? "/history" : `/history?scope=${scope}`);
+  const projectHref = (id?: string) => {
+    const q = new URLSearchParams();
+    if (scopeKey !== "all") q.set("scope", scopeKey);
+    if (id) q.set("project", id);
+    return `/history${q.size ? `?${q}` : ""}`;
+  };
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-black/5">
-        <div>
-          <span className="text-xs font-semibold tracking-eyebrow text-[#5F5F5B] uppercase block">
-            Execution Ledger
-          </span>
-          <h1 className="text-3xl font-bold tracking-tight text-[#171717]">
-            Commit History
-          </h1>
-          <p className="text-xs text-[#5F5F5B] mt-1">
-            Canonical chronological record of completed work across projects and workspaces.
-          </p>
-        </div>
+    <>
+      <PageHeader
+        label="Execution ledger"
+        title="History"
+        description="Every commit, newest first. Commit times are permanent; select one to see the task behind it."
+        actions={
+          <SegmentedLinks
+            label="Scope"
+            items={[
+              { href: scopeHref("all"), label: "Mine", active: scopeKey === "all" },
+              { href: scopeHref("personal"), label: "Personal", active: scopeKey === "personal" },
+              ...viewer.orgs.map((o) => ({ href: scopeHref(o.slug), label: o.name, active: scopeKey === o.slug })),
+            ]}
+          />
+        }
+      />
 
-        <div className="flex items-center space-x-2">
-          <Button variant="raised" size="sm" className="text-xs">
-            <Filter className="w-3.5 h-3.5 mr-1" />
-            Filter
-          </Button>
-          <Button variant="raised" size="sm" className="text-xs">
-            <Calendar className="w-3.5 h-3.5 mr-1" />
-            Time Range
-          </Button>
-        </div>
-      </div>
+      {projects.length > 0 && (
+        <nav aria-label="Filter by project" className="flex flex-wrap gap-2">
+          {[{ id: undefined, label: "All projects" }, ...projects].map((p) => {
+            const active = (p.id ?? null) === (project?.id ?? null);
+            return (
+              <Link
+                key={p.id ?? "all"}
+                href={projectHref(p.id) as Route}
+                aria-current={active ? "page" : undefined}
+                scroll={false}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-xs font-medium transition-[box-shadow,background-color,color]",
+                  active ? "neu-inset-sm text-[#171717]" : "neu-raised-sm text-[#5F5F5B] hover:text-[#171717]"
+                )}
+              >
+                {p.label}
+              </Link>
+            );
+          })}
+        </nav>
+      )}
 
-      <div className="bg-[#DEDEDA] rounded-card p-6 shadow-neu-raised-sm space-y-6">
-        <div className="flex items-center justify-between pb-3 border-b border-black/5">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#5F5F5B]">
-            Commits Ledger
-          </h2>
-          <span className="text-xs font-mono text-[#8B8B86]">0 commits</span>
-        </div>
+      <Panel title={org ? `${org.name} commits` : "Your commits"} aside={`${commits.length}${commits.length === 250 ? "+" : ""} shown`}>
+        {commits.length === 0 ? (
+          <EmptyState title="No commits">Complete a task or record a manual commit to begin your execution history.</EmptyState>
+        ) : (
+          <div className="-mx-3">
+            <CommitLedger commits={commits} tz={viewer.tz} now={new Date()} hrefFor={(id) => withParam("/history", params, "commit", id)} showAuthor={Boolean(org)} />
+          </div>
+        )}
+      </Panel>
 
-        <div className="py-16 text-center text-xs text-[#8B8B86]">
-          No commits recorded yet. Moving tasks to Done or logging manual commits creates immutable ledger records.
-        </div>
-      </div>
-    </div>
+      <Drawers params={params} viewer={viewer} />
+    </>
   );
 }

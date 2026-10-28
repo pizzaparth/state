@@ -1,21 +1,38 @@
 import * as React from "react";
+import { notFound } from "next/navigation";
+import { getProjectBySlug } from "@/db/queries";
+import { getViewer } from "@/lib/viewer";
+import { Chip, PageHeader } from "@/components/app/primitives";
+import { ProjectView } from "@/components/app/views";
+import { withParam } from "@/components/app/task-row";
+import { Drawers, type PageSearchParams } from "@/components/app/drawers";
 
-export default async function ProjectPage({ params }: { params: Promise<{ projectSlug: string }> }) {
-  const { projectSlug } = await params;
+export default async function ProjectPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ projectSlug: string }>;
+  searchParams: PageSearchParams;
+}) {
+  const [{ projectSlug }, query] = await Promise.all([params, searchParams]);
+  const viewer = await getViewer();
+  const project = viewer.personalWorkspaceId ? await getProjectBySlug(viewer.personalWorkspaceId, projectSlug) : null;
+  if (!project) notFound();
+  const base = `/projects/${projectSlug}`;
 
   return (
-    <div className="space-y-8">
-      <div className="pb-4 border-b border-black/5">
-        <span className="text-xs font-semibold tracking-eyebrow text-[#5F5F5B] uppercase block">
-          Project
-        </span>
-        <h1 className="text-3xl font-bold tracking-tight text-[#171717]">
-          {projectSlug}
-        </h1>
-        <p className="text-xs text-[#5F5F5B] mt-1">
-          Status, board, execution graph, commit history, and metrics for this project.
-        </p>
-      </div>
-    </div>
+    <>
+      <title>{`${project.name} — State`}</title>
+      <PageHeader label="Project" title={project.name} description={project.description} actions={<Chip>{project.status}</Chip>} />
+      <ProjectView
+        project={project}
+        scope={{ workspaceIds: [project.workspaceId] }}
+        tz={viewer.tz}
+        taskHref={(id) => withParam(base, query, "task", id)}
+        commitHref={(id) => withParam(base, query, "commit", id)}
+        showPeople={false}
+      />
+      <Drawers params={query} viewer={viewer} />
+    </>
   );
 }

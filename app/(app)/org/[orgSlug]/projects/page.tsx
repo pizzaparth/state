@@ -1,27 +1,21 @@
 import * as React from "react";
+import { getProjects } from "@/db/queries";
+import { getViewerOrg } from "@/lib/viewer";
+import { Panel } from "@/components/app/primitives";
+import { ProjectTable } from "@/components/app/views";
+import { OrgHeader } from "@/components/app/org-header";
 
 export default async function OrganisationProjectsPage({ params }: { params: Promise<{ orgSlug: string }> }) {
   const { orgSlug } = await params;
-
+  const { viewer, org } = await getViewerOrg(orgSlug);
+  const projects = await getProjects([org.workspaceId]);
   return (
-    <div className="space-y-8">
-      <div className="pb-4 border-b border-black/5">
-        <span className="text-xs font-semibold tracking-eyebrow text-[#5F5F5B] uppercase block">
-          {orgSlug}
-        </span>
-        <h1 className="text-3xl font-bold tracking-tight text-[#171717]">
-          Projects
-        </h1>
-        <p className="text-xs text-[#5F5F5B] mt-1">
-          Shared projects in this organisation.
-        </p>
-      </div>
-
-      <div className="bg-[#DEDEDA] rounded-card p-6 shadow-neu-raised-sm">
-        <p className="py-8 text-center text-xs text-[#8B8B86]">
-          No organisation projects yet.
-        </p>
-      </div>
-    </div>
+    <>
+      <title>{`${org.name} projects — State`}</title>
+      <OrgHeader org={org} active="projects" />
+      <Panel aside={`${projects.length} projects`}>
+        <ProjectTable projects={projects} hrefFor={(slug) => `/org/${org.slug}/projects/${slug}`} tz={viewer.tz} />
+      </Panel>
+    </>
   );
 }

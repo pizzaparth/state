@@ -1,0 +1,517 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import type { Route } from "next";
+import { usePathname, useRouter } from "next/navigation";
+import * as Dialog from "@radix-ui/react-dialog";
+import {
+  Activity,
+  BarChart3,
+  Calendar,
+  FolderKanban,
+  History,
+  Inbox,
+  LogOut,
+  Menu as MenuIcon,
+  Plus,
+  Search,
+  Settings,
+  User,
+  Users,
+  X,
+} from "lucide-react";
+import { authClient } from "@/lib/auth/client";
+import { cn } from "@/lib/utils";
+import { NoticeProvider, useLocalOnlyNotice } from "./notice";
+
+export interface ShellData {
+  user: { name: string; email: string; initials: string };
+  inboxCount: number;
+  orgs: { name: string; slug: string }[];
+  projects: { name: string; href: string }[];
+  dateLabel: string;
+}
+
+type NavItem = { name: string; href: string; icon: React.ComponentType<{ className?: string }>; badge?: number; shortcut?: string };
+
+function navSections(data: ShellData): { title?: string; items: NavItem[] }[] {
+  return [
+    {
+      items: [
+        { name: "Today", href: "/today", icon: Calendar, shortcut: "G T" },
+        { name: "Inbox", href: "/inbox", icon: Inbox, badge: data.inboxCount, shortcut: "G I" },
+      ],
+    },
+    {
+      title: "Execution",
+      items: [
+        { name: "Activity", href: "/activity", icon: Activity, shortcut: "G A" },
+        { name: "History", href: "/history", icon: History, shortcut: "G H" },
+        { name: "Metrics", href: "/metrics", icon: BarChart3, shortcut: "G M" },
+      ],
+    },
+    {
+      title: "Work",
+      items: [
+        { name: "Personal", href: "/personal", icon: User, shortcut: "G P" },
+        ...data.orgs.map((o) => ({ name: o.name, href: `/org/${o.slug}`, icon: Users, shortcut: "G O" })),
+        { name: "Projects", href: "/projects", icon: FolderKanban },
+      ],
+    },
+  ];
+}
+
+const TITLES: [RegExp, string][] = [
+  [/^\/today/, "Today"],
+  [/^\/inbox/, "Inbox"],
+  [/^\/activity/, "Activity"],
+  [/^\/history/, "History"],
+  [/^\/metrics/, "Metrics"],
+  [/^\/personal/, "Personal"],
+  [/^\/projects/, "Projects"],
+  [/^\/org/, "Organisation"],
+  [/^\/settings/, "Settings"],
+];
+
+const isActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
+
+// ------------------------------------------------------------------ shell
+const ShellContext = React.createContext<{ openPalette: () => void; openCommit: () => void }>({
+  openPalette: () => {},
+  openCommit: () => {},
+});
+export const useShell = () => React.useContext(ShellContext);
+
+export function AppShell({ data, children }: { data: ShellData; children: React.ReactNode }) {
+  const [paletteOpen, setPaletteOpen] = React.useState(false);
+  const [commitOpen, setCommitOpen] = React.useState(false);
+  const [navOpen, setNavOpen] = React.useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  React.useEffect(() => setNavOpen(false), [pathname]);
+
+  // Keyboard-first: ⌘K / Ctrl+K palette, "/" search, C commit, N capture, G then a letter to jump
+  React.useEffect(() => {
+    let pendingG = 0;
+    const jumps: Record<string, string> = {
+      t: "/today",
+      i: "/inbox",
+      a: "/activity",
+      h: "/history",
+      m: "/metrics",
+      p: "/personal",
+      o: data.orgs[0] ? `/org/${data.orgs[0].slug}` : "/org",
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+        return;
+      }
+      const target = e.target as HTMLElement;
+      if (e.metaKey || e.ctrlKey || e.altKey || target.closest("input, textarea, select, [contenteditable=true], [role=dialog]")) return;
+      const key = e.key.toLowerCase();
+      if (pendingG && Date.now() - pendingG < 1200 && jumps[key]) {
+        e.preventDefault();
+        pendingG = 0;
+        router.push(jumps[key] as Route);
+        return;
+      }
+      pendingG = key === "g" ? Date.now() : 0;
+      if (key === "/") {
+        e.preventDefault();
+        setPaletteOpen(true);
+      } else if (key === "c") {
+        e.preventDefault();
+        setCommitOpen(true);
+      } else if (key === "n") {
+        e.preventDefault();
+        router.push("/inbox?capture=1" as Route);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [router, data.orgs]);
+
+  const title = TITLES.find(([re]) => re.test(pathname))?.[1] ?? "State";
+
+  return (
+    <NoticeProvider>
+      <ShellContext.Provider value={{ openPalette: () => setPaletteOpen(true), openCommit: () => setCommitOpen(true) }}>
+        <div className="flex h-[100dvh] w-full overflow-hidden bg-[#D9D9D5] text-[#171717]">
+          <aside className="hidden w-64 shrink-0 p-3 lg:block">
+            <div className="neu-panel flex h-full flex-col rounded-[28px]">
+              <SidebarContent data={data} pathname={pathname} />
+            </div>
+          </aside>
+
+          <div className="flex min-w-0 flex-1 flex-col">
+            <header className="flex h-16 shrink-0 items-center justify-between gap-3 px-4 pt-[env(safe-area-inset-top)] sm:px-6 lg:px-8">
+              <div className="flex min-w-0 items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setNavOpen(true)}
+                  aria-label="Open navigation"
+                  className="neu-btn-raised grid size-10 place-items-center rounded-[12px] lg:hidden"
+                >
+                  <MenuIcon className="size-4" aria-hidden="true" />
+                </button>
+                <p className="truncate text-sm font-semibold text-[#171717]">
+                  {title}
+                  <span className="ml-3 hidden font-normal text-[#5F5F5B] sm:inline">{data.dateLabel}</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaletteOpen(true)}
+                  className="neu-inset-sm hidden h-10 items-center gap-2 rounded-[12px] px-3 text-xs text-[#5F5F5B] transition-colors hover:text-[#171717] sm:flex"
+                >
+                  <Search className="size-3.5" aria-hidden="true" />
+                  <span className="w-28 text-left">Search…</span>
+                  <kbd className="rounded-[6px] bg-black/[0.07] px-1.5 py-0.5 font-mono text-[10px]">⌘&nbsp;K</kbd>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaletteOpen(true)}
+                  aria-label="Search and commands"
+                  className="neu-btn-raised grid size-10 place-items-center rounded-[12px] sm:hidden"
+                >
+                  <Search className="size-4" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCommitOpen(true)}
+                  className="neu-inverse inline-flex h-10 items-center gap-1.5 rounded-[12px] px-4 text-xs font-semibold tracking-[0.06em] transition-[background-color,transform] hover:bg-[#1d1d1d] active:translate-y-px"
+                >
+                  <Plus className="size-3.5" aria-hidden="true" />
+                  COMMIT
+                </button>
+              </div>
+            </header>
+
+            <main id="content" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-16 pt-4 sm:px-6 lg:px-8">
+              <div className="mx-auto max-w-6xl space-y-8">{children}</div>
+            </main>
+          </div>
+        </div>
+
+        {/* Mobile navigation drawer */}
+        <Dialog.Root open={navOpen} onOpenChange={setNavOpen}>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-[#171717]/25 backdrop-blur-[2px] lg:hidden" />
+            <Dialog.Content
+              aria-describedby={undefined}
+              className="fixed inset-y-3 left-3 z-50 flex w-[17rem] flex-col overscroll-contain rounded-[28px] bg-[#DEDEDA] shadow-[16px_0_40px_rgba(0,0,0,0.15)] outline-none lg:hidden"
+            >
+              <Dialog.Title className="sr-only">Navigation</Dialog.Title>
+              <Dialog.Close aria-label="Close navigation" className="neu-btn-raised absolute right-3 top-3 grid size-9 place-items-center rounded-full">
+                <X className="size-4" aria-hidden="true" />
+              </Dialog.Close>
+              <SidebarContent data={data} pathname={pathname} />
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+
+        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} data={data} onCommit={() => setCommitOpen(true)} />
+        <CommitDialog open={commitOpen} onOpenChange={setCommitOpen} projects={data.projects} />
+      </ShellContext.Provider>
+    </NoticeProvider>
+  );
+}
+
+// ------------------------------------------------------------------ sidebar
+function SidebarContent({ data, pathname }: { data: ShellData; pathname: string }) {
+  const router = useRouter();
+  const [signingOut, setSigningOut] = React.useState(false);
+
+  return (
+    <>
+      <div className="px-5 pb-4 pt-5">
+        <Link href="/today" className="block rounded-[8px]">
+          <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5F5F5B]">Ksan Relay</span>
+          <span className="block text-xl font-bold tracking-[-0.03em]">STATE</span>
+        </Link>
+      </div>
+      <nav aria-label="Main" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3">
+        {navSections(data).map((section, i) => (
+          <div key={i}>
+            {section.title && <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5F5F5B]">{section.title}</p>}
+            <ul className="space-y-0.5">
+              {section.items.map((item) => {
+                const active = isActive(pathname, item.href);
+                const Icon = item.icon;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href as Route}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "flex items-center gap-3 rounded-[12px] px-3 py-2 text-sm font-medium transition-[background-color,color,box-shadow]",
+                        active ? "bg-[#111] text-[#F4F4F1] shadow-[0_6px_14px_-4px_rgba(0,0,0,.35)]" : "text-[#4A4A47] hover:bg-black/[0.05] hover:text-[#171717]"
+                      )}
+                    >
+                      <Icon className="size-4 shrink-0" aria-hidden="true" />
+                      <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                      {item.badge ? (
+                        <span className={cn("font-mono text-[11px] tabular-nums", active ? "text-[#C9C9C5]" : "text-[#5F5F5B]")}>{item.badge}</span>
+                      ) : null}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+      <div className="space-y-1 border-t border-black/[0.06] p-3">
+        <Link
+          href="/settings"
+          aria-current={isActive(pathname, "/settings") ? "page" : undefined}
+          className={cn(
+            "flex items-center gap-3 rounded-[12px] px-3 py-2 text-sm font-medium transition-colors",
+            isActive(pathname, "/settings") ? "bg-[#111] text-[#F4F4F1]" : "text-[#4A4A47] hover:bg-black/[0.05] hover:text-[#171717]"
+          )}
+        >
+          <Settings className="size-4" aria-hidden="true" />
+          Settings
+        </Link>
+        <div className="flex items-center gap-3 px-3 pt-2">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#CFCFCB] text-[11px] font-semibold shadow-neu-raised-xs" aria-hidden="true">
+            {data.user.initials}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium">{data.user.name}</span>
+            <span className="block truncate text-xs text-[#5F5F5B]">{data.user.email}</span>
+          </span>
+          <button
+            type="button"
+            disabled={signingOut}
+            onClick={async () => {
+              setSigningOut(true);
+              await authClient.signOut();
+              router.replace("/login" as Route);
+              router.refresh();
+            }}
+            aria-label="Sign out"
+            className="grid size-8 place-items-center rounded-full text-[#5F5F5B] transition-colors hover:bg-black/[0.06] hover:text-[#171717] disabled:opacity-50"
+          >
+            <LogOut className="size-4" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ------------------------------------------------------------------ command palette
+type Command = { id: string; label: string; group: string; hint?: string; run: () => void };
+
+function CommandPalette({
+  open,
+  onOpenChange,
+  data,
+  onCommit,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  data: ShellData;
+  onCommit: () => void;
+}) {
+  const router = useRouter();
+  const [query, setQuery] = React.useState("");
+  const [index, setIndex] = React.useState(0);
+
+  const go = (href: string) => () => router.push(href as Route);
+  const commands: Command[] = [
+    { id: "commit", label: "Create commit", group: "Actions", hint: "C", run: onCommit },
+    { id: "capture", label: "Capture task", group: "Actions", hint: "N", run: go("/inbox?capture=1") },
+    ...navSections(data).flatMap((s) => s.items.map((i) => ({ id: i.href, label: `Open ${i.name}`, group: "Go to", hint: i.shortcut, run: go(i.href) }))),
+    { id: "/settings", label: "Open settings", group: "Go to", run: go("/settings") },
+    ...data.projects.map((p) => ({ id: p.href, label: p.name, group: "Projects", run: go(p.href) })),
+  ];
+  const q = query.trim().toLowerCase();
+  const results = q ? commands.filter((c) => c.label.toLowerCase().includes(q) || c.group.toLowerCase().includes(q)) : commands;
+
+  React.useEffect(() => {
+    if (open) {
+      setQuery("");
+      setIndex(0);
+    }
+  }, [open]);
+  React.useEffect(() => setIndex(0), [query]);
+
+  const run = (c: Command | undefined) => {
+    if (!c) return;
+    onOpenChange(false);
+    c.run();
+  };
+
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#171717]/30 backdrop-blur-sm" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          className="neu-inverse fixed left-1/2 top-[12vh] z-50 w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[24px] outline-none"
+        >
+          <Dialog.Title className="sr-only">Command palette</Dialog.Title>
+          <div className="flex items-center gap-3 border-b border-white/10 px-5">
+            <Search className="size-4 text-[#A9A9A6]" aria-hidden="true" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setIndex((i) => Math.min(results.length - 1, i + 1));
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setIndex((i) => Math.max(0, i - 1));
+                } else if (e.key === "Enter") {
+                  e.preventDefault();
+                  run(results[index]);
+                }
+              }}
+              role="combobox"
+              aria-expanded="true"
+              aria-controls="palette-results"
+              aria-activedescendant={results[index] ? `cmd-${index}` : undefined}
+              placeholder="Type a command or project…"
+              className="h-14 flex-1 bg-transparent text-base text-[#F2F2EF] placeholder:text-[#6F6F6B] focus:outline-none"
+            />
+            <kbd className="rounded-[6px] bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-[#A9A9A6]">esc</kbd>
+          </div>
+          <ul id="palette-results" role="listbox" className="max-h-[50vh] overflow-y-auto overscroll-contain p-2">
+            {results.length === 0 && <li className="px-3 py-6 text-center text-sm text-[#A9A9A6]">No matches.</li>}
+            {results.map((c, i) => (
+              <li
+                key={`${c.group}-${c.id}`}
+                id={`cmd-${i}`}
+                role="option"
+                aria-selected={i === index}
+                onPointerMove={() => setIndex(i)}
+                onClick={() => run(c)}
+                className={cn("flex cursor-pointer items-center gap-3 rounded-[12px] px-3 py-2.5 text-sm", i === index ? "bg-white/10 text-white" : "text-[#C9C9C5]")}
+              >
+                <span className="w-16 shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6F6F6B]">{c.group}</span>
+                <span className="min-w-0 flex-1 truncate">{c.label}</span>
+                {c.hint && <kbd className="font-mono text-[10px] text-[#8B8B86]">{c.hint}</kbd>}
+              </li>
+            ))}
+          </ul>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+// ------------------------------------------------------------------ manual commit
+const selectClass =
+  "neu-inset-sm h-11 w-full rounded-[14px] border border-transparent bg-[#D2D2CE] px-3 text-sm text-[#171717] focus:border-black/25 focus:outline-none";
+
+function CommitDialog({
+  open,
+  onOpenChange,
+  projects,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  projects: ShellData["projects"];
+}) {
+  const notify = useLocalOnlyNotice();
+  const [error, setError] = React.useState<string | null>(null);
+
+  return (
+    <Dialog.Root open={open} onOpenChange={(o) => (setError(null), onOpenChange(o))}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#171717]/25 backdrop-blur-[2px]" />
+        <Dialog.Content className="fixed left-1/2 top-[14vh] z-50 w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 overscroll-contain rounded-[28px] bg-[#DEDEDA] p-6 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.3)] outline-none">
+          <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">Record a commit</Dialog.Title>
+          <Dialog.Description className="mt-1 text-sm text-[#5F5F5B]">
+            For executed work that never started as a task.
+          </Dialog.Description>
+          <form
+            className="mt-5 space-y-4"
+            noValidate
+            onSubmit={(e) => {
+              e.preventDefault();
+              const form = new FormData(e.currentTarget);
+              const message = String(form.get("message") ?? "").trim();
+              if (!message) {
+                setError("Describe what you did.");
+                e.currentTarget.querySelector<HTMLTextAreaElement>("textarea")?.focus();
+                return;
+              }
+              onOpenChange(false);
+              notify(`Commit drafted: “${message}” +${form.get("weight")}.`);
+            }}
+          >
+            <div className="space-y-1.5">
+              <label htmlFor="commit-message" className="text-xs font-medium text-[#5F5F5B]">
+                What did you do?
+              </label>
+              <textarea
+                id="commit-message"
+                name="message"
+                rows={3}
+                aria-invalid={Boolean(error)}
+                aria-describedby={error ? "commit-message-error" : undefined}
+                placeholder="Reviewed pull request #38…"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit();
+                }}
+                className="neu-input w-full resize-none rounded-[16px] px-4 py-3 text-sm max-md:text-base"
+              />
+              {error && (
+                <p id="commit-message-error" className="text-xs text-[#8A3B35]">
+                  {error}
+                </p>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label htmlFor="commit-project" className="text-xs font-medium text-[#5F5F5B]">
+                  Project
+                </label>
+                <select id="commit-project" name="project" className={selectClass} defaultValue="">
+                  <option value="">None</option>
+                  {projects.map((p) => (
+                    <option key={p.href} value={p.href}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="commit-weight" className="text-xs font-medium text-[#5F5F5B]">
+                  Execution
+                </label>
+                <select id="commit-weight" name="weight" className={selectClass} defaultValue="2">
+                  <option value="1">Small, 1</option>
+                  <option value="2">Normal, 2</option>
+                  <option value="4">Major, 4</option>
+                  <option value="8">Milestone, 8</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <p className="text-xs text-[#5F5F5B]">
+                <kbd className="font-mono">⌘&nbsp;Enter</kbd> to commit
+              </p>
+              <div className="flex gap-2">
+                <Dialog.Close className="neu-btn-raised h-10 rounded-[12px] px-4 text-sm font-medium">Cancel</Dialog.Close>
+                <button type="submit" className="neu-inverse h-10 rounded-[12px] px-4 text-sm font-semibold">
+                  Commit
+                </button>
+              </div>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}

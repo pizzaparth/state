@@ -314,15 +314,17 @@ export interface TodayData {
 export async function getToday(scope: Scope & { userId: string }, tz: string): Promise<TodayData> {
   if (empty(scope)) return { active: [], queued: [], overdue: [], completed: [], commits: [], executionToday: 0 };
   const open = and(...taskWhere(scope), isNull(tasks.completedAt), isNull(tasks.archivedAt));
+  // Overdue tasks get their own list, so Active and Queued exclude them
+  const notOverdue = sql`(${tasks.dueAt} is null or ${tasks.dueAt} >= ${localDayStart(tz, 0)})`;
 
   const [active, queued, overdue, completed, todayCommits] = await Promise.all([
     selectTaskCards()
       .innerJoin(columns, eq(columns.id, tasks.columnId))
-      .where(and(open, inArray(columns.stateType, ["active", "review"])))
+      .where(and(open, notOverdue, inArray(columns.stateType, ["active", "review"])))
       .orderBy(asc(PRIORITY_RANK), asc(tasks.dueAt)),
     selectTaskCards()
       .innerJoin(columns, eq(columns.id, tasks.columnId))
-      .where(and(open, eq(columns.stateType, "backlog")))
+      .where(and(open, notOverdue, eq(columns.stateType, "backlog")))
       .orderBy(sql`${tasks.dueAt} asc nulls last`, asc(PRIORITY_RANK))
       .limit(6),
     selectTaskCards().where(and(open, isNotNull(tasks.dueAt), lt(tasks.dueAt, localDayStart(tz, 0)))).orderBy(asc(tasks.dueAt)),

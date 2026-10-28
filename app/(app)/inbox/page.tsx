@@ -1,49 +1,57 @@
 import * as React from "react";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { getInbox, getProjects } from "@/db/queries";
+import { getViewer } from "@/lib/viewer";
+import { EmptyState, PageHeader, Panel } from "@/components/app/primitives";
+import { QuickCapture } from "@/components/app/quick-capture";
+import { TaskRow, withParam } from "@/components/app/task-row";
+import { Drawers, type PageSearchParams } from "@/components/app/drawers";
 
-export default function InboxPage() {
+export const metadata = { title: "Inbox — State" };
+
+export default async function InboxPage({ searchParams }: { searchParams: PageSearchParams }) {
+  const params = await searchParams;
+  const viewer = await getViewer();
+  const [inbox, projects] = await Promise.all([
+    getInbox(viewer.personalWorkspaceId),
+    getProjects(viewer.personalWorkspaceId ? [viewer.personalWorkspaceId] : []),
+  ]);
+  const now = new Date();
+
   return (
-    <div className="space-y-8">
-      <div>
-        <span className="text-xs font-semibold tracking-eyebrow text-[#5F5F5B] uppercase block">
-          Rapid Capture
-        </span>
-        <h1 className="text-3xl font-bold tracking-tight text-[#171717]">
-          Inbox
-        </h1>
-        <p className="text-xs text-[#5F5F5B] mt-1">
-          Capture tasks without deciding where they belong yet. Triage later into personal boards, projects, or organisation columns.
-        </p>
-      </div>
+    <>
+      <PageHeader
+        label="Rapid capture"
+        title="Inbox"
+        description="Write it down now, decide where it belongs later. Tasks here are not on any board yet."
+      />
 
-      {/* Input */}
-      <div className="relative">
-        <input
-          type="text"
-          placeholder="Capture anything… (Use #project or !priority)"
-          className="w-full h-12 pl-4 pr-24 text-sm bg-[#D2D2CE] text-[#171717] rounded-input shadow-neu-inset-sm placeholder:text-[#8B8B86] border border-transparent focus:border-black/20 focus:outline-none focus:ring-1 focus:ring-black/20 transition-[border-color,box-shadow] touch-manipulation"
-        />
-        <div className="absolute right-2 top-2">
-          <Button variant="raised" size="sm" className="h-8 px-3 text-xs">
-            <Plus className="w-3.5 h-3.5 mr-1" />
-            Capture
-          </Button>
-        </div>
-      </div>
+      <Panel title="Capture">
+        <QuickCapture projects={projects.map((p) => ({ slug: p.slug, name: p.name }))} autoFocus />
+        <dl className="mt-3 grid gap-x-8 gap-y-1 px-2 text-xs text-[#5F5F5B] sm:grid-cols-2">
+          <div className="flex gap-2">
+            <dt className="font-mono text-[#171717]">#relaydb</dt>
+            <dd>assigns a project by its slug</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt className="font-mono text-[#171717]">!high</dt>
+            <dd>sets priority: !critical, !high, !medium, !low</dd>
+          </div>
+        </dl>
+      </Panel>
 
-      {/* Inbox List */}
-      <div className="bg-[#DEDEDA] rounded-card p-6 shadow-neu-raised-sm space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-black/5">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#5F5F5B]">
-            Captured Items
-          </h2>
-          <span className="text-xs font-mono text-[#8B8B86]">0 items</span>
-        </div>
-        <div className="py-12 text-center text-xs text-[#8B8B86]">
-          Your inbox is clean. Every incoming idea or task captured here awaits triage.
-        </div>
-      </div>
-    </div>
+      <Panel title="Captured" aside={`${inbox.length} to triage`}>
+        {inbox.length === 0 ? (
+          <EmptyState title="Inbox zero">Anything you capture appears here until you move it to a board or project.</EmptyState>
+        ) : (
+          <ul className="-mx-3">
+            {inbox.map((t) => (
+              <TaskRow key={t.id} task={t} tz={viewer.tz} now={now} href={withParam("/inbox", params, "task", t.id)} />
+            ))}
+          </ul>
+        )}
+      </Panel>
+
+      <Drawers params={params} viewer={viewer} />
+    </>
   );
 }

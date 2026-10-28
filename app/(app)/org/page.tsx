@@ -1,25 +1,32 @@
 import * as React from "react";
+import Link from "next/link";
+import type { Route } from "next";
+import { getViewer } from "@/lib/viewer";
+import { Chip, EmptyState, PageHeader, Panel } from "@/components/app/primitives";
 
-export default function OrganisationsPage() {
+export const metadata = { title: "Organisations — State" };
+
+export default async function OrganisationsPage() {
+  const viewer = await getViewer();
   return (
-    <div className="space-y-8">
-      <div className="pb-4 border-b border-black/5">
-        <span className="text-xs font-semibold tracking-eyebrow text-[#5F5F5B] uppercase block">
-          Work
-        </span>
-        <h1 className="text-3xl font-bold tracking-tight text-[#171717]">
-          Organisations
-        </h1>
-        <p className="text-xs text-[#5F5F5B] mt-1">
-          Organisations you own or belong to.
-        </p>
-      </div>
-
-      <div className="bg-[#DEDEDA] rounded-card p-6 shadow-neu-raised-sm">
-        <p className="py-8 text-center text-xs text-[#8B8B86]">
-          No organisations yet. Create one or accept an invitation to begin team execution.
-        </p>
-      </div>
-    </div>
+    <>
+      <PageHeader label="Work" title="Organisations" description="Teams you belong to. Each has shared boards, projects and team metrics." />
+      <Panel>
+        {viewer.orgs.length === 0 ? (
+          <EmptyState title="No organisations">Accept an invitation, or create an organisation, to execute with a team.</EmptyState>
+        ) : (
+          <ul className="-mx-3">
+            {viewer.orgs.map((o) => (
+              <li key={o.id}>
+                <Link href={`/org/${o.slug}` as Route} className="flex items-center justify-between gap-4 rounded-[12px] px-3 py-3 transition-colors hover:bg-black/[0.04]">
+                  <span className="font-medium">{o.name}</span>
+                  <Chip>{o.role}</Chip>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+    </>
   );
 }

@@ -1,41 +1,66 @@
 import * as React from "react";
-import { ExecutionGraph } from "@/components/execution";
-import { type ExecutionCell } from "@/lib/execution";
+import { getCommits, getDailyExecution } from "@/db/queries";
+import { getViewer } from "@/lib/viewer";
+import { formatDate, formatNumber } from "@/lib/format";
+import { EmptyState, Measure, PageHeader, Panel, SegmentedLinks } from "@/components/app/primitives";
+import { ExecutionGraph } from "@/components/app/execution-graph";
+import { CommitLedger } from "@/components/app/commit-ledger";
+import { withParam } from "@/components/app/task-row";
+import { Drawers, type PageSearchParams } from "@/components/app/drawers";
 
-export default function ActivityPage() {
-  // Scaffolding placeholder for cells
-  const mockCells: ExecutionCell[] = Array.from({ length: 90 }, (_, i) => ({
-    date: `2026-${String(Math.floor(i / 30) + 8).padStart(2, "0")}-${String((i % 30) + 1).padStart(2, "0")}`,
-    commitsCount: 0,
-    tasksCompleted: 0,
-    executionValue: 0,
-    intensity: 0,
-  }));
+export const metadata = { title: "Activity — State" };
+
+const RANGES = { "30d": 30, "90d": 91, "6m": 182, "1y": 371 } as const;
+type RangeKey = keyof typeof RANGES;
+
+export default async function ActivityPage({ searchParams }: { searchParams: PageSearchParams }) {
+  const params = await searchParams;
+  const range: RangeKey = params.range && params.range in RANGES ? (params.range as RangeKey) : "90d";
+  const viewer = await getViewer();
+  const scope = { workspaceIds: viewer.workspaceIds, userId: viewer.id };
+  const [days, recent] = await Promise.all([getDailyExecution(scope, viewer.tz, RANGES[range]), getCommits(scope, { sinceDays: 7, tz: viewer.tz })]);
+
+  const execution = days.reduce((s, d) => s + d.execution, 0);
+  const commits = days.reduce((s, d) => s + d.commits, 0);
+  const active = days.filter((d) => d.commits > 0).length;
+  const best = days.reduce((a, b) => (b.execution > a.execution ? b : a), days[0]);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <span className="text-xs font-semibold tracking-eyebrow text-[#5F5F5B] uppercase block">
-          Execution Matrix
-        </span>
-        <h1 className="text-3xl font-bold tracking-tight text-[#171717]">
-          Activity
-        </h1>
-        <p className="text-xs text-[#5F5F5B] mt-1">
-          Quantitative density of executed work across the past 90 days.
-        </p>
+    <>
+      <PageHeader
+        label="Execution"
+        title="Activity"
+        description="Every day you committed work, shaded by how much execution it carried."
+        actions={
+          <SegmentedLinks
+            label="Range"
+            items={(Object.keys(RANGES) as RangeKey[]).map((key) => ({ href: `/activity?range=${key}`, label: key.toUpperCase(), active: key === range }))}
+          />
+        }
+      />
+
+      <Panel title="Execution graph" aside={`${RANGES[range]} days`}>
+        <ExecutionGraph days={days} />
+      </Panel>
+
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <Measure label="Execution" value={formatNumber(execution)} formula="Σ commit execution in range" />
+        <Measure label="Commits" value={formatNumber(commits)} formula="Task completions + manual commits" />
+        <Measure label="Active days" value={`${active}/${days.length}`} formula="Days with at least one commit" />
+        <Measure label="Highest day" value={formatNumber(best?.execution ?? 0)} formula={best?.execution ? `on ${formatDate(new Date(`${best.day}T12:00:00Z`), "UTC", { weekday: "short", day: "numeric", month: "short" })}` : "No execution in range"} />
       </div>
 
-      <ExecutionGraph cells={mockCells} title="Last 90 Days Execution" />
+      <Panel title="Last 7 days" aside={`${recent.length} commits`}>
+        {recent.length === 0 ? (
+          <EmptyState title="Quiet week">Complete a task or record a manual commit to add to your history.</EmptyState>
+        ) : (
+          <div className="-mx-3">
+            <CommitLedger commits={recent} tz={viewer.tz} now={new Date()} hrefFor={(id) => withParam("/activity", params, "commit", id)} />
+          </div>
+        )}
+      </Panel>
 
-      <div className="bg-[#DEDEDA] rounded-card p-6 shadow-neu-raised-sm space-y-4">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#5F5F5B] pb-3 border-b border-black/5">
-          Recent Execution Flow
-        </h2>
-        <div className="py-8 text-center text-xs text-[#8B8B86]">
-          Execution events will appear in real time as tasks are moved to done or commits are logged.
-        </div>
-      </div>
-    </div>
+      <Drawers params={params} viewer={viewer} />
+    </>
   );
 }
