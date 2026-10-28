@@ -17,5 +17,17 @@ export async function consumeThrottle(key: string, max: number, windowSeconds: n
     returning count
   `);
   const count = Number(result.rows[0]?.count ?? 0);
+  // Keys include attacker-chosen emails, so expired buckets are pruned now and then
+  // to keep both tables bounded. Fire and forget: never delays the caller.
+  if (Math.random() < 0.01) void prune();
   return count <= max;
+}
+
+async function prune() {
+  try {
+    await db.execute(sql`delete from throttle_buckets where window_start < now() - interval '1 day'`);
+    await db.execute(sql`delete from rate_limits where last_request < (extract(epoch from now()) * 1000)::bigint - 86400000`);
+  } catch (error) {
+    console.error("[throttle] prune failed", error);
+  }
 }

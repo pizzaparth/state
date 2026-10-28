@@ -13,6 +13,19 @@ import { hashPassword } from "better-auth/crypto";
 import { db } from "../db";
 import * as s from "../db/schema";
 
+// Demo accounts share a published password, so they must never reach a real deployment
+const target = (() => {
+  try {
+    return new URL(process.env.DATABASE_URL ?? "").hostname;
+  } catch {
+    return "";
+  }
+})();
+if (process.env.NODE_ENV === "production" || (!["localhost", "127.0.0.1", "::1"].includes(target) && process.env.SEED_ALLOW_REMOTE !== "1")) {
+  console.error(`Refusing to seed ${target || "an unknown database"}: demo accounts use a public password. Local databases only.`);
+  process.exit(2);
+}
+
 const PASSWORD = "state-demo-2026";
 const TZ = "Asia/Kolkata";
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;

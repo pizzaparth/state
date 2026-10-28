@@ -37,7 +37,12 @@ export const tasks = pgTable(
   (table) => [
     check("tasks_weight_check", sql`${table.weight} in (1, 2, 4, 8)`),
     index("tasks_workspace_idx").on(table.workspaceId),
-    index("tasks_board_column_idx").on(table.boardId, table.columnId, table.position),
+    // Bytewise collation matches the fractional ordering keys (lib/position.ts)
+    index("tasks_board_column_idx").on(table.boardId, table.columnId, sql`${table.position} collate "C"`),
+    // Inbox: untriaged, open captures per workspace, newest first
+    index("tasks_inbox_idx")
+      .on(table.workspaceId, table.createdAt)
+      .where(sql`${table.boardId} is null and ${table.deletedAt} is null and ${table.completedAt} is null`),
     index("tasks_project_idx").on(table.projectId),
     index("tasks_assignee_idx").on(table.assigneeId),
     index("tasks_completed_at_idx").on(table.workspaceId, table.completedAt),
