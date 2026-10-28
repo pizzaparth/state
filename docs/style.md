@@ -852,6 +852,7 @@ letter-spacing: .08em–.14em
 
 
 Minimum product text size is 12px (uppercase, tracked micro-labels only). Secondary text and metadata are 13–14px; body and row titles 16px.
+
 ---
 
 # 23. Product Navigation
