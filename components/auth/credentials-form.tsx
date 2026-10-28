@@ -81,7 +81,7 @@ export function CredentialsForm({ mode, redirectTo }: { mode: Mode; redirectTo: 
   );
 
   return (
-    <form ref={formRef} onSubmit={onSubmit} className="space-y-4" noValidate>
+    <form ref={formRef} method="post" onSubmit={onSubmit} className="space-y-4" noValidate>
       {mode === "sign-up" && field("name", "Full name", { type: "text", autoComplete: "name", placeholder: "Ada Lovelace…" })}
       {field("email", "Email address", {
         type: "email",

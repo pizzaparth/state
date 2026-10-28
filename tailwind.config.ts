@@ -95,7 +95,7 @@ const config: Config = {
         },
         // Product motion (transform/opacity only; durations 120–220ms)
         "page-in": {
-          from: { opacity: "0", transform: "translateY(6px)" },
+          from: { opacity: "0.5", transform: "translateY(4px)" },
           to: { opacity: "1", transform: "none" },
         },
         "overlay-in": { from: { opacity: "0" }, to: { opacity: "1" } },
@@ -154,7 +154,7 @@ const config: Config = {
       animation: {
         "line-rise": "line-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) both",
         "fade-in": "fade-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both",
-        "page-in": "page-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "page-in": "page-in 140ms cubic-bezier(0.16, 1, 0.3, 1) both",
         "overlay-in": "overlay-in 160ms ease-out both",
         "overlay-out": "overlay-out 120ms ease-in both",
         "drawer-in": "drawer-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both",

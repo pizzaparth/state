@@ -297,9 +297,17 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
 
 /** Nav item whose near-white active pill slides between items (shared layout animation). */
 function NavLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+  const router = useRouter();
+  // Intent prefetch: fetch the full page on hover/focus so the click renders instantly.
+  // (Link's own viewport prefetch only loads the shell and loading skeleton for dynamic pages.)
+  const prefetch = () => {
+    if (!active) router.prefetch(href as Route);
+  };
   return (
     <Link
       href={href as Route}
+      onPointerEnter={prefetch}
+      onFocus={prefetch}
       aria-current={active ? "page" : undefined}
       className={cn(
         "relative flex items-center gap-3 rounded-[12px] px-3 py-2 text-sm font-medium transition-colors duration-150",

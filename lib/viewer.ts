@@ -35,11 +35,26 @@ export const getViewer = cache(async (): Promise<Viewer> => {
   const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
   if (!user) redirect("/login");
 
-  const [personal] = await db
-    .select({ id: workspaces.id })
-    .from(workspaces)
-    .where(and(eq(workspaces.ownerId, user.id), eq(workspaces.type, "personal")))
-    .limit(1);
+  const [[personal], orgs] = await Promise.all([
+    db
+      .select({ id: workspaces.id })
+      .from(workspaces)
+      .where(and(eq(workspaces.ownerId, user.id), eq(workspaces.type, "personal")))
+      .limit(1),
+    db
+      .select({
+        id: organisations.id,
+        name: organisations.name,
+        slug: organisations.slug,
+        workspaceId: organisations.workspaceId,
+        timezone: organisations.timezone,
+        role: organisationMembers.role,
+      })
+      .from(organisationMembers)
+      .innerJoin(organisations, eq(organisations.id, organisationMembers.organisationId))
+      .where(eq(organisationMembers.userId, user.id))
+      .orderBy(asc(organisations.name)),
+  ]);
 
   const [personalBoard] = personal
     ? await db
@@ -48,20 +63,6 @@ export const getViewer = cache(async (): Promise<Viewer> => {
         .where(and(eq(boards.workspaceId, personal.id), eq(boards.type, "personal")))
         .limit(1)
     : [];
-
-  const orgs = await db
-    .select({
-      id: organisations.id,
-      name: organisations.name,
-      slug: organisations.slug,
-      workspaceId: organisations.workspaceId,
-      timezone: organisations.timezone,
-      role: organisationMembers.role,
-    })
-    .from(organisationMembers)
-    .innerJoin(organisations, eq(organisations.id, organisationMembers.organisationId))
-    .where(eq(organisationMembers.userId, user.id))
-    .orderBy(asc(organisations.name));
 
   return {
     id: user.id,

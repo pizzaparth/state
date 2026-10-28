@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -14,7 +14,8 @@
     "db:studio": "drizzle-kit studio",
     "security:check": "node scripts/security-check.mjs",
     "bench": "node scripts/bench.mjs",
-    "db:seed": "tsx --env-file=.env scripts/seed.ts"
+    "db:seed": "tsx --env-file=.env scripts/seed.ts",
+    "dev:webpack": "next dev"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
