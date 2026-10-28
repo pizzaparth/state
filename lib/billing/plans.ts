@@ -62,6 +62,11 @@ const ENV_KEYS: Record<Provider, Record<PlanId, Record<Interval, string>>> = {
   },
 };
 
+/** Name of the env var holding the provider plan/price ID for this combination. */
+export function providerPlanEnvKey(provider: Provider, plan: PlanId, interval: Interval): string {
+  return ENV_KEYS[provider][plan][interval];
+}
+
 /** Provider-side plan (Razorpay) or price (Stripe) ID, or null when not configured. */
 export function providerPlanId(provider: Provider, plan: PlanId, interval: Interval): string | null {
   return process.env[ENV_KEYS[provider][plan][interval]] || null;

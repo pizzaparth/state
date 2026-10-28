@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { razorpay, stripe } from "@/lib/billing";
-import { providerForCountry, providerPlanId } from "@/lib/billing/plans";
+import { PLANS, providerForCountry, providerPlanEnvKey, providerPlanId } from "@/lib/billing/plans";
 import { syncSubscription } from "@/lib/billing/sync";
 import { hasPaidAccess } from "@/lib/billing/access";
 import { checkoutSchema } from "@/lib/validation";
@@ -41,7 +41,13 @@ export async function POST(req: NextRequest) {
   const provider = providerForCountry(req.headers.get("x-vercel-ip-country"));
   const planId = providerPlanId(provider, plan, interval);
   if (!planId) {
-    return NextResponse.json({ error: `Billing is not configured for ${plan} ${interval}.` }, { status: 503 });
+    // Name the missing setting during development only; never expose env names in production
+    const detail =
+      process.env.NODE_ENV === "production" ? "" : ` Set ${providerPlanEnvKey(provider, plan, interval)} in .env.`;
+    return NextResponse.json(
+      { error: `${PLANS[plan].name} ${interval} payments are not available yet.${detail}` },
+      { status: 503 }
+    );
   }
 
   try {

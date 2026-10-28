@@ -110,7 +110,10 @@ export function SubscribeForm({
               name="plan"
               value={p.id}
               checked={planId === p.id}
-              onChange={() => setPlanId(p.id)}
+              onChange={() => {
+                setPlanId(p.id);
+                setError(null);
+              }}
               className="mt-1 accent-white"
             />
             <span className="min-w-0 flex-1">
@@ -146,7 +149,10 @@ export function SubscribeForm({
                 name="interval"
                 value={value}
                 checked={interval === value}
-                onChange={() => setInterval(value)}
+                onChange={() => {
+                  setInterval(value);
+                  setError(null);
+                }}
                 className="sr-only"
               />
               {value === "monthly" ? "Monthly" : "Yearly · 2 months free"}
@@ -168,7 +174,10 @@ export function SubscribeForm({
             min={1}
             max={500}
             value={seats}
-            onChange={(e) => setSeats(e.target.value)}
+            onChange={(e) => {
+              setSeats(e.target.value);
+              setError(null);
+            }}
             className="w-full h-11 px-4 text-sm tabular-nums bg-[#151515] text-[#F4F4F2] rounded-input border border-white/[0.1] focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40 transition-[border-color,box-shadow] touch-manipulation"
           />
         </div>
