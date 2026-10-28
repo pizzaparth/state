@@ -113,7 +113,7 @@ state/
 │   │   └── index.ts             # Schema bundle export
 │   ├── migrations/              # Generated SQL migrations
 │   ├── queries/                 # Reusable Drizzle query functions
-│   └── index.ts                 # Neon WebSocket Pool client (supports transactions)
+│   └── index.ts                 # Neon WebSocket Pool, or node-postgres for localhost (both support transactions)
 │
 ├── lib/
 │   ├── auth/                    # Better Auth server configuration
@@ -165,7 +165,7 @@ State calculations are completely deterministic and transparent:
 
 - Node.js `v20+` or `v22+` (tested on Node `26.8.1`)
 - npm `v10+` or `v11+`
-- Neon PostgreSQL database (the `@neondatabase/serverless` WebSocket driver does not connect to a plain local Postgres without a WebSocket proxy)
+- PostgreSQL: a Neon database, or a local Postgres for development (`localhost` URLs use `node-postgres`; everything else uses Neon's WebSocket driver)
 
 ### Setup Instructions
 
