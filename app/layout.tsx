@@ -1,4 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
@@ -8,14 +10,21 @@ export const metadata: Metadata = {
   keywords: ["execution system", "quantitative productivity", "kanban", "commits", "velocity", "throughput"],
 };
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#050505" },
+    { media: "(prefers-color-scheme: light)", color: "#D9D9D5" },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-[#D9D9D5] text-[#171717] antialiased selection:bg-black selection:text-white">
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+      <body className="min-h-screen font-sans bg-[#D9D9D5] text-[#171717] antialiased selection:bg-black selection:text-white">
         {children}
       </body>
     </html>

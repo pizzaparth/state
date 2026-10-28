@@ -1,5 +1,5 @@
 import { db } from "../index";
-import { tasks, commits, projects, workspaces, users } from "../schema";
+import { tasks, commits, projects, workspaces } from "../schema";
 import { eq, desc } from "drizzle-orm";
 
 /**

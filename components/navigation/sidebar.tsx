@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { usePathname } from "next/navigation";
 import {
   Calendar,
@@ -18,7 +19,7 @@ import { cn } from "@/lib/utils";
 
 interface NavItem {
   name: string;
-  href: string;
+  href: Route;
   icon: React.ComponentType<{ className?: string }>;
 }
 

@@ -23,11 +23,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
-    const payload = JSON.parse(rawBody);
-    // Process subscription events (e.g. subscription.charged, subscription.cancelled)
+    // TODO: parse with Zod and upsert subscriptions (subscription.charged, subscription.cancelled)
+    JSON.parse(rawBody);
 
     return NextResponse.json({ received: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Webhook processing error" }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Webhook processing error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -23,7 +23,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Stripe webhook error" }, { status: 400 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Stripe webhook error";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

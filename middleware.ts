@@ -13,6 +13,8 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
+  // better-auth/cookies pulls in jose, which uses Node-only APIs
+  runtime: "nodejs",
   matcher: [
     "/today/:path*",
     "/inbox/:path*",
