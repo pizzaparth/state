@@ -48,7 +48,7 @@ export function ExecutionMatrix() {
             { label: "Active days", value: `${totals.activeDays}/${days.length}` },
           ].map((stat) => (
             <div key={stat.label}>
-              <dt className="text-xs text-[#6F6F6B]">{stat.label}</dt>
+              <dt className="text-sm text-[#6F6F6B]">{stat.label}</dt>
               <dd className="font-display text-3xl font-bold tabular-nums [font-stretch:110%] text-[#F4F4F2]">
                 {typeof stat.value === "number" ? formatNumber(stat.value) : stat.value}
               </dd>
@@ -67,7 +67,7 @@ export function ExecutionMatrix() {
                 setActive(r.weeks * 7 - 1);
               }}
               className={cn(
-                "h-8 min-w-[5.5rem] rounded-full px-3 text-xs transition-[background-color,color]",
+                "h-8 min-w-[5.5rem] rounded-full px-3 text-sm transition-[background-color,color]",
                 rangeId === r.id ? "bg-[#F1F1EE] font-semibold text-[#090909]" : "text-[#A9A9A6] hover:text-white"
               )}
             >
@@ -103,7 +103,7 @@ export function ExecutionMatrix() {
         </div>
       </div>
 
-      <div className="mt-5 flex flex-wrap items-baseline justify-between gap-4 text-sm">
+      <div className="mt-5 flex flex-wrap items-baseline justify-between gap-4 text-base">
         <p aria-live="polite" className="tabular-nums text-[#A9A9A6]">
           <span className="font-semibold text-[#F4F4F2]">{formatDay(day.date)}</span>
           <span className="ml-4">{day.commits} commits</span>
@@ -111,7 +111,7 @@ export function ExecutionMatrix() {
           <span className="ml-4">{day.execution} execution</span>
           <span className="ml-4">{day.projects} projects</span>
         </p>
-        <div className="flex items-center gap-1.5 text-xs text-[#6F6F6B]" aria-hidden="true">
+        <div className="flex items-center gap-1.5 text-sm text-[#6F6F6B]" aria-hidden="true">
           <span className="mr-1">0</span>
           {INTENSITY_FILL.map((fill) => (
             <span key={fill} className="size-2.5 rounded-[2px]" style={{ backgroundColor: fill }} />

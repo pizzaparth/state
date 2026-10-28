@@ -20,7 +20,7 @@ export default function MarketingLayout({
     >
       <a
         href="#content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-[#F1F1EE] focus:px-4 focus:py-2 focus:text-sm focus:text-[#090909]"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-[#F1F1EE] focus:px-4 focus:py-2 focus:text-base focus:text-[#090909]"
       >
         Skip to content
       </a>
@@ -32,10 +32,10 @@ export default function MarketingLayout({
           aria-label="Main"
           className="flex h-12 w-full max-w-[44rem] items-center justify-between gap-2 rounded-full border border-white/[0.1] bg-[#050505]/70 pl-5 pr-1.5 backdrop-blur-md"
         >
-          <Link href="/" className="font-display text-sm font-extrabold uppercase tracking-[-0.01em] [font-stretch:125%]" translate="no">
+          <Link href="/" className="font-display text-base font-extrabold uppercase tracking-[-0.01em] [font-stretch:125%]" translate="no">
             State
           </Link>
-          <div className="hidden items-center gap-6 text-sm text-[#A9A9A6] sm:flex">
+          <div className="hidden items-center gap-6 text-base text-[#A9A9A6] sm:flex">
             <Link href="/#history" className="transition-colors hover:text-white">
               Product
             </Link>
@@ -47,11 +47,11 @@ export default function MarketingLayout({
             </Link>
           </div>
           <div className="flex items-center gap-1">
-            <Link href="/login" className="px-3 py-2 text-sm text-[#A9A9A6] transition-colors hover:text-white">
+            <Link href="/login" className="px-3 py-2 text-base text-[#A9A9A6] transition-colors hover:text-white">
               Sign in
             </Link>
             <Magnetic strength={0.3} radius={70}>
-              <Button asChild variant="dark-cta" size="sm" className="h-9 rounded-full px-4">
+              <Button asChild variant="dark-cta" size="sm" className="h-9 rounded-full px-4 text-sm">
                 <Link href="/register">
                   <MagneticLabel>Subscribe</MagneticLabel>
                 </Link>
@@ -65,14 +65,14 @@ export default function MarketingLayout({
         {children}
       </main>
 
-      <footer className="relative z-10 border-t border-white/[0.08] px-5 py-12 text-sm text-[#6F6F6B] sm:px-8 lg:px-12">
+      <footer className="relative z-10 border-t border-white/[0.08] px-5 py-12 text-base text-[#6F6F6B] sm:px-8 lg:px-12">
         <div className="mx-auto grid max-w-[1320px] gap-10 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-16">
           <div className="space-y-3">
             <p>
               <span className="font-semibold text-[#A9A9A6]" translate="no">State</span> is built by{" "}
               <span translate="no">Ksan&nbsp;Relay</span>. No ads, no AI, no surveillance.
             </p>
-            <p className="max-w-[56ch] text-xs leading-relaxed">
+            <p className="max-w-[56ch] text-sm leading-relaxed">
               Graphs, histories and figures on this site are illustrative sample data. State’s metrics describe recorded work, not people,
               and are not intended for employment decisions.{" "}
               <Link href="/legal/disclaimer" className="underline underline-offset-4 transition-colors hover:text-white">
@@ -80,7 +80,7 @@ export default function MarketingLayout({
               </Link>
               .
             </p>
-            <p className="text-xs">© {new Date().getFullYear()} Ksan&nbsp;Relay</p>
+            <p className="text-sm">© {new Date().getFullYear()} Ksan&nbsp;Relay</p>
           </div>
           <nav aria-label="Product" className="flex flex-col gap-2">
             <Link href="/principles" className="transition-colors hover:text-white">

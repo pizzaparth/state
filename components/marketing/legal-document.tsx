@@ -20,7 +20,7 @@ export function LegalDocument({
 }) {
   return (
     <article className="mx-auto w-full max-w-[1320px] px-5 pb-[14vh] pt-36 sm:px-8 lg:px-12">
-      <nav aria-label="Legal" className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+      <nav aria-label="Legal" className="flex flex-wrap gap-x-6 gap-y-2 text-base">
         {LEGAL_PAGES.map((page) => (
           <Link
             key={page.href}
@@ -39,10 +39,10 @@ export function LegalDocument({
       <h1 className="mt-10 font-display text-[clamp(2rem,6vw,4.5rem)] font-extrabold uppercase leading-[0.95] tracking-[-0.02em] [font-stretch:120%] text-balance">
         {title}
       </h1>
-      <p className="mt-4 text-sm text-[#6F6F6B]">Effective {LEGAL.effectiveDate}</p>
+      <p className="mt-4 text-base text-[#6F6F6B]">Effective {LEGAL.effectiveDate}</p>
       <p className="mt-8 max-w-[62ch] text-lg leading-relaxed text-[#A9A9A6]">{summary}</p>
 
-      <div className="mt-14 max-w-[68ch] space-y-12 text-[15px] leading-relaxed text-[#C9C9C5]">{children}</div>
+      <div className="mt-14 max-w-[68ch] space-y-12 text-[17px] leading-relaxed text-[#C9C9C5]">{children}</div>
     </article>
   );
 }

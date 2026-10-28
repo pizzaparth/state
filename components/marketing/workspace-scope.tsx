@@ -42,7 +42,7 @@ export function WorkspaceScope() {
             aria-checked={scope === key}
             onClick={() => setScope(key)}
             className={cn(
-              "h-9 min-w-[7.5rem] rounded-full px-4 text-sm transition-[background-color,color]",
+              "h-9 min-w-[7.5rem] rounded-full px-4 text-base transition-[background-color,color]",
               scope === key ? "bg-[#F1F1EE] font-semibold text-[#090909]" : "text-[#A9A9A6] hover:text-white"
             )}
           >
@@ -50,7 +50,7 @@ export function WorkspaceScope() {
           </button>
         ))}
       </div>
-      <p className="mt-5 max-w-[52ch] text-sm leading-relaxed text-[#A9A9A6]">{current.note}</p>
+      <p className="mt-5 max-w-[52ch] text-base leading-relaxed text-[#A9A9A6]">{current.note}</p>
 
       <div
         className="mt-10 grid gap-x-6 gap-y-8"
@@ -58,13 +58,13 @@ export function WorkspaceScope() {
       >
         {current.columns.map((column) => (
           <div key={column.name} className="min-w-0">
-            <p className="flex items-baseline justify-between border-b border-white/[0.08] pb-2 text-xs text-[#6F6F6B]">
+            <p className="flex items-baseline justify-between border-b border-white/[0.08] pb-2 text-sm text-[#6F6F6B]">
               <span>{column.name}</span>
               <span className="tabular-nums">{column.tasks.length}</span>
             </p>
             <ul className="mt-3 space-y-2.5">
               {column.tasks.map((task) => (
-                <li key={task} className="flex min-w-0 items-center gap-2 text-sm text-[#D6D6D3]">
+                <li key={task} className="flex min-w-0 items-center gap-2 text-base text-[#D6D6D3]">
                   <span
                     aria-hidden="true"
                     className={cn(

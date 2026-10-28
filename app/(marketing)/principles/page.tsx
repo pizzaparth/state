@@ -35,13 +35,13 @@ export default function PrinciplesPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 pt-40 pb-20 md:pb-28 space-y-16">
       <div className="space-y-4">
-        <span className="text-xs font-mono uppercase tracking-widest text-[#A9A9A6]">
+        <span className="text-sm font-mono uppercase tracking-widest text-[#A9A9A6]">
           Manifesto
         </span>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[#F4F4F2] uppercase">
           Product Principles
         </h1>
-        <p className="text-[#A9A9A6] text-sm md:text-base leading-relaxed">
+        <p className="text-[#A9A9A6] text-base md:text-base leading-relaxed">
           State is infrastructure for measuring execution. These non-negotiable principles guide its architecture, design, and future development.
         </p>
       </div>
@@ -49,10 +49,10 @@ export default function PrinciplesPage() {
       <div className="divide-y divide-white/[0.08]">
         {principles.map((p) => (
           <div key={p.number} className="py-8 grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-            <span className="font-mono text-sm text-[#6F6F6B]">{p.number}</span>
+            <span className="font-mono text-base text-[#6F6F6B]">{p.number}</span>
             <div className="md:col-span-3 space-y-2">
               <h2 className="text-lg font-semibold text-[#F4F4F2]">{p.title}</h2>
-              <p className="text-sm text-[#A9A9A6] leading-relaxed">{p.desc}</p>
+              <p className="text-base text-[#A9A9A6] leading-relaxed">{p.desc}</p>
             </div>
           </div>
         ))}

@@ -67,11 +67,6 @@ const REFUSALS = [
   "An unexplained productivity score",
 ];
 
-const HERO_LEDGER = [
-  { time: "18:42", message: "Implemented temporal indexing", value: 4 },
-  { time: "17:51", message: "Finished market microstructure notes", value: 2 },
-  { time: "16:08", message: "Fixed auth middleware", value: 2 },
-];
 
 export default function LandingPage() {
   return (
@@ -87,7 +82,7 @@ export default function LandingPage() {
           </span>
         </h1>
 
-        <div className="mt-10 grid animate-fade-in gap-10 [animation-delay:500ms] lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-end">
+        <div className="mt-10 animate-fade-in [animation-delay:500ms]">
           <div>
             <p className="max-w-[44ch] text-lg leading-relaxed text-[#A9A9A6] text-pretty sm:text-xl">
               Tasks are what you intend. Commits are what you actually did. State keeps both and measures the
@@ -107,26 +102,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="text-sm">
-            <p className="sr-only">Example commit history</p>
-            <ul>
-              {HERO_LEDGER.map((row, i) => (
-                <li
-                  key={row.time}
-                  className="grid grid-cols-[3.25rem_1rem_minmax(0,1fr)_2rem] items-center border-t border-white/[0.08] py-2.5"
-                  style={{ opacity: 1 - i * 0.28 }}
-                >
-                  <span className="font-mono text-xs tabular-nums text-[#6F6F6B]">{row.time}</span>
-                  <span aria-hidden="true" className="size-1.5 rounded-full bg-[#F4F4F2]" />
-                  <span className="truncate text-[#F4F4F2]">{row.message}</span>
-                  <span className="text-right font-mono text-xs tabular-nums text-[#A9A9A6]">+{row.value}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-6 hidden text-xs text-[#6F6F6B] [@media(pointer:fine)]:block">
-              Move your pointer across the page. Scattered points fall into line.
-            </p>
-          </div>
         </div>
       </section>
 
@@ -159,7 +134,7 @@ export default function LandingPage() {
         <table className="mt-16 w-full border-collapse text-left">
           <caption className="sr-only">State metrics with their formulas, last 30 days</caption>
           <thead className="max-md:sr-only">
-            <tr className="text-xs text-[#6F6F6B]">
+            <tr className="text-sm text-[#6F6F6B]">
               <th scope="col" className="pb-3 font-normal">Metric</th>
               <th scope="col" className="pb-3 pr-12 text-right font-normal">Value</th>
               <th scope="col" className="pb-3 font-normal">Formula</th>
@@ -178,8 +153,8 @@ export default function LandingPage() {
                 <td className="py-5 pr-12 text-right font-display text-[clamp(1.75rem,3.5vw,3rem)] font-bold leading-none tabular-nums [font-stretch:110%] text-[#F4F4F2] max-md:row-span-2 max-md:self-center max-md:py-0 max-md:pr-0">
                   {metric.value}
                 </td>
-                <td className="py-5 text-sm text-[#A9A9A6] max-md:py-0">{metric.formula}</td>
-                <td className="py-5 font-mono text-xs tabular-nums text-[#6F6F6B] transition-colors group-hover:text-[#A9A9A6] max-md:col-span-2 max-md:py-0 max-md:pt-1">
+                <td className="py-5 text-base text-[#A9A9A6] max-md:py-0">{metric.formula}</td>
+                <td className="py-5 font-mono text-sm tabular-nums text-[#6F6F6B] transition-colors group-hover:text-[#A9A9A6] max-md:col-span-2 max-md:py-0 max-md:pt-1">
                   {metric.worked}
                 </td>
               </tr>
@@ -243,7 +218,7 @@ export default function LandingPage() {
               </Link>
             </Button>
           </Magnetic>
-          <p className="text-sm text-[#6F6F6B]">
+          <p className="text-base text-[#6F6F6B]">
             From {formatInr(PLANS.individual.priceInr.monthly)} a month. Your workspace opens as soon as payment clears.
           </p>
         </div>
