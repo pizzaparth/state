@@ -42,13 +42,11 @@ export type CommitInput = z.infer<typeof commitSchema>;
  * Commit edits are limited: message clarification, project reassignment, tags.
  * Timestamp, execution value, and source are immutable.
  */
-export const commitUpdateSchema = z
-  .object({
-    message: z.string().trim().min(1, "Commit message is required").max(500).optional(),
-    projectId: z.string().optional().nullable(),
-    tagIds: z.array(z.string().min(1)).optional(),
-  })
-  .strict();
+export const commitUpdateSchema = z.strictObject({
+  message: z.string().trim().min(1, "Commit message is required").max(500).optional(),
+  projectId: z.string().optional().nullable(),
+  tagIds: z.array(z.string().min(1)).max(50).optional(),
+});
 
 export type CommitUpdateInput = z.infer<typeof commitUpdateSchema>;
 

@@ -18,6 +18,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Optional separate output dir so a production build or test run can coexist with
+  // a running `next dev` (both otherwise write to .next)
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   reactStrictMode: true,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

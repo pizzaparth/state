@@ -33,8 +33,11 @@ async function req(path, { method = "GET", headers = {}, body, raw } = {}) {
   return { status: res.status, headers: res.headers, text };
 }
 
-let ipCounter = 10;
-const nextIp = () => `198.51.100.${ipCounter++}`;
+// IPv6 documentation range, a distinct /64 per request and per run, so repeated runs
+// do not inherit each other's per-IP limits
+const runId = Math.floor(Math.random() * 0xffff).toString(16);
+let ipCounter = 0;
+const nextIp = () => `2001:db8:${runId}:${(ipCounter++).toString(16)}::1`;
 
 const authPost = (path, body, extra = {}) =>
   req(`/api/auth${path}`, { method: "POST", body, headers: { origin: ORIGIN, "x-forwarded-for": nextIp(), ...extra } });

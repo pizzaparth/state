@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { razorpay, stripe } from "@/lib/billing";
 import { providerForCountry, providerPlanId } from "@/lib/billing/plans";
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
   if (!body.ok) return body.response;
   const parsed = checkoutSchema.safeParse(body.data);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid plan selection.", issues: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: "Invalid plan selection.", issues: z.flattenError(parsed.error) }, { status: 400 });
   }
   const { plan, interval, seats } = parsed.data;
   const { user } = session;
