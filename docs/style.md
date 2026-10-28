@@ -829,7 +829,7 @@ Section title:
 Body:
 
 ```text
-14–16px
+16px (dense rows and meta 14px)
 400–500
 ```
 
@@ -844,12 +844,14 @@ tabular numerals
 Micro-label:
 
 ```text
-10–12px
+12–13px
 500–600
 uppercase
 letter-spacing: .08em–.14em
 ```
 
+
+Minimum product text size is 12px (uppercase, tracked micro-labels only). Secondary text and metadata are 13–14px; body and row titles 16px.
 ---
 
 # 23. Product Navigation

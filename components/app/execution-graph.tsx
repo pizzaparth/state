@@ -69,7 +69,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
           className="relative pl-8 pt-5"
           style={{ minWidth: `calc(${weeks} * 0.8rem + 2rem)`, maxWidth: `calc(${weeks} * 2rem + 2rem)` }}
         >
-          <div aria-hidden="true" className="absolute left-8 right-0 top-0 h-4 text-[10px] text-[#9A9A96]">
+          <div aria-hidden="true" className="absolute left-8 right-0 top-0 h-4 text-[12px] text-[#9A9A96]">
             {months.map((m) => (
               <span key={`${m.week}-${m.text}`} className="absolute" style={{ left: `${(m.week / weeks) * 100}%` }}>
                 {m.text}
@@ -78,7 +78,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
           </div>
 
           <div className="flex gap-2">
-            <div aria-hidden="true" className="-ml-8 grid w-6 py-2 text-[10px] leading-none text-[#9A9A96]" style={{ gridTemplateRows: "repeat(7, 1fr)", rowGap: gap }}>
+            <div aria-hidden="true" className="-ml-8 grid w-6 py-2 text-[12px] leading-none text-[#9A9A96]" style={{ gridTemplateRows: "repeat(7, 1fr)", rowGap: gap }}>
               {["Mon", "", "Wed", "", "Fri", "", ""].map((d, i) => (
                 <span key={i} className="flex items-center">
                   {d}
@@ -116,7 +116,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
               {shown && (
                 <div
                   aria-hidden="true"
-                  className="app-inverse pointer-events-none absolute z-10 w-max rounded-[12px] px-3 py-2 text-xs"
+                  className="app-inverse pointer-events-none absolute z-10 w-max rounded-[12px] px-3 py-2 text-sm"
                   style={{
                     left: `calc(0.5rem + (100% - 1rem) * ${(col + 0.5) / weeks})`,
                     top: `calc(0.5rem + (100% - 1rem) * ${row / 7} - 6px)`,
@@ -134,7 +134,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm">
         <p aria-live="polite" className="tabular-nums text-[#9A9A96]">
           {shown ? (
             <>

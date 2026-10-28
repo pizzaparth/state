@@ -92,7 +92,7 @@ export async function MetricsView({
               ["75th pct", p75],
             ].map(([label, v]) => (
               <div key={label as string} className="app-field rounded-[14px] px-3 py-2.5">
-                <dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{label as string}</dt>
+                <dt className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{label as string}</dt>
                 <dd className="mt-1 text-lg font-semibold tabular-nums">{formatDuration(v as number | null)}</dd>
               </div>
             ))}
@@ -113,7 +113,7 @@ export async function MetricsView({
                 <li key={o.id} className="grid gap-4 py-4 first:pt-0 last:pb-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{o.name}</p>
-                    <p className="mt-0.5 text-xs text-[#85857F] tabular-nums">
+                    <p className="mt-0.5 text-sm text-[#85857F] tabular-nums">
                       {formatNumber(o.currentValue)} / {formatNumber(o.targetValue)} {o.unit}
                       {o.deadlineAt && `, due ${formatDate(o.deadlineAt, tz, { day: "numeric", month: "short", year: "numeric" })}`}
                     </p>
@@ -121,14 +121,14 @@ export async function MetricsView({
                       <ProgressRail value={o.currentValue} max={o.targetValue} label={`${o.name} progress`} />
                     </div>
                   </div>
-                  <p className="font-mono text-xs leading-relaxed tabular-nums text-[#9A9A96]">
+                  <p className="font-mono text-sm leading-relaxed tabular-nums text-[#9A9A96]">
                     velocity {formatNumber(pos.velocity, 2)}/d
                     <br />
                     required {pos.required === null ? "—" : pos.required === Infinity ? "past deadline" : `${formatNumber(pos.required, 2)}/d`}
                   </p>
                   <span
                     className={cn(
-                      "justify-self-start rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] md:justify-self-end",
+                      "justify-self-start rounded-full px-2.5 py-1 text-[12px] font-semibold uppercase tracking-[0.12em] md:justify-self-end",
                       pos.status === "behind" ? "app-inverse" : "app-field text-[#D4D4D0]"
                     )}
                   >
@@ -227,9 +227,9 @@ export function ProjectTable({
   const sorted = [...projects].sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
   return (
     <div className="-mx-2 overflow-x-auto">
-      <table className="w-full min-w-[40rem] border-collapse text-sm">
+      <table className="w-full min-w-[40rem] border-collapse text-base">
         <thead>
-          <tr className="text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">
+          <tr className="text-left text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">
             <th scope="col" className="px-2 pb-2 font-semibold">Project</th>
             <th scope="col" className="px-2 pb-2 font-semibold">Status</th>
             <th scope="col" className="px-2 pb-2 text-right font-semibold">Open</th>

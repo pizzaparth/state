@@ -26,7 +26,7 @@ export default async function AccountSettingsPage() {
         </dl>
       </Panel>
       <Panel title="Your data">
-        <p className="max-w-[62ch] text-sm leading-relaxed text-[#9A9A96]">
+        <p className="max-w-[62ch] text-base leading-relaxed text-[#9A9A96]">
           Tasks, commits, projects, tags and metrics are yours. Export as CSV or JSON is part of the plan and stays available for
           90 days after cancellation.
         </p>

@@ -160,7 +160,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
                 >
                   <MenuIcon className="size-4" aria-hidden="true" />
                 </button>
-                <p className="truncate text-sm font-semibold text-[#F2F2EF]">
+                <p className="truncate text-base font-semibold text-[#F2F2EF]">
                   {title}
                   <span className="ml-3 hidden font-normal text-[#9A9A96] sm:inline">{data.dateLabel}</span>
                 </p>
@@ -169,11 +169,11 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
                 <button
                   type="button"
                   onClick={() => setPaletteOpen(true)}
-                  className="app-field hidden h-10 items-center gap-2 rounded-[12px] px-3 text-xs text-[#9A9A96] transition-colors hover:text-[#F2F2EF] sm:flex"
+                  className="app-field hidden h-10 items-center gap-2 rounded-[12px] px-3 text-sm text-[#9A9A96] transition-colors hover:text-[#F2F2EF] sm:flex"
                 >
                   <Search className="size-3.5" aria-hidden="true" />
                   <span className="w-28 text-left">Search…</span>
-                  <kbd className="rounded-[6px] bg-white/[0.07] px-1.5 py-0.5 font-mono text-[10px]">⌘&nbsp;K</kbd>
+                  <kbd className="rounded-[6px] bg-white/[0.07] px-1.5 py-0.5 font-mono text-[12px]">⌘&nbsp;K</kbd>
                 </button>
                 <button
                   type="button"
@@ -186,7 +186,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
                 <button
                   type="button"
                   onClick={() => setCommitOpen(true)}
-                  className="app-inverse inline-flex h-10 items-center gap-1.5 rounded-[12px] px-4 text-xs font-semibold tracking-[0.06em] hover:bg-white"
+                  className="app-inverse inline-flex h-10 items-center gap-1.5 rounded-[12px] px-4 text-sm font-semibold tracking-[0.06em] hover:bg-white"
                 >
                   <Plus className="size-3.5" aria-hidden="true" />
                   COMMIT
@@ -234,14 +234,14 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
     <LayoutGroup id={`nav-${scope}`}>
       <div className="px-5 pb-4 pt-5">
         <Link href="/today" className="block rounded-[8px]">
-          <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#9A9A96]">Ksan Relay</span>
+          <span className="block text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9A96]">Ksan Relay</span>
           <span className="block text-xl font-bold tracking-[-0.03em]">STATE</span>
         </Link>
       </div>
       <nav aria-label="Main" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3">
         {navSections(data).map((section, i) => (
           <div key={i}>
-            {section.title && <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#9A9A96]">{section.title}</p>}
+            {section.title && <p className="px-3 pb-1 text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9A96]">{section.title}</p>}
             <ul className="space-y-0.5">
               {section.items.map((item) => {
                 const active = isActive(pathname, item.href);
@@ -252,7 +252,7 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
                       <Icon className="size-4 shrink-0" aria-hidden="true" />
                       <span className="min-w-0 flex-1 truncate">{item.name}</span>
                       {item.badge ? (
-                        <span className={cn("font-mono text-[11px] tabular-nums", active ? "text-[#55554F]" : "text-[#9A9A96]")}>{item.badge}</span>
+                        <span className={cn("font-mono text-[13px] tabular-nums", active ? "text-[#55554F]" : "text-[#9A9A96]")}>{item.badge}</span>
                       ) : null}
                     </NavLink>
                   </li>
@@ -268,12 +268,12 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
           Settings
         </NavLink>
         <div className="flex items-center gap-3 px-3 pt-2">
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#1F1F1F] text-[11px] font-semibold border border-white/15" aria-hidden="true">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#1F1F1F] text-[13px] font-semibold border border-white/15" aria-hidden="true">
             {data.user.initials}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium">{data.user.name}</span>
-            <span className="block truncate text-xs text-[#9A9A96]">{data.user.email}</span>
+            <span className="block truncate text-base font-medium">{data.user.name}</span>
+            <span className="block truncate text-sm text-[#9A9A96]">{data.user.email}</span>
           </span>
           <button
             type="button"
@@ -310,7 +310,7 @@ function NavLink({ href, active, children }: { href: string; active: boolean; ch
       onFocus={prefetch}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "relative flex items-center gap-3 rounded-[12px] px-3 py-2 text-sm font-medium transition-colors duration-150",
+        "relative flex items-center gap-3 rounded-[12px] px-3 py-2 text-base font-medium transition-colors duration-150",
         active ? "text-[#0A0A0A]" : "text-[#BDBDB9] hover:bg-white/[0.05] hover:text-[#F2F2EF]"
       )}
     >
@@ -404,10 +404,10 @@ function CommandPalette({
               placeholder="Type a command or project…"
               className="h-14 flex-1 bg-transparent text-base text-[#F2F2EF] placeholder:text-[#6F6F6B] focus:outline-none"
             />
-            <kbd className="rounded-[6px] bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-[#A9A9A6]">esc</kbd>
+            <kbd className="rounded-[6px] bg-white/10 px-1.5 py-0.5 font-mono text-[12px] text-[#A9A9A6]">esc</kbd>
           </div>
           <ul id="palette-results" role="listbox" className="max-h-[50vh] overflow-y-auto overscroll-contain p-2">
-            {results.length === 0 && <li className="px-3 py-6 text-center text-sm text-[#A9A9A6]">No matches.</li>}
+            {results.length === 0 && <li className="px-3 py-6 text-center text-base text-[#A9A9A6]">No matches.</li>}
             {results.map((c, i) => (
               <li
                 key={`${c.group}-${c.id}`}
@@ -416,11 +416,11 @@ function CommandPalette({
                 aria-selected={i === index}
                 onPointerMove={() => setIndex(i)}
                 onClick={() => run(c)}
-                className={cn("flex cursor-pointer items-center gap-3 rounded-[12px] px-3 py-2.5 text-sm", i === index ? "bg-white/10 text-white" : "text-[#C9C9C5]")}
+                className={cn("flex cursor-pointer items-center gap-3 rounded-[12px] px-3 py-2.5 text-base", i === index ? "bg-white/10 text-white" : "text-[#C9C9C5]")}
               >
-                <span className="w-16 shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6F6F6B]">{c.group}</span>
+                <span className="w-16 shrink-0 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#6F6F6B]">{c.group}</span>
                 <span className="min-w-0 flex-1 truncate">{c.label}</span>
-                {c.hint && <kbd className="font-mono text-[10px] text-[#85857F]">{c.hint}</kbd>}
+                {c.hint && <kbd className="font-mono text-[12px] text-[#85857F]">{c.hint}</kbd>}
               </li>
             ))}
           </ul>
@@ -432,7 +432,7 @@ function CommandPalette({
 
 // ------------------------------------------------------------------ manual commit
 const selectClass =
-  "app-field h-11 w-full rounded-[14px] bg-[#000000] px-3 text-sm text-[#F2F2EF] focus:border-white/45 focus:outline-none";
+  "app-field h-11 w-full rounded-[14px] bg-[#000000] px-3 text-base text-[#F2F2EF] focus:border-white/45 focus:outline-none";
 
 function CommitDialog({
   open,
@@ -452,7 +452,7 @@ function CommitDialog({
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content className="fixed left-1/2 top-[14vh] z-50 origin-top data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 overscroll-contain rounded-[28px] bg-[#0A0A0A] p-6 border border-white/10 outline-none">
           <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">Record a commit</Dialog.Title>
-          <Dialog.Description className="mt-1 text-sm text-[#9A9A96]">
+          <Dialog.Description className="mt-1 text-base text-[#9A9A96]">
             For executed work that never started as a task.
           </Dialog.Description>
           <form
@@ -472,7 +472,7 @@ function CommitDialog({
             }}
           >
             <div className="space-y-1.5">
-              <label htmlFor="commit-message" className="text-xs font-medium text-[#9A9A96]">
+              <label htmlFor="commit-message" className="text-sm font-medium text-[#9A9A96]">
                 What did you do?
               </label>
               <textarea
@@ -485,17 +485,17 @@ function CommitDialog({
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit();
                 }}
-                className="app-input w-full resize-none rounded-[16px] px-4 py-3 text-sm max-md:text-base"
+                className="app-input w-full resize-none rounded-[16px] px-4 py-3 text-base max-md:text-base"
               />
               {error && (
-                <p id="commit-message-error" className="text-xs text-[#F0A39B]">
+                <p id="commit-message-error" className="text-sm text-[#F0A39B]">
                   {error}
                 </p>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label htmlFor="commit-project" className="text-xs font-medium text-[#9A9A96]">
+                <label htmlFor="commit-project" className="text-sm font-medium text-[#9A9A96]">
                   Project
                 </label>
                 <select id="commit-project" name="project" className={selectClass} defaultValue="">
@@ -508,7 +508,7 @@ function CommitDialog({
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="commit-weight" className="text-xs font-medium text-[#9A9A96]">
+                <label htmlFor="commit-weight" className="text-sm font-medium text-[#9A9A96]">
                   Execution
                 </label>
                 <select id="commit-weight" name="weight" className={selectClass} defaultValue="2">
@@ -520,12 +520,12 @@ function CommitDialog({
               </div>
             </div>
             <div className="flex items-center justify-between gap-3 pt-2">
-              <p className="text-xs text-[#9A9A96]">
+              <p className="text-sm text-[#9A9A96]">
                 <kbd className="font-mono">⌘&nbsp;Enter</kbd> to commit
               </p>
               <div className="flex gap-2">
-                <Dialog.Close className="app-btn h-10 rounded-[12px] px-4 text-sm font-medium">Cancel</Dialog.Close>
-                <button type="submit" className="app-inverse h-10 rounded-[12px] px-4 text-sm font-semibold">
+                <Dialog.Close className="app-btn h-10 rounded-[12px] px-4 text-base font-medium">Cancel</Dialog.Close>
+                <button type="submit" className="app-inverse h-10 rounded-[12px] px-4 text-base font-semibold">
                   Commit
                 </button>
               </div>

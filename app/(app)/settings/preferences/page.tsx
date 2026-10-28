@@ -50,11 +50,11 @@ export default async function PreferencesSettingsPage() {
           </dl>
         </Panel>
         <Panel title="Keyboard shortcuts">
-          <dl className="grid grid-cols-[5rem_minmax(0,1fr)] gap-y-2 text-sm">
+          <dl className="grid grid-cols-[5rem_minmax(0,1fr)] gap-y-2 text-base">
             {SHORTCUTS.map(([keys, action]) => (
               <React.Fragment key={keys}>
                 <dt>
-                  <kbd className="app-btn inline-block rounded-[8px] px-2 py-0.5 font-mono text-xs">{keys.replace(" ", " ")}</kbd>
+                  <kbd className="app-btn inline-block rounded-[8px] px-2 py-0.5 font-mono text-sm">{keys.replace(" ", " ")}</kbd>
                 </dt>
                 <dd className="text-[#D4D4D0]">{action}</dd>
               </React.Fragment>

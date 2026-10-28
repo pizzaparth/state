@@ -40,7 +40,7 @@ export function DetailDrawer({ param, title, children }: { param: string; title:
           aria-describedby={undefined}
         >
           <div className="flex items-center justify-between gap-4 px-6 pb-2 pt-6">
-            <Dialog.Title className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{title}</Dialog.Title>
+            <Dialog.Title className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{title}</Dialog.Title>
             <Dialog.Close className="app-btn grid size-9 place-items-center rounded-full" aria-label="Close">
               <X className="size-4" aria-hidden="true" />
             </Dialog.Close>

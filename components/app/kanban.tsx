@@ -157,8 +157,8 @@ export function Kanban({
           return (
             <Column key={column.id} column={column} highlighted={overColumn === column.id && dragging?.columnId !== startColumn.current}>
               <div className="mb-3 flex items-baseline justify-between px-1">
-                <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{column.name}</h2>
-                <span className="font-mono text-[11px] tabular-nums text-[#9A9A96]">
+                <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{column.name}</h2>
+                <span className="font-mono text-[13px] tabular-nums text-[#9A9A96]">
                   {isDone ? `${columnCards.length} in ${doneWindowDays}d` : columnCards.length}
                 </span>
               </div>
@@ -177,7 +177,7 @@ export function Kanban({
                     />
                   ))}
                   {columnCards.length === 0 && (
-                    <li className="rounded-[14px] border border-dashed border-white/10 px-3 py-6 text-center text-xs text-[#9A9A96]">
+                    <li className="rounded-[14px] border border-dashed border-white/10 px-3 py-6 text-center text-sm text-[#9A9A96]">
                       Drop a task here
                     </li>
                   )}
@@ -253,8 +253,8 @@ function SortableCard({
           <MoreHorizontal className="size-4" aria-hidden="true" />
         </Menu.Trigger>
         <Menu.Portal>
-          <Menu.Content align="end" sideOffset={6} className="app-card z-50 origin-[var(--radix-dropdown-menu-content-transform-origin)] data-[state=closed]:animate-menu-out data-[state=open]:animate-menu-in min-w-44 rounded-[16px] p-1.5 text-sm">
-            <Menu.Label className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">Move to…</Menu.Label>
+          <Menu.Content align="end" sideOffset={6} className="app-card z-50 origin-[var(--radix-dropdown-menu-content-transform-origin)] data-[state=closed]:animate-menu-out data-[state=open]:animate-menu-in min-w-44 rounded-[16px] p-1.5 text-base">
+            <Menu.Label className="px-3 pb-1 pt-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">Move to…</Menu.Label>
             {columns
               .filter((c) => c.id !== card.columnId)
               .map((c) => (
@@ -289,7 +289,7 @@ function CardFace({
   flash?: boolean;
 }) {
   const title = (
-    <span className={cn("block pr-8 text-sm font-medium leading-snug", done ? "text-[#9A9A96] line-through decoration-white/30" : "text-[#F2F2EF]")}>
+    <span className={cn("block pr-8 text-base font-medium leading-snug", done ? "text-[#9A9A96] line-through decoration-white/30" : "text-[#F2F2EF]")}>
       {card.title}
     </span>
   );
@@ -308,8 +308,8 @@ function CardFace({
       ) : (
         title
       )}
-      {card.projectName && <p className="mt-1 truncate text-xs text-[#85857F]">{card.projectName}</p>}
-      <div className="mt-3 flex items-center gap-3">
+      {card.projectName && <p className="mt-1 truncate text-sm text-[#85857F]">{card.projectName}</p>}
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
         {card.due && !done && <DueLabel due={card.due} />}
         <PriorityMark priority={card.priority} />
         <span className="flex-1" />

@@ -22,7 +22,7 @@ export function NoticeProvider({ children }: { children: React.ReactNode }) {
       {children}
       <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-[70] flex justify-center px-4">
         {notice && (
-          <p key={notice.id} className="app-inverse animate-toast-in rounded-full px-4 py-2 text-sm">
+          <p key={notice.id} className="app-inverse animate-toast-in rounded-full px-4 py-2 text-base">
             {notice.text}
           </p>
         )}

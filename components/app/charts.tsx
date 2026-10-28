@@ -30,12 +30,12 @@ export function VelocityBars({ days }: { days: DailyExecution[] }) {
           ))}
         </div>
         <div className="absolute inset-x-0 border-t border-dashed border-[#9A9A96]" style={{ bottom: `${(mean / max) * 100}%` }}>
-          <span className="absolute -top-5 right-0 rounded-[6px] bg-[#0A0A0A]/90 px-1.5 text-[11px] tabular-nums text-[#D4D4D0]">
+          <span className="absolute -top-5 right-0 rounded-[6px] bg-[#0A0A0A]/90 px-1.5 text-[13px] tabular-nums text-[#D4D4D0]">
             mean {formatNumber(mean, 1)}/d
           </span>
         </div>
       </div>
-      <div className="mt-1.5 flex gap-[2px] text-[10px] text-[#9A9A96]" aria-hidden="true">
+      <div className="mt-1.5 flex gap-[2px] text-[12px] text-[#9A9A96]" aria-hidden="true">
         {days.map((d, i) => (
           <span key={d.day} className="min-w-0 flex-1 overflow-visible whitespace-nowrap">
             {i % every === 0 ? dayText(d.day, { day: "numeric", month: "short" }) : ""}
@@ -77,7 +77,7 @@ export function CycleHistogram({ durationsMs }: { durationsMs: number[] }) {
   return (
     <ul className="space-y-2" aria-label="Cycle time distribution">
       {BUCKETS.map((b, i) => (
-        <li key={b.label} className="grid grid-cols-[3.5rem_minmax(0,1fr)_2rem] items-center gap-3 text-xs">
+        <li key={b.label} className="grid grid-cols-[3.5rem_minmax(0,1fr)_2rem] items-center gap-3 text-sm">
           <span className="tabular-nums text-[#9A9A96]">{b.label}</span>
           <span className="app-field h-2.5 overflow-hidden rounded-full">
             <span className="block h-full origin-left animate-grow-x rounded-full bg-[#F2F2EF]" style={{ transform: `scaleX(${counts[i] / max})` }} />
@@ -92,16 +92,16 @@ export function CycleHistogram({ durationsMs }: { durationsMs: number[] }) {
 /** Share of execution by project. */
 export function Distribution({ rows }: { rows: { name: string; execution: number }[] }) {
   const total = rows.reduce((s, r) => s + r.execution, 0);
-  if (total === 0) return <p className="text-sm text-[#9A9A96]">No execution in this period.</p>;
+  if (total === 0) return <p className="text-base text-[#9A9A96]">No execution in this period.</p>;
   return (
     <ul className="space-y-3">
       {rows.map((r) => {
         const share = r.execution / total;
         return (
-          <li key={r.name} className="text-sm">
+          <li key={r.name} className="text-base">
             <div className="flex items-baseline justify-between gap-3">
               <span className="truncate text-[#F2F2EF]">{r.name}</span>
-              <span className="shrink-0 font-mono text-xs tabular-nums text-[#9A9A96]">
+              <span className="shrink-0 font-mono text-sm tabular-nums text-[#9A9A96]">
                 {formatNumber(share * 100)}% <span className="text-[#85857F]">({r.execution})</span>
               </span>
             </div>

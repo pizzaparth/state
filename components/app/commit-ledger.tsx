@@ -40,7 +40,7 @@ export function CommitLedger({
         return (
           <section key={group.key} aria-label={grouped ? dayLabel(group.key, today) : undefined}>
             {grouped && (
-              <h3 className="mb-1 flex items-baseline justify-between px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">
+              <h3 className="mb-1 flex items-baseline justify-between px-3 text-[13px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">
                 <span>{dayLabel(group.key, today)}</span>
                 <span className="font-mono tabular-nums normal-case tracking-normal">
                   {group.rows.length} {group.rows.length === 1 ? "commit" : "commits"}, +{total}
@@ -57,7 +57,7 @@ export function CommitLedger({
                     scroll={false}
                     className="grid grid-cols-[3.25rem_1rem_minmax(0,1fr)_auto] items-center gap-x-2 rounded-[12px] px-3 py-2 transition-colors hover:bg-white/[0.04]"
                   >
-                    <time dateTime={c.createdAt.toISOString()} className="font-mono text-xs tabular-nums text-[#9A9A96]">
+                    <time dateTime={c.createdAt.toISOString()} className="font-mono text-sm tabular-nums text-[#9A9A96]">
                       {formatTime(c.createdAt, tz)}
                     </time>
                     <span
@@ -65,12 +65,12 @@ export function CommitLedger({
                       className={cn("relative z-[1] mx-auto size-2 rounded-full", c.source === "manual" ? "border border-[#F2F2EF] bg-[#0A0A0A]" : "bg-[#F2F2EF]")}
                     />
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium text-[#F2F2EF]">{c.message}</span>
-                      <span className="block truncate text-xs text-[#85857F]">
+                      <span className="block truncate text-base font-medium text-[#F2F2EF]">{c.message}</span>
+                      <span className="block truncate text-sm text-[#85857F]">
                         {[c.projectName, showAuthor ? c.authorName : null, c.source === "manual" ? "manual" : null].filter(Boolean).join(", ")}
                       </span>
                     </span>
-                    <span className="font-mono text-xs font-semibold tabular-nums text-[#F2F2EF]">+{c.executionValue}</span>
+                    <span className="font-mono text-sm font-semibold tabular-nums text-[#F2F2EF]">+{c.executionValue}</span>
                   </Link>
                 </li>
               ))}

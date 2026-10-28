@@ -14,10 +14,10 @@ export function SettingsNav({ active }: { active: (typeof ITEMS)[number]["href"]
 export function Row({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <div className="grid gap-1 border-t border-white/[0.08] py-3.5 first:border-t-0 first:pt-0 sm:grid-cols-[12rem_minmax(0,1fr)] sm:gap-6">
-      <dt className="text-sm text-[#9A9A96]">{label}</dt>
-      <dd className="min-w-0 break-words text-sm">
+      <dt className="text-base text-[#9A9A96]">{label}</dt>
+      <dd className="min-w-0 break-words text-base">
         {children}
-        {hint && <span className="mt-0.5 block text-xs text-[#85857F]">{hint}</span>}
+        {hint && <span className="mt-0.5 block text-sm text-[#85857F]">{hint}</span>}
       </dd>
     </div>
   );

@@ -55,19 +55,19 @@ export function QuickCapture({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
-          className="h-10 min-w-0 flex-1 bg-transparent text-sm text-[#F2F2EF] placeholder:text-[#85857F] focus:outline-none max-md:text-base"
+          className="h-10 min-w-0 flex-1 bg-transparent text-base text-[#F2F2EF] placeholder:text-[#85857F] focus:outline-none max-md:text-base"
         />
         <button
           type="submit"
           disabled={!parsed?.title}
-          className="app-btn inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[12px] px-4 text-sm font-medium disabled:opacity-50"
+          className="app-btn inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[12px] px-4 text-base font-medium disabled:opacity-50"
         >
           <Plus className="size-4" aria-hidden="true" />
           Capture
         </button>
       </form>
 
-      <p aria-live="polite" className="mt-2 min-h-5 px-2 text-xs text-[#9A9A96]">
+      <p aria-live="polite" className="mt-2 min-h-5 px-2 text-sm text-[#9A9A96]">
         {parsed?.title && (
           <>
             Task <span className="font-medium text-[#F2F2EF]">“{parsed.title}”</span>
@@ -80,11 +80,11 @@ export function QuickCapture({
       {captured.length > 0 && (
         <ul className="mt-2 space-y-1">
           {captured.map((c, i) => (
-            <li key={captured.length - i} className="flex animate-row-in items-center gap-3 rounded-[12px] px-3 py-2 text-sm">
+            <li key={captured.length - i} className="flex animate-row-in items-center gap-3 rounded-[12px] px-3 py-2 text-base">
               <span aria-hidden="true" className="app-field size-3 rounded-full" />
               <span className="min-w-0 flex-1 truncate font-medium">{c.title}</span>
-              <span className="text-xs text-[#85857F]">{[c.project, c.priority].filter(Boolean).join(", ") || "Unsorted"}</span>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">Unsaved</span>
+              <span className="text-sm text-[#85857F]">{[c.project, c.priority].filter(Boolean).join(", ") || "Unsorted"}</span>
+              <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">Unsaved</span>
             </li>
           ))}
         </ul>
