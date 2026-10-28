@@ -202,7 +202,8 @@ State calculations are completely deterministic and transparent:
    npm run db:seed
    ```
    Recreates three demo users with about 90 days of history. See
-   [Demo credentials](#demo-credentials). Never run against production.
+   [Demo credentials](#demo-credentials). The script refuses any database that is not
+   on localhost (override with `SEED_ALLOW_REMOTE=1` for a disposable staging database).
 
 6. **Start Development Server:**
    ```bash
@@ -214,7 +215,10 @@ State calculations are completely deterministic and transparent:
    npm run lint
    npm run typecheck
    npm run build
+   npm run authz:check     # BOLA/IDOR suite, needs a seeded *_test database
+   npm run security:check  # black-box suite against a running build
    ```
+   See [docs/security.md](docs/security.md) for the test database setup.
    Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 ### Demo credentials
@@ -228,8 +232,9 @@ Created by `npm run db:seed` in your local database. Sign in at
 | Aarav Kulkarni | `aarav@state.test` | `state-demo-2026` | Admin |
 | Ishita Sharma | `ishita@state.test` | `state-demo-2026` | Member |
 
-All three have an active subscription, so sign-in goes straight to Today. These accounts exist
-only in databases you seed yourself; never seed a production database.
+All three have an active subscription, so sign-in goes straight to Today. Board moves,
+Inbox captures and manual commits are saved to the database. These accounts exist only in
+databases you seed yourself; the seed refuses remote databases.
 
 ---
 

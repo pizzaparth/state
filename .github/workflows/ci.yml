@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Read-only token: CI never writes to the repository, packages or deployments
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: state
+          POSTGRES_PASSWORD: state
+          POSTGRES_DB: state_ci_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U state" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # Disposable CI database and throwaway secret; no production credentials in CI
+      DATABASE_URL: postgresql://state:state@localhost:5432/state_ci_test
+      BETTER_AUTH_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
+      BETTER_AUTH_URL: http://localhost:3123
+      NEXT_PUBLIC_APP_URL: http://localhost:3123
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # No install scripts: dependencies cannot run code on the runner
+      - run: npm ci --ignore-scripts
+      - run: npm audit --audit-level=moderate
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run db:migrate
+      - run: npx tsx scripts/seed.ts
+      - run: npm run authz:check
+      - run: npm run build
+      - name: Black-box security suite
+        run: |
+          npx next start -p 3123 &
+          for i in $(seq 1 30); do curl -sf localhost:3123/api/health && break; sleep 1; done
+          BASE_URL=http://localhost:3123 npm run security:check

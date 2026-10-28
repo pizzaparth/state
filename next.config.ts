@@ -32,8 +32,10 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "date-fns", "recharts", "motion"],
     // Reuse a visited dynamic page for 30s on client navigation (Next 15 default is 0).
-    // Writes must call router.refresh() / revalidatePath() once they exist.
+    // Product writes call revalidatePath() (app/(app)/actions.ts), which clears it.
     staleTimes: { dynamic: 30, static: 180 },
+    // Product actions take a few hundred bytes; refuse anything near the 1 MB default
+    serverActions: { bodySizeLimit: "64kb" },
   },
 };
 
