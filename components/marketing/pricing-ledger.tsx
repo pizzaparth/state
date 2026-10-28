@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Magnetic, MagneticLabel } from "./magnetic";
 import { cn } from "@/lib/utils";
 import { PLANS, formatInr, type Interval } from "@/lib/billing/plans";
 
@@ -62,9 +63,13 @@ export function PricingLedger() {
               ))}
             </ul>
             <div className="mt-10">
-              <Button asChild variant={i === 0 ? "dark-cta" : "dark-secondary"} size="lg">
-                <Link href={`/register?plan=${plan.id}&interval=${interval}`}>Subscribe to {plan.name}</Link>
-              </Button>
+              <Magnetic strength={0.3} radius={100}>
+                <Button asChild variant={i === 0 ? "dark-cta" : "dark-secondary"} size="lg">
+                  <Link href={`/register?plan=${plan.id}&interval=${interval}`}>
+                    <MagneticLabel>Subscribe to {plan.name}</MagneticLabel>
+                  </Link>
+                </Button>
+              </Magnetic>
             </div>
           </div>
         ))}

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Archivo } from "next/font/google";
 import { Button } from "@/components/ui/button";
 import { ParticleField } from "@/components/marketing/particle-field";
+import { Magnetic, MagneticLabel } from "@/components/marketing/magnetic";
 
 // Expanded grotesk for display type; the wdth axis drives font-stretch
 const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
@@ -34,8 +35,8 @@ export default function MarketingLayout({
             State
           </Link>
           <div className="hidden items-center gap-6 text-sm text-[#A9A9A6] sm:flex">
-            <Link href="/#how-it-works" className="transition-colors hover:text-white">
-              How it works
+            <Link href="/#history" className="transition-colors hover:text-white">
+              Product
             </Link>
             <Link href="/principles" className="transition-colors hover:text-white">
               Principles
@@ -48,9 +49,13 @@ export default function MarketingLayout({
             <Link href="/login" className="px-3 py-2 text-sm text-[#A9A9A6] transition-colors hover:text-white">
               Sign in
             </Link>
-            <Button asChild variant="dark-cta" size="sm" className="h-9 rounded-full px-4">
-              <Link href="/register">Subscribe</Link>
-            </Button>
+            <Magnetic strength={0.3} radius={70}>
+              <Button asChild variant="dark-cta" size="sm" className="h-9 rounded-full px-4">
+                <Link href="/register">
+                  <MagneticLabel>Subscribe</MagneticLabel>
+                </Link>
+              </Button>
+            </Magnetic>
           </div>
         </nav>
       </header>

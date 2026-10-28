@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { LifecycleSequence } from "@/components/marketing/lifecycle-sequence";
+import { Magnetic, MagneticLabel } from "@/components/marketing/magnetic";
 import { ExecutionMatrix } from "@/components/marketing/execution-matrix";
 import { WorkspaceScope } from "@/components/marketing/workspace-scope";
 import { PricingLedger } from "@/components/marketing/pricing-ledger";
@@ -94,11 +94,15 @@ export default function LandingPage() {
               difference, day after day.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button asChild variant="dark-cta" size="lg" className="rounded-full px-7">
-                <Link href="/register">Subscribe</Link>
-              </Button>
+              <Magnetic>
+                <Button asChild variant="dark-cta" size="lg" className="rounded-full px-7">
+                  <Link href="/register">
+                    <MagneticLabel>Subscribe</MagneticLabel>
+                  </Link>
+                </Button>
+              </Magnetic>
               <Button asChild variant="dark-secondary" size="lg" className="rounded-full px-7">
-                <Link href="#how-it-works">See how it works</Link>
+                <Link href="#history">See your history</Link>
               </Button>
             </div>
           </div>
@@ -126,10 +130,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <LifecycleSequence />
-
       {/* History */}
-      <section aria-labelledby="history-title" className={`${sectionPad} py-[16vh]`}>
+      <section id="history" aria-labelledby="history-title" className={`${sectionPad} scroll-mt-16 py-[16vh]`}>
         <div className="max-w-3xl">
           <h2 id="history-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
             Your work has a history.
@@ -234,9 +236,13 @@ export default function LandingPage() {
       <section className={`${sectionPad} flex min-h-[80svh] flex-col justify-center py-[12vh]`}>
         <h2 className={`${displayHeading} ${silver} text-[clamp(2.25rem,10vw,9.5rem)] leading-[0.88]`}>Start measuring.</h2>
         <div className="mt-10 flex flex-wrap items-center gap-6">
-          <Button asChild variant="dark-cta" size="lg" className="rounded-full px-8">
-            <Link href="/register">Subscribe</Link>
-          </Button>
+          <Magnetic strength={0.45} radius={160}>
+            <Button asChild variant="dark-cta" size="lg" className="rounded-full px-8">
+              <Link href="/register">
+                <MagneticLabel>Subscribe</MagneticLabel>
+              </Link>
+            </Button>
+          </Magnetic>
           <p className="text-sm text-[#6F6F6B]">
             From {formatInr(PLANS.individual.priceInr.monthly)} a month. Your workspace opens as soon as payment clears.
           </p>
