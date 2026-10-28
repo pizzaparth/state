@@ -78,8 +78,9 @@ state/
 │   │   ├── history/page.tsx     # Canonical commit ledger
 │   │   ├── metrics/page.tsx     # Quantitative throughput & cycle-time analytics
 │   │   ├── personal/page.tsx    # Default personal execution board
-│   │   ├── projects/page.tsx    # Project delivery streams
-│   │   └── org/page.tsx         # Multi-member team execution board
+│   │   ├── projects/            # Project list & /projects/[projectSlug]
+│   │   ├── org/                 # Organisation list & /org/[orgSlug]/{board,projects,members,metrics}
+│   │   └── settings/            # Account, billing, preferences
 │   ├── api/                     # Server Route Handlers
 │   │   ├── auth/[...all]/       # Better Auth Next.js endpoint
 │   │   ├── health/              # Service health monitor
@@ -107,10 +108,12 @@ state/
 │   │   ├── tags.ts              # Categorisation tags & mappings
 │   │   ├── subscriptions.ts     # Subscription state & provider links
 │   │   ├── metrics.ts           # Pre-calculated metric snapshots
+│   │   ├── objectives.ts        # Measurable objectives & project/task links
+│   │   ├── events.ts            # Audit events & notifications
 │   │   └── index.ts             # Schema bundle export
 │   ├── migrations/              # Generated SQL migrations
 │   ├── queries/                 # Reusable Drizzle query functions
-│   └── index.ts                 # Neon serverless client connection
+│   └── index.ts                 # Neon WebSocket Pool client (supports transactions)
 │
 ├── lib/
 │   ├── auth/                    # Better Auth server configuration
@@ -119,6 +122,8 @@ state/
 │   ├── metrics/                 # Deterministic formulas (Velocity, Cycle Time, etc.)
 │   ├── validation/              # Zod input schemas & quick parser
 │   └── utils.ts                 # Classname merge utility (cn)
+│
+├── middleware.ts                # Redirects signed-out requests on product routes to /login
 │
 ├── styles/
 │   ├── tokens.css               # Design system variables (colors, radii, shadows)
@@ -160,7 +165,7 @@ State calculations are completely deterministic and transparent:
 
 - Node.js `v20+` or `v22+` (tested on Node `26.8.1`)
 - npm `v10+` or `v11+`
-- PostgreSQL database (or Neon Serverless account)
+- Neon PostgreSQL database (the `@neondatabase/serverless` WebSocket driver does not connect to a plain local Postgres without a WebSocket proxy)
 
 ### Setup Instructions
 
@@ -189,6 +194,9 @@ State calculations are completely deterministic and transparent:
    # Push schema directly to database (development)
    npm run db:push
 
+   # Or apply the committed migrations in db/migrations
+   npm run db:migrate
+
    # Launch Drizzle Studio database explorer
    npm run db:studio
    ```
@@ -196,6 +204,13 @@ State calculations are completely deterministic and transparent:
 5. **Start Development Server:**
    ```bash
    npm run dev
+   ```
+
+6. **Checks:**
+   ```bash
+   npm run lint
+   npm run typecheck
+   npm run build
    ```
    Open [http://localhost:3000](http://localhost:3000) to view the application.
 
