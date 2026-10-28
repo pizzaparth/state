@@ -1,0 +1,67 @@
+@import "./tokens.css";
+@import "./neumorphism.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: rgba(0, 0, 0, 0.08);
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Accessible focus indicators per AGENTS.md */
+  :focus-visible {
+    outline: 2px solid rgba(23, 23, 23, 0.75);
+    outline-offset: 2px;
+  }
+
+  /* Dark mode focus visible override */
+  .dark :focus-visible {
+    outline: 2px solid rgba(244, 244, 242, 0.85);
+    outline-offset: 2px;
+  }
+
+  /* Tabular numbers for all quantitative metrics comparisons */
+  .tabular-nums,
+  [data-tabular-nums="true"] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Touch optimization per AGENTS.md */
+  button,
+  input,
+  select,
+  textarea,
+  a {
+    touch-action: manipulation;
+  }
+
+  /* Prevent automatic iOS zoom on inputs */
+  @media (max-width: 768px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Honor user reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

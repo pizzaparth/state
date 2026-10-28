@@ -1,0 +1,68 @@
+:root {
+  /* ==========================================================================
+     State Design System Tokens
+     Reference: docs/style.md & docs/techstack.md
+     ========================================================================== */
+
+  /* Marketing & External Brand Theme (Dark Monochrome) */
+  --bg-0: #050505;
+  --bg-1: #080808;
+  --bg-2: #0D0D0D;
+
+  --surface-1: #111111;
+  --surface-2: #161616;
+  --surface-3: #1C1C1C;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-default: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.20);
+
+  --text-primary: #F4F4F2;
+  --text-secondary: #A9A9A6;
+  --text-tertiary: #6F6F6B;
+  --text-inverse: #0A0A0A;
+
+  --action-primary: #F2F2EF;
+  --action-primary-text: #0A0A0A;
+
+  /* Product Theme (Pale Neumorphic Application Environment) */
+  --app-bg: #D9D9D5;
+  --app-bg-soft: #E1E1DD;
+  --surface-base: #D9D9D5;
+  --surface-raised: #DEDEDA;
+  --surface-raised-light: #E6E6E2;
+  --surface-inset: #D2D2CE;
+
+  --surface-inverse: #101010;
+  --surface-inverse-2: #171717;
+  --inverse-text: #F2F2EF;
+
+  --app-text-primary: #171717;
+  --app-text-secondary: #5F5F5B;
+  --app-text-tertiary: #8B8B86;
+
+  /* Neumorphic Shadow Physics (Highlights & Shadows) */
+  --shadow-light: rgba(255, 255, 255, 0.70);
+  --shadow-dark: rgba(0, 0, 0, 0.10);
+  --shadow-dark-inset: rgba(0, 0, 0, 0.09);
+
+  --shadow-raised-lg: -8px -8px 20px var(--shadow-light), 8px 8px 20px var(--shadow-dark);
+  --shadow-raised-sm: -3px -3px 8px rgba(255, 255, 255, 0.65), 3px 3px 8px var(--shadow-dark);
+  --shadow-raised-xs: -2px -2px 5px rgba(255, 255, 255, 0.60), 2px 2px 5px rgba(0, 0, 0, 0.08);
+  --shadow-inset-lg: inset 3px 3px 8px var(--shadow-dark-inset), inset -3px -3px 8px var(--shadow-light);
+  --shadow-inset-sm: inset 2px 2px 5px rgba(0, 0, 0, 0.08), inset -2px -2px 5px rgba(255, 255, 255, 0.65);
+
+  /* Corner Radii (Geometric Superellipses) */
+  --radius-control: 12px;
+  --radius-input: 16px;
+  --radius-task: 16px;
+  --radius-card: 24px;
+  --radius-module: 32px;
+  --radius-pill: 9999px;
+
+  /* Transitions & Animation Duration (120ms - 220ms per docs/techstack.md) */
+  --duration-fast: 120ms;
+  --duration-normal: 180ms;
+  --duration-slow: 220ms;
+  --ease-restrained: cubic-bezier(0.16, 1, 0.3, 1);
+}
