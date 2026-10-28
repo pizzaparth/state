@@ -60,6 +60,10 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 - MUST: Use Drizzle ORM with Neon PostgreSQL for all relational queries and metric aggregations.
 - MUST: Validate all inputs (Server Actions, Route Handlers, Forms) using deterministic Zod schemas.
 - MUST: Use optimistic local updates for Kanban board card drag-and-drop; rollback only if persistence fails.
+- MUST: Route every product write through a Server Action in `app/(app)/actions.ts` (session, paid access, write budget, strict Zod schema) into `lib/mutations.ts`, which re-checks every referenced id with `assertWritable` (`lib/authz.ts`). Identity, workspace, author, timestamps and execution value come from the server, never the request.
+- MUST: Scope every read query by the viewer's workspace ids; ids outside them behave like missing ids (404, never 403).
+- MUST: Add a case to `scripts/authz-check.ts` for every new endpoint or object type (User A vs User B, outsider, viewer role).
+- MUST: Index every foreign key column and bound every list query (`limit`).
 - NEVER: Introduce distributed microservices, external queue brokers, or separate databases before usage demands it.
 
 ---

@@ -6,10 +6,15 @@ import { CommitDetail, TaskDetail } from "./details";
 
 export type PageSearchParams = Promise<Record<string, string | undefined>>;
 
+// Repeated (?task=a&task=b) or malformed ids never reach a query
+const objectIdParam = (value: unknown) => (typeof value === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(value) ? value : null);
+
 /** Renders the task or commit panel named in the URL, if the viewer may read it. */
 export async function Drawers({ params, viewer }: { params: Record<string, string | undefined>; viewer: Viewer }) {
-  if (params.task) {
-    const task = await getTaskDetail(params.task, viewer.workspaceIds);
+  const taskId = objectIdParam(params.task);
+  const commitId = objectIdParam(params.commit);
+  if (taskId) {
+    const task = await getTaskDetail(taskId, viewer.workspaceIds);
     if (task) {
       return (
         <DetailDrawer param="task" title="Task">
@@ -18,8 +23,8 @@ export async function Drawers({ params, viewer }: { params: Record<string, strin
       );
     }
   }
-  if (params.commit) {
-    const commit = await getCommitDetail(params.commit, viewer.workspaceIds);
+  if (commitId) {
+    const commit = await getCommitDetail(commitId, viewer.workspaceIds);
     if (commit) {
       return (
         <DetailDrawer param="commit" title="Commit">

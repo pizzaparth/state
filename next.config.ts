@@ -15,6 +15,8 @@ const securityHeaders = [
   // Razorpay Checkout may open bank/UPI windows, so popups keep their opener
   { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
   { key: "X-DNS-Prefetch-Control", value: "off" },
+  // Other sites cannot embed this origin's responses (XS-Leaks, Spectre-style reads)
+  { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
 ];
 
 const nextConfig: NextConfig = {
