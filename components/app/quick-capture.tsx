@@ -80,7 +80,7 @@ export function QuickCapture({
       {captured.length > 0 && (
         <ul className="mt-2 space-y-1">
           {captured.map((c, i) => (
-            <li key={i} className="flex items-center gap-3 rounded-[12px] px-3 py-2 text-sm">
+            <li key={captured.length - i} className="flex animate-row-in items-center gap-3 rounded-[12px] px-3 py-2 text-sm">
               <span aria-hidden="true" className="app-field size-3 rounded-full" />
               <span className="min-w-0 flex-1 truncate font-medium">{c.title}</span>
               <span className="text-xs text-[#85857F]">{[c.project, c.priority].filter(Boolean).join(", ") || "Unsorted"}</span>

@@ -1,8 +1,7 @@
 import * as React from "react";
-import Link from "next/link";
-import type { Route } from "next";
 import { cn } from "@/lib/utils";
 import type { DueState } from "@/lib/format";
+import { TabLinks } from "./tab-links";
 
 /**
  * Product-surface primitives on the flat AMOLED surface scale (styles/product.css):
@@ -75,31 +74,14 @@ export function ProgressRail({ value, max, label }: { value: number; max: number
       aria-valuenow={value}
       className="app-field h-2.5 w-full overflow-hidden rounded-full"
     >
-      <div className="h-full origin-left rounded-full bg-[#F2F2EF] transition-transform duration-300" style={{ transform: `scaleX(${pct / 100})` }} />
+      <div className="h-full origin-left animate-grow-x rounded-full bg-[#F2F2EF] transition-transform duration-300" style={{ transform: `scaleX(${pct / 100})` }} />
     </div>
   );
 }
 
-/** URL-driven segmented control: an inset trough with a raised active segment. */
+/** URL-driven segmented control with a sliding active indicator. */
 export function SegmentedLinks({ label, items }: { label: string; items: { href: string; label: string; active: boolean }[] }) {
-  return (
-    <nav aria-label={label} className="app-field inline-flex rounded-[12px] p-1">
-      {items.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href as Route}
-          aria-current={item.active ? "page" : undefined}
-          scroll={false}
-          className={cn(
-            "rounded-[9px] px-3 py-1.5 text-xs font-medium transition-[background-color,box-shadow,color]",
-            item.active ? "bg-white/[0.12] text-[#F2F2EF]" : "text-[#9A9A96] hover:text-[#F2F2EF]"
-          )}
-        >
-          {item.label}
-        </Link>
-      ))}
-    </nav>
-  );
+  return <TabLinks label={label} items={items} />;
 }
 
 export function Chip({ children }: { children: React.ReactNode }) {

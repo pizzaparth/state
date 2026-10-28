@@ -1344,6 +1344,26 @@ Avoid:
 
 The marketing site may use limited scroll motion.
 
+## Product motion catalogue (implemented)
+
+All product motion uses `transform` and `opacity` only, lasts 100–220ms (data reveals up to 600ms), is interruptible, and collapses to an instant change under `prefers-reduced-motion`. Keyframes live in `tailwind.config.ts`.
+
+| Element | Motion |
+|---|---|
+| Route change | content fades in and rises 6px, once per route (`app/(app)/template.tsx`) |
+| Sidebar, segmented controls, section tabs | active indicator slides to the new item (shared layout, spring) |
+| Task / commit drawer | slides in from the right; animates out before the URL updates |
+| Dialogs, command palette | fade and scale up from 98%; reverse on close |
+| Mobile navigation | slides in from the left |
+| Menus | scale from the trigger's origin |
+| Toasts | rise and fade in |
+| Buttons | press scales to 97% and the fill drops to black |
+| Board | drag lift and drop; a brief flash when a task reaches Done |
+| Progress and distribution bars | fill grows from zero on load |
+| Daily execution bars | grow up from the baseline, lightly staggered |
+| Execution graph | cells fade in column by column |
+| Quick capture | new items slide in |
+
 ---
 
 # 40. Hover Behaviour

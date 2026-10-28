@@ -1,7 +1,5 @@
 import * as React from "react";
-import Link from "next/link";
-import type { Route } from "next";
-import { cn } from "@/lib/utils";
+import { TabLinks } from "./tab-links";
 
 const ITEMS = [
   { href: "/settings/account", label: "Account" },
@@ -10,23 +8,7 @@ const ITEMS = [
 ] as const;
 
 export function SettingsNav({ active }: { active: (typeof ITEMS)[number]["href"] }) {
-  return (
-    <nav aria-label="Settings sections" className="app-field inline-flex rounded-[14px] p-1">
-      {ITEMS.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href as Route}
-          aria-current={item.href === active ? "page" : undefined}
-          className={cn(
-            "rounded-[10px] px-4 py-2 text-sm font-medium transition-[background-color,box-shadow,color]",
-            item.href === active ? "bg-white/[0.12] text-[#F2F2EF]" : "text-[#9A9A96] hover:text-[#F2F2EF]"
-          )}
-        >
-          {item.label}
-        </Link>
-      ))}
-    </nav>
-  );
+  return <TabLinks label="Settings sections" size="md" scroll items={ITEMS.map((item) => ({ ...item, active: item.href === active }))} />;
 }
 
 export function Row({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {

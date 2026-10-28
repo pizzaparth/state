@@ -102,8 +102,11 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
                   <span
                     key={d.day}
                     onPointerEnter={() => setActive(i)}
-                    className={cn("aspect-square rounded-[3px] transition-transform duration-100", active === i && "scale-125 outline outline-1 outline-white")}
-                    style={{ backgroundColor: FILL[level(d.execution)] }}
+                    className={cn(
+                      "aspect-square animate-cell-in rounded-[3px] transition-transform duration-100",
+                      active === i && "scale-125 outline outline-1 outline-white"
+                    )}
+                    style={{ backgroundColor: FILL[level(d.execution)], animationDelay: `${Math.floor(i / 7) * Math.min(14, 420 / weeks)}ms` }}
                   />
                 ) : (
                   <span key={`pad-${i}`} className="aspect-square" />

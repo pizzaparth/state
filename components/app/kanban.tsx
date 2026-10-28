@@ -66,6 +66,9 @@ export function Kanban({
   const [cards, setCards] = React.useState(initial);
   const [dragging, setDragging] = React.useState<BoardCard | null>(null);
   const [overColumn, setOverColumn] = React.useState<string | null>(null);
+  // Card that just reached Done: a brief flash acknowledges the recorded commit
+  const [flashId, setFlashId] = React.useState<string | null>(null);
+  const flashTimer = React.useRef<number | undefined>(undefined);
   const startColumn = React.useRef<string | null>(null);
   const notify = useLocalOnlyNotice();
 
@@ -79,7 +82,12 @@ export function Kanban({
 
   const announceMove = (card: BoardCard, toColumn: string) => {
     const name = columns.find((c) => c.id === toColumn)?.name ?? "column";
-    if (toColumn === doneId) notify(`“${card.title}” moved to Done. A commit of +${card.weight} would be recorded.`);
+    if (toColumn === doneId) {
+      window.clearTimeout(flashTimer.current);
+      setFlashId(card.id);
+      flashTimer.current = window.setTimeout(() => setFlashId(null), 950);
+      notify(`“${card.title}” moved to Done. A commit of +${card.weight} would be recorded.`);
+    }
     else notify(`“${card.title}” moved to ${name}.`);
   };
 
@@ -157,6 +165,7 @@ export function Kanban({
                     <SortableCard
                       key={card.id}
                       card={card}
+                      flash={flashId === card.id}
                       href={taskHref[card.id]}
                       done={isDone}
                       showAssignee={showAssignee}
@@ -200,6 +209,7 @@ function Column({ column, highlighted, children }: { column: BoardColumn; highli
 
 function SortableCard({
   card,
+  flash,
   href,
   done,
   showAssignee,
@@ -207,6 +217,7 @@ function SortableCard({
   onMove,
 }: {
   card: BoardCard;
+  flash: boolean;
   href: string;
   done: boolean;
   showAssignee: boolean;
@@ -223,7 +234,7 @@ function SortableCard({
       className={cn("relative", isDragging && "opacity-40")}
     >
       <div {...attributes} {...listeners} aria-roledescription="draggable task" className="cursor-grab rounded-[16px] active:cursor-grabbing">
-        <CardFace card={card} done={done} showAssignee={showAssignee} href={href} />
+        <CardFace card={card} done={done} showAssignee={showAssignee} href={href} flash={flash} />
       </div>
       <Menu.Root>
         <Menu.Trigger
@@ -233,7 +244,7 @@ function SortableCard({
           <MoreHorizontal className="size-4" aria-hidden="true" />
         </Menu.Trigger>
         <Menu.Portal>
-          <Menu.Content align="end" sideOffset={6} className="app-card z-50 min-w-44 rounded-[16px] p-1.5 text-sm">
+          <Menu.Content align="end" sideOffset={6} className="app-card z-50 origin-[var(--radix-dropdown-menu-content-transform-origin)] data-[state=closed]:animate-menu-out data-[state=open]:animate-menu-in min-w-44 rounded-[16px] p-1.5 text-sm">
             <Menu.Label className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">Move to…</Menu.Label>
             {columns
               .filter((c) => c.id !== card.columnId)
@@ -259,12 +270,14 @@ function CardFace({
   showAssignee,
   href,
   lifted = false,
+  flash = false,
 }: {
   card: BoardCard;
   done: boolean;
   showAssignee: boolean;
   href?: string;
   lifted?: boolean;
+  flash?: boolean;
 }) {
   const title = (
     <span className={cn("block pr-8 text-sm font-medium leading-snug", done ? "text-[#9A9A96] line-through decoration-white/30" : "text-[#F2F2EF]")}>
@@ -274,10 +287,11 @@ function CardFace({
   return (
     <div
       className={cn(
-        "rounded-[16px] p-3.5",
+        "relative rounded-[16px] p-3.5",
         lifted ? "scale-[1.02] border border-white/40" : "app-card"
       )}
     >
+      {flash && <span aria-hidden="true" className="pointer-events-none absolute inset-0 animate-flash rounded-[16px] bg-white/[0.14]" />}
       {href ? (
         <Link href={href as Route} scroll={false} className="rounded-[6px] focus-visible:outline-2">
           {title}

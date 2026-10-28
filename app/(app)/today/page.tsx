@@ -47,7 +47,7 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
                 aria-valuenow={done}
                 className="mt-5 h-2.5 overflow-hidden rounded-full bg-black/10"
               >
-                <div className="h-full origin-left rounded-full bg-[#0A0A0A]" style={{ transform: `scaleX(${pct / 100})` }} />
+                <div className="h-full origin-left animate-grow-x rounded-full bg-[#0A0A0A]" style={{ transform: `scaleX(${pct / 100})` }} />
               </div>
               <p className="mt-3 text-sm text-[#55554F]">
                 {done >= target ? "Target reached." : `${formatNumber(target - done)} to today’s target.`}{" "}

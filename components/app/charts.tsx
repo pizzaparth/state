@@ -19,12 +19,13 @@ export function VelocityBars({ days }: { days: DailyExecution[] }) {
     <figure>
       <div className="relative h-44" aria-hidden="true">
         <div className="absolute inset-0 flex items-end gap-[2px] border-b border-white/15">
-          {days.map((d) => (
+          {days.map((d, i) => (
             <div
               key={d.day}
               title={`${dayText(d.day, { day: "numeric", month: "short" })}: ${d.execution} execution`}
-              className="min-w-0 flex-1 rounded-t-[3px] bg-[#F2F2EF]"
-              style={{ height: `${(d.execution / max) * 100}%` }}
+              className="min-w-0 flex-1 origin-bottom animate-grow-y rounded-t-[3px] bg-[#F2F2EF]"
+              // Light stagger, capped so long ranges finish quickly
+              style={{ height: `${(d.execution / max) * 100}%`, animationDelay: `${Math.min(i * 12, 360)}ms` }}
             />
           ))}
         </div>
@@ -79,7 +80,7 @@ export function CycleHistogram({ durationsMs }: { durationsMs: number[] }) {
         <li key={b.label} className="grid grid-cols-[3.5rem_minmax(0,1fr)_2rem] items-center gap-3 text-xs">
           <span className="tabular-nums text-[#9A9A96]">{b.label}</span>
           <span className="app-field h-2.5 overflow-hidden rounded-full">
-            <span className="block h-full origin-left rounded-full bg-[#F2F2EF]" style={{ transform: `scaleX(${counts[i] / max})` }} />
+            <span className="block h-full origin-left animate-grow-x rounded-full bg-[#F2F2EF]" style={{ transform: `scaleX(${counts[i] / max})` }} />
           </span>
           <span className="text-right font-mono tabular-nums text-[#F2F2EF]">{counts[i]}</span>
         </li>
@@ -105,7 +106,7 @@ export function Distribution({ rows }: { rows: { name: string; execution: number
               </span>
             </div>
             <span className="app-field mt-1.5 block h-2 overflow-hidden rounded-full">
-              <span className="block h-full origin-left rounded-full bg-[#F2F2EF]" style={{ transform: `scaleX(${share})` }} />
+              <span className="block h-full origin-left animate-grow-x rounded-full bg-[#F2F2EF]" style={{ transform: `scaleX(${share})` }} />
             </span>
           </li>
         );

@@ -15,19 +15,28 @@ export function DetailDrawer({ param, title, children }: { param: string; title:
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const close = () => {
+  const [open, setOpen] = React.useState(true);
+
+  const navigateAway = () => {
     const next = new URLSearchParams(searchParams.toString());
     next.delete(param);
     const query = next.toString();
     router.replace(`${pathname}${query ? `?${query}` : ""}` as Route, { scroll: false });
   };
 
+  // Play the exit animation, then drop the URL param (immediately under reduced motion)
+  const close = () => {
+    setOpen(false);
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(navigateAway, reduced ? 0 : 140);
+  };
+
   return (
-    <Dialog.Root open onOpenChange={(open) => !open && close()}>
+    <Dialog.Root open={open} onOpenChange={(next) => !next && close()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 animate-fade-in bg-black/70 backdrop-blur-[2px]" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content
-          className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[30rem] flex-col overscroll-contain bg-[#0A0A0A] border-l border-white/10 outline-none sm:inset-y-3 sm:right-3 sm:rounded-[28px]"
+          className="fixed inset-y-0 right-0 z-50 flex w-full data-[state=closed]:animate-drawer-out data-[state=open]:animate-drawer-in max-w-[30rem] flex-col overscroll-contain bg-[#0A0A0A] border-l border-white/10 outline-none sm:inset-y-3 sm:right-3 sm:rounded-[28px]"
           aria-describedby={undefined}
         >
           <div className="flex items-center justify-between gap-4 px-6 pb-2 pt-6">

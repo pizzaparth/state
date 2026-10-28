@@ -1,9 +1,7 @@
 import * as React from "react";
-import Link from "next/link";
-import type { Route } from "next";
 import type { ViewerOrg } from "@/lib/viewer";
-import { cn } from "@/lib/utils";
 import { Chip } from "./primitives";
+import { TabLinks } from "./tab-links";
 
 const TABS = [
   { key: "overview", label: "Overview", path: "" },
@@ -25,21 +23,12 @@ export function OrgHeader({ org, active, description }: { org: ViewerOrg; active
         </div>
         <Chip>Your role: {org.role}</Chip>
       </div>
-      <nav aria-label={`${org.name} sections`} className="app-field inline-flex max-w-full overflow-x-auto rounded-[14px] p-1">
-        {TABS.map((tab) => (
-          <Link
-            key={tab.key}
-            href={`/org/${org.slug}${tab.path}` as Route}
-            aria-current={tab.key === active ? "page" : undefined}
-            className={cn(
-              "shrink-0 rounded-[10px] px-4 py-2 text-sm font-medium transition-[background-color,box-shadow,color]",
-              tab.key === active ? "bg-white/[0.12] text-[#F2F2EF]" : "text-[#9A9A96] hover:text-[#F2F2EF]"
-            )}
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
+      <TabLinks
+        label={`${org.name} sections`}
+        size="md"
+        scroll
+        items={TABS.map((tab) => ({ href: `/org/${org.slug}${tab.path}`, label: tab.label, active: tab.key === active }))}
+      />
     </header>
   );
 }

@@ -27,7 +27,10 @@
   border: 1px solid var(--app-line-strong);
   border-radius: var(--radius-control);
   color: var(--app-text-primary);
-  transition: border-color var(--duration-fast) var(--ease-restrained), background-color var(--duration-fast) var(--ease-restrained);
+  transition:
+    border-color var(--duration-fast) var(--ease-restrained),
+    background-color var(--duration-fast) var(--ease-restrained),
+    transform var(--duration-fast) var(--ease-restrained);
 }
 
 .app-btn:hover {
@@ -35,8 +38,19 @@
   border-color: rgba(255, 255, 255, 0.24);
 }
 
+/* Press: fill drops to the page and the control gives slightly under the pointer */
 .app-btn:active {
   background-color: var(--app-bg);
+  transform: scale(0.97);
+}
+
+/* Inverse buttons (+ COMMIT) share the same press response */
+button.app-inverse {
+  transition: transform var(--duration-fast) var(--ease-restrained), background-color var(--duration-fast) var(--ease-restrained);
+}
+
+button.app-inverse:active {
+  transform: scale(0.97);
 }
 
 .app-field {

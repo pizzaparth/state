@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { usePathname, useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
+import { LayoutGroup, MotionConfig, motion } from "motion/react";
 import {
   Activity,
   BarChart3,
@@ -138,12 +139,13 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
   const title = TITLES.find(([re]) => re.test(pathname))?.[1] ?? "State";
 
   return (
+    <MotionConfig reducedMotion="user">
     <NoticeProvider>
       <ShellContext.Provider value={{ openPalette: () => setPaletteOpen(true), openCommit: () => setCommitOpen(true) }}>
         <div className="flex h-[100dvh] w-full overflow-hidden bg-[#000000] text-[#F2F2EF]">
           <aside className="hidden w-64 shrink-0 p-3 lg:block">
             <div className="app-panel flex h-full flex-col rounded-[28px]">
-              <SidebarContent data={data} pathname={pathname} />
+              <SidebarContent data={data} pathname={pathname} scope="rail" />
             </div>
           </aside>
 
@@ -184,7 +186,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
                 <button
                   type="button"
                   onClick={() => setCommitOpen(true)}
-                  className="app-inverse inline-flex h-10 items-center gap-1.5 rounded-[12px] px-4 text-xs font-semibold tracking-[0.06em] transition-[background-color,transform] hover:bg-white active:translate-y-px"
+                  className="app-inverse inline-flex h-10 items-center gap-1.5 rounded-[12px] px-4 text-xs font-semibold tracking-[0.06em] hover:bg-white"
                 >
                   <Plus className="size-3.5" aria-hidden="true" />
                   COMMIT
@@ -193,7 +195,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
             </header>
 
             <main id="content" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-16 pt-4 sm:px-6 lg:px-8">
-              <div className="mx-auto max-w-6xl space-y-8">{children}</div>
+              <div className="mx-auto max-w-6xl">{children}</div>
             </main>
           </div>
         </div>
@@ -201,16 +203,16 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
         {/* Mobile navigation drawer */}
         <Dialog.Root open={navOpen} onOpenChange={setNavOpen}>
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px] lg:hidden" />
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in lg:hidden" />
             <Dialog.Content
               aria-describedby={undefined}
-              className="fixed inset-y-3 left-3 z-50 flex w-[17rem] flex-col overscroll-contain rounded-[28px] bg-[#0A0A0A] border border-white/10 outline-none lg:hidden"
+              className="fixed inset-y-3 left-3 z-50 flex data-[state=closed]:animate-nav-out data-[state=open]:animate-nav-in w-[17rem] flex-col overscroll-contain rounded-[28px] bg-[#0A0A0A] border border-white/10 outline-none lg:hidden"
             >
               <Dialog.Title className="sr-only">Navigation</Dialog.Title>
               <Dialog.Close aria-label="Close navigation" className="app-btn absolute right-3 top-3 grid size-9 place-items-center rounded-full">
                 <X className="size-4" aria-hidden="true" />
               </Dialog.Close>
-              <SidebarContent data={data} pathname={pathname} />
+              <SidebarContent data={data} pathname={pathname} scope="drawer" />
             </Dialog.Content>
           </Dialog.Portal>
         </Dialog.Root>
@@ -219,16 +221,17 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
         <CommitDialog open={commitOpen} onOpenChange={setCommitOpen} projects={data.projects} />
       </ShellContext.Provider>
     </NoticeProvider>
+    </MotionConfig>
   );
 }
 
 // ------------------------------------------------------------------ sidebar
-function SidebarContent({ data, pathname }: { data: ShellData; pathname: string }) {
+function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: string; scope: string }) {
   const router = useRouter();
   const [signingOut, setSigningOut] = React.useState(false);
 
   return (
-    <>
+    <LayoutGroup id={`nav-${scope}`}>
       <div className="px-5 pb-4 pt-5">
         <Link href="/today" className="block rounded-[8px]">
           <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#9A9A96]">Ksan Relay</span>
@@ -245,20 +248,13 @@ function SidebarContent({ data, pathname }: { data: ShellData; pathname: string 
                 const Icon = item.icon;
                 return (
                   <li key={item.href}>
-                    <Link
-                      href={item.href as Route}
-                      aria-current={active ? "page" : undefined}
-                      className={cn(
-                        "flex items-center gap-3 rounded-[12px] px-3 py-2 text-sm font-medium transition-[background-color,color,box-shadow]",
-                        active ? "bg-[#F2F2EF] text-[#0A0A0A]" : "text-[#BDBDB9] hover:bg-white/[0.05] hover:text-[#F2F2EF]"
-                      )}
-                    >
+                    <NavLink href={item.href} active={active}>
                       <Icon className="size-4 shrink-0" aria-hidden="true" />
                       <span className="min-w-0 flex-1 truncate">{item.name}</span>
                       {item.badge ? (
                         <span className={cn("font-mono text-[11px] tabular-nums", active ? "text-[#55554F]" : "text-[#9A9A96]")}>{item.badge}</span>
                       ) : null}
-                    </Link>
+                    </NavLink>
                   </li>
                 );
               })}
@@ -267,17 +263,10 @@ function SidebarContent({ data, pathname }: { data: ShellData; pathname: string 
         ))}
       </nav>
       <div className="space-y-1 border-t border-white/[0.08] p-3">
-        <Link
-          href="/settings"
-          aria-current={isActive(pathname, "/settings") ? "page" : undefined}
-          className={cn(
-            "flex items-center gap-3 rounded-[12px] px-3 py-2 text-sm font-medium transition-colors",
-            isActive(pathname, "/settings") ? "bg-[#F2F2EF] text-[#0A0A0A]" : "text-[#BDBDB9] hover:bg-white/[0.05] hover:text-[#F2F2EF]"
-          )}
-        >
+        <NavLink href="/settings" active={isActive(pathname, "/settings")}>
           <Settings className="size-4" aria-hidden="true" />
           Settings
-        </Link>
+        </NavLink>
         <div className="flex items-center gap-3 px-3 pt-2">
           <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#1F1F1F] text-[11px] font-semibold border border-white/15" aria-hidden="true">
             {data.user.initials}
@@ -302,7 +291,31 @@ function SidebarContent({ data, pathname }: { data: ShellData; pathname: string 
           </button>
         </div>
       </div>
-    </>
+    </LayoutGroup>
+  );
+}
+
+/** Nav item whose near-white active pill slides between items (shared layout animation). */
+function NavLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href as Route}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "relative flex items-center gap-3 rounded-[12px] px-3 py-2 text-sm font-medium transition-colors duration-150",
+        active ? "text-[#0A0A0A]" : "text-[#BDBDB9] hover:bg-white/[0.05] hover:text-[#F2F2EF]"
+      )}
+    >
+      {active && (
+        <motion.span
+          layoutId="nav-active"
+          aria-hidden="true"
+          className="absolute inset-0 rounded-[12px] bg-[#F2F2EF]"
+          transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.8 }}
+        />
+      )}
+      <span className="relative z-[1] flex min-w-0 flex-1 items-center gap-3">{children}</span>
+    </Link>
   );
 }
 
@@ -352,10 +365,10 @@ function CommandPalette({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="app-overlay fixed left-1/2 top-[12vh] z-50 w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[24px] outline-none"
+          className="app-overlay fixed left-1/2 top-[12vh] z-50 origin-top data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[24px] outline-none"
         >
           <Dialog.Title className="sr-only">Command palette</Dialog.Title>
           <div className="flex items-center gap-3 border-b border-white/10 px-5">
@@ -428,8 +441,8 @@ function CommitDialog({
   return (
     <Dialog.Root open={open} onOpenChange={(o) => (setError(null), onOpenChange(o))}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px]" />
-        <Dialog.Content className="fixed left-1/2 top-[14vh] z-50 w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 overscroll-contain rounded-[28px] bg-[#0A0A0A] p-6 border border-white/10 outline-none">
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
+        <Dialog.Content className="fixed left-1/2 top-[14vh] z-50 origin-top data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 overscroll-contain rounded-[28px] bg-[#0A0A0A] p-6 border border-white/10 outline-none">
           <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">Record a commit</Dialog.Title>
           <Dialog.Description className="mt-1 text-sm text-[#9A9A96]">
             For executed work that never started as a task.

@@ -93,10 +93,84 @@ const config: Config = {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
+        // Product motion (transform/opacity only; durations 120–220ms)
+        "page-in": {
+          from: { opacity: "0", transform: "translateY(6px)" },
+          to: { opacity: "1", transform: "none" },
+        },
+        "overlay-in": { from: { opacity: "0" }, to: { opacity: "1" } },
+        "overlay-out": { from: { opacity: "1" }, to: { opacity: "0" } },
+        "drawer-in": {
+          from: { opacity: "0", transform: "translateX(24px)" },
+          to: { opacity: "1", transform: "none" },
+        },
+        "drawer-out": {
+          from: { opacity: "1", transform: "none" },
+          to: { opacity: "0", transform: "translateX(24px)" },
+        },
+        "nav-in": {
+          from: { opacity: "0", transform: "translateX(-24px)" },
+          to: { opacity: "1", transform: "none" },
+        },
+        "nav-out": {
+          from: { opacity: "1", transform: "none" },
+          to: { opacity: "0", transform: "translateX(-24px)" },
+        },
+        // Centred dialogs keep their -50% x offset inside the keyframes
+        "dialog-in": {
+          from: { opacity: "0", transform: "translateX(-50%) translateY(8px) scale(0.98)" },
+          to: { opacity: "1", transform: "translateX(-50%) translateY(0) scale(1)" },
+        },
+        "dialog-out": {
+          from: { opacity: "1", transform: "translateX(-50%) scale(1)" },
+          to: { opacity: "0", transform: "translateX(-50%) scale(0.98)" },
+        },
+        "menu-in": {
+          from: { opacity: "0", transform: "scale(0.96)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        "menu-out": {
+          from: { opacity: "1", transform: "scale(1)" },
+          to: { opacity: "0", transform: "scale(0.96)" },
+        },
+        "toast-in": {
+          from: { opacity: "0", transform: "translateY(8px) scale(0.98)" },
+          to: { opacity: "1", transform: "none" },
+        },
+        "row-in": {
+          from: { opacity: "0", transform: "translateY(-4px)" },
+          to: { opacity: "1", transform: "none" },
+        },
+        // Fills animate from zero to their inline transform value
+        "grow-x": { from: { transform: "scaleX(0)" } },
+        "grow-y": { from: { transform: "scaleY(0)" } },
+        "cell-in": { from: { opacity: "0" } },
+        flash: {
+          "0%": { opacity: "0" },
+          "25%": { opacity: "1" },
+          "100%": { opacity: "0" },
+        },
       },
       animation: {
         "line-rise": "line-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) both",
         "fade-in": "fade-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "page-in": "page-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "overlay-in": "overlay-in 160ms ease-out both",
+        "overlay-out": "overlay-out 120ms ease-in both",
+        "drawer-in": "drawer-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "drawer-out": "drawer-out 140ms ease-in both",
+        "nav-in": "nav-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "nav-out": "nav-out 140ms ease-in both",
+        "dialog-in": "dialog-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "dialog-out": "dialog-out 120ms ease-in both",
+        "menu-in": "menu-in 140ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "menu-out": "menu-out 100ms ease-in both",
+        "toast-in": "toast-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "row-in": "row-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "grow-x": "grow-x 600ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "grow-y": "grow-y 500ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "cell-in": "cell-in 300ms ease-out both",
+        flash: "flash 900ms ease-out both",
       },
       letterSpacing: {
         display: "-0.03em",
