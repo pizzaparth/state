@@ -64,7 +64,7 @@ export function PricingLedger() {
             </ul>
             <div className="mt-10">
               <Magnetic strength={0.3} radius={100}>
-                <Button asChild variant={i === 0 ? "dark-cta" : "dark-secondary"} size="lg">
+                <Button asChild variant="dark-cta" size="lg">
                   <Link href={`/register?plan=${plan.id}&interval=${interval}`}>
                     <MagneticLabel>Subscribe to {plan.name}</MagneticLabel>
                   </Link>
