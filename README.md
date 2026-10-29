@@ -259,6 +259,12 @@ State has no free plan and no trial. The flow is:
 4. First activation provisions the personal workspace, board and columns.
 5. The `(app)` layout checks session and paid access server-side; unpaid users are sent to `/subscribe`.
 
+**Skip payment (development only).** `/subscribe` shows a “Skip payment” button under
+`npm run dev`. It grants a 30-day subscription (provider `dev`) and provisions the
+workspace, the same as a first payment. A production build hides it and refuses the action
+on the server. `ALLOW_PAYMENT_SKIP=1` turns it on for a local `next start`; production
+refuses to boot with that flag on a non-localhost URL.
+
 Configure plan and price IDs in `.env` (`RAZORPAY_PLAN_*`, `STRIPE_PRICE_*`). Display prices live in `lib/billing/plans.ts`; keep them in sync with the provider dashboards.
 
 ---

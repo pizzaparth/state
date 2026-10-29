@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { hasPaidAccess } from "@/lib/billing/access";
 import { PLANS } from "@/lib/billing/plans";
+import { paymentSkipEnabled } from "@/lib/billing/skip";
 import { SubscribeForm } from "./subscribe-form";
 
 export const metadata = { title: "Subscribe — State" };
@@ -34,6 +35,7 @@ export default async function SubscribePage({
         plans={Object.values(PLANS)}
         initialPlan={plan === "organisation" ? "organisation" : "individual"}
         initialInterval={interval === "yearly" ? "yearly" : "monthly"}
+        canSkip={paymentSkipEnabled()}
       />
     </div>
   );

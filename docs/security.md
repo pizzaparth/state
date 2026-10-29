@@ -57,7 +57,7 @@ rate limits. `authz:check` refuses any database whose name does not end in `_tes
 | M1–M6 tampering | Extra `workspaceId`/`userId`/`source`/`createdAt` keys rejected. Commit weight outside 1/2/4/8 rejected (0, negative, 1 000 000, string, fraction). Oversized message and capture rejected. Ids with SQL metacharacters rejected. |
 | L1–L6 lifecycle and races | 10 parallel Done moves record exactly one commit. A replayed Done records nothing. Reopen retires the commit, and completing again records one. A deleted task cannot be moved. A removed member loses write access at once. |
 
-`npm run security:check` (black box, production build): **76 of 76 pass.**
+`npm run security:check` (black box, production build): **77 of 77 pass.**
 
 Email verification and password reset (EV, PR):
 
@@ -86,6 +86,7 @@ Product and surface checks:
 | SA4/SA5 | Extra fields; inflated execution value | Rejected, no commit written |
 | SA6 | Unpaid account writing through the raw action | “Your subscription is not active.” |
 | SA7 | The owner's own move | Saved |
+| SK1 | Calling the development “Skip payment” action on a production build | Hidden and refused on the server; no subscription created |
 | SA8 | Burst of 70 writes | Write budget blocks the excess |
 | X2 | Stored XSS in a task title | Escaped on render |
 | K2 | Session token reused after sign-out | Redirected to sign-in |
@@ -115,7 +116,7 @@ malformed `?task=`/`?commit=` parameters never reach a query. Tried with
 | 11–13 | Sessions, JWT, OAuth | Opaque random session tokens, server-side revocation (K2), every session revoked on password reset (PR8), 14-day expiry. The reset token is removed from the address bar and history when the page loads. No JWTs. OAuth uses Better Auth's state and PKCE; account linking is pinned to verified emails, no trusted providers and no cross-email linking. |
 | 14–15 | API, mass assignment | Endpoints enumerated (E1); strict schemas (M1–M5, SA4, M2); bounded payloads (64 KB Server Actions, 16 KB billing JSON, list limits). |
 | 16–18 | SSRF, uploads, path traversal | Not applicable: the server fetches no user URLs, takes no uploads and serves no files by path. |
-| 19–22 | Webhooks, payments, business logic, races | Signed webhooks (W1–W3); price and plan resolved on the server (V1–V4). Workflow skipping, replay and parallel completion covered (L1–L4, SA6). |
+| 19–22 | Webhooks, payments, business logic, races | Signed webhooks (W1–W3); price and plan resolved on the server (V1–V4). The development payment skip is off in production builds and refused on the server (SK1); `lib/env.ts` blocks the override flag on public URLs. Workflow skipping, replay and parallel completion covered (L1–L4, SA6). |
 | 23–31 | CORS, headers, clickjacking, redirects, reset poisoning, Host header, cache | CO1, H1, R1, PR2, PR3. Auth, email and payment URLs come from fixed env values (`baseURL`, `lib/env.ts`), never the Host header. No shared caching of private pages (CA1, CA2). |
 | 32–36 | Prototype pollution, DOM clobbering, postMessage, WebSockets, GraphQL | Strict Zod objects, no `message` listeners, no WebSocket or GraphQL endpoints. |
 | 37 | Email change | Not offered: Better Auth's change-email endpoint is disabled (E1). |

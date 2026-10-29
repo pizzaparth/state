@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatInr, type Interval, type Plan, type PlanId } from "@/lib/billing/plans";
+import { skipPaymentAction } from "./actions";
 
 interface RazorpayCheckoutResponse {
   razorpay_payment_id: string;
@@ -36,16 +37,20 @@ export function SubscribeForm({
   plans,
   initialPlan,
   initialInterval,
+  canSkip = false,
 }: {
   plans: Plan[];
   initialPlan: PlanId;
   initialInterval: Interval;
+  /** Development builds only (lib/billing/skip.ts); the server re-checks on every call. */
+  canSkip?: boolean;
 }) {
   const router = useRouter();
   const [planId, setPlanId] = React.useState<PlanId>(initialPlan);
   const [interval, setInterval] = React.useState<Interval>(initialInterval);
   const [seats, setSeats] = React.useState("2");
   const [pending, setPending] = React.useState(false);
+  const [skipping, startSkip] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
 
   const plan = plans.find((p) => p.id === planId)!;
@@ -198,6 +203,29 @@ export function SubscribeForm({
       <p className="text-center text-[11px] text-[#6F6F6B]">
         Payments in India via Razorpay; elsewhere via Stripe. Prices in INR; Stripe charges the local equivalent.
       </p>
+      {canSkip && (
+        <div className="space-y-2 border-t border-dashed border-white/[0.12] pt-4">
+          <Button
+            type="button"
+            variant="dark-secondary"
+            size="md"
+            className="w-full"
+            isLoading={skipping}
+            disabled={skipping || pending}
+            onClick={() =>
+              startSkip(async () => {
+                const result = await skipPaymentAction({ plan: planId });
+                if (result?.error) setError(result.error);
+              })
+            }
+          >
+            Skip payment
+          </Button>
+          <p className="text-center text-[11px] text-[#6F6F6B]">
+            Development only. Activates a 30-day {plan.name.toLowerCase()} subscription without charging. Not available in production.
+          </p>
+        </div>
+      )}
     </form>
   );
 }

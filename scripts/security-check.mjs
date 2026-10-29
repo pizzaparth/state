@@ -483,6 +483,24 @@ async function checkServerActions() {
   const free = await callAction(ids.createCommitAction, [{ message: "free ride", projectId: null, weight: 8 }], { cookie: unpaid });
   record("SA6", "Unpaid account cannot write through the raw action", !free.ok && (await commitCount()) === commitsBefore, free.error ?? `${free.status}`);
 
+  // Development "Skip payment": its action id ships in the /subscribe bundle, so a
+  // production build must refuse it on the server
+  const subscribePage = await req("/subscribe", { headers: { cookie: unpaid } });
+  let skipId = null;
+  for (const m of subscribePage.text.matchAll(/<script[^>]+src="([^"]+\.js)"/g)) {
+    const js = (await req(m[1])).text;
+    skipId = js.match(/"([0-9a-f]{40,42})",[^"]{0,120}?"skipPaymentAction"/)?.[1] ?? skipId;
+  }
+  const skip = skipId ? await callAction(skipId, [{ plan: "organisation" }], { cookie: unpaid, path: "/subscribe" }) : null;
+  const { rows: [granted] } = await db.query("select count(*)::int n from subscriptions s join users u on u.id = s.user_id where u.email = $1", [email]);
+  const skipVisible = /Skip payment/.test(subscribePage.text);
+  record(
+    "SK1",
+    "Skip payment is hidden and refused on a production build",
+    Boolean(skip) && !skip.ok && /Payment is required/.test(skip.text) && granted.n === 0 && !skipVisible,
+    skip ? `${skip.status} granted=${granted.n} visible=${skipVisible}` : "action id not found"
+  );
+
   const legit = await callAction(ids.moveTaskAction, [{ taskId: victim.id, columnId: active.id, afterTaskId: null }], { cookie: owner });
   const after = await state();
   record("SA7", "Owner's own move succeeds and persists", legit.ok && after.column_id === active.id, legit.error ?? "");
