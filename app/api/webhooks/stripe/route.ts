@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { stripe } from "@/lib/billing";
-import { mapStripeStatus, syncSubscription, fromUnixSeconds } from "@/lib/billing/sync";
+import { mapStripeStatus, recordPayment, syncSubscription, fromUnixSeconds } from "@/lib/billing/sync";
 import { PLAN_IDS, type PlanId } from "@/lib/billing/plans";
 
 async function syncStripeSubscription(subscription: Stripe.Subscription) {
@@ -21,6 +21,32 @@ async function syncStripeSubscription(subscription: Stripe.Subscription) {
     currentPeriodStart: fromUnixSeconds(subscription.current_period_start),
     currentPeriodEnd: fromUnixSeconds(subscription.current_period_end),
   });
+}
+
+/**
+ * Records a subscription invoice (first charge and every renewal). The invoice can arrive
+ * before the subscription's own event, so an unknown subscription is synced first.
+ */
+async function recordStripeInvoice(invoice: Stripe.Invoice, status: "paid" | "failed") {
+  if (!stripe) return;
+  const subscriptionId = typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id;
+  if (!subscriptionId || !invoice.id) return;
+  const line = invoice.lines.data[0];
+  const payment = {
+    provider: "stripe" as const,
+    providerSubscriptionId: subscriptionId,
+    providerPaymentId: invoice.id,
+    amount: status === "paid" ? invoice.amount_paid : invoice.amount_due,
+    currency: invoice.currency,
+    status,
+    periodStart: fromUnixSeconds(line?.period.start),
+    periodEnd: fromUnixSeconds(line?.period.end),
+    receiptUrl: invoice.hosted_invoice_url ?? null,
+    chargedAt: new Date((invoice.status_transitions.paid_at ?? invoice.created) * 1000),
+  };
+  if (await recordPayment(payment)) return;
+  await syncStripeSubscription(await stripe.subscriptions.retrieve(subscriptionId));
+  await recordPayment(payment);
 }
 
 export async function POST(req: NextRequest) {
@@ -47,6 +73,12 @@ export async function POST(req: NextRequest) {
       case "customer.subscription.updated":
       case "customer.subscription.deleted":
         await syncStripeSubscription(event.data.object);
+        break;
+      case "invoice.paid":
+        await recordStripeInvoice(event.data.object, "paid");
+        break;
+      case "invoice.payment_failed":
+        await recordStripeInvoice(event.data.object, "failed");
         break;
       default:
         break;

@@ -1,13 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import type { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { hasPaidAccess } from "@/lib/billing/access";
 import { loadActor, MutationError, type Actor } from "@/lib/authz";
+import { deleteAccount, IdentityError, verifyIdentity } from "@/lib/accounts/delete";
+import { setAutoRenew } from "@/lib/billing/manage";
 import { captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "@/lib/mutations";
 import { consumeThrottle } from "@/lib/security/throttle";
-import { captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import { captureTaskSchema, createProjectSchema, deleteAccountSchema, setAutoRenewSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Server Actions for the product. Each one re-verifies everything itself: Server Actions
@@ -91,4 +94,51 @@ export async function setProjectArchivedAction(input: unknown) {
 
 export async function createCommitAction(input: unknown) {
   return run(manualCommitSchema, input, createManualCommit);
+}
+
+export async function setAutoRenewAction(input: unknown) {
+  return run(setAutoRenewSchema, input, async (actor, { renew }) => {
+    // Each change calls the payment provider; cap them per account
+    if (!(await consumeThrottle(`billing:${actor.id}`, 10, 60 * 60))) {
+      throw new MutationError("rate_limited", "Too many billing changes. Try again in an hour.");
+    }
+    return setAutoRenew(actor.id, renew);
+  });
+}
+
+export type DeleteAccountResult = { ok: true } | { ok: false; error: string; field?: "confirm" | "password" };
+
+/**
+ * Permanently deletes the signed-in account (lib/accounts/delete.ts). Works without an
+ * active plan, so a lapsed subscriber can still close their account. Not run through
+ * run(): that requires paid access and revalidates pages this account no longer has.
+ */
+export async function deleteAccountAction(input: unknown): Promise<DeleteAccountResult> {
+  try {
+    const session = await getSession();
+    if (!session) throw new MutationError("unauthenticated", "Your session has ended. Sign in again.");
+    // Password guesses are capped per account, not per IP
+    if (!(await consumeThrottle(`delete-account:${session.user.id}`, 5, 15 * 60))) {
+      throw new MutationError("rate_limited", "Too many attempts. Try again in 15 minutes.");
+    }
+    const parsed = deleteAccountSchema.safeParse(input);
+    if (!parsed.success) throw new MutationError("invalid", "Check the form and try again.");
+    if (parsed.data.confirm.toLowerCase() !== session.user.email.toLowerCase()) {
+      return { ok: false, field: "confirm", error: "Type your email exactly as shown." };
+    }
+    await verifyIdentity(session.user.id, session.session.createdAt, parsed.data.password);
+    await deleteAccount(session.user.id);
+
+    // Sessions went with the account; drop the now-useless cookies too
+    const jar = await cookies();
+    for (const { name } of jar.getAll()) {
+      if (name.includes("better-auth.")) jar.set(name, "", { maxAge: 0, path: "/", secure: name.startsWith("__Secure-") });
+    }
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof IdentityError) return { ok: false, error: error.message, field: error.field === "password" ? "password" : undefined };
+    if (error instanceof MutationError) return { ok: false, error: error.message };
+    console.error("[action] delete account", error);
+    return { ok: false, error: "Something went wrong. Your account was not deleted." };
+  }
 }

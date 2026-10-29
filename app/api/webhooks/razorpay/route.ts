@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { z } from "zod";
-import { mapRazorpayStatus, syncSubscription, fromUnixSeconds } from "@/lib/billing/sync";
+import { mapRazorpayStatus, recordPayment, syncSubscription, fromUnixSeconds } from "@/lib/billing/sync";
 
 const subscriptionEventSchema = z.object({
   event: z.string(),
@@ -18,6 +18,17 @@ const subscriptionEventSchema = z.object({
           notes: z
             .union([z.object({ userId: z.string().optional(), plan: z.enum(["individual", "organisation"]).optional() }), z.array(z.unknown())])
             .optional(),
+        }),
+      })
+      .optional(),
+    // subscription.charged carries the payment that renewed the subscription
+    payment: z
+      .object({
+        entity: z.object({
+          id: z.string(),
+          amount: z.number().int(),
+          currency: z.string(),
+          created_at: z.number(),
         }),
       })
       .optional(),
@@ -48,6 +59,7 @@ export async function POST(req: NextRequest) {
 
     const parsed = subscriptionEventSchema.safeParse(JSON.parse(rawBody));
     const entity = parsed.success ? parsed.data.payload.subscription?.entity : undefined;
+    const payment = parsed.success ? parsed.data.payload.payment?.entity : undefined;
     // Only subscription.* events carry a subscription entity; acknowledge everything else
     if (!entity) {
       return NextResponse.json({ received: true });
@@ -66,6 +78,21 @@ export async function POST(req: NextRequest) {
         seats: entity.quantity ?? 1,
         currentPeriodStart: fromUnixSeconds(entity.current_start),
         currentPeriodEnd: fromUnixSeconds(entity.current_end),
+      });
+    }
+
+    // Every successful recurring charge (first and renewals) lands in the payments ledger
+    if (parsed.success && parsed.data.event === "subscription.charged" && payment) {
+      await recordPayment({
+        provider: "razorpay",
+        providerSubscriptionId: entity.id,
+        providerPaymentId: payment.id,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: "paid",
+        periodStart: fromUnixSeconds(entity.current_start),
+        periodEnd: fromUnixSeconds(entity.current_end),
+        chargedAt: new Date(payment.created_at * 1000),
       });
     }
 

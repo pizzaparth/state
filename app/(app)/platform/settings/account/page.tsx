@@ -1,16 +1,18 @@
 import * as React from "react";
-import { getAccount } from "@/db/queries";
+import { getAccount, hasPassword } from "@/db/queries";
 import { getViewer } from "@/lib/viewer";
 import { formatDate } from "@/lib/format";
 import { PageHeader, Panel } from "@/components/app/primitives";
 import { Row, SettingsNav } from "@/components/app/settings-nav";
 import { SignOutButton } from "@/components/app/sign-out-button";
+import { ExportLinks, ImportForm } from "@/components/app/data-transfer";
+import { DeleteAccount } from "@/components/app/delete-account";
 
 export const metadata = { title: "Account — State" };
 
 export default async function AccountSettingsPage() {
   const viewer = await getViewer();
-  const account = await getAccount(viewer.id);
+  const [account, needsPassword] = await Promise.all([getAccount(viewer.id), hasPassword(viewer.id)]);
   return (
     <>
       <PageHeader label="Settings" title="Account" />
@@ -26,12 +28,20 @@ export default async function AccountSettingsPage() {
         </dl>
       </Panel>
       <Panel title="Your data">
-        <p className="font-mono text-sm text-[#9A9A96]">
-          <span className="text-[#F2F2EF]">100% yours.</span> CSV/JSON export · kept 90 days after you cancel.
-        </p>
+        <dl>
+          <Row label="Export" hint="personal workspace · org memberships">
+            <ExportLinks />
+          </Row>
+          <Row label="Import" hint="into your personal workspace">
+            <ImportForm />
+          </Row>
+        </dl>
       </Panel>
       <Panel title="Session">
         <SignOutButton />
+      </Panel>
+      <Panel title="Delete account">
+        <DeleteAccount email={viewer.email} needsPassword={needsPassword} />
       </Panel>
     </>
   );

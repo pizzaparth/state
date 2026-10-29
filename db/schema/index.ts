@@ -8,6 +8,7 @@ export * from "./tasks";
 export * from "./commits";
 export * from "./tags";
 export * from "./subscriptions";
+export * from "./payments";
 export * from "./metrics";
 export * from "./objectives";
 export * from "./events";

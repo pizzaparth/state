@@ -1,9 +1,9 @@
-import { and, asc, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { auditEvents, boards, columns, commits, organisations, projects, tasks, users } from "@/db/schema";
+import { auditEvents, boards, columns, commitTags, commits, organisations, projects, tags, taskTags, tasks, users } from "@/db/schema";
 import { assertWritable, MutationError, type Actor } from "@/lib/authz";
 import { keyBetween } from "@/lib/position";
-import { parseQuickCapture } from "@/lib/validation";
+import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
 import type { z } from "zod";
 import type { captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
@@ -440,4 +440,240 @@ export async function createManualCommit(actor: Actor, input: z.infer<typeof man
     })
     .returning({ id: commits.id });
   return row;
+}
+
+export interface ImportResult {
+  projects: number;
+  tasks: number;
+  commits: number;
+  /** Rows already present (same title or message at the same time) and left alone. */
+  skipped: number;
+}
+
+// Fixed-width suffix digits without "0": lib/position.ts treats trailing zeros as
+// insignificant, so appended keys must not end in one
+const KEY_DIGITS = "123456789abcdefghijklmnopqrstuvwxyz";
+const appendKey = (prefix: string, i: number) => {
+  let suffix = "";
+  for (let n = i, w = 0; w < 3; w++, n = Math.floor(n / KEY_DIGITS.length)) suffix = KEY_DIGITS[n % KEY_DIGITS.length] + suffix;
+  return prefix + suffix;
+};
+
+const chunk = <T>(rows: T[], size = 500): T[][] => Array.from({ length: Math.ceil(rows.length / size) }, (_, i) => rows.slice(i * size, (i + 1) * size));
+
+const msKey = (date: Date, text: string) => `${date.getTime()}|${text}`;
+
+/**
+ * Imports projects, tags, tasks and commits into the actor's personal workspace, in one
+ * transaction (all or nothing). Tasks land on the personal board in the column matching
+ * their status (Inbox when "inbox"); commits are recorded as source "imported" with the
+ * time they originally happened, linked to their task when it is in the same file.
+ *
+ * Importing the same file twice adds nothing the second time: a task with the same
+ * title and creation time, or a commit with the same message and time, is skipped.
+ * Completed tasks do not create commits here; the commits in the file carry the execution.
+ */
+export async function importData(actor: Actor, input: ImportData): Promise<ImportResult> {
+  const workspaceId = actor.personalWorkspaceId;
+  assertWritable(actor, workspaceId);
+  const now = new Date();
+
+  return db.transaction(async (tx) => {
+    // Serialise imports per workspace so two uploads cannot both miss each other's rows
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`import:${workspaceId}`}))`);
+
+    // ---- projects: listed ones keep their details; ones only referenced get their slug as name
+    const listed = new Map(input.projects.map((p) => [p.slug, p]));
+    const referenced = new Set([...input.tasks.map((t) => t.project), ...input.commits.map((c) => c.project)].filter((s): s is string => Boolean(s)));
+    const slugs = new Set([...listed.keys(), ...referenced]);
+    if (slugs.size > IMPORT_LIMITS.projects) throw new MutationError("invalid", `Up to ${IMPORT_LIMITS.projects} projects per import.`);
+    const projectRows = [...slugs].map((slug) => {
+      const p = listed.get(slug);
+      return {
+        workspaceId,
+        slug,
+        name: p?.name ?? slug,
+        description: p?.description ?? null,
+        status: p?.status ?? "active",
+        createdAt: p?.createdAt ?? now,
+        archivedAt: p?.archivedAt ?? (p?.status === "archived" ? now : null),
+      };
+    });
+    let projectsCreated = 0;
+    const projectIds = new Map<string, string>();
+    for (const rows of chunk(projectRows)) {
+      projectsCreated += (await tx.insert(projects).values(rows).onConflictDoNothing({ target: [projects.workspaceId, projects.slug] }).returning({ id: projects.id })).length;
+      const found = await tx
+        .select({ id: projects.id, slug: projects.slug })
+        .from(projects)
+        .where(and(eq(projects.workspaceId, workspaceId), inArray(projects.slug, rows.map((r) => r.slug))));
+      for (const p of found) projectIds.set(p.slug, p.id);
+    }
+    const projectOf = (slug: string | null | undefined) => (slug ? projectIds.get(slug) ?? null : null);
+
+    // ---- tags by name
+    const tagNames = new Set([...input.tasks.flatMap((t) => t.tags), ...input.commits.flatMap((c) => c.tags)]);
+    if (tagNames.size > IMPORT_LIMITS.tags) throw new MutationError("invalid", `Up to ${IMPORT_LIMITS.tags} distinct tags per import.`);
+    const tagIds = new Map<string, string>();
+    for (const names of chunk([...tagNames])) {
+      await tx.insert(tags).values(names.map((name) => ({ workspaceId, name }))).onConflictDoNothing({ target: [tags.workspaceId, tags.name] });
+      const found = await tx.select({ id: tags.id, name: tags.name }).from(tags).where(and(eq(tags.workspaceId, workspaceId), inArray(tags.name, names)));
+      for (const t of found) tagIds.set(t.name, t.id);
+    }
+
+    // ---- tasks onto the personal board
+    const [board] = await tx
+      .select({ id: boards.id })
+      .from(boards)
+      .where(and(eq(boards.workspaceId, workspaceId), eq(boards.type, "personal")))
+      .limit(1);
+    const boardColumns = board
+      ? await tx.select({ id: columns.id, stateType: columns.stateType }).from(columns).where(eq(columns.boardId, board.id)).orderBy(asc(columns.position)).limit(50)
+      : [];
+    const columnOf = (state: string) => boardColumns.find((c) => c.stateType === state);
+    const columnFor = (status: (typeof input.tasks)[number]["status"]) => {
+      if (status === "inbox") return undefined;
+      if (status === "queued") return columnOf("backlog");
+      return columnOf(status) ?? (status === "review" ? columnOf("active") : undefined) ?? columnOf("backlog");
+    };
+
+    const existingTasks = await existingKeys(
+      input.tasks.flatMap((t) => (t.createdAt ? [t.createdAt] : [])),
+      (from, to) =>
+        tx
+          .select({ id: tasks.id, at: tasks.createdAt, text: tasks.title })
+          .from(tasks)
+          .where(and(eq(tasks.workspaceId, workspaceId), isNull(tasks.deletedAt), gte(tasks.createdAt, from), lte(tasks.createdAt, to)))
+          .limit(200_000)
+    );
+
+    // Each column's new cards go after its current last card, in file order
+    const tails = new Map<string, { prefix: string; next: number }>();
+    const nextPosition = async (columnId: string) => {
+      let tail = tails.get(columnId);
+      if (!tail) {
+        const [last] = await tx
+          .select({ position: tasks.position })
+          .from(tasks)
+          .where(and(eq(tasks.columnId, columnId), isNull(tasks.deletedAt)))
+          .orderBy(desc(byPosition))
+          .limit(1);
+        tail = { prefix: keyBetween(last?.position ?? null, null), next: 0 };
+        tails.set(columnId, tail);
+      }
+      return appendKey(tail.prefix, tail.next++);
+    };
+
+    const taskIdByRef = new Map<string, string>();
+    const taskRows: (typeof tasks.$inferInsert)[] = [];
+    const taskTagRows: { taskId: string; tagId: string }[] = [];
+    let skipped = 0;
+    for (const t of input.tasks) {
+      const duplicate = t.createdAt ? existingTasks.get(msKey(t.createdAt, t.title)) : undefined;
+      if (duplicate) {
+        if (t.id) taskIdByRef.set(t.id, duplicate);
+        skipped++;
+        continue;
+      }
+      const id = crypto.randomUUID();
+      if (t.id) taskIdByRef.set(t.id, id);
+      if (t.createdAt) existingTasks.set(msKey(t.createdAt, t.title), id);
+      const column = columnFor(t.status);
+      const done = column?.stateType === "done";
+      const createdAt = t.createdAt ?? now;
+      taskRows.push({
+        id,
+        workspaceId,
+        projectId: projectOf(t.project),
+        boardId: column ? board!.id : null,
+        columnId: column?.id ?? null,
+        position: column ? await nextPosition(column.id) : "a0",
+        creatorId: actor.id,
+        assigneeId: actor.id,
+        title: t.title,
+        description: t.description ?? null,
+        priority: t.priority,
+        weight: t.weight,
+        recurrenceRule: t.recurrenceRule ?? null,
+        dueAt: done ? null : t.dueAt ?? null,
+        startedAt: t.startedAt ?? (column && column.stateType !== "backlog" ? createdAt : null),
+        completedAt: done ? t.completedAt ?? createdAt : null,
+        createdAt,
+        archivedAt: t.archivedAt ?? null,
+      });
+      for (const name of t.tags) taskTagRows.push({ taskId: id, tagId: tagIds.get(name)! });
+    }
+    for (const rows of chunk(taskRows)) await tx.insert(tasks).values(rows);
+    for (const rows of chunk(taskTagRows)) await tx.insert(taskTags).values(rows).onConflictDoNothing();
+
+    // ---- commits
+    const existingCommits = await existingKeys(
+      input.commits.map((c) => c.createdAt),
+      (from, to) =>
+        tx
+          .select({ id: commits.id, at: commits.createdAt, text: commits.message })
+          .from(commits)
+          .where(and(eq(commits.workspaceId, workspaceId), isNull(commits.deletedAt), gte(commits.createdAt, from), lte(commits.createdAt, to)))
+          .limit(200_000)
+    );
+    const commitRows: (typeof commits.$inferInsert & { id: string })[] = [];
+    const commitTagNames = new Map<string, string[]>();
+    for (const c of input.commits) {
+      const key = msKey(c.createdAt, c.message);
+      if (existingCommits.has(key)) {
+        skipped++;
+        continue;
+      }
+      existingCommits.set(key, "");
+      const id = crypto.randomUUID();
+      commitRows.push({
+        id,
+        workspaceId,
+        projectId: projectOf(c.project),
+        taskId: c.taskId ? taskIdByRef.get(c.taskId) ?? null : null,
+        userId: actor.id,
+        message: c.message,
+        executionValue: c.executionValue,
+        source: "imported",
+        createdAt: c.createdAt,
+      });
+      commitTagNames.set(id, c.tags);
+    }
+    let commitsCreated = 0;
+    const commitTagRows: { commitId: string; tagId: string }[] = [];
+    for (const rows of chunk(commitRows)) {
+      // At most one live commit per task (unique index): a second one for the same task is dropped
+      const inserted = await tx.insert(commits).values(rows).onConflictDoNothing().returning({ id: commits.id });
+      commitsCreated += inserted.length;
+      skipped += rows.length - inserted.length;
+      for (const { id } of inserted) for (const name of commitTagNames.get(id) ?? []) commitTagRows.push({ commitId: id, tagId: tagIds.get(name)! });
+    }
+    for (const rows of chunk(commitTagRows)) await tx.insert(commitTags).values(rows).onConflictDoNothing();
+
+    const result = { projects: projectsCreated, tasks: taskRows.length, commits: commitsCreated, skipped };
+    await tx.insert(auditEvents).values({ workspaceId, actorId: actor.id, action: "data.imported", targetType: "workspace", targetId: workspaceId, metadata: result });
+    return result;
+  });
+}
+
+/**
+ * Rows already in the workspace between the earliest and latest timestamp of an import,
+ * keyed by millisecond time and text. Stored times have microseconds and exports carry
+ * milliseconds, so keys are compared at millisecond precision.
+ */
+async function existingKeys(
+  dates: Date[],
+  load: (from: Date, to: Date) => Promise<{ id: string; at: Date; text: string }[]>
+): Promise<Map<string, string>> {
+  const keys = new Map<string, string>();
+  if (dates.length === 0) return keys;
+  let min = Infinity;
+  let max = -Infinity;
+  for (const d of dates) {
+    min = Math.min(min, d.getTime());
+    max = Math.max(max, d.getTime());
+  }
+  const rows = await load(new Date(min - 1), new Date(max + 1));
+  for (const r of rows) keys.set(msKey(r.at, r.text), r.id);
+  return keys;
 }

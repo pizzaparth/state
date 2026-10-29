@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lt, sql, type SQL } from "drizzle-orm";
 import { db } from "../index";
 import {
+  accounts,
   boards,
   columns,
   commitTags,
@@ -9,6 +10,7 @@ import {
   objectives,
   organisationInvitations,
   organisationMembers,
+  payments,
   projects,
   subscriptions,
   tags,
@@ -745,6 +747,35 @@ export async function getSubscription(userId: string) {
     .orderBy(desc(subscriptions.updatedAt))
     .limit(1);
   return row ?? null;
+}
+
+/** Recurring charges, newest first. */
+export async function getPayments(userId: string, limit = 24) {
+  return db
+    .select({
+      id: payments.id,
+      amount: payments.amount,
+      currency: payments.currency,
+      status: payments.status,
+      periodStart: payments.periodStart,
+      periodEnd: payments.periodEnd,
+      receiptUrl: payments.receiptUrl,
+      chargedAt: payments.chargedAt,
+    })
+    .from(payments)
+    .where(eq(payments.userId, userId))
+    .orderBy(desc(payments.chargedAt))
+    .limit(limit);
+}
+
+/** Whether the account signs in with a password (deletion asks for it). */
+export async function hasPassword(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(and(eq(accounts.userId, userId), eq(accounts.providerId, "credential"), isNotNull(accounts.password)))
+    .limit(1);
+  return Boolean(row);
 }
 
 export async function getAccount(userId: string) {

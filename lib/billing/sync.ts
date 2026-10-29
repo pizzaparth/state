@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { subscriptions, users } from "@/db/schema";
+import { payments, subscriptions, users } from "@/db/schema";
 import { provisionAccount } from "@/lib/accounts/provision";
 import type { PlanId, Provider } from "./plans";
 
@@ -67,15 +67,17 @@ export async function syncSubscription(snapshot: SubscriptionSnapshot): Promise<
     plan: snapshot.plan,
     status: snapshot.status,
     seats: snapshot.seats ?? 1,
-    cancelAtPeriodEnd: snapshot.cancelAtPeriodEnd ?? false,
     currentPeriodStart: snapshot.currentPeriodStart ?? null,
     currentPeriodEnd: snapshot.currentPeriodEnd ?? null,
   };
+  // Razorpay's subscription entity does not say whether a cancellation is scheduled, so
+  // its events leave the flag as set by lib/billing/manage.ts; Stripe always reports it
+  const cancel = snapshot.cancelAtPeriodEnd === undefined ? {} : { cancelAtPeriodEnd: snapshot.cancelAtPeriodEnd };
 
   await db
     .insert(subscriptions)
-    .values(values)
-    .onConflictDoUpdate({ target: subscriptions.providerSubscriptionId, set: values });
+    .values({ ...values, cancelAtPeriodEnd: snapshot.cancelAtPeriodEnd ?? false })
+    .onConflictDoUpdate({ target: subscriptions.providerSubscriptionId, set: { ...values, ...cancel } });
 
   await db
     .update(users)
@@ -85,6 +87,49 @@ export async function syncSubscription(snapshot: SubscriptionSnapshot): Promise<
   if (snapshot.status === "active") {
     await provisionAccount(snapshot.userId);
   }
+}
+
+export interface PaymentSnapshot {
+  provider: Provider;
+  providerSubscriptionId: string;
+  providerPaymentId: string;
+  amount: number;
+  currency: string;
+  status: "paid" | "failed";
+  periodStart?: Date | null;
+  periodEnd?: Date | null;
+  receiptUrl?: string | null;
+  chargedAt: Date;
+}
+
+/**
+ * Records one recurring charge against the local subscription it belongs to. Returns
+ * false when that subscription is not known yet (the caller syncs it and retries).
+ * Idempotent on the provider payment id; a later delivery (failed, then paid on retry)
+ * updates the row.
+ */
+export async function recordPayment(payment: PaymentSnapshot): Promise<boolean> {
+  const [sub] = await db
+    .select({ id: subscriptions.id, userId: subscriptions.userId })
+    .from(subscriptions)
+    .where(eq(subscriptions.providerSubscriptionId, payment.providerSubscriptionId))
+    .limit(1);
+  if (!sub) return false;
+  const values = {
+    userId: sub.userId,
+    subscriptionId: sub.id,
+    provider: payment.provider,
+    providerPaymentId: payment.providerPaymentId,
+    amount: payment.amount,
+    currency: payment.currency.toUpperCase(),
+    status: payment.status,
+    periodStart: payment.periodStart ?? null,
+    periodEnd: payment.periodEnd ?? null,
+    receiptUrl: payment.receiptUrl ?? null,
+    chargedAt: payment.chargedAt,
+  };
+  await db.insert(payments).values(values).onConflictDoUpdate({ target: payments.providerPaymentId, set: values });
+  return true;
 }
 
 export function fromUnixSeconds(value: number | null | undefined): Date | null {

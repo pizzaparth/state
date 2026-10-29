@@ -16,8 +16,13 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail, getTicker } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
-import { captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
+import { captureTaskSchema, createProjectSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { buildExport } from "../lib/data/export";
+import { parseImport } from "../lib/data/import";
+import { parseCsv, toCsv } from "../lib/data/csv";
+import { deleteAccount } from "../lib/accounts/delete";
+import { setAutoRenew } from "../lib/billing/manage";
 
 const dbName = new URL(process.env.DATABASE_URL ?? "postgres://x/none").pathname.slice(1);
 if (!dbName.endsWith("_test")) {
@@ -374,7 +379,60 @@ async function main() {
   await db.insert(s.organisationMembers).values({ organisationId: org.id, userId: ishitaId, role: "member" });
 
   await db.delete(s.projects).where(inArray(s.projects.id, [mine.id, theirs.id, orgMade.id]));
-  await db.delete(s.users).where(eq(s.users.id, outsiderId));
+
+  // ------------------------------------------------------------ export, import, account deletion, billing
+  const execution = async (workspaceId: string) =>
+    (await one(db.select({ n: sql<number>`coalesce(sum(${s.commits.executionValue}), 0)::int` }).from(s.commits).where(and(eq(s.commits.workspaceId, workspaceId), isNull(s.commits.deletedAt))))).n;
+  const rowCount = async (workspaceId: string) => ({
+    tasks: (await one(db.select({ n: sql<number>`count(*)::int` }).from(s.tasks).where(eq(s.tasks.workspaceId, workspaceId)))).n,
+    commits: (await one(db.select({ n: sql<number>`count(*)::int` }).from(s.commits).where(eq(s.commits.workspaceId, workspaceId)))).n,
+  });
+
+  const aaravExport = await buildExport(aaravId);
+  const parthTaskIds = new Set((await db.select({ id: s.tasks.id }).from(s.tasks).where(eq(s.tasks.workspaceId, parth.ws.id))).map((t) => t.id));
+  const parthCommitIds = new Set((await db.select({ id: s.commits.id }).from(s.commits).where(eq(s.commits.workspaceId, parth.ws.id))).map((c) => c.id));
+  const orgTaskIds = new Set((await db.select({ id: s.tasks.id }).from(s.tasks).where(eq(s.tasks.workspaceId, org.workspaceId))).map((t) => t.id));
+  const leaked = [...aaravExport.tasks.filter((t) => parthTaskIds.has(t.id) || orgTaskIds.has(t.id)), ...aaravExport.commits.filter((c) => parthCommitIds.has(c.id))];
+  record("D1", "Export holds no other tenant's or organisation's tasks and commits", leaked.length === 0 && aaravExport.organisations.every((o) => o.slug === org.slug), `${leaked.length} leaked`);
+
+  const stripped = importSchema.parse({ tasks: [{ title: "x", workspaceId: parth.ws.id, creatorId: parthId }], commits: [{ message: "x", executionValue: 2, createdAt: "2026-01-01T00:00:00Z", userId: parthId, workspaceId: parth.ws.id, source: "task_completion" }] });
+  record("D2", "Import rows drop workspaceId, userId, creatorId and source", !("workspaceId" in stripped.tasks[0]) && !("creatorId" in stripped.tasks[0]) && !("userId" in stripped.commits[0]) && !("source" in stripped.commits[0]));
+  const badRows = [
+    { commits: [{ message: "x", executionValue: 3, createdAt: "2026-01-01T00:00:00Z" }] },
+    { commits: [{ message: "x", executionValue: 2, createdAt: "2999-01-01T00:00:00Z" }] },
+    { tasks: [{ title: "" }] },
+    { tasks: [{ title: "x", status: "archived" }] },
+    { tasks: Array.from({ length: 10_001 }, () => ({ title: "x" })) },
+  ].map((rows) => importSchema.safeParse(rows).success);
+  record("D3", "Import rejects bad weights, future commits, blank titles, unknown statuses, oversized files", badRows.every((v) => !v), JSON.stringify(badRows));
+
+  const parthBefore = await rowCount(parth.ws.id);
+  const parthExport = await buildExport(parthId);
+  const parsedExport = parseImport(JSON.stringify(parthExport));
+  if (!parsedExport.ok) throw new Error(`export did not parse: ${parsedExport.error}`);
+  const first = await importData(X, parsedExport.data);
+  record("D4", "Import writes only into the importer's personal workspace", JSON.stringify(await rowCount(parth.ws.id)) === JSON.stringify(parthBefore) && first.tasks > 0, JSON.stringify(first));
+  record("D5", "JSON export round-trips: imported execution equals the source", (await execution(outWs.id)) === (await execution(parth.ws.id)), `${await execution(outWs.id)} vs ${await execution(parth.ws.id)}`);
+  const second = await importData(X, parsedExport.data);
+  record("D6", "Re-importing the same file adds nothing", second.tasks + second.commits === 0 && second.skipped > 0, JSON.stringify(second));
+  const forgedActor: Actor = { id: outsiderId, personalWorkspaceId: aarav.ws.id, readable: new Set(), writable: new Set() };
+  [ok, detail] = await expectError(() => importData(forgedActor, parsedExport.data), "not_found");
+  record("D7", "Import into a workspace the actor cannot write is refused", ok, detail);
+
+  const csv = toCsv(["a", "b"] as const, [{ a: '=HYPERLINK("x")', b: "line\nbreak, \"quoted\"" }]);
+  const back = parseCsv(csv)?.[0];
+  record("D8", "CSV neutralises formulas and round-trips quotes and newlines", csv.includes(`"'=HYPERLINK(""x"")"`) && back?.a === '=HYPERLINK("x")' && back?.b === 'line\nbreak, "quoted"', JSON.stringify(back));
+
+  record("D9", "Unknown fields rejected on account deletion and auto-renew", !deleteAccountSchema.safeParse({ confirm: "x", userId: aaravId }).success && !setAutoRenewSchema.safeParse({ renew: "false" }).success);
+  [ok, detail] = await expectError(() => setAutoRenew(outsiderId, false), "not_found");
+  record("B1", "Auto-renew change without a subscription is refused", ok, detail);
+
+  [ok, detail] = await expectError(() => deleteAccount(parthId), "conflict");
+  record("D10", "Owner of an organisation with other members cannot delete their account", ok && Boolean(await one(db.select({ id: s.organisations.id }).from(s.organisations).where(eq(s.organisations.id, org.id)))), detail);
+  await deleteAccount(outsiderId);
+  const gone = await rowCount(outWs.id);
+  const userGone = !(await one(db.select({ id: s.users.id }).from(s.users).where(eq(s.users.id, outsiderId))));
+  record("D11", "Account deletion removes the user, workspace, tasks and commits", userGone && gone.tasks === 0 && gone.commits === 0, JSON.stringify(gone));
 
   const failed = results.filter((r) => !r.pass);
   for (const r of results) console.log(`${r.pass ? "PASS" : "FAIL"}  ${r.id.padEnd(4)} ${r.name}${r.detail ? `  (${r.detail})` : ""}`);

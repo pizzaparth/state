@@ -224,3 +224,93 @@ export const razorpayVerifySchema = z.object({
   razorpay_subscription_id: z.string().min(1),
   razorpay_signature: z.string().min(1),
 });
+
+/**
+ * Data import (State JSON export, or a tasks / commits / projects CSV). Rows go into the
+ * importer's personal workspace; workspace, author and ids are always assigned on the
+ * server, so unknown keys in a row (ids, userId, workspaceId, source) are dropped.
+ * Original timestamps are kept: they are when the work happened.
+ */
+export const IMPORT_LIMITS = { bytes: 4 * 1024 * 1024, projects: 1_000, tags: 1_000, tasks: 10_000, commits: 20_000 } as const;
+
+export const TASK_IMPORT_STATUSES = ["inbox", "queued", "active", "review", "done"] as const;
+
+const weightValue = z.coerce
+  .number()
+  .pipe(z.union([z.literal(1), z.literal(2), z.literal(4), z.literal(8)], { error: "Weight must be 1, 2, 4 or 8." }));
+
+const validDate = (max: () => number, message: string) =>
+  z.coerce
+    .date({ error: "Use an ISO date, like 2026-10-29T09:30:00Z." })
+    .refine((d) => d.getTime() >= Date.UTC(2000, 0, 1) && d.getTime() <= max(), message);
+// Past events may carry a clock a little ahead; due dates may be far ahead
+const pastDate = validDate(() => Date.now() + 86_400_000, "Dates must fall between 2000 and today.");
+const dueDate = validDate(() => Date.UTC(2101, 0, 1), "Due dates must fall between 2000 and 2100.");
+
+/** Project references are matched by slug; "Relay DB" is read as relay-db. */
+const projectRef = z
+  .string()
+  .transform((value) => slugify(value) || null)
+  .nullish();
+
+const importTags = z.array(z.string().trim().min(1).max(50, "Keep tag names under 50 characters.")).max(20, "Up to 20 tags per row.").default([]);
+
+/** Ids from the source file, used only to link commits to tasks within one import. */
+const sourceRef = z.coerce.string().trim().min(1).max(64).nullish();
+
+export const importProjectSchema = z.object({
+  name: projectFields.name,
+  slug: projectFields.slug,
+  description: projectFields.description.optional(),
+  status: z.enum([...PROJECT_STATUSES, "archived"]).default("active"),
+  createdAt: pastDate.nullish(),
+  archivedAt: pastDate.nullish(),
+});
+
+export const importTaskSchema = z.object({
+  id: sourceRef,
+  title: z.string().trim().min(1, "Give the task a title.").max(500, "Keep the title under 500 characters."),
+  description: z.string().trim().max(10_000).nullish(),
+  project: projectRef,
+  status: z.enum(TASK_IMPORT_STATUSES, { error: "Status must be inbox, queued, active, review or done." }).default("queued"),
+  priority: z.enum(PRIORITIES, { error: "Priority must be none, low, medium, high or critical." }).default("none"),
+  weight: weightValue.default(2),
+  recurrenceRule: z.string().regex(RECURRENCE_RULES, "Invalid recurrence").nullish(),
+  dueAt: dueDate.nullish(),
+  startedAt: pastDate.nullish(),
+  completedAt: pastDate.nullish(),
+  createdAt: pastDate.nullish(),
+  archivedAt: pastDate.nullish(),
+  tags: importTags,
+});
+
+export const importCommitSchema = z.object({
+  message: z.string().trim().min(1, "Describe what was done.").max(500, "Keep the message under 500 characters."),
+  project: projectRef,
+  taskId: sourceRef,
+  executionValue: weightValue,
+  createdAt: pastDate,
+  tags: importTags,
+});
+
+export const importSchema = z.object({
+  projects: z.array(importProjectSchema).max(IMPORT_LIMITS.projects, `Up to ${IMPORT_LIMITS.projects} projects per import.`).default([]),
+  tasks: z.array(importTaskSchema).max(IMPORT_LIMITS.tasks, `Up to ${IMPORT_LIMITS.tasks} tasks per import.`).default([]),
+  commits: z.array(importCommitSchema).max(IMPORT_LIMITS.commits, `Up to ${IMPORT_LIMITS.commits} commits per import.`).default([]),
+});
+
+export type ImportData = z.infer<typeof importSchema>;
+
+/** Auto-renew on (renew) or off (cancel at period end) for the current subscription. */
+export const setAutoRenewSchema = z.strictObject({
+  renew: z.boolean(),
+});
+
+/**
+ * Permanent account deletion. `confirm` must be the account's email; `password` is
+ * required when the account has one (checked on the server).
+ */
+export const deleteAccountSchema = z.strictObject({
+  confirm: z.string().trim().max(320),
+  password: z.string().max(128).optional(),
+});

@@ -14,11 +14,11 @@ export function rejectCrossOrigin(req: NextRequest): NextResponse | null {
   return null;
 }
 
-/** Reads a JSON body with a hard byte cap. Returns a response on failure. */
-export async function readJsonBody(
+/** Reads a text body with a hard byte cap. Returns a response on failure. */
+export async function readTextBody(
   req: NextRequest,
   maxBytes = 16 * 1024
-): Promise<{ ok: true; data: unknown } | { ok: false; response: NextResponse }> {
+): Promise<{ ok: true; text: string } | { ok: false; response: NextResponse }> {
   const declared = Number(req.headers.get("content-length") ?? 0);
   if (declared > maxBytes) {
     return { ok: false, response: NextResponse.json({ error: "Request body too large." }, { status: 413 }) };
@@ -27,8 +27,18 @@ export async function readJsonBody(
   if (new TextEncoder().encode(text).byteLength > maxBytes) {
     return { ok: false, response: NextResponse.json({ error: "Request body too large." }, { status: 413 }) };
   }
+  return { ok: true, text };
+}
+
+/** Reads a JSON body with a hard byte cap. Returns a response on failure. */
+export async function readJsonBody(
+  req: NextRequest,
+  maxBytes = 16 * 1024
+): Promise<{ ok: true; data: unknown } | { ok: false; response: NextResponse }> {
+  const body = await readTextBody(req, maxBytes);
+  if (!body.ok) return body;
   try {
-    return { ok: true, data: JSON.parse(text) };
+    return { ok: true, data: JSON.parse(body.text) };
   } catch {
     return { ok: false, response: NextResponse.json({ error: "Request body must be JSON." }, { status: 400 }) };
   }

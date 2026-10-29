@@ -4,6 +4,10 @@ import { hasPaidAccess } from "@/lib/billing/access";
 import { PLANS } from "@/lib/billing/plans";
 import { paymentSkipEnabled } from "@/lib/billing/skip";
 import { DISPLAY } from "@/lib/type";
+import { hasPassword } from "@/db/queries";
+import { personalWorkspaceId } from "@/lib/data/export";
+import { ExportLinks } from "@/components/app/data-transfer";
+import { DeleteAccount } from "@/components/app/delete-account";
 import { SubscribeForm } from "./subscribe-form";
 
 export const metadata = { title: "Subscribe — State" };
@@ -18,6 +22,8 @@ export default async function SubscribePage({
   if (await hasPaidAccess(session.user.id)) redirect("/platform/today");
 
   const { plan, interval, canceled } = await searchParams;
+  // A lapsed subscriber keeps a workspace: their data stays exportable and closable here
+  const [workspaceId, needsPassword] = await Promise.all([personalWorkspaceId(session.user.id), hasPassword(session.user.id)]);
 
   return (
     <div className="space-y-6">
@@ -36,6 +42,13 @@ export default async function SubscribePage({
         initialInterval={interval === "yearly" ? "yearly" : "monthly"}
         canSkip={paymentSkipEnabled()}
       />
+      <section aria-labelledby="your-data" className="space-y-3 border-t border-white/[0.08] pt-6">
+        <h2 id="your-data" className="font-mono text-[12px] uppercase tracking-[0.14em] text-[#A9A9A6]">
+          Your data
+        </h2>
+        {workspaceId && <ExportLinks />}
+        <DeleteAccount email={session.user.email} needsPassword={needsPassword} />
+      </section>
     </div>
   );
 }
