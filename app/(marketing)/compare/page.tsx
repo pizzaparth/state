@@ -5,7 +5,7 @@ import { COMPARISONS } from "@/lib/compare";
 export const metadata: Metadata = {
   title: "Notion, Trello, Todoist and Asana alternatives",
   description:
-    "How State compares with Notion, Trello, Todoist, Asana, ClickUp, Jira, Linear and Salesforce: a to-do list and kanban app that measures finished work.",
+    "How State compares with Notion, Trello, Todoist, Asana, ClickUp, Jira and Linear: a to-do list and kanban app that measures finished work.",
   alternates: { canonical: "/compare" },
 };
 

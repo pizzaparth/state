@@ -218,9 +218,10 @@ export default function LandingPage() {
         <h2 id="compare-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           Switching from…
         </h2>
+        {/* Seven tools: the last cell spans two so neither the 2- nor 4-column grid leaves a gap */}
         <ul className="mt-12 grid grid-cols-2 gap-px overflow-hidden rounded-[28px] border border-white/[0.08] bg-white/[0.08] sm:grid-cols-4">
           {COMPARISONS.map((c) => (
-            <li key={c.slug} className="bg-[#050505]">
+            <li key={c.slug} className="bg-[#050505] last:col-span-2">
               <Link
                 href={`/compare/${c.slug}`}
                 className="flex min-h-24 flex-col justify-between gap-3 p-5 transition-colors hover:bg-[#0E0E0E] focus-visible:outline focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-white"

@@ -132,21 +132,6 @@ export const COMPARISONS: Comparison[] = [
       ["Keyboard", "Keyboard-first", "Keyboard-first"],
     ],
   },
-  {
-    slug: "salesforce",
-    name: "Salesforce",
-    query: "Salesforce task management alternative",
-    is: "Salesforce is a CRM: accounts, contacts, leads and opportunities, with tasks attached to those records.",
-    pickThem: "You manage customers and a sales pipeline. State is not a CRM and does not replace one.",
-    pickState: "You want to track your own work, not deals: a task board, a record of what got done, and the numbers.",
-    rows: [
-      ["Built for", "Customer relationships and sales pipeline", "Planning and measuring executed work"],
-      ["Tasks", "Activities logged against CRM records", "Weighted tasks on a kanban board"],
-      ["Reporting", "Pipeline and activity reports", STATE_ROWS.metrics],
-      ["AI", "Einstein and Agentforce", STATE_ROWS.ai],
-      ["Setup", "Admin configuration", "Ready on sign-up"],
-    ],
-  },
 ];
 
 export function getComparison(slug: string) {

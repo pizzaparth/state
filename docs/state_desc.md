@@ -2294,7 +2294,7 @@ Routes (product pages under `/platform`; the old unprefixed URLs redirect):
 /                       landing page (served from app/(marketing)/home)
 /home                   → redirects to /
 /compare                comparisons hub
-/compare/:tool          State vs Notion, Trello, Todoist, Asana, ClickUp, Jira, Linear, Salesforce
+/compare/:tool          State vs Notion, Trello, Todoist, Asana, ClickUp, Jira, Linear
 /platform/today
 /platform/inbox
 /platform/activity
