@@ -611,6 +611,31 @@ async function checkServerActions() {
     repeatId ? `${repeatIdor.error} | ${repeatBad.error} | ${repeatForged.error}` : "action id not found"
   );
 
+  // Commit corrections: message, project and tags only, by the author (or an org owner/admin)
+  const { rows: [ownCommit] } = await db.query("select id, message, execution_value, created_at, user_id from commits where workspace_id = 'seed-ws-parth' and deleted_at is null order by created_at desc limit 1");
+  const commitPath = `/platform/history?commit=${ownCommit.id}`;
+  const editId = await actionIdOn(commitPath, "editCommitAction", owner);
+  const commitNow = async () => (await db.query("select message, execution_value, created_at, user_id from commits where id = $1", [ownCommit.id])).rows[0];
+  const base = { commitId: ownCommit.id, message: "hijacked", projectId: null, tags: [] };
+  const editIdor = editId ? await callAction(editId, [base], { cookie: other, path: commitPath }) : null;
+  const editValue = editId ? await callAction(editId, [{ ...base, executionValue: 8, createdAt: "2020-01-01T00:00:00Z" }], { cookie: owner, path: commitPath }) : null;
+  const untouched = JSON.stringify(await commitNow()) === JSON.stringify({ message: ownCommit.message, execution_value: ownCommit.execution_value, created_at: ownCommit.created_at, user_id: ownCommit.user_id });
+  record(
+    "CM1",
+    "Commit edit: another user's call and forged time/value fields are refused",
+    Boolean(editId) && !editIdor.ok && !editValue.ok && untouched,
+    editId ? `${editIdor.error} | ${editValue.error}` : "action id not found"
+  );
+  const editXss = editId ? await callAction(editId, [{ ...base, message: payload, tags: ["<b>tag</b>"] }], { cookie: owner, path: commitPath }) : null;
+  const correctedCommit = await commitNow();
+  const historyHtml = (await req(commitPath, { headers: { cookie: owner } })).text;
+  record(
+    "CM2",
+    "Corrected commit keeps its time and value; markup in message and tags is escaped",
+    Boolean(editXss?.ok) && correctedCommit.execution_value === ownCommit.execution_value && correctedCommit.created_at.getTime() === ownCommit.created_at.getTime() && !historyHtml.includes("<img src=x onerror") && !historyHtml.includes("<b>tag</b>"),
+    editXss?.error ?? ""
+  );
+
   // Write budget: 60 per user per minute, shared across instances. Invalid calls count too.
   const burst = await Promise.all(Array.from({ length: 70 }, () => callAction(ids.moveTaskAction, [{}], { cookie: other })));
   const limited = burst.filter((r) => /Too many changes/.test(r.error ?? "")).length;

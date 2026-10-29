@@ -19,8 +19,8 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail, getTicker } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { acceptInvitation, setTaskRecurrence, captureTask, createManualCommit, createOrganisation, createProject, hashInvitationToken, inviteMember, leaveOrganisation, removeMember, revokeInvitation, setMemberRole, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
-import { acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, inviteMemberSchema, setMemberRoleSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { editCommit, acceptInvitation, setTaskRecurrence, captureTask, createManualCommit, createOrganisation, createProject, hashInvitationToken, inviteMember, leaveOrganisation, removeMember, revokeInvitation, setMemberRole, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
+import { editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, inviteMemberSchema, setMemberRoleSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
 import { buildExport } from "../lib/data/export";
 import { parseImport } from "../lib/data/import";
 import { parseCsv, toCsv } from "../lib/data/csv";
@@ -621,6 +621,68 @@ async function main() {
   record("RC8", "Next due days: weekdays skip weekends, months clamp, late finishes never land in the past", JSON.stringify(days) === JSON.stringify(["2026-11-02", "2026-02-28", "2026-10-30", "2026-11-12", "2027-01-04", "2026-10-30"]), JSON.stringify(days));
   await db.delete(s.tasks).where(inArray(s.tasks.id, [repeat.id, next1.id, ...(await occurrences(next1.id)).map((t) => t.id)]));
   await db.delete(s.tags).where(eq(s.tags.id, tag.id));
+
+  // ------------------------------------------------------------ commit corrections
+  const commitRow = (id: string) => one(db.select().from(s.commits).where(eq(s.commits.id, id)));
+  const tagsOf = async (commitId: string) =>
+    (await db.select({ n: s.tags.name, w: s.tags.workspaceId }).from(s.commitTags).innerJoin(s.tags, eq(s.tags.id, s.commitTags.tagId)).where(eq(s.commitTags.commitId, commitId))).sort((a, b) => a.n.localeCompare(b.n));
+  const frozen = (c: typeof s.commits.$inferSelect) => JSON.stringify([c.createdAt, c.executionValue, c.source, c.userId, c.taskId, c.workspaceId, c.deletedAt]);
+  const myCommit = await commitRow(parth.commit.id);
+  const ishitaCommit = await one(db.select().from(s.commits).where(and(eq(s.commits.workspaceId, org.workspaceId), eq(s.commits.userId, ishitaId), isNull(s.commits.deletedAt))));
+  const parthOrgCommit = await one(db.select().from(s.commits).where(and(eq(s.commits.workspaceId, org.workspaceId), eq(s.commits.userId, parthId), isNull(s.commits.deletedAt))));
+  const edit = (commitId: string, extra: Partial<{ message: string; projectId: string | null; tags: string[] }> = {}) => ({ commitId, message: "Corrected", projectId: null, tags: [], ...extra });
+
+  [ok, detail] = await expectError(() => editCommit(B, edit(myCommit.id)), "not_found");
+  record("CE1", "Another user edits someone's personal commit", ok && (await commitRow(myCommit.id)).message === myCommit.message, detail);
+  [ok, detail] = await expectError(() => editCommit(X, edit(ishitaCommit.id)), "not_found");
+  record("CE2", "Outsider edits an organisation commit", ok && (await commitRow(ishitaCommit.id)).message === ishitaCommit.message, detail);
+  const [ishitaMember] = [await loadActor(ishitaId)];
+  [ok, detail] = await expectError(() => editCommit(ishitaMember, edit(parthOrgCommit.id)), "forbidden");
+  record("CE3", "Member edits another member's commit", ok && (await commitRow(parthOrgCommit.id)).message === parthOrgCommit.message, detail);
+  await db.update(s.organisationMembers).set({ role: "viewer" }).where(and(eq(s.organisationMembers.userId, ishitaId), eq(s.organisationMembers.organisationId, org.id)));
+  [ok, detail] = await expectError(async () => editCommit(await loadActor(ishitaId), edit(ishitaCommit.id)), "forbidden");
+  record("CE4", "Viewer edits even their own commit", ok && (await commitRow(ishitaCommit.id)).message === ishitaCommit.message, detail);
+  await db.update(s.organisationMembers).set({ role: "member" }).where(and(eq(s.organisationMembers.userId, ishitaId), eq(s.organisationMembers.organisationId, org.id)));
+
+  [ok, detail] = await expectError(() => editCommit(A, edit(myCommit.id, { projectId: aarav.project.id })), "not_found");
+  const [crossOk, crossDetail] = await expectError(() => editCommit(A, edit(parthOrgCommit.id, { projectId: parth.project.id })), "not_found");
+  const [archived] = await db.insert(s.projects).values({ workspaceId: parth.ws.id, name: "Old", slug: `authz-old-${Date.now()}`, archivedAt: new Date() }).returning();
+  const [archivedOk] = await expectError(() => editCommit(A, edit(myCommit.id, { projectId: archived.id })), "not_found");
+  record("CE5", "Project must be live and in the commit's own workspace (no foreign, cross-workspace or archived)", ok && crossOk && archivedOk && (await commitRow(myCommit.id)).projectId === myCommit.projectId, `${detail} | ${crossDetail}`);
+  await db.delete(s.projects).where(eq(s.projects.id, archived.id));
+
+  const badEdits = [
+    { ...edit(myCommit.id), executionValue: 8 },
+    { ...edit(myCommit.id), createdAt: "2020-01-01T00:00:00Z" },
+    { ...edit(myCommit.id), userId: aaravId },
+    { ...edit(myCommit.id), workspaceId: aarav.ws.id },
+    { ...edit(myCommit.id), taskId: aarav.task.id },
+    { ...edit(myCommit.id), source: "imported" },
+    edit(myCommit.id, { message: "   " }),
+    edit(myCommit.id, { tags: Array.from({ length: 11 }, (_, i) => `t${i}`) }),
+    edit(myCommit.id, { tags: ["a,b"] }),
+  ].map((v) => editCommitSchema.safeParse(v).success);
+  record("CE6", "Commit edits reject time, value, author, workspace, task and source fields, blank messages and bad tags", badEdits.every((v) => !v), JSON.stringify(badEdits));
+
+  const editTarget = myCommit.projectId === parth.project.id ? null : parth.project.id;
+  await editCommit(A, editCommitSchema.parse(edit(myCommit.id, { message: "  Corrected message  ", projectId: editTarget, tags: ["Deep Work", "deep work", "review"] })));
+  const corrected = await commitRow(myCommit.id);
+  const editedTags = await tagsOf(myCommit.id);
+  const audit = await one(db.select().from(s.auditEvents).where(and(eq(s.auditEvents.action, "commit.edited"), eq(s.auditEvents.targetId, myCommit.id))));
+  record(
+    "CE7",
+    "Author corrects message, project and tags; time, execution, author, source and task are unchanged",
+    corrected.message === "Corrected message" && corrected.projectId === editTarget && frozen(corrected) === frozen(myCommit) && JSON.stringify(editedTags.map((t) => t.n)) === JSON.stringify(["deep work", "review"]) && editedTags.every((t) => t.w === parth.ws.id) && Boolean(audit) && audit.actorId === parthId,
+    JSON.stringify(editedTags.map((t) => t.n))
+  );
+  await editCommit(A, edit(ishitaCommit.id, { message: "Owner fixed typo" }));
+  const ownerEdited = await commitRow(ishitaCommit.id);
+  record("CE8", "Organisation owner corrects a member's commit; author and value stay", ownerEdited.message === "Owner fixed typo" && frozen(ownerEdited) === frozen(ishitaCommit));
+
+  await db.update(s.commits).set({ deletedAt: new Date() }).where(eq(s.commits.id, parthOrgCommit.id));
+  [ok, detail] = await expectError(() => editCommit(A, edit(parthOrgCommit.id)), "not_found");
+  record("CE9", "A retired commit cannot be edited", ok, detail);
+  await db.update(s.commits).set({ deletedAt: null }).where(eq(s.commits.id, parthOrgCommit.id));
 
   // ------------------------------------------------------------ export, import, account deletion, billing
   const execution = async (workspaceId: string) =>

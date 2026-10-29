@@ -123,6 +123,22 @@ export const manualCommitSchema = z.strictObject({
 });
 
 /**
+ * Commit correction: message, project and tags only. Time, execution value, author,
+ * source and the linked task never change, so they are not accepted here.
+ */
+export const COMMIT_TAGS_MAX = 10;
+
+export const editCommitSchema = z.strictObject({
+  commitId: objectId,
+  message: z.string().trim().min(1, "Describe what you did.").max(500, "Keep the message under 500 characters."),
+  projectId: objectId.nullable(),
+  tags: z
+    .array(z.string().trim().toLowerCase().min(1).max(50, "Keep tags under 50 characters.").regex(/^[^,#\s][^,]*$/, "Separate tags with commas."))
+    .max(COMMIT_TAGS_MAX, `Up to ${COMMIT_TAGS_MAX} tags.`)
+    .transform((list) => [...new Set(list)]),
+});
+
+/**
  * Project creation. The workspace is derived on the server: null organisationId means
  * the actor's personal workspace. The slug is what `#slug` matches in quick capture.
  */

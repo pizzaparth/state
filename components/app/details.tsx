@@ -7,6 +7,7 @@ import { Chip, DISPLAY, DueLabel, PriorityMark, TICK } from "./primitives";
 import { TaskPriority, TaskRecurrence, TaskWeight } from "./task-fields";
 import { recurrenceLabel } from "@/lib/recurrence";
 import { TaskTitle } from "./task-title";
+import { CommitEditor } from "./commit-editor";
 
 type Task = NonNullable<Awaited<ReturnType<typeof getTaskDetail>>>;
 type Commit = NonNullable<Awaited<ReturnType<typeof getCommitDetail>>>;
@@ -106,7 +107,8 @@ const SOURCE: Record<string, string> = {
   integration: "Integration",
 };
 
-export function CommitDetail({ commit, tz }: { commit: Commit; tz: string }) {
+/** `projects` (the commit's workspace) is passed only when the viewer may correct this commit. */
+export function CommitDetail({ commit, tz, projects }: { commit: Commit; tz: string; projects?: { id: string; name: string }[] }) {
   return (
     <div>
       <p className="flex items-center gap-3">
@@ -139,6 +141,7 @@ export function CommitDetail({ commit, tz }: { commit: Commit; tz: string }) {
         )}
       </dl>
       <p className="mt-6 font-mono text-[12px] text-[#85857F]">time + value locked · message, project, tags fixable</p>
+      {projects && <CommitEditor commit={commit} projects={projects} />}
     </div>
   );
 }

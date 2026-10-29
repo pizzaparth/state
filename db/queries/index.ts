@@ -140,11 +140,14 @@ export async function getCommitDetail(commitId: string, workspaceIds: string[]) 
   const [row] = await db
     .select({
       id: commits.id,
+      workspaceId: commits.workspaceId,
+      userId: commits.userId,
       message: commits.message,
       executionValue: commits.executionValue,
       source: commits.source,
       createdAt: commits.createdAt,
       authorName: users.name,
+      projectId: commits.projectId,
       projectName: projects.name,
       taskId: tasks.id,
       taskTitle: tasks.title,
@@ -589,6 +592,17 @@ export interface ProjectSummary {
   commits7d: number;
   execution30d: number;
   lastCommitAt: Date | null;
+}
+
+/** Live projects of one workspace for a picker, if the viewer can read it. */
+export async function getProjectOptions(workspaceId: string, workspaceIds: string[]) {
+  if (!workspaceIds.includes(workspaceId)) return [];
+  return db
+    .select({ id: projects.id, name: projects.name })
+    .from(projects)
+    .where(and(eq(projects.workspaceId, workspaceId), isNull(projects.archivedAt)))
+    .orderBy(asc(projects.name))
+    .limit(200);
 }
 
 export async function getProjects(workspaceIds: string[]): Promise<ProjectSummary[]> {

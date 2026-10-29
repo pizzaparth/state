@@ -9,7 +9,7 @@ import { keyBetween } from "@/lib/position";
 import { dayIn, nextDueDay } from "@/lib/recurrence";
 import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
 import type { z } from "zod";
-import type { acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, invitationRefSchema, inviteMemberSchema, memberRefSchema, organisationRefSchema, setMemberRoleSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import type { editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, invitationRefSchema, inviteMemberSchema, memberRefSchema, organisationRefSchema, setMemberRoleSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -827,6 +827,76 @@ export async function createManualCommit(actor: Actor, input: z.infer<typeof man
     })
     .returning({ id: commits.id });
   return row;
+}
+
+/**
+ * Corrects a commit's message, project and tags. Its time, execution value, author,
+ * source and task stay as recorded. The author can edit their own commits; in an
+ * organisation, owners and admins can edit anyone's. The project must be a live project
+ * in the commit's own workspace (or none); tags are created in that workspace by name.
+ */
+export async function editCommit(actor: Actor, input: z.infer<typeof editCommitSchema>): Promise<{ message: string }> {
+  return db.transaction(async (tx) => {
+    const [commit] = await tx
+      .select({ id: commits.id, workspaceId: commits.workspaceId, userId: commits.userId, message: commits.message, projectId: commits.projectId })
+      .from(commits)
+      .where(and(eq(commits.id, input.commitId), isNull(commits.deletedAt)))
+      .limit(1)
+      .for("update");
+    if (!commit) throw new MutationError("not_found", "That commit no longer exists.");
+    assertWritable(actor, commit.workspaceId);
+    if (commit.userId !== actor.id) {
+      const [membership] = await tx
+        .select({ role: organisationMembers.role })
+        .from(organisationMembers)
+        .innerJoin(organisations, eq(organisations.id, organisationMembers.organisationId))
+        .where(and(eq(organisations.workspaceId, commit.workspaceId), eq(organisationMembers.userId, actor.id)))
+        .limit(1);
+      if (!membership || !MANAGER_ROLES.includes(membership.role)) throw new MutationError("forbidden", "Only its author, an owner or an admin can edit this commit.");
+    }
+
+    if (input.projectId && input.projectId !== commit.projectId) {
+      const [project] = await tx
+        .select({ id: projects.id })
+        .from(projects)
+        .where(and(eq(projects.id, input.projectId), eq(projects.workspaceId, commit.workspaceId), isNull(projects.archivedAt)))
+        .limit(1);
+      if (!project) throw new MutationError("not_found", "That project no longer exists.");
+    }
+
+    const before = await tx
+      .select({ name: tags.name })
+      .from(commitTags)
+      .innerJoin(tags, eq(tags.id, commitTags.tagId))
+      .where(eq(commitTags.commitId, commit.id))
+      .limit(100);
+    const tagsChanged = JSON.stringify(before.map((t) => t.name).sort()) !== JSON.stringify([...input.tags].sort());
+    if (tagsChanged) {
+      await tx.delete(commitTags).where(eq(commitTags.commitId, commit.id));
+      if (input.tags.length > 0) {
+        await tx.insert(tags).values(input.tags.map((name) => ({ workspaceId: commit.workspaceId, name }))).onConflictDoNothing({ target: [tags.workspaceId, tags.name] });
+        const ids = await tx.select({ id: tags.id }).from(tags).where(and(eq(tags.workspaceId, commit.workspaceId), inArray(tags.name, input.tags)));
+        await tx.insert(commitTags).values(ids.map((t) => ({ commitId: commit.id, tagId: t.id })));
+      }
+    }
+
+    const changed = [
+      ...(input.message !== commit.message ? ["message"] : []),
+      ...(input.projectId !== commit.projectId ? ["project"] : []),
+      ...(tagsChanged ? ["tags"] : []),
+    ];
+    if (changed.length === 0) return { message: commit.message };
+    await tx.update(commits).set({ message: input.message, projectId: input.projectId }).where(eq(commits.id, commit.id));
+    await tx.insert(auditEvents).values({
+      workspaceId: commit.workspaceId,
+      actorId: actor.id,
+      action: "commit.edited",
+      targetType: "commit",
+      targetId: commit.id,
+      metadata: { changed, fromProjectId: commit.projectId, toProjectId: input.projectId },
+    });
+    return { message: input.message };
+  });
 }
 
 export interface ImportResult {

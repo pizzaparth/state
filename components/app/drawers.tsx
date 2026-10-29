@@ -1,5 +1,5 @@
 import * as React from "react";
-import { getBoardTargets, getCommitDetail, getTaskDetail } from "@/db/queries";
+import { getBoardTargets, getCommitDetail, getProjectOptions, getTaskDetail } from "@/db/queries";
 import { WRITE_ROLES } from "@/lib/authz";
 import { dayKey } from "@/lib/format";
 import type { Viewer } from "@/lib/viewer";
@@ -13,6 +13,11 @@ export type PageSearchParams = Promise<Record<string, string | undefined>>;
 const canWrite = (viewer: Viewer, workspaceId: string) =>
   workspaceId === viewer.personalWorkspaceId ||
   viewer.orgs.some((o) => o.workspaceId === workspaceId && (WRITE_ROLES as readonly string[]).includes(o.role));
+
+// Mirrors editCommit: the author, or an owner or admin of the commit's organisation
+const canEditCommit = (viewer: Viewer, commit: { workspaceId: string; userId: string }) =>
+  canWrite(viewer, commit.workspaceId) &&
+  (commit.userId === viewer.id || viewer.orgs.some((o) => o.workspaceId === commit.workspaceId && (o.role === "owner" || o.role === "admin")));
 
 // Repeated (?task=a&task=b) or malformed ids never reach a query
 const objectIdParam = (value: unknown) => (typeof value === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(value) ? value : null);
@@ -43,9 +48,10 @@ export async function Drawers({ params, viewer }: { params: Record<string, strin
   if (commitId) {
     const commit = await getCommitDetail(commitId, viewer.workspaceIds);
     if (commit) {
+      const projects = canEditCommit(viewer, commit) ? await getProjectOptions(commit.workspaceId, viewer.workspaceIds) : undefined;
       return (
         <DetailDrawer param="commit" title="Commit">
-          <CommitDetail commit={commit} tz={viewer.tz} />
+          <CommitDetail commit={commit} tz={viewer.tz} projects={projects} />
         </DetailDrawer>
       );
     }

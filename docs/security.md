@@ -48,7 +48,7 @@ rate limits. `authz:check` refuses any database whose name does not end in `_tes
 
 ## Results
 
-`npm run authz:check`: **145 of 145 pass.**
+`npm run authz:check`: **154 of 154 pass.**
 
 | Group | Checks |
 |---|---|
@@ -59,9 +59,10 @@ rate limits. `authz:check` refuses any database whose name does not end in `_tes
 | I1–I13 invitations | Outsiders, members and admins (for admin roles) cannot invite. Only a SHA-256 of the emailed token is stored. Inviting again keeps one pending row and retires the old link. Accepting needs the invited, verified address; links work once and expire. Revocation is owner/admin only. Owner role, extra keys, bad emails and malformed tokens rejected. |
 | MR1–MR10 member management | Outsiders and members cannot change roles. The owner cannot be demoted or removed; nobody changes their own role; only the owner promotes or demotes admins. Role changes and removal take effect on the next request; a removed member's open tasks are unassigned and their commits kept. The owner cannot leave. |
 | RC1–RC8 recurring tasks | Another user or a viewer cannot set a repeat. Unknown rules, out-of-range intervals and extra keys rejected. Completing a recurring task records one commit and queues one next occurrence in the same workspace and board; reopening and completing again, or 10 parallel completions, add no second one. Due-day arithmetic never lands in the past. |
+| CE1–CE9 commit corrections | Another user, an outsider, a member (on someone else's commit) and a viewer cannot edit. The project must be live and in the commit's own workspace. Time, execution value, author, workspace, task and source cannot be sent. The author, or an organisation owner, corrects message, project and tags; time and value stay; an audit event is written. Retired commits cannot be edited. |
 | L1–L6 lifecycle and races | 10 parallel Done moves record exactly one commit. A replayed Done records nothing. Reopen retires the commit, and completing again records one. A deleted task cannot be moved. A removed member loses write access at once. |
 
-`npm run security:check` (black box, production build): **86 of 86 pass.**
+`npm run security:check` (black box, production build): **88 of 88 pass.**
 
 Email verification and password reset (EV, PR):
 
@@ -94,6 +95,7 @@ Product and surface checks:
 | OR1–OR3 | Unpaid organisation creation; forged `ownerId`; stored XSS in the organisation name | Refused; refused; owner is the session user and the name is escaped |
 | IV1–IV5 | Guessed or malformed invitation links; link poisoning through forwarded Host; anonymous or wrong-account acceptance; replay; mail bombing one address | Nothing revealed; fixed origin and forged Host refused; refused; single use; 3 per address per hour |
 | RT1 | Another user's repeat rule, invalid rules, forged `recurrenceParentId` through the raw action | Refused, nothing changed |
+| CM1–CM2 | Another user's commit edit; forged `executionValue`/`createdAt`; stored XSS in a corrected message and tags | Refused; refused; escaped, time and value unchanged |
 | SA8 | Burst of 70 writes | Write budget blocks the excess |
 | X2 | Stored XSS in a task title | Escaped on render |
 | K2 | Session token reused after sign-out | Redirected to sign-in |
