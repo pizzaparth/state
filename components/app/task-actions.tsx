@@ -6,7 +6,9 @@ import type { Route } from "next";
 import { ArrowRight, CalendarCheck, Loader2, Trash2 } from "lucide-react";
 import { deleteTaskAction, placeTaskAction, restoreTaskAction, setTaskDueAction } from "@/app/(app)/actions";
 import type { BoardTarget } from "@/db/queries";
+import { cn } from "@/lib/utils";
 import { useNotice } from "./notice";
+import { TICK } from "./primitives";
 
 const selectClass =
   "app-field h-11 w-full min-w-0 rounded-[14px] bg-[#000000] px-3 text-base text-[#F2F2EF] focus:border-white/45 focus:outline-none";
@@ -83,7 +85,7 @@ export function TaskActions({
 
   return (
     <section aria-labelledby="task-actions-heading" className="mt-8 border-t border-white/[0.08] pt-6">
-      <h3 id="task-actions-heading" className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">
+      <h3 id="task-actions-heading" className={cn(TICK, "text-[#9A9A96]")}>
         Actions
       </h3>
 
@@ -96,8 +98,8 @@ export function TaskActions({
             saveDue(dueRef.current?.value ?? "");
           }}
         >
-          <label htmlFor="task-due" className="text-sm font-medium text-[#9A9A96]">
-            Due date
+          <label htmlFor="task-due" className={cn(TICK, "text-[11px] text-[#85857F]")}>
+            Due
           </label>
           <div className="flex gap-2">
             {/* Keyed by the saved day so a save or another tab's change resets the field */}
@@ -150,7 +152,7 @@ export function TaskActions({
             });
           }}
         >
-          <label htmlFor="task-move-column" className="text-sm font-medium text-[#9A9A96]">
+          <label htmlFor="task-move-column" className={cn(TICK, "text-[11px] text-[#85857F]")}>
             Move to board
           </label>
           <div className="flex gap-2">
@@ -178,9 +180,7 @@ export function TaskActions({
       )}
 
       {task.completed ? (
-        <p className="mt-3 text-sm leading-relaxed text-[#9A9A96]">
-          Completed tasks are part of your history. To delete this one, move it out of Done on its board first.
-        </p>
+        <p className="mt-3 font-mono text-[12px] text-[#85857F]">done = history · move out of Done to delete</p>
       ) : (
         <button
           type="button"
@@ -189,7 +189,7 @@ export function TaskActions({
           className="app-btn mt-4 inline-flex h-11 items-center gap-1.5 rounded-[14px] px-4 text-base font-medium text-[#F0A39B] disabled:opacity-50"
         >
           {pending === "delete" ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Trash2 className="size-4" aria-hidden="true" />}
-          Delete task
+          Delete
         </button>
       )}
 

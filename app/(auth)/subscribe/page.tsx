@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth/session";
 import { hasPaidAccess } from "@/lib/billing/access";
 import { PLANS } from "@/lib/billing/plans";
 import { paymentSkipEnabled } from "@/lib/billing/skip";
+import { DISPLAY } from "@/lib/type";
 import { SubscribeForm } from "./subscribe-form";
 
 export const metadata = { title: "Subscribe — State" };
@@ -21,14 +22,12 @@ export default async function SubscribePage({
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-xl font-bold tracking-tight text-[#F4F4F2]">Choose your plan</h1>
-        <p className="text-xs text-[#A9A9A6] text-pretty">
-          State is paid from day one. Your workspace is created as soon as payment clears. Cancel anytime; your data stays exportable.
-        </p>
+        <h1 className={`${DISPLAY} text-[2rem] leading-[0.95] text-[#F4F4F2] text-balance`}>Pick a plan</h1>
+        <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-[#A9A9A6]">Step 2/2 · cancel anytime · data stays yours</p>
       </div>
       {canceled && (
-        <p role="status" className="text-xs text-[#A9A9A6] border-l-2 border-white/20 pl-3">
-          Checkout was cancelled. No payment was taken.
+        <p role="status" className="text-sm text-[#A9A9A6] border-l-2 border-white/20 pl-3">
+          Checkout cancelled. Nothing charged.
         </p>
       )}
       <SubscribeForm

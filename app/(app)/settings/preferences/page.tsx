@@ -7,16 +7,16 @@ import { WEIGHT_LEVELS } from "@/lib/weights";
 export const metadata = { title: "Preferences — State" };
 
 const SHORTCUTS = [
-  ["⌘ K", "Command palette"],
+  ["⌘ K", "Commands"],
   ["/", "Search"],
-  ["C", "Record a commit"],
-  ["N", "Capture a task"],
+  ["C", "Log work"],
+  ["N", "Add task"],
   ["G T", "Today"],
   ["G I", "Inbox"],
   ["G A", "Activity"],
   ["G H", "History"],
   ["G M", "Metrics"],
-  ["G P", "Personal board"],
+  ["G P", "Board"],
   ["G O", "Organisation"],
 ] as const;
 
@@ -30,26 +30,26 @@ export default async function PreferencesSettingsPage() {
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel title="Execution">
           <dl>
-            <Row label="Task weights" hint="Execution = Σ completed task weights + manual commit weights.">
+            <Row label="Weights" hint="execution = Σ task + manual weights">
               <ul className="space-y-2">
                 {WEIGHT_LEVELS.map((w) => (
                   <li key={w.value}>
-                    {w.label} <span className="tabular-nums text-[#9A9A96]">{w.value}</span>
-                    <span className="block text-sm leading-relaxed text-[#9A9A96]">{w.hint}</span>
+                    {w.label} <span className="font-mono font-semibold tabular-nums text-[#F2F2EF]">+{w.value}</span>
+                    <span className="block text-sm font-normal leading-relaxed text-[#9A9A96]">{w.hint}</span>
                   </li>
                 ))}
               </ul>
             </Row>
           </dl>
         </Panel>
-        <Panel title="Keyboard shortcuts">
+        <Panel title="Shortcuts">
           <dl className="grid grid-cols-[5rem_minmax(0,1fr)] gap-y-2 text-base">
             {SHORTCUTS.map(([keys, action]) => (
               <React.Fragment key={keys}>
                 <dt>
                   <kbd className="app-btn inline-block rounded-[8px] px-2 py-0.5 font-mono text-sm">{keys.replace(" ", " ")}</kbd>
                 </dt>
-                <dd className="text-[#D4D4D0]">{action}</dd>
+                <dd className="font-medium text-[#D4D4D0]">{action}</dd>
               </React.Fragment>
             ))}
           </dl>

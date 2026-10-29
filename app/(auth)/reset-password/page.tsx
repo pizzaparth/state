@@ -1,4 +1,5 @@
 import { ExpiredLink, ResetPasswordForm } from "@/components/auth/password-reset-forms";
+import { DISPLAY } from "@/lib/type";
 
 export const metadata = { title: "Choose a new password — State" };
 
@@ -11,8 +12,8 @@ export default async function ResetPasswordPage({ searchParams }: { searchParams
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-xl font-bold tracking-tight text-[#F4F4F2]">Choose a new password</h1>
-        {valid && <p className="text-xs text-[#A9A9A6]">At least 8 characters.</p>}
+        <h1 className={`${DISPLAY} text-[2rem] leading-[0.95] text-[#F4F4F2] text-balance`}>New password</h1>
+        {valid && <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-[#A9A9A6]">8+ characters</p>}
       </div>
       {valid ? <ResetPasswordForm token={token} /> : <ExpiredLink />}
     </div>

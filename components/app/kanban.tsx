@@ -78,6 +78,7 @@ export function Kanban({
   React.useEffect(() => setMounted(true), []);
   const notify = useNotice();
 
+  const dndId = React.useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -157,6 +158,8 @@ export function Kanban({
 
   return (
     <DndContext
+      // Stable id: dnd-kit's own counter differs between server and client and breaks hydration
+      id={dndId}
       sensors={sensors}
       collisionDetection={closestCorners}
       onDragStart={onDragStart}

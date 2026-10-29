@@ -301,12 +301,12 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
           Settings
         </NavLink>
         <div className="flex items-center gap-3 px-3 pt-2">
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#1F1F1F] text-[13px] font-semibold border border-white/15" aria-hidden="true">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full border border-white/15 bg-[#1F1F1F] font-display text-[12px] font-extrabold [font-stretch:125%]" aria-hidden="true">
             {data.user.initials}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-base font-medium">{data.user.name}</span>
-            <span className="block truncate text-sm text-[#9A9A96]">{data.user.email}</span>
+            <span className="block truncate text-[15px] font-semibold">{data.user.name}</span>
+            <span className="block truncate font-mono text-[12px] text-[#85857F]">{data.user.email}</span>
           </span>
           <button
             type="button"
@@ -343,7 +343,7 @@ function NavLink({ href, active, children }: { href: string; active: boolean; ch
       onFocus={prefetch}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "relative flex items-center gap-3 rounded-[12px] px-3 py-2 text-base font-medium transition-colors duration-150",
+        "relative flex items-center gap-3 rounded-[12px] px-3 py-2 text-[15px] font-semibold tracking-[-0.01em] transition-colors duration-150",
         active ? "text-[#0A0A0A]" : "text-[#BDBDB9] hover:bg-white/[0.05] hover:text-[#F2F2EF]"
       )}
     >

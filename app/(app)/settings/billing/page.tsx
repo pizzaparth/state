@@ -19,7 +19,7 @@ export default async function BillingSettingsPage() {
       <SettingsNav active="/settings/billing" />
       <Panel title="Subscription">
         {!sub || !plan ? (
-          <EmptyState title="No subscription">Choose a plan to open your workspace.</EmptyState>
+          <EmptyState title="No plan yet" />
         ) : (
           <dl>
             <Row label="Plan">
@@ -29,16 +29,16 @@ export default async function BillingSettingsPage() {
             <Row label="Status">
               <Chip>{sub.status.replace("_", " ")}</Chip>
             </Row>
-            <Row label="Price" hint="Monthly list price; yearly billing is ten months for twelve.">
-              {formatInr(plan.priceInr.monthly * (plan.perSeat ? sub.seats : 1))} per month
+            <Row label="Price" hint="yearly = 10 months for 12">
+              {formatInr(plan.priceInr.monthly * (plan.perSeat ? sub.seats : 1))}/mo
             </Row>
-            <Row label="Current period">
+            <Row label="Period">
               {sub.currentPeriodStart && sub.currentPeriodEnd
-                ? `${formatDate(sub.currentPeriodStart, viewer.tz, fullDate)} to ${formatDate(sub.currentPeriodEnd, viewer.tz, fullDate)}`
+                ? `${formatDate(sub.currentPeriodStart, viewer.tz, fullDate)} → ${formatDate(sub.currentPeriodEnd, viewer.tz, fullDate)}`
                 : "—"}
             </Row>
-            <Row label="Renewal">{sub.cancelAtPeriodEnd ? "Ends at period end" : "Renews automatically"}</Row>
-            <Row label="Payment provider">{sub.provider === "razorpay" ? "Razorpay" : "Stripe"}</Row>
+            <Row label="Renewal">{sub.cancelAtPeriodEnd ? "Ends at period end" : "Auto-renews"}</Row>
+            <Row label="Provider">{sub.provider === "razorpay" ? "Razorpay" : "Stripe"}</Row>
           </dl>
         )}
       </Panel>

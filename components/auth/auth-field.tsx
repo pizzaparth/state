@@ -1,7 +1,7 @@
 import * as React from "react";
 
 export const inputClasses =
-  "w-full h-11 px-4 text-sm bg-[#151515] text-[#F4F4F2] rounded-input border border-white/[0.1] focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40 placeholder:text-[#6F6F6B] transition-[border-color,box-shadow] touch-manipulation aria-[invalid=true]:border-[#E5A3A3]/60";
+  "w-full h-11 px-4 text-base bg-[#151515] text-[#F4F4F2] rounded-input border border-white/[0.1] focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40 placeholder:text-[#6F6F6B] transition-[border-color,box-shadow] touch-manipulation aria-[invalid=true]:border-[#E5A3A3]/60";
 
 /** Labelled input with its inline error, shared by the auth forms. */
 export function AuthField({
@@ -14,7 +14,7 @@ export function AuthField({
   return (
     <div className="space-y-1">
       <div className="flex items-baseline justify-between gap-3">
-        <label htmlFor={name} className="block text-xs font-medium text-[#A9A9A6]">
+        <label htmlFor={name} className="block text-sm font-medium text-[#A9A9A6]">
           {label}
         </label>
         {aside}
@@ -28,7 +28,7 @@ export function AuthField({
         {...props}
       />
       {error && (
-        <p id={`${name}-error`} className="text-xs text-[#E5A3A3]">
+        <p id={`${name}-error`} className="text-sm text-[#E5A3A3]">
           {error}
         </p>
       )}

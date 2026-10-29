@@ -5,7 +5,8 @@ import { Loader2, Pencil } from "lucide-react";
 import { renameTaskAction } from "@/app/(app)/actions";
 import { useNotice } from "./notice";
 
-const headingClass = "text-xl font-semibold leading-snug tracking-[-0.01em] text-[#F2F2EF]";
+// Display face without caps: task titles are user text and can run long
+const headingClass = "font-display text-2xl font-bold leading-tight tracking-[-0.02em] [font-stretch:110%] text-[#F2F2EF]";
 
 /**
  * Task panel heading with an inline Rename… form. Enter saves, Escape cancels without

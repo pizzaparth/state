@@ -5,6 +5,7 @@ import { SentNotice } from "@/components/auth/auth-field";
 import { Button } from "@/components/ui/button";
 import { isSafeRedirectPath } from "@/lib/auth/redirect";
 import { getSession } from "@/lib/auth/session";
+import { DISPLAY } from "@/lib/type";
 
 export const metadata = { title: "Verify email — State" };
 
@@ -19,9 +20,9 @@ export default async function VerifyEmailPage({ searchParams }: { searchParams: 
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-bold tracking-tight text-[#F4F4F2]">Verification link expired</h1>
+        <h1 className={`${DISPLAY} text-[2rem] leading-[0.95] text-[#F4F4F2] text-balance`}>Link expired</h1>
         <SentNotice title="Get a new link">
-          <p>Verification links expire after 24 hours. Sign in with your email and password and we will send a fresh one.</p>
+          <p>Links last 24 hours. Sign in and we’ll send a fresh one.</p>
         </SentNotice>
         <Button asChild variant="dark-cta" size="md" className="w-full">
           <Link href="/login">Sign in</Link>
@@ -34,8 +35,8 @@ export default async function VerifyEmailPage({ searchParams }: { searchParams: 
   if (!session?.user.emailVerified) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-bold tracking-tight text-[#F4F4F2]">Email already verified</h1>
-        <p className="text-sm text-[#A9A9A6]">This link has been used. Sign in to continue.</p>
+        <h1 className={`${DISPLAY} text-[2rem] leading-[0.95] text-[#F4F4F2] text-balance`}>Already verified</h1>
+        <p className="text-sm text-[#A9A9A6]">Link used. Sign in to continue.</p>
         <Button asChild variant="dark-cta" size="md" className="w-full">
           <Link href={`/login?next=${encodeURIComponent(continueTo)}` as Route}>Sign in</Link>
         </Button>

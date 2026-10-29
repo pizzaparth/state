@@ -49,7 +49,7 @@ export function ForgotPasswordForm() {
     <form method="post" onSubmit={onSubmit} className="space-y-4" noValidate>
       <AuthField
         name="email"
-        label="Email address"
+        label="Email"
         type="email"
         autoComplete="email"
         inputMode="email"

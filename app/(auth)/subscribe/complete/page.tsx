@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth/session";
 import { hasPaidAccess } from "@/lib/billing/access";
+import { DISPLAY } from "@/lib/type";
 import { RefreshUntilActive } from "./refresh";
 
 export const metadata = { title: "Confirming payment — State" };
@@ -15,16 +16,16 @@ export default async function SubscribeCompletePage() {
 
   return (
     <div className="space-y-4" aria-live="polite">
-      <h1 className="text-xl font-bold tracking-tight text-[#F4F4F2]">Confirming payment…</h1>
-      <p className="text-xs text-[#A9A9A6]">
-        Your workspace opens automatically once the payment provider confirms. This usually takes a few seconds.
+      <h1 className={`${DISPLAY} text-[2rem] leading-[0.95] text-[#F4F4F2] text-balance`}>Confirming…</h1>
+      <p className="text-sm text-[#A9A9A6]">
+        Workspace opens once payment clears. Usually seconds.
       </p>
       <p className="text-xs text-[#6F6F6B]">
         Nothing after a minute?{" "}
         <Link href="/subscribe" className="text-white underline-offset-2 hover:underline">
           Return to plans
         </Link>
-        . You will not be charged twice.
+        . No double charge.
       </p>
       <RefreshUntilActive />
     </div>

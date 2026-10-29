@@ -107,7 +107,7 @@ export function SubscribeForm({
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
       <fieldset className="space-y-2">
-        <legend className="mb-2 text-xs font-medium text-[#A9A9A6]">Plan</legend>
+        <legend className="mb-2 text-sm font-medium text-[#A9A9A6]">Plan</legend>
         {plans.map((p) => (
           <label key={p.id} className={optionClasses}>
             <input
@@ -138,7 +138,7 @@ export function SubscribeForm({
       </fieldset>
 
       <fieldset>
-        <legend className="mb-2 text-xs font-medium text-[#A9A9A6]">Billing</legend>
+        <legend className="mb-2 text-sm font-medium text-[#A9A9A6]">Billing</legend>
         <div className="grid grid-cols-2 gap-1 rounded-input border border-white/[0.1] p-1">
           {(["monthly", "yearly"] as const).map((value) => (
             <label
@@ -168,7 +168,7 @@ export function SubscribeForm({
 
       {plan.perSeat && (
         <div className="space-y-1">
-          <label htmlFor="seats" className="block text-xs font-medium text-[#A9A9A6]">
+          <label htmlFor="seats" className="block text-sm font-medium text-[#A9A9A6]">
             Members
           </label>
           <input
@@ -193,7 +193,7 @@ export function SubscribeForm({
         <span className="text-lg font-semibold tabular-nums text-[#F4F4F2]">{formatInr(total)}</span>
       </div>
 
-      <p aria-live="polite" className="min-h-4 text-xs text-[#E5A3A3]">
+      <p aria-live="polite" className="min-h-4 text-sm text-[#E5A3A3]">
         {error}
       </p>
 

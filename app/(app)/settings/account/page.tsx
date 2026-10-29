@@ -18,16 +18,15 @@ export default async function AccountSettingsPage() {
         <dl>
           <Row label="Name">{account?.name}</Row>
           <Row label="Email">{account?.email}</Row>
-          <Row label="Timezone" hint="Days in graphs and history start at midnight in this timezone.">
+          <Row label="Timezone" hint="your day starts at 00:00 here">
             {account?.timezone}
           </Row>
-          <Row label="Member since">{account ? formatDate(account.createdAt, viewer.tz, { day: "numeric", month: "long", year: "numeric" }) : ""}</Row>
+          <Row label="Since">{account ? formatDate(account.createdAt, viewer.tz, { day: "numeric", month: "long", year: "numeric" }) : ""}</Row>
         </dl>
       </Panel>
       <Panel title="Your data">
-        <p className="max-w-[62ch] text-base leading-relaxed text-[#9A9A96]">
-          Tasks, commits, projects, tags and metrics are yours. Export as CSV or JSON is part of the plan and stays available for
-          90 days after cancellation.
+        <p className="font-mono text-sm text-[#9A9A96]">
+          <span className="text-[#F2F2EF]">100% yours.</span> CSV/JSON export · kept 90 days after you cancel.
         </p>
       </Panel>
     </>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DISPLAY, TICK } from "@/lib/type";
 import type { DueState } from "@/lib/format";
 import { weightLabel } from "@/lib/weights";
 import { TabLinks } from "./tab-links";
@@ -13,11 +14,10 @@ import { TabLinks } from "./tab-links";
  *   Field / Rail    #000 + stronger hairline (inputs, progress rails, segmented controls)
  *   Rows, labels    directly on the page, no surface
  *
- * Type: titles and big numbers use the landing page's extended display face (DISPLAY);
- * labels read like a ticker (TICK). Copy stays to a few words.
+ * Type: titles and big numbers use DISPLAY, labels TICK (lib/type.ts). Copy stays to a
+ * few words.
  */
-export const DISPLAY = "font-display font-extrabold uppercase [font-stretch:125%] tracking-[-0.03em]";
-export const TICK = "font-mono text-[12px] font-medium uppercase tracking-[0.16em]";
+export { DISPLAY, TICK };
 
 export function PageHeader({
   label,

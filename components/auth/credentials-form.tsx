@@ -91,8 +91,8 @@ export function CredentialsForm({ mode, redirectTo }: { mode: Mode; redirectTo: 
 
   return (
     <form ref={formRef} method="post" onSubmit={onSubmit} className="space-y-4" noValidate>
-      {mode === "sign-up" && field("name", "Full name", { type: "text", autoComplete: "name", placeholder: "Ada Lovelace…" })}
-      {field("email", "Email address", {
+      {mode === "sign-up" && field("name", "Name", { type: "text", autoComplete: "name", placeholder: "Ada Lovelace…" })}
+      {field("email", "Email", {
         type: "email",
         autoComplete: "email",
         inputMode: "email",
@@ -113,7 +113,7 @@ export function CredentialsForm({ mode, redirectTo }: { mode: Mode; redirectTo: 
           </Link>
         )
       )}
-      <p aria-live="polite" className="min-h-4 text-xs text-[#E5A3A3]">
+      <p aria-live="polite" className="min-h-4 text-sm text-[#E5A3A3]">
         {formError}
       </p>
       <Button type="submit" variant="dark-cta" size="md" className="w-full" isLoading={pending} disabled={pending}>
