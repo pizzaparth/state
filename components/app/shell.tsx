@@ -333,7 +333,44 @@ function NavLink({ href, active, children }: { href: string; active: boolean; ch
 }
 
 // ------------------------------------------------------------------ command palette
-type Command = { id: string; label: string; group: string; hint?: string; run: () => void };
+type Command = { id: string; label: string; group: string; hint?: string; detail?: string; run: () => void };
+
+type SearchHit = { id: string; kind: "task" | "commit"; title: string; context: string; href: string; done: boolean };
+
+/**
+ * Tasks and commits matching the query, fetched as the person types (debounced; a newer
+ * query cancels the older request). Empty below 2 characters.
+ */
+function useWorkSearch(query: string) {
+  const [hits, setHits] = React.useState<SearchHit[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  React.useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setHits([]);
+      setLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    setLoading(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q.slice(0, 100))}`, { signal: controller.signal });
+        const body = res.ok ? ((await res.json()) as { hits: SearchHit[] }) : { hits: [] };
+        setHits(body.hits);
+      } catch {
+        if (!controller.signal.aborted) setHits([]);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, 150);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [query]);
+  return { hits, loading };
+}
 
 function CommandPalette({
   open,
@@ -359,7 +396,16 @@ function CommandPalette({
     ...data.projects.map((p) => ({ id: p.href, label: p.name, group: "Projects", run: go(p.href) })),
   ];
   const q = query.trim().toLowerCase();
-  const results = q ? commands.filter((c) => c.label.toLowerCase().includes(q) || c.group.toLowerCase().includes(q)) : commands;
+  const search = useWorkSearch(open ? query : "");
+  const found: Command[] = search.hits.map((h) => ({
+    id: `${h.kind}-${h.id}`,
+    label: h.title,
+    group: h.kind === "task" ? "Task" : "Commit",
+    detail: h.context,
+    hint: h.kind === "task" && h.done ? "done" : undefined,
+    run: go(h.href),
+  }));
+  const results = q ? [...commands.filter((c) => c.label.toLowerCase().includes(q) || c.group.toLowerCase().includes(q)), ...found] : commands;
 
   React.useEffect(() => {
     if (open) {
@@ -368,6 +414,8 @@ function CommandPalette({
     }
   }, [open]);
   React.useEffect(() => setIndex(0), [query]);
+  // Results arriving later can shorten the list under the cursor
+  React.useEffect(() => setIndex((i) => Math.min(i, Math.max(0, results.length - 1))), [results.length]);
 
   const run = (c: Command | undefined) => {
     if (!c) return;
@@ -406,13 +454,17 @@ function CommandPalette({
               aria-expanded="true"
               aria-controls="palette-results"
               aria-activedescendant={results[index] ? `cmd-${index}` : undefined}
-              placeholder="Type a command or project…"
+              placeholder="Search tasks, commits, commands…"
               className="h-14 flex-1 bg-transparent text-base text-[#F2F2EF] placeholder:text-[#6F6F6B] focus:outline-none"
             />
+            {search.loading && <Loader2 className="size-4 animate-spin text-[#85857F]" aria-hidden="true" />}
             <kbd className="rounded-[6px] bg-white/10 px-1.5 py-0.5 font-mono text-[12px] text-[#A9A9A6]">esc</kbd>
           </div>
+          <p role="status" className="sr-only">
+            {q.length >= 2 && !search.loading ? `${results.length} results` : ""}
+          </p>
           <ul id="palette-results" role="listbox" className="max-h-[50vh] overflow-y-auto overscroll-contain p-2">
-            {results.length === 0 && <li className="px-3 py-6 text-center text-base text-[#A9A9A6]">No matches.</li>}
+            {results.length === 0 && <li className="px-3 py-6 text-center text-base text-[#A9A9A6]">{search.loading ? "Searching…" : "No matches."}</li>}
             {results.map((c, i) => (
               <li
                 key={`${c.group}-${c.id}`}
@@ -424,7 +476,10 @@ function CommandPalette({
                 className={cn("flex cursor-pointer items-center gap-3 rounded-[12px] px-3 py-2.5 text-base", i === index ? "bg-white/10 text-white" : "text-[#C9C9C5]")}
               >
                 <span className="w-16 shrink-0 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#6F6F6B]">{c.group}</span>
-                <span className="min-w-0 flex-1 truncate">{c.label}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">{c.label}</span>
+                  {c.detail && <span className="block truncate text-sm text-[#85857F]">{c.detail}</span>}
+                </span>
                 {c.hint && <kbd className="font-mono text-[12px] text-[#85857F]">{c.hint}</kbd>}
               </li>
             ))}

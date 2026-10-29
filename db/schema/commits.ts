@@ -28,6 +28,8 @@ export const commits = pgTable(
     // Foreign key lookups (task deletion sets task_id null on every commit, live or not)
     index("commits_task_idx").on(table.taskId),
     // Idempotent auto-commit: at most one live commit per completed task
+    // Search: substring match on messages (pg_trgm)
+    index("commits_message_trgm_idx").using("gin", sql`${table.message} gin_trgm_ops`),
     uniqueIndex("commits_task_live_uidx").on(table.taskId).where(sql`${table.taskId} is not null and ${table.deletedAt} is null`),
   ]
 );

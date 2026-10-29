@@ -10,6 +10,7 @@ import {
   objectives,
   organisationInvitations,
   organisationMembers,
+  organisations,
   payments,
   projects,
   subscriptions,
@@ -808,4 +809,84 @@ export async function getAccount(userId: string) {
     .where(eq(users.id, userId))
     .limit(1);
   return row ?? null;
+}
+
+// ------------------------------------------------------------------ search
+export const SEARCH_LIMIT = 8;
+
+export interface SearchHit {
+  id: string;
+  kind: "task" | "commit";
+  title: string;
+  /** Project and place, e.g. "RelayDB · Ksan Relay". */
+  context: string;
+  href: string;
+  at: Date;
+  done: boolean;
+}
+
+/** `%` and `_` in the query match themselves, not any character. */
+const likePattern = (q: string) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+/**
+ * Tasks by title and commits by message across the viewer's workspaces, newest first.
+ * Deleted tasks and retired commits are left out; archived ones are found.
+ */
+export async function searchWork(q: string, workspaceIds: string[]): Promise<SearchHit[]> {
+  if (workspaceIds.length === 0) return [];
+  const pattern = likePattern(q);
+  const [taskRows, commitRows] = await Promise.all([
+    db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        boardId: tasks.boardId,
+        completedAt: tasks.completedAt,
+        createdAt: tasks.createdAt,
+        projectName: projects.name,
+        orgName: organisations.name,
+        orgSlug: organisations.slug,
+      })
+      .from(tasks)
+      .leftJoin(projects, eq(projects.id, tasks.projectId))
+      .leftJoin(organisations, eq(organisations.workspaceId, tasks.workspaceId))
+      .where(and(inArray(tasks.workspaceId, workspaceIds), isNull(tasks.deletedAt), sql`${tasks.title} ilike ${pattern}`))
+      .orderBy(desc(tasks.createdAt))
+      .limit(SEARCH_LIMIT),
+    db
+      .select({
+        id: commits.id,
+        message: commits.message,
+        createdAt: commits.createdAt,
+        projectName: projects.name,
+        orgName: organisations.name,
+      })
+      .from(commits)
+      .leftJoin(projects, eq(projects.id, commits.projectId))
+      .leftJoin(organisations, eq(organisations.workspaceId, commits.workspaceId))
+      .where(and(inArray(commits.workspaceId, workspaceIds), isNull(commits.deletedAt), sql`${commits.message} ilike ${pattern}`))
+      .orderBy(desc(commits.createdAt))
+      .limit(SEARCH_LIMIT),
+  ]);
+  const place = (project: string | null, org: string | null) => [project, org ?? "Personal"].filter(Boolean).join(" · ");
+  return [
+    ...taskRows.map((t) => ({
+      id: t.id,
+      kind: "task" as const,
+      title: t.title,
+      context: place(t.projectName, t.orgName),
+      href: t.orgSlug ? `/platform/org/${t.orgSlug}/board?task=${t.id}` : t.boardId ? `/platform/personal?task=${t.id}` : `/platform/inbox?task=${t.id}`,
+      at: t.createdAt,
+      done: t.completedAt !== null,
+    })),
+    ...commitRows.map((c) => ({
+      id: c.id,
+      kind: "commit" as const,
+      title: c.message,
+      context: place(c.projectName, c.orgName),
+      href: `/platform/history?commit=${c.id}`,
+      at: c.createdAt,
+      done: true,
+    })),
+  ];
 }

@@ -52,5 +52,7 @@ export const tasks = pgTable(
     index("tasks_completed_at_idx").on(table.workspaceId, table.completedAt),
     // Completing a recurring task checks whether its next occurrence already exists
     index("tasks_recurrence_parent_idx").on(table.recurrenceParentId),
+    // Search: substring match on titles (pg_trgm)
+    index("tasks_title_trgm_idx").using("gin", sql`${table.title} gin_trgm_ops`),
   ]
 );

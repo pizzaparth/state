@@ -636,6 +636,24 @@ async function checkServerActions() {
     editXss?.error ?? ""
   );
 
+  // Search: same gates as product pages, results scoped to the caller's workspaces
+  const { rows: [personalTask] } = await db.query("select title from tasks where workspace_id = 'seed-ws-parth' and deleted_at is null and title not like '%<%' order by created_at desc limit 1");
+  const search = (q, cookie, extra = "") => req(`/api/search?q=${encodeURIComponent(q)}${extra}`, { headers: cookie ? { cookie } : {} });
+  const [anonSearch, forgedSearch, unpaidSearch] = await Promise.all([search("relay"), search("relay", "better-auth.session_token=forged.forged"), search("relay", unpaid)]);
+  record("SR1", "Search refuses anonymous, forged-session and unpaid callers", anonSearch.status === 401 && forgedSearch.status === 401 && unpaidSearch.status === 403, `${anonSearch.status} ${forgedSearch.status} ${unpaidSearch.status}`);
+  const badSearches = await Promise.all([search("x", owner), search("y".repeat(101), owner), search("relay", owner, "&workspaceId=seed-ws-aarav"), req("/api/search", { headers: { cookie: owner } })]);
+  record("SR2", "Search rejects short, oversized and extra parameters", badSearches.every((r) => r.status === 400), badSearches.map((r) => r.status).join(","));
+  const ownerSearch = await search(personalTask.title, owner);
+  const otherSearch = await search(personalTask.title, other);
+  const ownerFound = JSON.parse(ownerSearch.text).hits?.some((h) => h.title === personalTask.title);
+  const otherFound = JSON.parse(otherSearch.text).hits?.some((h) => h.title === personalTask.title);
+  record(
+    "SR3",
+    "Search finds the owner's personal task, never another user's; responses are private",
+    ownerFound && !otherFound && /private/.test(ownerSearch.headers.get("cache-control") ?? "") && /no-store/.test(ownerSearch.headers.get("cache-control") ?? ""),
+    `owner ${ownerFound} other ${otherFound} ${ownerSearch.headers.get("cache-control")}`
+  );
+
   // Write budget: 60 per user per minute, shared across instances. Invalid calls count too.
   const burst = await Promise.all(Array.from({ length: 70 }, () => callAction(ids.moveTaskAction, [{}], { cookie: other })));
   const limited = burst.filter((r) => /Too many changes/.test(r.error ?? "")).length;

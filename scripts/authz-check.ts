@@ -17,7 +17,7 @@ import path from "node:path";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../db";
 import * as s from "../db/schema";
-import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail, getTicker } from "../db/queries";
+import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
 import { editCommit, acceptInvitation, setTaskRecurrence, captureTask, createManualCommit, createOrganisation, createProject, hashInvitationToken, inviteMember, leaveOrganisation, removeMember, revokeInvitation, setMemberRole, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
 import { editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, inviteMemberSchema, setMemberRoleSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
@@ -683,6 +683,27 @@ async function main() {
   [ok, detail] = await expectError(() => editCommit(A, edit(parthOrgCommit.id)), "not_found");
   record("CE9", "A retired commit cannot be edited", ok, detail);
   await db.update(s.commits).set({ deletedAt: null }).where(eq(s.commits.id, parthOrgCommit.id));
+
+  // ------------------------------------------------------------ search
+  const secret = `zz-private-${Date.now()}`;
+  const [secretTask] = await db.insert(s.tasks).values({ workspaceId: parth.ws.id, boardId: parth.board.id, columnId: parth.col("backlog").id, creatorId: parthId, title: `${secret} task` }).returning();
+  const [secretCommit] = await db.insert(s.commits).values({ workspaceId: parth.ws.id, userId: parthId, message: `${secret} commit`, executionValue: 1 }).returning();
+  const ownHits = await searchWork(secret, readable(A));
+  record("S1", "Search finds the owner's own tasks and commits", ownHits.some((h) => h.id === secretTask.id) && ownHits.some((h) => h.id === secretCommit.id), `${ownHits.length} hits`);
+  const [bHits, xHits] = [await searchWork(secret, readable(B)), await searchWork(secret, readable(X))];
+  record("S2", "Another user and an outsider find none of them", bHits.length === 0 && xHits.length === 0, `${bHits.length}/${xHits.length}`);
+  const orgHits = await searchWork(orgTask.title, readable(B));
+  const orgHitsX = await searchWork(orgTask.title, readable(X));
+  record("S3", "Members find organisation tasks; outsiders do not", orgHits.some((h) => h.id === orgTask.id && h.href.startsWith(`/platform/org/${org.slug}/board`)) && !orgHitsX.some((h) => h.id === orgTask.id));
+  const wild = await Promise.all(["%", "_", "%%", "\\", "' or 1=1 --"].map((q) => searchWork(q, readable(A))));
+  record("S4", "Wildcards and quotes match literally, never everything", wild.every((hits) => hits.length === 0 || hits.every((h) => /[%_\\']/.test(h.title))), wild.map((w) => w.length).join(","));
+  await db.update(s.tasks).set({ deletedAt: new Date() }).where(eq(s.tasks.id, secretTask.id));
+  await db.update(s.commits).set({ deletedAt: new Date() }).where(eq(s.commits.id, secretCommit.id));
+  record("S5", "Deleted tasks and retired commits are not found", (await searchWork(secret, readable(A))).length === 0);
+  const capped = await searchWork("e", readable(A));
+  record("S6", "Results are bounded", capped.filter((h) => h.kind === "task").length <= 8 && capped.filter((h) => h.kind === "commit").length <= 8, `${capped.length}`);
+  await db.delete(s.tasks).where(eq(s.tasks.id, secretTask.id));
+  await db.delete(s.commits).where(eq(s.commits.id, secretCommit.id));
 
   // ------------------------------------------------------------ export, import, account deletion, billing
   const execution = async (workspaceId: string) =>
