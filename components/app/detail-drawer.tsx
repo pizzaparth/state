@@ -43,10 +43,11 @@ export function DetailDrawer({ param, title, children }: { param: string; title:
             if (e.target instanceof Element && e.target.closest("[data-drawer-escape]")) e.preventDefault();
           }}
         >
-          {/* Close sits in the panel's corner, clear of controls on the content's right edge */}
-          <div className="flex items-start justify-between gap-4 pb-4 pl-6 pr-3 pt-3">
-            <Dialog.Title className="pt-3 text-[13px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{title}</Dialog.Title>
-            <Dialog.Close className="app-btn grid size-9 place-items-center rounded-full" aria-label="Close">
+          {/* Close sits in the top-left corner, away from controls on the content's right edge.
+              The title is for assistive tech only; the content's heading names the object. */}
+          <div className="pb-3 pl-2.5 pt-2.5">
+            <Dialog.Title className="sr-only">{title}</Dialog.Title>
+            <Dialog.Close className="app-btn grid size-9 place-items-center rounded-full" aria-label={`Close ${title.toLowerCase()}`}>
               <X className="size-4" aria-hidden="true" />
             </Dialog.Close>
           </div>
