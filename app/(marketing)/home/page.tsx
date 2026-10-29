@@ -10,7 +10,17 @@ import { MetricsReport } from "@/components/app/metrics-view";
 import { Panel } from "@/components/app/primitives";
 import { DEMO_TZ, demoBoard, demoCommits, demoDaily, demoMetrics, demoSeries, demoWorkspaces } from "@/lib/demo/workspace";
 import { formatNumber } from "@/lib/format";
-import { PLANS, formatInr } from "@/lib/billing/plans";
+import { PLANS, PLAN_IDS, formatInr } from "@/lib/billing/plans";
+import { COMPARISONS } from "@/lib/compare";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/site";
+import { LEGAL } from "@/lib/legal";
+import { JsonLd } from "@/components/marketing/json-ld";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: { absolute: SITE_TITLE },
+  alternates: { canonical: "/" },
+};
 
 const silver = "bg-gradient-to-b from-white via-[#D9D9D5] to-[#6F6F6B] bg-clip-text text-transparent";
 const displayHeading =
@@ -29,6 +39,56 @@ const REFUSALS = [
   "An unexplained productivity score",
 ];
 
+// Plain answers to what people search before picking a to-do app
+const FAQ = [
+  {
+    q: "What is State?",
+    a: "A to-do list and kanban app that records finished work. Tasks are the plan. When a task is done it becomes a commit, and State turns commits into execution, velocity, throughput, cycle time and consistency.",
+  },
+  {
+    q: "How is it different from Notion, Trello or Todoist?",
+    a: "Those tools organise tasks. State also measures them: every task has a weight (Small 1, Normal 2, Major 4, Milestone 8), every finished task is logged, and every metric shows its formula.",
+  },
+  {
+    q: "Is it only for software teams?",
+    a: "No. It works for studying, writing, training, design or building anything, alone or with a team.",
+  },
+  {
+    q: "Does State use AI or track employees?",
+    a: "No. No AI summaries or chat, no keystroke or hours-online tracking, no leaderboards and no unexplained productivity score.",
+  },
+  {
+    q: "How much does it cost?",
+    a: `Individual is ${formatInr(PLANS.individual.priceInr.monthly)}/month. Organisation is ${formatInr(PLANS.organisation.priceInr.monthly)} per member per month. No ads, no free tier.`,
+  },
+];
+
+function structuredData() {
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      { "@type": "Organization", "@id": `${SITE_URL}/#org`, name: LEGAL.entity, url: SITE_URL },
+      { "@type": "WebSite", "@id": `${SITE_URL}/#site`, name: SITE_NAME, url: SITE_URL, publisher: { "@id": `${SITE_URL}/#org` } },
+      {
+        "@type": "SoftwareApplication",
+        name: SITE_NAME,
+        url: SITE_URL,
+        description: SITE_DESCRIPTION,
+        applicationCategory: "BusinessApplication",
+        applicationSubCategory: "Task management",
+        operatingSystem: "Web",
+        publisher: { "@id": `${SITE_URL}/#org` },
+        offers: PLAN_IDS.map((id) => ({
+          "@type": "Offer",
+          name: PLANS[id].name,
+          price: PLANS[id].priceInr.monthly,
+          priceCurrency: "INR",
+          url: `${SITE_URL}/pricing`,
+        })),
+      },
+    ],
+  };
+}
 
 export default function LandingPage() {
   // The real product screens, fed by a generated demo workspace (lib/demo/workspace.ts)
@@ -43,8 +103,11 @@ export default function LandingPage() {
 
   return (
     <>
+      <JsonLd data={structuredData()} />
+
       {/* Hero: type is the graphic; the particle field sits behind */}
       <section className={`${sectionPad} flex min-h-[100svh] flex-col justify-end pb-[10vh] pt-32`}>
+        <p className="mb-6 font-mono text-sm uppercase tracking-[0.18em] text-[#85857F] animate-fade-in">To-do list · Kanban · Metrics</p>
         <h1 className={`${displayHeading} ${silver} text-[clamp(2.25rem,10vw,9.5rem)] leading-[0.86]`}>
           <span className="block overflow-hidden pb-[0.04em]">
             <span className="block animate-line-rise">Execution,</span>
@@ -148,6 +211,43 @@ export default function LandingPage() {
         <div className="mt-14">
           <PricingLedger />
         </div>
+      </section>
+
+      {/* Switching from: internal links to the comparison pages */}
+      <section aria-labelledby="compare-title" className={`${sectionPad} py-[16vh]`}>
+        <h2 id="compare-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
+          Switching from…
+        </h2>
+        <ul className="mt-12 grid grid-cols-2 gap-px overflow-hidden rounded-[28px] border border-white/[0.08] bg-white/[0.08] sm:grid-cols-4">
+          {COMPARISONS.map((c) => (
+            <li key={c.slug} className="bg-[#050505]">
+              <Link
+                href={`/compare/${c.slug}`}
+                className="flex min-h-24 flex-col justify-between gap-3 p-5 transition-colors hover:bg-[#0E0E0E] focus-visible:outline focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-white"
+              >
+                <span className="min-w-0 break-words font-display text-lg font-bold uppercase tracking-[-0.01em] [font-stretch:112%] sm:text-xl" translate="no">
+                  {c.name}
+                </span>
+                <span className="font-mono text-xs uppercase tracking-[0.16em] text-[#85857F]">State vs {c.name} →</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* FAQ */}
+      <section aria-labelledby="faq-title" className={`${sectionPad} py-[16vh]`}>
+        <h2 id="faq-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
+          Questions.
+        </h2>
+        <dl className="mt-12 divide-y divide-white/[0.08] border-y border-white/[0.08]">
+          {FAQ.map((item) => (
+            <div key={item.q} className="grid gap-3 py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:gap-12">
+              <dt className="text-xl font-semibold text-[#F4F4F2] text-balance">{item.q}</dt>
+              <dd className="max-w-[60ch] text-lg leading-relaxed text-[#A9A9A6] text-pretty">{item.a}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       {/* Closing */}

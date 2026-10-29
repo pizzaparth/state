@@ -8,7 +8,7 @@ import { Row, SettingsNav } from "@/components/app/settings-nav";
 import { RenewalControl } from "@/components/app/renewal-control";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "Billing — State" };
+export const metadata = { title: "Billing" };
 
 // Periods longer than this are yearly plans
 const YEARLY_AFTER_DAYS = 40;

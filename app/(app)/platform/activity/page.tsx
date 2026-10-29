@@ -8,7 +8,7 @@ import { CommitLedger } from "@/components/app/commit-ledger";
 import { withParam } from "@/components/app/task-row";
 import { Drawers, type PageSearchParams } from "@/components/app/drawers";
 
-export const metadata = { title: "Activity — State" };
+export const metadata = { title: "Activity" };
 
 const RANGES = { "30d": 30, "90d": 91, "6m": 182, "1y": 371 } as const;
 type RangeKey = keyof typeof RANGES;

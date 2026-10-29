@@ -6,7 +6,7 @@ import { ArchivedProjects, ProjectTable } from "@/components/app/views";
 import { NewProject } from "@/components/app/project-dialog";
 import { WRITE_ROLES } from "@/lib/authz";
 
-export const metadata = { title: "Projects — State" };
+export const metadata = { title: "Projects" };
 
 export default async function ProjectsPage() {
   const viewer = await getViewer();

@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { PricingLedger } from "@/components/marketing/pricing-ledger";
 
-export const metadata = { title: "Pricing — State" };
+export const metadata: Metadata = {
+  title: "Pricing",
+  description: "State pricing: Individual and Organisation plans for a to-do list and kanban app with real work metrics. No ads, no free tier.",
+  alternates: { canonical: "/pricing" },
+};
 
 export default function PricingPage() {
   return (

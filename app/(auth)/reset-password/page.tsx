@@ -1,7 +1,7 @@
 import { ExpiredLink, ResetPasswordForm } from "@/components/auth/password-reset-forms";
 import { DISPLAY } from "@/lib/type";
 
-export const metadata = { title: "Choose a new password — State" };
+export const metadata = { title: "Choose a new password", robots: { index: false } };
 
 // Better Auth checks the emailed token at /api/auth/reset-password/:token and redirects
 // here with ?token=… when it is valid, or ?error=INVALID_TOKEN when not

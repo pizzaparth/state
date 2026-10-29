@@ -7,7 +7,7 @@ import { isSafeRedirectPath } from "@/lib/auth/redirect";
 import { getSession } from "@/lib/auth/session";
 import { DISPLAY } from "@/lib/type";
 
-export const metadata = { title: "Verify email — State" };
+export const metadata = { title: "Verify email", robots: { index: false } };
 
 // Landing page for the emailed verification link. Better Auth verifies the token at
 // /api/auth/verify-email, signs the user in and redirects here, adding ?error=… on failure.

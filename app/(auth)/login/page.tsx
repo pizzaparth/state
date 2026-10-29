@@ -3,7 +3,7 @@ import { CredentialsForm } from "@/components/auth/credentials-form";
 import { isSafeRedirectPath } from "@/lib/auth/redirect";
 import { DISPLAY } from "@/lib/type";
 
-export const metadata = { title: "Sign in — State" };
+export const metadata = { title: "Sign in" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reset?: string }> }) {
   const { next, reset } = await searchParams;

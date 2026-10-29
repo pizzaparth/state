@@ -4,7 +4,7 @@ import { PageHeader, Panel } from "@/components/app/primitives";
 import { Row, SettingsNav } from "@/components/app/settings-nav";
 import { WEIGHT_LEVELS } from "@/lib/weights";
 
-export const metadata = { title: "Preferences — State" };
+export const metadata = { title: "Preferences" };
 
 const SHORTCUTS = [
   ["⌘ K", "Commands"],

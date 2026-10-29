@@ -3,7 +3,7 @@ import { LegalDocument, LegalList, LegalSection, Mail } from "@/components/marke
 import { LEGAL } from "@/lib/legal";
 import { PLANS, formatInr } from "@/lib/billing/plans";
 
-export const metadata = { title: "Terms of service — State" };
+export const metadata = { title: "Terms of service" };
 
 export default function TermsPage() {
   return (

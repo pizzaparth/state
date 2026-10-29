@@ -15,7 +15,7 @@ const BASE = (process.env.BASE_URL || "http://localhost:3123").replace(/\/$/, ""
 const TOTAL = Number(process.argv[2] || 400);
 const CONCURRENCY = Number(process.argv[3] || 20);
 
-const ROUTES = ["/home", "/pricing", "/login", "/register", "/legal/privacy", "/api/health"];
+const ROUTES = ["/", "/pricing", "/login", "/register", "/legal/privacy", "/api/health"];
 
 const pct = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))];
 

@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/app/primitives";
 import { BoardView } from "@/components/app/board-view";
 import { Drawers, type PageSearchParams } from "@/components/app/drawers";
 
-export const metadata = { title: "Personal board — State" };
+export const metadata = { title: "Personal board" };
 
 export default async function PersonalBoardPage({ searchParams }: { searchParams: PageSearchParams }) {
   const params = await searchParams;

@@ -10,7 +10,7 @@ import { QuickCapture } from "@/components/app/quick-capture";
 import { CountUp } from "@/components/app/count-up";
 import { Drawers, type PageSearchParams } from "@/components/app/drawers";
 
-export const metadata = { title: "Today — State" };
+export const metadata = { title: "Today" };
 
 export default async function TodayPage({ searchParams }: { searchParams: PageSearchParams }) {
   const params = await searchParams;

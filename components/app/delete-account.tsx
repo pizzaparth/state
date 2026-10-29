@@ -38,7 +38,7 @@ export function DeleteAccount({ email, needsPassword }: { email: string; needsPa
       const result = await deleteAccountAction({ confirm, password });
       if (result.ok) {
         // Full navigation: every cached product page belonged to the deleted account
-        window.location.replace("/home");
+        window.location.replace("/");
         return;
       }
       if (result.field) {

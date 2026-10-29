@@ -6,7 +6,7 @@ import { QuickCapture } from "@/components/app/quick-capture";
 import { TaskRow, withParam } from "@/components/app/task-row";
 import { Drawers, type PageSearchParams } from "@/components/app/drawers";
 
-export const metadata = { title: "Inbox — State" };
+export const metadata = { title: "Inbox" };
 
 export default async function InboxPage({ searchParams }: { searchParams: PageSearchParams }) {
   const params = await searchParams;

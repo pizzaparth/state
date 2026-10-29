@@ -1,7 +1,7 @@
 import { LegalDocument, LegalSection, Mail } from "@/components/marketing/legal-document";
 import { LEGAL } from "@/lib/legal";
 
-export const metadata = { title: "Disclaimer — State" };
+export const metadata = { title: "Disclaimer" };
 
 export default function DisclaimerPage() {
   return (

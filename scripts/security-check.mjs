@@ -98,7 +98,7 @@ const uniqueEmail = (tag) => `sec-${tag}-${Date.now()}-${Math.random().toString(
 
 // ---------------------------------------------------------------- headers
 async function checkHeaders() {
-  for (const path of ["/home", "/login", "/register", "/pricing", "/legal/privacy"]) {
+  for (const path of ["/", "/login", "/register", "/pricing", "/legal/privacy"]) {
     const res = await req(path);
     const h = res.headers;
     const csp = h.get("content-security-policy") || "";
@@ -460,7 +460,7 @@ async function checkServerActions() {
   // Posting to a public page skips the middleware's cookie gate; product actions must
   // not run there. On product routes the gate redirects, and SA1b covers the action's
   // own session check for requests that get past the gate.
-  const anonPublic = await callAction(ids.moveTaskAction, [move], { path: "/home" });
+  const anonPublic = await callAction(ids.moveTaskAction, [move], { path: "/" });
   const anonProduct = await callAction(ids.moveTaskAction, [move]);
   record(
     "SA1",
@@ -539,7 +539,7 @@ async function checkSurface() {
 
   // Client bundles: no secrets, no server-only modules (client/server boundary)
   const chunks = new Set();
-  for (const path of ["/home", "/login", "/pricing", "/platform/today", "/platform/personal", "/platform/inbox", "/platform/settings/billing"]) {
+  for (const path of ["/", "/login", "/pricing", "/platform/today", "/platform/personal", "/platform/inbox", "/platform/settings/billing"]) {
     const page = await req(path, { headers: owner ? { cookie: owner } : {} });
     for (const m of page.text.matchAll(/<script[^>]+src="([^"]+\.js)"/g)) chunks.add(m[1]);
   }

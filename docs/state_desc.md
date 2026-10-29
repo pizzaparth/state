@@ -2291,8 +2291,10 @@ Added as-of join tests
 Routes (product pages under `/platform`; the old unprefixed URLs redirect):
 
 ```text
-/                       → redirects to /home
-/home                   landing page
+/                       landing page (served from app/(marketing)/home)
+/home                   → redirects to /
+/compare                comparisons hub
+/compare/:tool          State vs Notion, Trello, Todoist, Asana, ClickUp, Jira, Linear, Salesforce
 /platform/today
 /platform/inbox
 /platform/activity

@@ -1,7 +1,7 @@
 import { LegalDocument, LegalList, LegalSection, Mail } from "@/components/marketing/legal-document";
 import { LEGAL } from "@/lib/legal";
 
-export const metadata = { title: "Privacy policy — State" };
+export const metadata = { title: "Privacy policy" };
 
 export default function PrivacyPage() {
   return (

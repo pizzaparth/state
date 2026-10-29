@@ -28,16 +28,21 @@ const nextConfig: NextConfig = {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
   async redirects() {
-    // The landing page lives at /home; product pages under /platform. Old product URLs
-    // (bookmarks, emailed links) keep working.
+    // The landing page is served at / (see rewrites) so the root URL carries its search
+    // ranking; /home links from before keep working. Product pages live under /platform
+    // and old product URLs (bookmarks, emailed links) keep working.
     const moved = ["today", "inbox", "activity", "history", "metrics", "personal", "projects", "org", "settings"];
     return [
-      { source: "/", destination: "/home", permanent: false },
+      { source: "/home", destination: "/", permanent: true },
       ...moved.flatMap((page) => [
         { source: `/${page}`, destination: `/platform/${page}`, permanent: true },
         { source: `/${page}/:path*`, destination: `/platform/${page}/:path*`, permanent: true },
       ]),
     ];
+  },
+  async rewrites() {
+    // Redirects only match the incoming path, so this does not loop with /home → /
+    return { beforeFiles: [{ source: "/", destination: "/home" }] };
   },
   poweredByHeader: false,
   typedRoutes: true,

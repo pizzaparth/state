@@ -10,7 +10,7 @@ import { ExportLinks } from "@/components/app/data-transfer";
 import { DeleteAccount } from "@/components/app/delete-account";
 import { SubscribeForm } from "./subscribe-form";
 
-export const metadata = { title: "Subscribe — State" };
+export const metadata = { title: "Subscribe", robots: { index: false } };
 
 export default async function SubscribePage({
   searchParams,

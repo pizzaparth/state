@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Principles",
+  description: "Why State has no AI clutter, no gamification and no employee surveillance: a task manager built on deterministic, explainable metrics.",
+  alternates: { canonical: "/principles" },
+};
+
 export default function PrinciplesPage() {
   const principles = [
     {

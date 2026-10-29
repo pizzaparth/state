@@ -8,7 +8,7 @@ import { SignOutButton } from "@/components/app/sign-out-button";
 import { ExportLinks, ImportForm } from "@/components/app/data-transfer";
 import { DeleteAccount } from "@/components/app/delete-account";
 
-export const metadata = { title: "Account — State" };
+export const metadata = { title: "Account" };
 
 export default async function AccountSettingsPage() {
   const viewer = await getViewer();

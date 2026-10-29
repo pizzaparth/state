@@ -3,13 +3,23 @@ import { connection } from "next/server";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { archivo } from "@/lib/fonts";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/site";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
-  title: "State — Execution, measured.",
-  description:
-    "A quantitative execution system for individuals and organisations. Tasks represent intent. Commits represent executed work. State measures the difference.",
-  keywords: ["execution system", "quantitative productivity", "kanban", "commits", "velocity", "throughput"],
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_TITLE, template: `%s — ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    locale: "en_US",
+  },
+  twitter: { card: "summary_large_image", title: SITE_TITLE, description: SITE_DESCRIPTION },
+  formatDetection: { telephone: false, email: false, address: false },
 };
 
 export const viewport: Viewport = {

@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/app/primitives";
 import { MetricsView, toPeriod } from "@/components/app/metrics-view";
 import type { PageSearchParams } from "@/components/app/drawers";
 
-export const metadata = { title: "Metrics — State" };
+export const metadata = { title: "Metrics" };
 
 export default async function MetricsPage({ searchParams }: { searchParams: PageSearchParams }) {
   const params = await searchParams;

@@ -4,7 +4,7 @@ import type { Route } from "next";
 import { getViewer } from "@/lib/viewer";
 import { Chip, EmptyState, PageHeader, Panel } from "@/components/app/primitives";
 
-export const metadata = { title: "Organisations — State" };
+export const metadata = { title: "Organisations" };
 
 export default async function OrganisationsPage() {
   const viewer = await getViewer();

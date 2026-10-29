@@ -1,4 +1,5 @@
 import * as React from "react";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { hasPaidAccess } from "@/lib/billing/access";
@@ -6,6 +7,9 @@ import { getViewer } from "@/lib/viewer";
 import { getInboxCount, getProjects, getTicker } from "@/db/queries";
 import { formatDate } from "@/lib/format";
 import { AppShell } from "@/components/app/shell";
+
+// Signed-in product pages never belong in search results
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function AppLayout({
   children,

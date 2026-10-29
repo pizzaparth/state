@@ -28,11 +28,11 @@ export default function MarketingLayout({
           aria-label="Main"
           className="flex h-12 w-full max-w-[44rem] items-center justify-between gap-2 rounded-full border border-white/[0.1] bg-[#050505]/70 pl-5 pr-1.5 backdrop-blur-md"
         >
-          <Link href="/home" className="font-display text-base font-extrabold uppercase tracking-[-0.01em] [font-stretch:125%]" translate="no">
+          <Link href="/" className="font-display text-base font-extrabold uppercase tracking-[-0.01em] [font-stretch:125%]" translate="no">
             State
           </Link>
           <div className="hidden items-center gap-6 text-base text-[#A9A9A6] sm:flex">
-            <Link href="/home#history" className="transition-colors hover:text-white">
+            <Link href="/#history" className="transition-colors hover:text-white">
               Product
             </Link>
             <Link href="/principles" className="transition-colors hover:text-white">
@@ -79,6 +79,9 @@ export default function MarketingLayout({
             <p className="text-sm">© {new Date().getFullYear()} Ksan&nbsp;Relay</p>
           </div>
           <nav aria-label="Product" className="flex flex-col gap-2">
+            <Link href="/compare" className="transition-colors hover:text-white">
+              Compare
+            </Link>
             <Link href="/principles" className="transition-colors hover:text-white">
               Principles
             </Link>

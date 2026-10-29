@@ -2,7 +2,11 @@ import Link from "next/link";
 import { CredentialsForm } from "@/components/auth/credentials-form";
 import { DISPLAY } from "@/lib/type";
 
-export const metadata = { title: "Create account — State" };
+export const metadata = {
+  title: "Create account",
+  description: "Create a State account: a to-do list and kanban app that measures finished work.",
+  alternates: { canonical: "/register" },
+};
 
 export default async function RegisterPage({
   searchParams,

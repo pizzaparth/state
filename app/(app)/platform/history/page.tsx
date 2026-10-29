@@ -9,7 +9,7 @@ import { withParam } from "@/components/app/task-row";
 import { Drawers, type PageSearchParams } from "@/components/app/drawers";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "History — State" };
+export const metadata = { title: "History" };
 
 export default async function HistoryPage({ searchParams }: { searchParams: PageSearchParams }) {
   const params = await searchParams;

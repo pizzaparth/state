@@ -11,7 +11,7 @@ export default function AuthLayout({
   return (
     <div className="dark min-h-screen bg-[#050505] text-[#F4F4F2] flex flex-col justify-between p-6">
       <header className="max-w-md mx-auto w-full pt-8 text-center">
-        <Link href="/home" className="inline-block focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white">
+        <Link href="/" className="inline-block focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white">
           <span className="block font-mono text-[11px] uppercase tracking-[0.18em] text-[#6F6F6B]">Ksan Relay</span>
           <span className={`${DISPLAY} block text-3xl leading-none text-[#F4F4F2]`}>State</span>
         </Link>

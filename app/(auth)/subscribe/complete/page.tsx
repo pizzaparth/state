@@ -5,7 +5,7 @@ import { hasPaidAccess } from "@/lib/billing/access";
 import { DISPLAY } from "@/lib/type";
 import { RefreshUntilActive } from "./refresh";
 
-export const metadata = { title: "Confirming payment — State" };
+export const metadata = { title: "Confirming payment", robots: { index: false } };
 
 // Landing page after checkout. The webhook usually arrives within seconds; until then
 // the page re-checks access and forwards to Today once the subscription is active.
