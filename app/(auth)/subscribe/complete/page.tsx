@@ -12,7 +12,7 @@ export const metadata = { title: "Confirming payment — State" };
 export default async function SubscribeCompletePage() {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (await hasPaidAccess(session.user.id)) redirect("/today");
+  if (await hasPaidAccess(session.user.id)) redirect("/platform/today");
 
   return (
     <div className="space-y-4" aria-live="polite">

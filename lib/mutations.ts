@@ -344,13 +344,13 @@ export async function createProject(actor: Actor, input: z.infer<typeof createPr
     .onConflictDoNothing({ target: [projects.workspaceId, projects.slug] })
     .returning({ id: projects.id, slug: projects.slug });
   if (!row) throw new MutationError("conflict", `#${input.slug} is already used here. Choose another slug.`);
-  return { ...row, href: orgSlug ? `/org/${orgSlug}/projects/${row.slug}` : `/projects/${row.slug}` };
+  return { ...row, href: orgSlug ? `/platform/org/${orgSlug}/projects/${row.slug}` : `/platform/projects/${row.slug}` };
 }
 
-/** Where a project lives in the app: /projects/<slug> or /org/<org>/projects/<slug>. */
+/** Where a project lives in the app: /platform/projects/<slug> or /platform/org/<org>/projects/<slug>. */
 async function projectHref(workspaceId: string, slug: string): Promise<string> {
   const [org] = await db.select({ slug: organisations.slug }).from(organisations).where(eq(organisations.workspaceId, workspaceId)).limit(1);
-  return org ? `/org/${org.slug}/projects/${slug}` : `/projects/${slug}`;
+  return org ? `/platform/org/${org.slug}/projects/${slug}` : `/platform/projects/${slug}`;
 }
 
 const isUniqueViolation = (error: unknown): boolean =>

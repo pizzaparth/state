@@ -7,7 +7,7 @@ export const metadata = { title: "Sign in — State" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reset?: string }> }) {
   const { next, reset } = await searchParams;
-  const redirectTo = isSafeRedirectPath(next) ? next : "/today";
+  const redirectTo = isSafeRedirectPath(next) ? next : "/platform/today";
 
   return (
     <div className="space-y-6">

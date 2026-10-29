@@ -4,9 +4,9 @@ import { TICK } from "./primitives";
 import { TabLinks } from "./tab-links";
 
 const ITEMS = [
-  { href: "/settings/account", label: "Account" },
-  { href: "/settings/billing", label: "Billing" },
-  { href: "/settings/preferences", label: "Preferences" },
+  { href: "/platform/settings/account", label: "Account" },
+  { href: "/platform/settings/billing", label: "Billing" },
+  { href: "/platform/settings/preferences", label: "Preferences" },
 ] as const;
 
 export function SettingsNav({ active }: { active: (typeof ITEMS)[number]["href"] }) {

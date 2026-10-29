@@ -27,6 +27,18 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  async redirects() {
+    // The landing page lives at /home; product pages under /platform. Old product URLs
+    // (bookmarks, emailed links) keep working.
+    const moved = ["today", "inbox", "activity", "history", "metrics", "personal", "projects", "org", "settings"];
+    return [
+      { source: "/", destination: "/home", permanent: false },
+      ...moved.flatMap((page) => [
+        { source: `/${page}`, destination: `/platform/${page}`, permanent: true },
+        { source: `/${page}/:path*`, destination: `/platform/${page}/:path*`, permanent: true },
+      ]),
+    ];
+  },
   poweredByHeader: false,
   typedRoutes: true,
   // Billing SDKs are Node-only; keep them out of the bundler

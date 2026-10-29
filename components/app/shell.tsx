@@ -44,24 +44,24 @@ function navSections(data: ShellData): { title?: string; items: NavItem[] }[] {
   return [
     {
       items: [
-        { name: "Today", href: "/today", icon: Calendar, shortcut: "G T" },
-        { name: "Inbox", href: "/inbox", icon: Inbox, badge: data.inboxCount, shortcut: "G I" },
+        { name: "Today", href: "/platform/today", icon: Calendar, shortcut: "G T" },
+        { name: "Inbox", href: "/platform/inbox", icon: Inbox, badge: data.inboxCount, shortcut: "G I" },
       ],
     },
     {
       title: "Execution",
       items: [
-        { name: "Activity", href: "/activity", icon: Activity, shortcut: "G A" },
-        { name: "History", href: "/history", icon: History, shortcut: "G H" },
-        { name: "Metrics", href: "/metrics", icon: BarChart3, shortcut: "G M" },
+        { name: "Activity", href: "/platform/activity", icon: Activity, shortcut: "G A" },
+        { name: "History", href: "/platform/history", icon: History, shortcut: "G H" },
+        { name: "Metrics", href: "/platform/metrics", icon: BarChart3, shortcut: "G M" },
       ],
     },
     {
       title: "Work",
       items: [
-        { name: "Personal", href: "/personal", icon: User, shortcut: "G P" },
-        ...data.orgs.map((o) => ({ name: o.name, href: `/org/${o.slug}`, icon: Users, shortcut: "G O" })),
-        { name: "Projects", href: "/projects", icon: FolderKanban },
+        { name: "Personal", href: "/platform/personal", icon: User, shortcut: "G P" },
+        ...data.orgs.map((o) => ({ name: o.name, href: `/platform/org/${o.slug}`, icon: Users, shortcut: "G O" })),
+        { name: "Projects", href: "/platform/projects", icon: FolderKanban },
       ],
     },
   ];
@@ -89,13 +89,13 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
   React.useEffect(() => {
     let pendingG = 0;
     const jumps: Record<string, string> = {
-      t: "/today",
-      i: "/inbox",
-      a: "/activity",
-      h: "/history",
-      m: "/metrics",
-      p: "/personal",
-      o: data.orgs[0] ? `/org/${data.orgs[0].slug}` : "/org",
+      t: "/platform/today",
+      i: "/platform/inbox",
+      a: "/platform/activity",
+      h: "/platform/history",
+      m: "/platform/metrics",
+      p: "/platform/personal",
+      o: data.orgs[0] ? `/platform/org/${data.orgs[0].slug}` : "/platform/org",
     };
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -121,7 +121,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
         setCommitOpen(true);
       } else if (key === "n") {
         e.preventDefault();
-        router.push("/inbox?capture=1" as Route);
+        router.push("/platform/inbox?capture=1" as Route);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -266,7 +266,7 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
   return (
     <LayoutGroup id={`nav-${scope}`}>
       <div className="px-5 pb-4 pt-5">
-        <Link href="/today" className="block rounded-[8px]">
+        <Link href="/platform/today" className="block rounded-[8px]">
           <span className="block font-mono text-[11px] uppercase tracking-[0.18em] text-[#85857F]">Ksan Relay</span>
           <span className="block font-display text-2xl font-extrabold uppercase leading-none tracking-[-0.03em] [font-stretch:125%]">State</span>
         </Link>
@@ -296,7 +296,7 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
         ))}
       </nav>
       <div className="space-y-1 border-t border-white/[0.08] p-3">
-        <NavLink href="/settings" active={isActive(pathname, "/settings")}>
+        <NavLink href="/platform/settings" active={isActive(pathname, "/platform/settings")}>
           <Settings className="size-4" aria-hidden="true" />
           Settings
         </NavLink>
@@ -381,9 +381,9 @@ function CommandPalette({
   const go = (href: string) => () => router.push(href as Route);
   const commands: Command[] = [
     { id: "commit", label: "Create commit", group: "Actions", hint: "C", run: onCommit },
-    { id: "capture", label: "Capture task", group: "Actions", hint: "N", run: go("/inbox?capture=1") },
+    { id: "capture", label: "Capture task", group: "Actions", hint: "N", run: go("/platform/inbox?capture=1") },
     ...navSections(data).flatMap((s) => s.items.map((i) => ({ id: i.href, label: `Open ${i.name}`, group: "Go to", hint: i.shortcut, run: go(i.href) }))),
-    { id: "/settings", label: "Open settings", group: "Go to", run: go("/settings") },
+    { id: "/platform/settings", label: "Open settings", group: "Go to", run: go("/platform/settings") },
     ...data.projects.map((p) => ({ id: p.href, label: p.name, group: "Projects", run: go(p.href) })),
   ];
   const q = query.trim().toLowerCase();

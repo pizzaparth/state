@@ -2288,27 +2288,28 @@ Added as-of join tests
 
 # 60. URL Structure
 
-Suggested routes:
+Routes (product pages under `/platform`; the old unprefixed URLs redirect):
 
 ```text
-/
- /today
- /inbox
- /activity
- /history
- /metrics
- /projects
- /projects/:projectSlug
- /personal
- /org/:orgSlug
- /org/:orgSlug/board
- /org/:orgSlug/projects
- /org/:orgSlug/members
- /org/:orgSlug/metrics
- /settings
- /settings/account
- /settings/billing
- /settings/preferences
+/                       → redirects to /home
+/home                   landing page
+/platform/today
+/platform/inbox
+/platform/activity
+/platform/history
+/platform/metrics
+/platform/projects
+/platform/projects/:projectSlug
+/platform/personal
+/platform/org/:orgSlug
+/platform/org/:orgSlug/board
+/platform/org/:orgSlug/projects
+/platform/org/:orgSlug/members
+/platform/org/:orgSlug/metrics
+/platform/settings
+/platform/settings/account
+/platform/settings/billing
+/platform/settings/preferences
 ```
 
 ---

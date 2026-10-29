@@ -16,5 +16,5 @@ export async function skipPaymentAction(input: unknown): Promise<{ error: string
   const parsed = skipSchema.safeParse(input);
   if (!parsed.success) return { error: "Choose a plan." };
   await grantDevSubscription(session.user.id, parsed.data.plan);
-  redirect("/today");
+  redirect("/platform/today");
 }

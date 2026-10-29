@@ -256,7 +256,7 @@ async function main() {
   record("W36", "Missing and foreign organisations give the same error", ok && detail === foreignDetail, detail);
   const mine = await createProject(A, { organisationId: null, name: "Authz probe", slug: "authz-probe", description: null });
   const mineRow = await one(db.select().from(s.projects).where(eq(s.projects.id, mine.id)));
-  record("W37", "Personal project lands in the actor's own workspace", mineRow.workspaceId === parth.ws.id && mine.href === "/projects/authz-probe");
+  record("W37", "Personal project lands in the actor's own workspace", mineRow.workspaceId === parth.ws.id && mine.href === "/platform/projects/authz-probe");
   const theirs = await createProject(B, { organisationId: null, name: "Authz probe", slug: "authz-probe", description: null });
   record("W38", "Same slug in another user's workspace is independent", theirs.id !== mine.id && (await projectCount(aarav.ws.id, "authz-probe")) === 1);
   [ok, detail] = await expectError(() => createProject(A, { organisationId: null, name: "Again", slug: "authz-probe", description: null }), "conflict");
@@ -277,7 +277,7 @@ async function main() {
   record(
     "W47",
     "Owner edits own project; #capture follows the new slug",
-    edited.href === "/projects/authz-probe-2" && editedRow.name === "Authz probe 2" && editedRow.status === "paused" && recaptured.projectName === "Authz probe 2"
+    edited.href === "/platform/projects/authz-probe-2" && editedRow.name === "Authz probe 2" && editedRow.status === "paused" && recaptured.projectName === "Authz probe 2"
   );
   await setProjectArchived(A, { projectId: mine.id, archived: true });
   const archivedCapture = await captureTask(A, { text: "After archive #authz-probe-2" });
@@ -289,7 +289,7 @@ async function main() {
   await db.update(s.tasks).set({ deletedAt: new Date() }).where(inArray(s.tasks.id, [recaptured.id, archivedCapture.id]));
 
   const orgMade = await createProject(B, { organisationId: org.id, name: "Member project", slug: "member-project", description: "From a member" });
-  record("W40", "Member creates an organisation project", (await projectCount(org.workspaceId, "member-project")) === 1 && orgMade.href === `/org/${org.slug}/projects/member-project`);
+  record("W40", "Member creates an organisation project", (await projectCount(org.workspaceId, "member-project")) === 1 && orgMade.href === `/platform/org/${org.slug}/projects/member-project`);
 
   // ------------------------------------------------------------ mass assignment / tampering
   const extra = moveTaskSchema.safeParse({ taskId: "a", columnId: "b", afterTaskId: null, workspaceId: parth.ws.id, userId: parthId });

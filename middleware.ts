@@ -1,18 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-const PROTECTED_PREFIXES = [
-  "/today",
-  "/inbox",
-  "/activity",
-  "/history",
-  "/metrics",
-  "/personal",
-  "/org",
-  "/projects",
-  "/settings",
-  "/subscribe",
-];
+// Every product page lives under /platform
+const PROTECTED_PREFIXES = ["/platform", "/subscribe"];
 
 function isProtected(pathname: string) {
   return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));

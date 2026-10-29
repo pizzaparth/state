@@ -90,7 +90,7 @@ export function SubscribeForm({
             body: JSON.stringify(response),
           });
           if (verify.ok) {
-            router.replace("/today");
+            router.replace("/platform/today");
           } else {
             router.replace("/subscribe/complete");
           }

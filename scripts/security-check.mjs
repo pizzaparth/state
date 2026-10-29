@@ -98,7 +98,7 @@ const uniqueEmail = (tag) => `sec-${tag}-${Date.now()}-${Math.random().toString(
 
 // ---------------------------------------------------------------- headers
 async function checkHeaders() {
-  for (const path of ["/", "/login", "/register", "/pricing", "/legal/privacy"]) {
+  for (const path of ["/home", "/login", "/register", "/pricing", "/legal/privacy"]) {
     const res = await req(path);
     const h = res.headers;
     const csp = h.get("content-security-policy") || "";
@@ -148,7 +148,7 @@ function checkOpenRedirect() {
     " //evil.example",
     "data:text/html,hi",
   ];
-  const good = ["/today", "/projects/relaydb?tab=metrics", "/subscribe?plan=organisation"];
+  const good = ["/platform/today", "/platform/projects/relaydb?tab=metrics", "/subscribe?plan=organisation"];
   const leaked = evil.filter((p) => isSafeRedirectPath(p));
   const blocked = good.filter((p) => !isSafeRedirectPath(p));
   record("R1", "Login ?next= rejects off-site targets", leaked.length === 0, leaked.join(" | "));
@@ -157,10 +157,10 @@ function checkOpenRedirect() {
 
 // ---------------------------------------------------------------- access control
 async function checkAccessControl() {
-  const anon = await req("/today");
+  const anon = await req("/platform/today");
   record("A1", "Product route without session redirects to sign-in", anon.status === 307 && /\/login/.test(anon.headers.get("location") || ""), `${anon.status}`);
 
-  const forged = await req("/today", { headers: { cookie: "better-auth.session_token=forged.forged" } });
+  const forged = await req("/platform/today", { headers: { cookie: "better-auth.session_token=forged.forged" } });
   const loc = forged.headers.get("location") || "";
   record("A2", "Forged session cookie is rejected", [303, 307, 308].includes(forged.status) && /\/login/.test(loc), `${forged.status} ${loc}`);
 
@@ -250,7 +250,7 @@ async function checkAuth() {
   // Paywall: an authenticated but unpaid user cannot reach the product
   const session = verified ? sessionCookie(verified) : "";
   if (session) {
-    const today = await req("/today", { headers: { cookie: session } });
+    const today = await req("/platform/today", { headers: { cookie: session } });
     record("A6", "Unpaid session is sent to checkout", [303, 307, 308].includes(today.status) && /\/subscribe/.test(today.headers.get("location") || ""), `${today.status} ${today.headers.get("location")}`);
 
     const tamper = await req("/api/billing/checkout", { method: "POST", headers: { cookie: session, origin: ORIGIN }, body: { plan: "enterprise", seats: -5 } });
@@ -407,7 +407,7 @@ async function signIn(email, password = DEMO_PASSWORD) {
 
 async function findActionIds(cookie) {
   const chunks = [];
-  for (const path of ["/personal", "/inbox"]) {
+  for (const path of ["/platform/personal", "/platform/inbox"]) {
     const page = await req(path, { headers: { cookie } });
     chunks.push(...[...page.text.matchAll(/<script[^>]+src="([^"]+\.js)"/g)].map((m) => m[1]));
   }
@@ -419,7 +419,7 @@ async function findActionIds(cookie) {
   return ids;
 }
 
-async function callAction(id, args, { cookie, origin = ORIGIN, path = "/personal" } = {}) {
+async function callAction(id, args, { cookie, origin = ORIGIN, path = "/platform/personal" } = {}) {
   const headers = { "next-action": id, "content-type": "text/plain;charset=UTF-8", accept: "text/x-component" };
   if (cookie) headers.cookie = cookie;
   if (origin) headers.origin = origin;
@@ -460,7 +460,7 @@ async function checkServerActions() {
   // Posting to a public page skips the middleware's cookie gate; product actions must
   // not run there. On product routes the gate redirects, and SA1b covers the action's
   // own session check for requests that get past the gate.
-  const anonPublic = await callAction(ids.moveTaskAction, [move], { path: "/" });
+  const anonPublic = await callAction(ids.moveTaskAction, [move], { path: "/home" });
   const anonProduct = await callAction(ids.moveTaskAction, [move]);
   record(
     "SA1",
@@ -514,8 +514,8 @@ async function checkServerActions() {
 
   // Stored XSS: user text is rendered back to the same and other members
   const payload = `<img src=x onerror=alert(1)><script>alert(2)</script>`;
-  const xssCapture = await callAction(ids.captureTaskAction, [{ text: payload }], { cookie: owner, path: "/inbox" });
-  const inboxHtml = (await req("/inbox", { headers: { cookie: owner } })).text;
+  const xssCapture = await callAction(ids.captureTaskAction, [{ text: payload }], { cookie: owner, path: "/platform/inbox" });
+  const inboxHtml = (await req("/platform/inbox", { headers: { cookie: owner } })).text;
   record("X2", "Stored XSS in a captured task title is escaped", xssCapture.ok && !inboxHtml.includes("<img src=x onerror") && !inboxHtml.includes("<script>alert(2)"), xssCapture.error ?? "");
 
   // Write budget: 60 per user per minute, shared across instances. Invalid calls count too.
@@ -539,7 +539,7 @@ async function checkSurface() {
 
   // Client bundles: no secrets, no server-only modules (client/server boundary)
   const chunks = new Set();
-  for (const path of ["/", "/login", "/pricing", "/today", "/personal", "/inbox", "/settings/billing"]) {
+  for (const path of ["/home", "/login", "/pricing", "/platform/today", "/platform/personal", "/platform/inbox", "/platform/settings/billing"]) {
     const page = await req(path, { headers: owner ? { cookie: owner } : {} });
     for (const m of page.text.matchAll(/<script[^>]+src="([^"]+\.js)"/g)) chunks.add(m[1]);
   }
@@ -577,10 +577,10 @@ async function checkSurface() {
 
   // Authenticated pages must not be stored by shared caches (cache deception)
   if (owner) {
-    const today = await req("/today", { headers: { cookie: owner } });
+    const today = await req("/platform/today", { headers: { cookie: owner } });
     const cc = today.headers.get("cache-control") || "";
     record("CA1", "Authenticated pages are private, no-store", /no-store/.test(cc) && !/public/.test(cc), cc);
-    const deception = await req("/today/style.css", { headers: { cookie: owner } });
+    const deception = await req("/platform/today/style.css", { headers: { cookie: owner } });
     record("CA2", "Static-looking suffix on a private page is not served as a cacheable asset", deception.status !== 200 || /no-store/.test(deception.headers.get("cache-control") || ""), `${deception.status}`);
   }
 
@@ -602,7 +602,7 @@ async function checkSurface() {
   const temp = await signIn("ishita@state.test");
   if (temp) {
     await req("/api/auth/sign-out", { method: "POST", body: {}, headers: { cookie: temp, origin: ORIGIN } });
-    const reuse = await req("/today", { headers: { cookie: temp } });
+    const reuse = await req("/platform/today", { headers: { cookie: temp } });
     record("K2", "Session token is invalid after sign-out (replay)", [303, 307, 308].includes(reuse.status) && /\/login/.test(reuse.headers.get("location") || ""), `${reuse.status}`);
   }
 

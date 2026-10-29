@@ -102,9 +102,11 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
                   <span
                     key={d.day}
                     onPointerEnter={() => setActive(i)}
+                    // Active day: a crisp ring in the 3px gap, raised above its neighbours so no
+                    // side is painted over (scaling the cell blurred and clipped the outline)
                     className={cn(
-                      "aspect-square animate-cell-in rounded-[3px] transition-transform duration-100",
-                      active === i && "scale-125 outline outline-1 outline-white"
+                      "relative aspect-square animate-cell-in rounded-[3px]",
+                      active === i && "z-[1] outline outline-2 outline-offset-1 outline-[#F2F2EF]"
                     )}
                     style={{ backgroundColor: FILL[level(d.execution)], animationDelay: `${Math.floor(i / 7) * Math.min(14, 420 / weeks)}ms` }}
                   />
@@ -125,7 +127,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
                 >
                   <p className="font-semibold">{label(shown.day, { weekday: "short", day: "numeric", month: "short" })}</p>
                   <p className="mt-1 tabular-nums text-[#55554F]">
-                    {shown.execution} execution, {shown.commits} commits
+                    {shown.execution} execution, {shown.commits} {shown.commits === 1 ? "commit" : "commits"}
                   </p>
                 </div>
               )}
@@ -139,7 +141,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
           {shown ? (
             <>
               <span className="font-semibold text-[#F2F2EF]">{label(shown.day, { weekday: "long", day: "numeric", month: "long" })}</span>
-              {`: ${shown.commits} commits, ${shown.tasks} tasks completed, ${shown.execution} execution, ${shown.projects} projects touched`}
+              {`: ${shown.commits} ${shown.commits === 1 ? "commit" : "commits"}, ${shown.tasks} done, ${shown.execution} execution, ${shown.projects} ${shown.projects === 1 ? "project" : "projects"}`}
             </>
           ) : (
             "Hover a day · or ← → keys"

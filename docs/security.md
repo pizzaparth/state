@@ -92,7 +92,7 @@ Product and surface checks:
 | K2 | Session token reused after sign-out | Redirected to sign-in |
 | F1/F2 | Secrets, real `.env` values or server modules in 25 client chunks; served source maps | None |
 | CO1 | CORS reflecting a foreign origin | No |
-| CA1/CA2 | Authenticated pages cached; cache deception through `/today/style.css` | `private, no-store`; 404 |
+| CA1/CA2 | Authenticated pages cached; cache deception through `/platform/today/style.css` | `private, no-store`; 404 |
 | M2 | Better Auth `update-user` with `subscriptionStatus`, `emailVerified`, `id`, `email` | Rejected, no field changed |
 | E1/E2 | Admin, debug, GraphQL, Swagger, `.env` and `.git` paths; health check disclosure | None answer; no versions |
 
@@ -135,7 +135,7 @@ database as the demo data.
 
 | Route (signed in, 400 requests, concurrency 20) | p50 ms | p95 ms | p50 with 900k extra rows | p95 with 900k extra rows |
 |---|---|---|---|---|
-| `/today` | 83.8 | 100.4 | 84.2 | 100.4 |
+| `/platform/today` | 83.8 | 100.4 | 84.2 | 100.4 |
 | `/personal` (board) | 57.4 | 84.2 | 56.7 | 59.1 |
 | `/org/ksan-relay` | 105.0 | 132.6 | 105.7 | 135.9 |
 | `/metrics` | 95.5 | 109.5 | 97.5 | 118.0 |

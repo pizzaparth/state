@@ -15,7 +15,7 @@ const BASE = (process.env.BASE_URL || "http://localhost:3123").replace(/\/$/, ""
 const TOTAL = Number(process.argv[2] || 400);
 const CONCURRENCY = Number(process.argv[3] || 20);
 
-const ROUTES = ["/", "/pricing", "/login", "/register", "/legal/privacy", "/api/health"];
+const ROUTES = ["/home", "/pricing", "/login", "/register", "/legal/privacy", "/api/health"];
 
 const pct = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))];
 
@@ -70,11 +70,11 @@ if (process.env.BENCH_EMAIL && process.env.BENCH_PASSWORD) {
   });
   cookie = (res.headers.getSetCookie?.() ?? []).map((c) => c.split(";")[0]).filter((c) => c.includes("session_token")).join("; ");
   if (!cookie) throw new Error(`Sign-in failed: ${res.status}`);
-  for (const route of ["/today", "/personal", "/org/ksan-relay", "/metrics", "/activity", "/inbox"]) rows.push(await bench(route));
+  for (const route of ["/platform/today", "/platform/personal", "/platform/org/ksan-relay", "/platform/metrics", "/platform/activity", "/platform/inbox"]) rows.push(await bench(route));
 
   // Write latency: sequential captures through the real Server Action (stays under the
   // 60-per-minute write budget)
-  const inbox = await (await fetch(`${BASE}/inbox`, { headers: { cookie } })).text();
+  const inbox = await (await fetch(`${BASE}/platform/inbox`, { headers: { cookie } })).text();
   let actionId = null;
   for (const m of inbox.matchAll(/<script[^>]+src="([^"]+\.js)"/g)) {
     const js = await (await fetch(BASE + m[1])).text();
@@ -83,7 +83,7 @@ if (process.env.BENCH_EMAIL && process.env.BENCH_PASSWORD) {
   const latencies = [];
   for (let i = 0; i < 40 && actionId; i++) {
     const t = performance.now();
-    const r = await fetch(`${BASE}/inbox`, {
+    const r = await fetch(`${BASE}/platform/inbox`, {
       method: "POST",
       headers: { cookie, origin: BASE, "next-action": actionId, "content-type": "text/plain;charset=UTF-8", accept: "text/x-component" },
       body: JSON.stringify([{ text: `Bench capture ${i}` }]),

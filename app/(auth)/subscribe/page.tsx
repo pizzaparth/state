@@ -15,7 +15,7 @@ export default async function SubscribePage({
 }) {
   const session = await getSession();
   if (!session) redirect("/register");
-  if (await hasPaidAccess(session.user.id)) redirect("/today");
+  if (await hasPaidAccess(session.user.id)) redirect("/platform/today");
 
   const { plan, interval, canceled } = await searchParams;
 

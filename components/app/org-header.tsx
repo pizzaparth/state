@@ -7,9 +7,9 @@ import { TabLinks } from "./tab-links";
 const TABS = [
   { key: "overview", label: "Overview", path: "" },
   { key: "board", label: "Board", path: "/board" },
-  { key: "projects", label: "Projects", path: "/projects" },
+  { key: "projects", label: "Projects", path: "/platform/projects" },
   { key: "members", label: "Members", path: "/members" },
-  { key: "metrics", label: "Metrics", path: "/metrics" },
+  { key: "metrics", label: "Metrics", path: "/platform/metrics" },
 ] as const;
 
 /** Organisation title plus section tabs (links, so every view deep-links). */
@@ -27,7 +27,7 @@ export function OrgHeader({ org, active }: { org: ViewerOrg; active: (typeof TAB
         label={`${org.name} sections`}
         size="md"
         scroll
-        items={TABS.map((tab) => ({ href: `/org/${org.slug}${tab.path}`, label: tab.label, active: tab.key === active }))}
+        items={TABS.map((tab) => ({ href: `/platform/org/${org.slug}${tab.path}`, label: tab.label, active: tab.key === active }))}
       />
     </header>
   );
