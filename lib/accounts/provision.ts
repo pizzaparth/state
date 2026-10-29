@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { workspaces, boards, columns, users } from "@/db/schema";
 
 const PERSONAL_COLUMNS = [
-  { name: "Backlog", stateType: "backlog" },
+  { name: "Queued", stateType: "backlog" },
   { name: "Active", stateType: "active" },
   { name: "Done", stateType: "done" },
 ] as const;

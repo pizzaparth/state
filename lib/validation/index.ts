@@ -87,6 +87,20 @@ export const setTaskWeightSchema = z.strictObject({
   weight: z.union([z.literal(1), z.literal(2), z.literal(4), z.literal(8)]),
 });
 
+/**
+ * Due date as a calendar day (YYYY-MM-DD) in the actor's timezone, or null to clear.
+ * The server stores the end of that day as UTC.
+ */
+export const setTaskDueSchema = z.strictObject({
+  taskId: objectId,
+  dueDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date.")
+    .refine((d) => !Number.isNaN(Date.parse(`${d}T00:00:00Z`)) && new Date(`${d}T00:00:00Z`).toISOString().startsWith(d), "Pick a real date.")
+    .refine((d) => d >= "2000-01-01" && d <= "2100-12-31", "Pick a date between 2000 and 2100.")
+    .nullable(),
+});
+
 /** Delete and undo-delete take only the task id. */
 export const taskRefSchema = z.strictObject({
   taskId: objectId,

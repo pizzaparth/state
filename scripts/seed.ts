@@ -193,22 +193,24 @@ async function main() {
       { id: "seed-board-ksan", workspaceId: "seed-ws-ksan", name: "Ksan Relay", type: "organisation" },
     ]);
     const col = (board: string, name: string) => `${board}-${name.toLowerCase()}`;
+    // "Queued" is the label; its state type stays "backlog"
+    const stateTypeOf = (name: string) => (name === "Queued" ? "backlog" : name.toLowerCase());
     await tx.insert(s.columns).values([
       ...USERS.flatMap((u) =>
-        ["Backlog", "Active", "Done"].map((name, position) => ({
+        ["Queued", "Active", "Done"].map((name, position) => ({
           id: col(`seed-board-${u.username}`, name),
           boardId: `seed-board-${u.username}`,
           name,
           position,
-          stateType: name.toLowerCase(),
+          stateType: stateTypeOf(name),
         }))
       ),
-      ...["Backlog", "Active", "Review", "Done"].map((name, position) => ({
+      ...["Queued", "Active", "Review", "Done"].map((name, position) => ({
         id: col("seed-board-ksan", name),
         boardId: "seed-board-ksan",
         name,
         position,
-        stateType: name.toLowerCase(),
+        stateType: stateTypeOf(name),
       })),
     ]);
     const PB = "seed-board-parth";
@@ -303,17 +305,17 @@ async function main() {
     }
 
     // -------------------------------------------------------------- personal open work
-    const open: { title: string; key: (typeof personalProjects)[number]; column: "Backlog" | "Active"; weight: Weight; priority: string; due?: number; description?: string }[] = [
+    const open: { title: string; key: (typeof personalProjects)[number]; column: "Queued" | "Active"; weight: Weight; priority: string; due?: number; description?: string }[] = [
       { title: "Finish RelayDB query parser", key: "relaydb", column: "Active", weight: 4, priority: "high", due: 0, description: "Handle nested as-of joins and window clauses. Parser tests must cover the grammar in docs/sql.md." },
       { title: "Implement caching for metric windows", key: "state", column: "Active", weight: 4, priority: "medium", due: 2 },
       { title: "Finish OS chapter 8", key: "university", column: "Active", weight: 2, priority: "medium", due: -1 },
       { title: "Review design for history filters", key: "state", column: "Active", weight: 1, priority: "low" },
-      { title: "Benchmark compaction under write load", key: "relaydb", column: "Backlog", weight: 4, priority: "medium", due: 6 },
-      { title: "Write related work section", key: "research", column: "Backlog", weight: 8, priority: "high", due: 14 },
-      { title: "Update documentation for CLI", key: "state", column: "Backlog", weight: 2, priority: "low" },
-      { title: "Prepare DBMS mid-semester revision", key: "university", column: "Backlog", weight: 2, priority: "medium", due: 4 },
-      { title: "Profile vector executor allocations", key: "relaydb", column: "Backlog", weight: 2, priority: "none" },
-      { title: "Draft objective review for Q4", key: "state", column: "Backlog", weight: 1, priority: "none", due: 9 },
+      { title: "Benchmark compaction under write load", key: "relaydb", column: "Queued", weight: 4, priority: "medium", due: 6 },
+      { title: "Write related work section", key: "research", column: "Queued", weight: 8, priority: "high", due: 14 },
+      { title: "Update documentation for CLI", key: "state", column: "Queued", weight: 2, priority: "low" },
+      { title: "Prepare DBMS mid-semester revision", key: "university", column: "Queued", weight: 2, priority: "medium", due: 4 },
+      { title: "Profile vector executor allocations", key: "relaydb", column: "Queued", weight: 2, priority: "none" },
+      { title: "Draft objective review for Q4", key: "state", column: "Queued", weight: 1, priority: "none", due: 9 },
     ];
     for (const t of open) {
       const taskId = id("task");
@@ -411,10 +413,10 @@ async function main() {
     }
 
     const orgOpen: { title: string; key: (typeof orgProjects)[number]; column: string; who: (typeof USERS)[number]; weight: Weight; priority: string; due?: number }[] = [
-      { title: "Rate limiting for public API", key: "o-state", column: "Backlog", who: AARAV, weight: 4, priority: "high", due: 5 },
-      { title: "Billing export to CSV", key: "o-state", column: "Backlog", who: ISHITA, weight: 2, priority: "medium" },
-      { title: "Docs search", key: "o-site", column: "Backlog", who: ISHITA, weight: 2, priority: "low" },
-      { title: "Range scan iterator", key: "o-relaydb", column: "Backlog", who: PARTH, weight: 8, priority: "high", due: 12 },
+      { title: "Rate limiting for public API", key: "o-state", column: "Queued", who: AARAV, weight: 4, priority: "high", due: 5 },
+      { title: "Billing export to CSV", key: "o-state", column: "Queued", who: ISHITA, weight: 2, priority: "medium" },
+      { title: "Docs search", key: "o-site", column: "Queued", who: ISHITA, weight: 2, priority: "low" },
+      { title: "Range scan iterator", key: "o-relaydb", column: "Queued", who: PARTH, weight: 8, priority: "high", due: 12 },
       { title: "As-of join tests", key: "o-relaydb", column: "Active", who: PARTH, weight: 2, priority: "medium", due: 1 },
       { title: "Vector execution for filters", key: "o-relaydb", column: "Active", who: AARAV, weight: 4, priority: "high", due: 3 },
       { title: "Pricing page copy", key: "o-site", column: "Active", who: ISHITA, weight: 1, priority: "low", due: -2 },
@@ -437,7 +439,7 @@ async function main() {
         weight: t.weight,
         position: pos(),
         dueAt: t.due === undefined ? null : ist(-t.due, 18),
-        startedAt: t.column === "Backlog" ? null : new Date(Math.max(createdAt.getTime(), NOW - between(6, 90) * 3_600_000)),
+        startedAt: t.column === "Queued" ? null : new Date(Math.max(createdAt.getTime(), NOW - between(6, 90) * 3_600_000)),
         createdAt,
       });
       taskTags.push({ taskId, tagId: tagId(ORG, orgTag[t.key]) });

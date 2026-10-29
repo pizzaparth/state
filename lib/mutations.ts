@@ -1,11 +1,11 @@
 import { and, asc, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { auditEvents, boards, columns, commits, organisations, projects, tasks } from "@/db/schema";
+import { auditEvents, boards, columns, commits, organisations, projects, tasks, users } from "@/db/schema";
 import { assertWritable, MutationError, type Actor } from "@/lib/authz";
 import { keyBetween } from "@/lib/position";
 import { parseQuickCapture } from "@/lib/validation";
 import type { z } from "zod";
-import type { captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import type { captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -231,6 +231,30 @@ export async function setTaskPriority(actor: Actor, input: z.infer<typeof setTas
 
   await db.update(tasks).set({ priority: input.priority }).where(and(eq(tasks.id, task.id), isNull(tasks.deletedAt)));
   return { priority: input.priority };
+}
+
+/**
+ * Sets or clears an open task's due date. The day is read in the actor's own timezone
+ * and stored as the end of that day (23:59) in UTC, so it shows as that day for them.
+ */
+export async function setTaskDue(actor: Actor, input: z.infer<typeof setTaskDueSchema>): Promise<{ dueAt: Date | null }> {
+  const [task] = await db
+    .select({ id: tasks.id, workspaceId: tasks.workspaceId, completedAt: tasks.completedAt })
+    .from(tasks)
+    .where(and(eq(tasks.id, input.taskId), isNull(tasks.deletedAt)))
+    .limit(1);
+  if (!task) throw new MutationError("not_found", "That task no longer exists.");
+  assertWritable(actor, task.workspaceId);
+  if (task.completedAt) throw new MutationError("invalid", "This task is done; it no longer has a due date to change.");
+
+  const [{ tz }] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
+  const dueAt = input.dueDate === null ? null : sql<Date>`((${input.dueDate})::date + time '23:59') at time zone ${tz}`;
+  const [row] = await db
+    .update(tasks)
+    .set({ dueAt })
+    .where(and(eq(tasks.id, task.id), isNull(tasks.deletedAt)))
+    .returning({ dueAt: tasks.dueAt });
+  return { dueAt: row?.dueAt ?? null };
 }
 
 /**

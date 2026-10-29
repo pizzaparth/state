@@ -91,7 +91,7 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
           </Panel>
           <Panel title="Queued" aside="Next by due date and priority">
             {today.queued.length === 0 ? (
-              <EmptyState title="Queue empty">Backlog tasks assigned to you appear here.</EmptyState>
+              <EmptyState title="Queue empty">Queued tasks assigned to you appear here.</EmptyState>
             ) : (
               <ul className="-mx-3">
                 {today.queued.map((t) => (

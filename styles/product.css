@@ -85,3 +85,19 @@ button.app-inverse:active {
   background-color: var(--app-panel);
   border: 1px solid var(--app-line-strong);
 }
+
+/* Native selects: own chevron with room on the right (the platform arrow hugs the edge).
+   Specificity beats Tailwind's px-* utilities, so every product select gets the gutter. */
+select.app-field {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%239A9A96' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  background-size: 1rem;
+}
+
+select.app-field:disabled {
+  cursor: not-allowed;
+}

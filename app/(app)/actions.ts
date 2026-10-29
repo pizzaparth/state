@@ -5,9 +5,9 @@ import type { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { hasPaidAccess } from "@/lib/billing/access";
 import { loadActor, MutationError, type Actor } from "@/lib/authz";
-import { captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskPriority, setTaskWeight } from "@/lib/mutations";
+import { captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "@/lib/mutations";
 import { consumeThrottle } from "@/lib/security/throttle";
-import { captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import { captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Server Actions for the product. Each one re-verifies everything itself: Server Actions
@@ -59,6 +59,10 @@ export async function setTaskPriorityAction(input: unknown) {
 
 export async function setTaskWeightAction(input: unknown) {
   return run(setTaskWeightSchema, input, setTaskWeight);
+}
+
+export async function setTaskDueAction(input: unknown) {
+  return run(setTaskDueSchema, input, setTaskDue);
 }
 
 export async function deleteTaskAction(input: unknown) {

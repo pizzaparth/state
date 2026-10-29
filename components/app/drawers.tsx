@@ -1,6 +1,7 @@
 import * as React from "react";
 import { getBoardTargets, getCommitDetail, getTaskDetail } from "@/db/queries";
 import { WRITE_ROLES } from "@/lib/authz";
+import { dayKey } from "@/lib/format";
 import type { Viewer } from "@/lib/viewer";
 import { DetailDrawer } from "./detail-drawer";
 import { CommitDetail, TaskDetail } from "./details";
@@ -30,7 +31,10 @@ export async function Drawers({ params, viewer }: { params: Record<string, strin
         <DetailDrawer param="task" title="Task">
           <TaskDetail task={task} tz={viewer.tz} now={new Date()} editable={writable} />
           {writable && (
-            <TaskActions task={{ id: task.id, title: task.title, completed: Boolean(task.completedAt), inInbox }} targets={targets} />
+            <TaskActions
+              task={{ id: task.id, title: task.title, completed: Boolean(task.completedAt), inInbox, due: task.dueAt ? dayKey(task.dueAt, viewer.tz) : null }}
+              targets={targets}
+            />
           )}
         </DetailDrawer>
       );

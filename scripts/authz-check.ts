@@ -16,8 +16,8 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskPriority, setTaskWeight } from "../lib/mutations";
-import { captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
+import { captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
 
 const dbName = new URL(process.env.DATABASE_URL ?? "postgres://x/none").pathname.slice(1);
 if (!dbName.endsWith("_test")) {
@@ -80,6 +80,10 @@ async function projectCount(workspaceId: string, slug: string) {
 
 async function projectRow(id: string) {
   return one(db.select().from(s.projects).where(eq(s.projects.id, id)));
+}
+
+async function dueOf(taskId: string) {
+  return (await one(db.select({ d: s.tasks.dueAt }).from(s.tasks).where(eq(s.tasks.id, taskId)))).d?.getTime() ?? null;
 }
 
 async function main() {
@@ -158,6 +162,8 @@ async function main() {
   record("W26", "Organisation viewer changes a task's priority", ok && (await priorityOf(orgTask.id)) === orgTask.priority, detail);
   [ok, detail] = await expectError(() => setTaskWeight(viewer, { taskId: orgTask.id, weight: 8 }), "forbidden");
   record("W30", "Organisation viewer changes a task's weight", ok && (await weightOf(orgTask.id)) === orgTask.weight, detail);
+  [ok, detail] = await expectError(() => setTaskDue(viewer, { taskId: orgTask.id, dueDate: "2030-01-01" }), "forbidden");
+  record("W50", "Organisation viewer sets a due date", ok && (await dueOf(orgTask.id)) === (orgTask.dueAt?.getTime() ?? null), detail);
   [ok, detail] = await expectError(() => createProject(viewer, { organisationId: org.id, name: "Viewer project", slug: "viewer-project", description: null }), "forbidden");
   const orgProjectBefore = JSON.stringify(await projectRow(orgProject.id));
   [ok, detail] = await expectError(() => updateProject(viewer, { projectId: orgProject.id, name: "x", slug: "viewer-edit", description: null, status: "paused" }), "forbidden");
@@ -229,6 +235,16 @@ async function main() {
   record("W32", "Outsider changes organisation task weight", ok && (await weightOf(orgTask.id)) === orgTask.weight, detail);
   await setTaskWeight(A, { taskId: inboxTask.id, weight: 4 });
   record("W33", "Owner changes own open task weight", (await weightOf(inboxTask.id)) === 4);
+  [ok, detail] = await expectError(() => setTaskDue(B, { taskId: parth.task.id, dueDate: "2030-01-01" }), "not_found");
+  record("W51", "Set a due date on another user's task", ok && (await dueOf(parth.task.id)) === (parth.task.dueAt?.getTime() ?? null), detail);
+  [ok, detail] = await expectError(() => setTaskDue(X, { taskId: orgTask.id, dueDate: null }), "not_found");
+  record("W52", "Outsider clears an organisation task's due date", ok && (await dueOf(orgTask.id)) === (orgTask.dueAt?.getTime() ?? null), detail);
+  // Due day is read in the actor's timezone and stored as 23:59 local
+  await db.update(s.users).set({ timezone: "Asia/Kolkata" }).where(eq(s.users.id, parthId));
+  await setTaskDue(A, { taskId: inboxTask.id, dueDate: "2030-03-15" });
+  const dueIso = new Date((await dueOf(inboxTask.id))!).toISOString();
+  await setTaskDue(A, { taskId: inboxTask.id, dueDate: null });
+  record("W53", "Owner sets a due date (end of day, own timezone) and clears it", dueIso === "2030-03-15T18:29:00.000Z" && (await dueOf(inboxTask.id)) === null, dueIso);
 
   [ok, detail] = await expectError(() => createProject(X, { organisationId: org.id, name: "Probe", slug: "outsider-probe", description: null }), "not_found");
   record("W35", "Outsider creates a project in an organisation", ok && (await projectCount(org.workspaceId, "outsider-probe")) === 0, detail);
@@ -300,6 +316,11 @@ async function main() {
   record("M17", "Status 'archived' is not set through edit", !updateProjectSchema.safeParse({ ...projectEdit, status: "archived" }).success);
   const archivedFlags = ["true", 1, null].map((archived) => setProjectArchivedSchema.safeParse({ projectId: "a", archived }).success);
   record("M18", "Non-boolean archive flag rejected", archivedFlags.every((v) => !v), JSON.stringify(archivedFlags));
+  const dueDates = ["2030-02-30", "30-01-2030", "2030-1-5", "2030-01-01T00:00", "1999-12-31", "2101-01-01", "' or 1=1"].map(
+    (dueDate) => setTaskDueSchema.safeParse({ taskId: "a", dueDate }).success
+  );
+  record("M19", "Malformed or out-of-range due dates rejected", dueDates.every((v) => !v), JSON.stringify(dueDates));
+  record("M20", "Unknown fields (dueAt, tz) rejected on due date", !setTaskDueSchema.safeParse({ taskId: "a", dueDate: null, dueAt: new Date(), tz: "UTC" }).success);
   record("M8", "Unknown fields (deletedAt, userId) rejected on delete", !taskRefSchema.safeParse({ taskId: "a", deletedAt: null, userId: aaravId }).success);
 
   // ------------------------------------------------------------ lifecycle, races, replay
@@ -317,6 +338,9 @@ async function main() {
   record("L3", "Reopening retires the commit", reopen.reopened && (await liveFor(raceTask)) === 0);
   const redo = await moveTask(A, { taskId: raceTask, columnId: parth.col("done").id, afterTaskId: null });
   record("L4", "Completing again records one new commit", redo.committed === parth.task.weight && (await liveFor(raceTask)) === 1);
+
+  [ok, detail] = await expectError(() => setTaskDue(A, { taskId: raceTask, dueDate: "2030-01-01" }), "invalid");
+  record("L12", "Completed task's due date cannot be changed", ok, detail);
 
   [ok, detail] = await expectError(() => setTaskWeight(A, { taskId: raceTask, weight: 8 }), "invalid");
   const raceCommit = await one(db.select({ v: s.commits.executionValue }).from(s.commits).where(and(eq(s.commits.taskId, raceTask), isNull(s.commits.deletedAt))));

@@ -26,11 +26,11 @@ const SCOPES = {
     audience: "For one person tracking their own work.",
     facts: [
       "A private board, ready the moment you subscribe",
-      "Three steps: Backlog, Active, Done",
+      "Three steps: Queued, Active, Done",
       "Every finished task adds to your own history and metrics",
       "Nothing to set up",
     ],
-    columns: ["Backlog", "Active", "Done"],
+    columns: ["Queued", "Active", "Done"],
     tasks: [
       { id: "p1", title: "Read chapter 7 of OS", project: "University", weight: 1, column: 0 },
       { id: "p2", title: "Update documentation", project: "State", weight: 2, column: 0 },
@@ -48,7 +48,7 @@ const SCOPES = {
       "Tasks assigned to teammates",
       "Team metrics that show progress, never rankings",
     ],
-    columns: ["Backlog", "Active", "Review", "Done"],
+    columns: ["Queued", "Active", "Review", "Done"],
     tasks: [
       { id: "o1", title: "Rate limiting", project: "API", weight: 2, column: 0, assignee: AARAV },
       { id: "o2", title: "Billing export", project: "State", weight: 4, column: 0, assignee: ISHITA },

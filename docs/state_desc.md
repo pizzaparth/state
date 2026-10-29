@@ -384,15 +384,15 @@ Fields:
 - `position`
 - `state_type`
 
-Default personal columns:
+Default personal columns (the first is labelled Queued; its `state_type` is `backlog`):
 
-- Backlog
+- Queued
 - Active
 - Done
 
 Default organisational columns may be:
 
-- Backlog
+- Queued
 - Active
 - Review
 - Done
