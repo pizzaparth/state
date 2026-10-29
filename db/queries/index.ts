@@ -323,6 +323,7 @@ export async function getTaskDetail(taskId: string, workspaceIds: string[]) {
       workspaceId: tasks.workspaceId,
       boardId: tasks.boardId,
       description: tasks.description,
+      recurrenceRule: tasks.recurrenceRule,
       boardName: boards.name,
       columnName: columns.name,
       creatorName: creator,

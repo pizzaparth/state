@@ -101,6 +101,12 @@ export const setTaskDueSchema = z.strictObject({
     .nullable(),
 });
 
+/** Repeat rule of an open task, or null to stop repeating. */
+export const setTaskRecurrenceSchema = z.strictObject({
+  taskId: objectId,
+  rule: z.string().regex(RECURRENCE_RULES, "Pick how often it repeats.").nullable(),
+});
+
 /** Delete and undo-delete take only the task id. */
 export const taskRefSchema = z.strictObject({
   taskId: objectId,

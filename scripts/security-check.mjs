@@ -597,6 +597,20 @@ async function checkServerActions() {
   await db.query("delete from organisation_members where organisation_id = 'seed-org-ksan' and user_id = (select id from users where email = $1)", [newcomer]);
   await db.query("delete from organisation_invitations where email = $1", [spamTarget]);
 
+  // Recurring tasks: the repeat rule is the owner's to set and comes from a fixed list
+  const taskPath = `/platform/personal?task=${victim.id}`;
+  const repeatId = await actionIdOn(taskPath, "setTaskRecurrenceAction", owner);
+  const ruleOf = async () => (await db.query("select recurrence_rule from tasks where id = $1", [victim.id])).rows[0].recurrence_rule;
+  const repeatIdor = repeatId ? await callAction(repeatId, [{ taskId: victim.id, rule: "daily" }], { cookie: other, path: taskPath }) : null;
+  const repeatBad = repeatId ? await callAction(repeatId, [{ taskId: victim.id, rule: "interval:0" }], { cookie: owner, path: taskPath }) : null;
+  const repeatForged = repeatId ? await callAction(repeatId, [{ taskId: victim.id, rule: "weekly", recurrenceParentId: "x" }], { cookie: owner, path: taskPath }) : null;
+  record(
+    "RT1",
+    "Repeat rule: another user's call, invalid rules and extra fields are refused",
+    Boolean(repeatId) && !repeatIdor.ok && !repeatBad.ok && !repeatForged.ok && (await ruleOf()) === null,
+    repeatId ? `${repeatIdor.error} | ${repeatBad.error} | ${repeatForged.error}` : "action id not found"
+  );
+
   // Write budget: 60 per user per minute, shared across instances. Invalid calls count too.
   const burst = await Promise.all(Array.from({ length: 70 }, () => callAction(ids.moveTaskAction, [{}], { cookie: other })));
   const limited = burst.filter((r) => /Too many changes/.test(r.error ?? "")).length;

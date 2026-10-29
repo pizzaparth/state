@@ -6,9 +6,10 @@ import { actionEmail, sendEmail } from "@/lib/email";
 import { hasOrganisationPlan } from "@/lib/billing/access";
 import { assertWritable, MutationError, type Actor } from "@/lib/authz";
 import { keyBetween } from "@/lib/position";
+import { dayIn, nextDueDay } from "@/lib/recurrence";
 import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
 import type { z } from "zod";
-import type { acceptInvitationSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, invitationRefSchema, inviteMemberSchema, memberRefSchema, organisationRefSchema, setMemberRoleSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import type { acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, invitationRefSchema, inviteMemberSchema, memberRefSchema, organisationRefSchema, setMemberRoleSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -23,12 +24,15 @@ export interface MoveResult {
   /** Execution recorded by this move (task reached Done), or 0. */
   committed: number;
   reopened: boolean;
+  /** A recurring task's next occurrence was created by this move. */
+  recurred: boolean;
 }
 
 /**
  * Moves a board card to a column and position. Reaching a Done column completes the task
  * and records its commit (at most one live commit per task, enforced by a unique index);
- * leaving Done reopens it and retires that commit.
+ * leaving Done reopens it and retires that commit. Completing a recurring task also creates
+ * its next occurrence, once: reopening and completing again does not add another.
  */
 export async function moveTask(actor: Actor, input: z.infer<typeof moveTaskSchema>): Promise<MoveResult> {
   return db.transaction(async (tx) => {
@@ -41,8 +45,13 @@ export async function moveTask(actor: Actor, input: z.infer<typeof moveTaskSchem
         columnId: tasks.columnId,
         projectId: tasks.projectId,
         assigneeId: tasks.assigneeId,
+        creatorId: tasks.creatorId,
         title: tasks.title,
+        description: tasks.description,
+        priority: tasks.priority,
         weight: tasks.weight,
+        recurrenceRule: tasks.recurrenceRule,
+        dueAt: tasks.dueAt,
         startedAt: tasks.startedAt,
         completedAt: tasks.completedAt,
       })
@@ -53,6 +62,7 @@ export async function moveTask(actor: Actor, input: z.infer<typeof moveTaskSchem
     if (!task) throw new MutationError("not_found", "That task no longer exists.");
     assertWritable(actor, task.workspaceId);
     if (!task.boardId) throw new MutationError("invalid", "Put this task on a board first.");
+    const boardId = task.boardId;
 
     // The target column must belong to the task's own board
     const [column] = await tx
@@ -112,6 +122,50 @@ export async function moveTask(actor: Actor, input: z.infer<typeof moveTaskSchem
       committed = inserted.length > 0 ? task.weight : 0;
     }
 
+    let recurred = false;
+    if (committed > 0 && task.recurrenceRule) {
+      const [existing] = await tx.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.recurrenceParentId, task.id), isNull(tasks.deletedAt))).limit(1);
+      // The next occurrence waits in the board's first queued column
+      const [queued] = await tx
+        .select({ id: columns.id })
+        .from(columns)
+        .where(and(eq(columns.boardId, boardId), ne(columns.stateType, "done")))
+        .orderBy(sql`${columns.stateType} = 'backlog' desc`, asc(columns.position))
+        .limit(1);
+      if (!existing && queued) {
+        const [{ tz }] = await tx.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
+        const dueDay = nextDueDay(task.recurrenceRule, task.dueAt ? dayIn(task.dueAt, tz) : null, dayIn(now, tz));
+        const [top] = await tx
+          .select({ position: tasks.position })
+          .from(tasks)
+          .where(and(eq(tasks.boardId, boardId), eq(tasks.columnId, queued.id), isNull(tasks.deletedAt)))
+          .orderBy(asc(byPosition))
+          .limit(1);
+        const [next] = await tx
+          .insert(tasks)
+          .values({
+            workspaceId: task.workspaceId,
+            projectId: task.projectId,
+            boardId,
+            columnId: queued.id,
+            position: keyBetween(null, top?.position ?? null),
+            assigneeId: task.assigneeId,
+            creatorId: task.creatorId,
+            title: task.title,
+            description: task.description,
+            priority: task.priority,
+            weight: task.weight,
+            recurrenceRule: task.recurrenceRule,
+            recurrenceParentId: task.id,
+            dueAt: sql<Date>`((${dueDay})::date + time '23:59') at time zone ${tz}`,
+          })
+          .returning({ id: tasks.id });
+        const labels = await tx.select({ tagId: taskTags.tagId }).from(taskTags).where(eq(taskTags.taskId, task.id)).limit(50);
+        if (labels.length > 0) await tx.insert(taskTags).values(labels.map((l) => ({ taskId: next.id, tagId: l.tagId })));
+        recurred = true;
+      }
+    }
+
     let reopened = false;
     if (!toDone && wasDone) {
       const retired = await tx
@@ -131,7 +185,7 @@ export async function moveTask(actor: Actor, input: z.infer<typeof moveTaskSchem
         });
       }
     }
-    return { committed, reopened };
+    return { committed, reopened, recurred };
   });
 }
 
@@ -279,6 +333,27 @@ export async function setTaskWeight(actor: Actor, input: z.infer<typeof setTaskW
 
     await tx.update(tasks).set({ weight: input.weight }).where(eq(tasks.id, task.id));
     return { weight: input.weight };
+  });
+}
+
+/**
+ * Sets how an open task repeats, or stops it repeating. The rule applies when the task is
+ * next completed; a completed task's next occurrence carries the rule from then on.
+ */
+export async function setTaskRecurrence(actor: Actor, input: z.infer<typeof setTaskRecurrenceSchema>): Promise<{ rule: string | null }> {
+  return db.transaction(async (tx) => {
+    const [task] = await tx
+      .select({ id: tasks.id, workspaceId: tasks.workspaceId, completedAt: tasks.completedAt })
+      .from(tasks)
+      .where(and(eq(tasks.id, input.taskId), isNull(tasks.deletedAt)))
+      .limit(1)
+      .for("update");
+    if (!task) throw new MutationError("not_found", "That task no longer exists.");
+    assertWritable(actor, task.workspaceId);
+    if (task.completedAt) throw new MutationError("invalid", "This task is done. Change the repeat on its next occurrence.");
+
+    await tx.update(tasks).set({ recurrenceRule: input.rule }).where(eq(tasks.id, task.id));
+    return { rule: input.rule };
   });
 }
 

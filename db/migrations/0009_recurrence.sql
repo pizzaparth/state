@@ -1,0 +1,1 @@
+CREATE INDEX "tasks_recurrence_parent_idx" ON "tasks" USING btree ("recurrence_parent_id");

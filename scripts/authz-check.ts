@@ -19,12 +19,13 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail, getTicker } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { acceptInvitation, captureTask, createManualCommit, createOrganisation, createProject, hashInvitationToken, inviteMember, leaveOrganisation, removeMember, revokeInvitation, setMemberRole, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
-import { acceptInvitationSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, inviteMemberSchema, setMemberRoleSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { acceptInvitation, setTaskRecurrence, captureTask, createManualCommit, createOrganisation, createProject, hashInvitationToken, inviteMember, leaveOrganisation, removeMember, revokeInvitation, setMemberRole, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
+import { acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, inviteMemberSchema, setMemberRoleSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
 import { buildExport } from "../lib/data/export";
 import { parseImport } from "../lib/data/import";
 import { parseCsv, toCsv } from "../lib/data/csv";
 import { deleteAccount } from "../lib/accounts/delete";
+import { nextDueDay } from "../lib/recurrence";
 import { setAutoRenew } from "../lib/billing/manage";
 
 const dbName = new URL(process.env.DATABASE_URL ?? "postgres://x/none").pathname.slice(1);
@@ -557,6 +558,69 @@ async function main() {
   record("MR10", "Member leaves; an outsider cannot 'leave' an organisation they are not in", ok && (await roleIn(ishitaId)) === null, detail);
   await db.insert(s.organisationMembers).values({ organisationId: org.id, userId: ishitaId, role: "member" });
   await db.delete(s.users).where(inArray(s.users.id, [inviteeId, strangerId]));
+
+  // ------------------------------------------------------------ recurring tasks
+  const [{ tz: parthTz }] = await db.select({ tz: s.users.timezone }).from(s.users).where(eq(s.users.id, parthId));
+  const [tag] = await db.insert(s.tags).values({ workspaceId: parth.ws.id, name: `authz-repeat-${Date.now()}` }).returning();
+  const [repeat] = await db
+    .insert(s.tasks)
+    .values({ workspaceId: parth.ws.id, boardId: parth.board.id, columnId: parth.col("active").id, projectId: parth.project.id, creatorId: parthId, assigneeId: parthId, title: "Weekly review", weight: 4, priority: "high", startedAt: new Date() })
+    .returning();
+  await db.insert(s.taskTags).values({ taskId: repeat.id, tagId: tag.id });
+  const ruleOf = async (taskId: string) => (await one(db.select({ r: s.tasks.recurrenceRule }).from(s.tasks).where(eq(s.tasks.id, taskId)))).r;
+  const occurrences = (parentId: string) => db.select().from(s.tasks).where(and(eq(s.tasks.recurrenceParentId, parentId), isNull(s.tasks.deletedAt)));
+
+  [ok, detail] = await expectError(() => setTaskRecurrence(B, { taskId: repeat.id, rule: "daily" }), "not_found");
+  record("RC1", "Another user sets a repeat on someone's task", ok && (await ruleOf(repeat.id)) === null, detail);
+  await db.update(s.organisationMembers).set({ role: "viewer" }).where(and(eq(s.organisationMembers.userId, ishitaId), eq(s.organisationMembers.organisationId, org.id)));
+  [ok, detail] = await expectError(async () => setTaskRecurrence(await loadActor(ishitaId), { taskId: orgTask.id, rule: "daily" }), "forbidden");
+  record("RC2", "Organisation viewer sets a repeat", ok && (await ruleOf(orgTask.id)) === null, detail);
+  await db.update(s.organisationMembers).set({ role: "member" }).where(and(eq(s.organisationMembers.userId, ishitaId), eq(s.organisationMembers.organisationId, org.id)));
+  const badRules = [
+    { taskId: repeat.id, rule: "hourly" },
+    { taskId: repeat.id, rule: "interval:0" },
+    { taskId: repeat.id, rule: "interval:1000" },
+    { taskId: repeat.id, rule: "daily; drop table tasks" },
+    { taskId: repeat.id, rule: "weekly", recurrenceParentId: aarav.task.id },
+  ].map((v) => setTaskRecurrenceSchema.safeParse(v).success);
+  record("RC3", "Repeat input rejects unknown rules, out-of-range intervals and extra keys", badRules.every((v) => !v), JSON.stringify(badRules));
+
+  await setTaskRecurrence(A, { taskId: repeat.id, rule: "weekly" });
+  await setTaskDue(A, { taskId: repeat.id, dueDate: "2020-01-06" }); // long overdue Monday
+  const done1 = await moveTask(A, { taskId: repeat.id, columnId: parth.col("done").id, afterTaskId: null });
+  const [next1] = await occurrences(repeat.id);
+  const nextTags = next1 ? await db.select().from(s.taskTags).where(eq(s.taskTags.taskId, next1.id)) : [];
+  const todayThere = new Intl.DateTimeFormat("en-CA", { timeZone: parthTz, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const nextDay = next1?.dueAt ? new Intl.DateTimeFormat("en-CA", { timeZone: parthTz, year: "numeric", month: "2-digit", day: "2-digit" }).format(next1.dueAt) : null;
+  record(
+    "RC4",
+    "Completing a recurring task records one commit and queues one next occurrence like it",
+    done1.committed === 4 && done1.recurred && (await liveFor(repeat.id)) === 1 && Boolean(next1) && next1.workspaceId === parth.ws.id && next1.boardId === parth.board.id && next1.columnId === parth.col("backlog").id && next1.completedAt === null && next1.weight === 4 && next1.priority === "high" && next1.projectId === parth.project.id && next1.recurrenceRule === "weekly" && nextTags.length === 1 && nextDay !== null && nextDay > todayThere && new Date(`${nextDay}T00:00:00Z`).getUTCDay() === 1,
+    `next due ${nextDay}, today ${todayThere}`
+  );
+  [ok, detail] = await expectError(() => setTaskRecurrence(A, { taskId: repeat.id, rule: "daily" }), "invalid");
+  record("RC5", "A completed task's repeat cannot be changed", ok && (await ruleOf(repeat.id)) === "weekly", detail);
+
+  await moveTask(A, { taskId: repeat.id, columnId: parth.col("active").id, afterTaskId: null });
+  const done2 = await moveTask(A, { taskId: repeat.id, columnId: parth.col("done").id, afterTaskId: null });
+  record("RC6", "Reopening and completing again adds no second occurrence", done2.committed === 4 && !done2.recurred && (await occurrences(repeat.id)).length === 1 && (await liveFor(repeat.id)) === 1);
+
+  await setTaskRecurrence(A, { taskId: next1.id, rule: "daily" });
+  await moveTask(A, { taskId: next1.id, columnId: parth.col("active").id, afterTaskId: null });
+  const raced = await Promise.allSettled(Array.from({ length: 10 }, () => moveTask(A, { taskId: next1.id, columnId: parth.col("done").id, afterTaskId: null })));
+  record("RC7", "10 parallel Done moves of a recurring task queue exactly one next occurrence", raced.every((r) => r.status === "fulfilled") && (await occurrences(next1.id)).length === 1 && (await liveFor(next1.id)) === 1);
+
+  const days = [
+    nextDueDay("weekdays", "2026-10-30", "2026-10-29"), // Friday -> Monday
+    nextDueDay("monthly", "2026-01-31", "2026-01-20"), // clamps to February's last day
+    nextDueDay("daily", "2026-10-01", "2026-10-29"), // overdue: tomorrow, never in the past
+    nextDueDay("interval:14", null, "2026-10-29"),
+    nextDueDay("weekly", "2026-12-28", "2026-12-20"), // across the year end
+    nextDueDay("daily", "2000-01-01", "2026-10-29"), // decades overdue
+  ];
+  record("RC8", "Next due days: weekdays skip weekends, months clamp, late finishes never land in the past", JSON.stringify(days) === JSON.stringify(["2026-11-02", "2026-02-28", "2026-10-30", "2026-11-12", "2027-01-04", "2026-10-30"]), JSON.stringify(days));
+  await db.delete(s.tasks).where(inArray(s.tasks.id, [repeat.id, next1.id, ...(await occurrences(next1.id)).map((t) => t.id)]));
+  await db.delete(s.tags).where(eq(s.tags.id, tag.id));
 
   // ------------------------------------------------------------ export, import, account deletion, billing
   const execution = async (workspaceId: string) =>

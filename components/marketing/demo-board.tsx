@@ -20,7 +20,7 @@ export function DemoBoard({ columns, cards, showAssignee, doneWindowDays }: { co
       if (toDone) done.current.add(taskId);
       else done.current.delete(taskId);
       const weight = cards.find((c) => c.id === taskId)?.weight ?? 0;
-      return { ok: true, data: { committed: toDone && !wasDone ? weight : 0, reopened: wasDone && !toDone } };
+      return { ok: true, data: { committed: toDone && !wasDone ? weight : 0, reopened: wasDone && !toDone, recurred: false } };
     },
     [cards, doneId]
   );

@@ -4,7 +4,8 @@ import { dueState, formatDateTime, formatDuration } from "@/lib/format";
 import { weightLabel } from "@/lib/weights";
 import { cn } from "@/lib/utils";
 import { Chip, DISPLAY, DueLabel, PriorityMark, TICK } from "./primitives";
-import { TaskPriority, TaskWeight } from "./task-fields";
+import { TaskPriority, TaskRecurrence, TaskWeight } from "./task-fields";
+import { recurrenceLabel } from "@/lib/recurrence";
 import { TaskTitle } from "./task-title";
 
 type Task = NonNullable<Awaited<ReturnType<typeof getTaskDetail>>>;
@@ -63,6 +64,15 @@ export function TaskDetail({ task, tz, now, editable = false }: { task: Task; tz
           )}
         </Field>
         <Field label="Due">{task.dueAt ? <DueLabel due={dueState(task.dueAt, now, tz)} /> : "—"}</Field>
+        <Field label="Repeats">
+          {editable && !task.completedAt ? (
+            <TaskRecurrence taskId={task.id} rule={task.recurrenceRule} />
+          ) : task.recurrenceRule ? (
+            recurrenceLabel(task.recurrenceRule)
+          ) : (
+            "—"
+          )}
+        </Field>
         <Field label="Created">{formatDateTime(task.createdAt, tz)}</Field>
         <Field label="Started">{task.startedAt ? formatDateTime(task.startedAt, tz) : "—"}</Field>
         <Field label="Done">{task.completedAt ? formatDateTime(task.completedAt, tz) : "—"}</Field>

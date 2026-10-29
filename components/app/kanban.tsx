@@ -110,7 +110,7 @@ export function Kanban({
       window.clearTimeout(flashTimer.current);
       setFlashId(card.id);
       flashTimer.current = window.setTimeout(() => setFlashId(null), 950);
-      notify(`“${card.title}” done. Commit recorded, +${result.data.committed}.`);
+      notify(`“${card.title}” done. Commit recorded, +${result.data.committed}.${result.data.recurred ? " Next one queued." : ""}`);
     } else if (result.data.reopened) notify(`“${card.title}” reopened. Its commit was withdrawn.`);
     else if (toColumn !== fromColumn) notify(`“${card.title}” moved to ${name}.`);
   };

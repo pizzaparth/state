@@ -25,6 +25,7 @@ export const tasks = pgTable(
     position: text("position").notNull().default("a0"),
     // Recurrence: "daily" | "weekdays" | "weekly" | "monthly" | "interval:<days>"
     recurrenceRule: text("recurrence_rule"),
+    // The occurrence this one was created from when it was completed
     recurrenceParentId: text("recurrence_parent_id"),
     dueAt: timestamp("due_at", { withTimezone: true }),
     startedAt: timestamp("started_at", { withTimezone: true }),
@@ -49,5 +50,7 @@ export const tasks = pgTable(
     index("tasks_column_idx").on(table.columnId),
     index("tasks_creator_idx").on(table.creatorId),
     index("tasks_completed_at_idx").on(table.workspaceId, table.completedAt),
+    // Completing a recurring task checks whether its next occurrence already exists
+    index("tasks_recurrence_parent_idx").on(table.recurrenceParentId),
   ]
 );

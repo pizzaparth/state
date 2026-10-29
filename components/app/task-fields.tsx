@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { Loader2 } from "lucide-react";
-import { setTaskPriorityAction, setTaskWeightAction, type ActionResult } from "@/app/(app)/actions";
+import { setTaskPriorityAction, setTaskRecurrenceAction, setTaskWeightAction, type ActionResult } from "@/app/(app)/actions";
+import { RECURRENCE_OPTIONS, recurrenceLabel } from "@/lib/recurrence";
 import { PRIORITIES, type Priority } from "@/lib/validation";
 import { WEIGHT_LEVELS, weightHint, weightLabel, type Weight } from "@/lib/weights";
 import { useNotice } from "./notice";
@@ -119,6 +120,27 @@ export function TaskWeight({ taskId, weight }: { taskId: string; weight: number 
       save={(next) => setTaskWeightAction({ taskId, weight: next })}
       savedMessage={(next) => `Weight set to ${weightLabel(next).toLowerCase()}, ${next} execution.`}
       describe={weightHint}
+    />
+  );
+}
+
+/** How an open task repeats; finishing it queues the next one. */
+export function TaskRecurrence({ taskId, rule }: { taskId: string; rule: string | null }) {
+  const current = rule ?? "none";
+  const options = [
+    { value: "none", label: "Never" },
+    ...RECURRENCE_OPTIONS,
+    // An imported custom interval stays selectable
+    ...(RECURRENCE_OPTIONS.some((o) => o.value === current) || current === "none" ? [] : [{ value: current, label: recurrenceLabel(current) }]),
+  ];
+  return (
+    <InlineSelect
+      name="recurrence"
+      label="Repeats"
+      value={current}
+      options={options}
+      save={(next) => setTaskRecurrenceAction({ taskId, rule: next === "none" ? null : next })}
+      savedMessage={(next) => (next === "none" ? "Stops repeating." : `Repeats ${recurrenceLabel(next).toLowerCase()}. Done queues the next.`)}
     />
   );
 }
