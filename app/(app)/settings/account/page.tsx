@@ -18,7 +18,6 @@ export default async function AccountSettingsPage() {
         <dl>
           <Row label="Name">{account?.name}</Row>
           <Row label="Email">{account?.email}</Row>
-          <Row label="Username">{account?.username ?? "Not set"}</Row>
           <Row label="Timezone" hint="Days in graphs and history start at midnight in this timezone.">
             {account?.timezone}
           </Row>

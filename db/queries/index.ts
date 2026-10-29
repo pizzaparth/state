@@ -634,9 +634,7 @@ export async function getAccount(userId: string) {
     .select({
       name: users.name,
       email: users.email,
-      username: users.username,
       timezone: users.timezone,
-      dailyExecutionTarget: users.dailyExecutionTarget,
       createdAt: users.createdAt,
     })
     .from(users)

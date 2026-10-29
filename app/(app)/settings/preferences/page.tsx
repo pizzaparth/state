@@ -21,7 +21,8 @@ const SHORTCUTS = [
 ] as const;
 
 export default async function PreferencesSettingsPage() {
-  const viewer = await getViewer();
+  // Signed-in only: redirects to /login otherwise
+  await getViewer();
   return (
     <>
       <PageHeader label="Settings" title="Preferences" />
@@ -29,9 +30,6 @@ export default async function PreferencesSettingsPage() {
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel title="Execution">
           <dl>
-            <Row label="Daily target" hint="Shown on Today as progress toward the day.">
-              <span className="tabular-nums">{viewer.dailyExecutionTarget ?? "Not set"}</span>
-            </Row>
             <Row label="Task weights" hint="Execution = Σ completed task weights + manual commit weights.">
               <ul className="space-y-2">
                 {WEIGHT_LEVELS.map((w) => (

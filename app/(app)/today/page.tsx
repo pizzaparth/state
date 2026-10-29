@@ -1,7 +1,7 @@
 import * as React from "react";
 import { getProjects, getToday } from "@/db/queries";
 import { getViewer } from "@/lib/viewer";
-import { formatDate, formatNumber } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import { PageHeader, Panel, EmptyState } from "@/components/app/primitives";
 import { TaskRow, withParam } from "@/components/app/task-row";
 import { CommitLedger } from "@/components/app/commit-ledger";
@@ -18,10 +18,8 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
     getToday({ workspaceIds: viewer.workspaceIds, userId: viewer.id }, viewer.tz),
     getProjects(viewer.personalWorkspaceId ? [viewer.personalWorkspaceId] : []),
   ]);
-  const target = viewer.dailyExecutionTarget;
   const done = today.executionToday;
   const href = (key: string) => (id: string) => withParam("/today", params, key, id);
-  const pct = target ? Math.min(100, (done / target) * 100) : 0;
 
   return (
     <>
@@ -33,30 +31,11 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
           <h2 id="execution-today" className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#55554F]">
             Execution today
           </h2>
-          <p className="mt-4 flex items-baseline gap-2">
-            <span className="text-6xl font-semibold leading-none tracking-[-0.03em] tabular-nums">{done}</span>
-            {target && <span className="text-xl tabular-nums text-[#55554F]">/ {target}</span>}
+          <p className="mt-4 text-6xl font-semibold leading-none tracking-[-0.03em] tabular-nums">{done}</p>
+          <p className="mt-3 text-base text-[#55554F]">
+            {today.commits.length} {today.commits.length === 1 ? "commit" : "commits"}, {today.completed.length}{" "}
+            {today.completed.length === 1 ? "task" : "tasks"} completed.
           </p>
-          {target ? (
-            <>
-              <div
-                role="progressbar"
-                aria-label="Execution toward today's target"
-                aria-valuemin={0}
-                aria-valuemax={target}
-                aria-valuenow={done}
-                className="mt-5 h-2.5 overflow-hidden rounded-full bg-black/10"
-              >
-                <div className="h-full origin-left animate-grow-x rounded-full bg-[#0A0A0A]" style={{ transform: `scaleX(${pct / 100})` }} />
-              </div>
-              <p className="mt-3 text-base text-[#55554F]">
-                {done >= target ? "Target reached." : `${formatNumber(target - done)} to today’s target.`}{" "}
-                {today.commits.length} {today.commits.length === 1 ? "commit" : "commits"}, {today.completed.length} tasks completed.
-              </p>
-            </>
-          ) : (
-            <p className="mt-3 text-base text-[#55554F]">Set a daily target in Settings to track progress here.</p>
-          )}
         </section>
 
         <Panel title="Capture">

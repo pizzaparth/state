@@ -43,6 +43,13 @@
       "when": 1793237090577,
       "tag": "0005_rename_backlog_to_queued",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793237484044,
+      "tag": "0006_drop_username_daily_target",
+      "breakpoints": true
     }
   ]
 }

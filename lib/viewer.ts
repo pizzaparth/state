@@ -19,7 +19,6 @@ export interface Viewer {
   name: string;
   email: string;
   tz: string;
-  dailyExecutionTarget: number | null;
   personalWorkspaceId: string | null;
   personalBoardId: string | null;
   orgs: ViewerOrg[];
@@ -69,7 +68,6 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     name: user.name,
     email: user.email,
     tz: user.timezone,
-    dailyExecutionTarget: user.dailyExecutionTarget,
     personalWorkspaceId: personal?.id ?? null,
     personalBoardId: personalBoard?.id ?? null,
     orgs,

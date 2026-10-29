@@ -33,9 +33,10 @@ const DAY = 86_400_000;
 const NOW = Date.now();
 
 const USERS = [
-  { id: "demo-parth", name: "Parth", email: "demo@state.test", username: "parth" },
-  { id: "demo-aarav", name: "Aarav Kulkarni", email: "aarav@state.test", username: "aarav" },
-  { id: "demo-ishita", name: "Ishita Sharma", email: "ishita@state.test", username: "ishita" },
+  // key: short handle for seed ids only (seed-board-parth, …), not stored on the user
+  { id: "demo-parth", name: "Parth", email: "demo@state.test", key: "parth" },
+  { id: "demo-aarav", name: "Aarav Kulkarni", email: "aarav@state.test", key: "aarav" },
+  { id: "demo-ishita", name: "Ishita Sharma", email: "ishita@state.test", key: "ishita" },
 ] as const;
 const [PARTH, AARAV, ISHITA] = USERS;
 
@@ -100,12 +101,13 @@ async function main() {
     // -------------------------------------------------------------- people
     await tx.insert(s.users).values(
       USERS.map((u) => ({
-        ...u,
+        id: u.id,
+        name: u.name,
+        email: u.email,
         emailVerified: true,
         timezone: TZ,
         subscriptionStatus: "active",
         subscriptionPlan: "organisation",
-        dailyExecutionTarget: 12,
         createdAt: ist(120, 10),
       }))
     );
@@ -114,7 +116,7 @@ async function main() {
     );
 
     // -------------------------------------------------------------- workspaces
-    const personalWs = Object.fromEntries(USERS.map((u) => [u.id, `seed-ws-${u.username}`]));
+    const personalWs = Object.fromEntries(USERS.map((u) => [u.id, `seed-ws-${u.key}`]));
     await tx.insert(s.workspaces).values([
       ...USERS.map((u) => ({ id: personalWs[u.id], name: "Personal", slug: `personal-${u.id}`, type: "personal", ownerId: u.id })),
       { id: "seed-ws-ksan", name: "Ksan Relay", slug: "ksan-relay", type: "organisation", ownerId: PARTH.id },
@@ -153,7 +155,7 @@ async function main() {
         userId: u.id,
         organisationId: ORG_ID,
         provider: "razorpay",
-        providerSubscriptionId: `sub_demo_${u.username}`,
+        providerSubscriptionId: `sub_demo_${u.key}`,
         plan: "organisation",
         status: "active",
         seats: u.id === PARTH.id ? 3 : 1,
@@ -189,7 +191,7 @@ async function main() {
 
     // -------------------------------------------------------------- boards
     await tx.insert(s.boards).values([
-      ...USERS.map((u) => ({ id: `seed-board-${u.username}`, workspaceId: personalWs[u.id], name: "Personal", type: "personal" })),
+      ...USERS.map((u) => ({ id: `seed-board-${u.key}`, workspaceId: personalWs[u.id], name: "Personal", type: "personal" })),
       { id: "seed-board-ksan", workspaceId: "seed-ws-ksan", name: "Ksan Relay", type: "organisation" },
     ]);
     const col = (board: string, name: string) => `${board}-${name.toLowerCase()}`;
@@ -198,8 +200,8 @@ async function main() {
     await tx.insert(s.columns).values([
       ...USERS.flatMap((u) =>
         ["Queued", "Active", "Done"].map((name, position) => ({
-          id: col(`seed-board-${u.username}`, name),
-          boardId: `seed-board-${u.username}`,
+          id: col(`seed-board-${u.key}`, name),
+          boardId: `seed-board-${u.key}`,
           name,
           position,
           stateType: stateTypeOf(name),

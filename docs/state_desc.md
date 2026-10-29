@@ -297,7 +297,6 @@ Fields:
 - `id`
 - `name`
 - `email`
-- `username`
 - `avatar`
 - `timezone`
 - `created_at`
@@ -934,8 +933,7 @@ TODAY
 
 28 OCT
 
-Execution target        12
-Current                  7
+Execution today          7
 
 ACTIVE
 □ Implement caching
@@ -958,7 +956,6 @@ Today should display:
 
 - date
 - execution completed
-- execution target
 - active tasks
 - queued tasks
 - overdue tasks
