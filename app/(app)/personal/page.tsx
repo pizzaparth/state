@@ -14,7 +14,6 @@ export default async function PersonalBoardPage({ searchParams }: { searchParams
       <PageHeader
         label="Work"
         title="Personal"
-        description="Drag a task to the next column, or use its ••• menu. Reaching Done records a commit."
       />
       <BoardView boardId={viewer.personalBoardId} viewer={viewer} params={params} basePath="/personal" showAssignee={false} />
       <Drawers params={params} viewer={viewer} />

@@ -36,10 +36,10 @@ export default async function OrganisationOverviewPage({
       <OrgHeader org={org} active="overview" />
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <Measure inverse label="Execution / 30d" value={formatNumber(metrics.execution)} formula="Σ team commit execution" />
-        <Measure label="Commits / 30d" value={formatNumber(metrics.commits)} formula="Task completions + manual commits" />
-        <Measure label="Projects touched" value={formatNumber(metrics.byProject.length)} formula="Projects with commits in 30 days" />
-        <Measure label="Median cycle" value={formatDuration(percentile(metrics.cycleTimesMs, 50))} formula="median(completed_at − started_at)" />
+        <Measure inverse label="Execution / 30d" value={formatNumber(metrics.execution)} formula="Σ team commits" />
+        <Measure label="Commits / 30d" value={formatNumber(metrics.commits)} formula="tasks + manual" />
+        <Measure label="Projects touched" value={formatNumber(metrics.byProject.length)} formula="with commits" />
+        <Measure label="Cycle time" value={formatDuration(percentile(metrics.cycleTimesMs, 50))} formula="median(done − started)" />
       </div>
 
       <Panel title="Team execution graph" aside="Last 13 weeks">
@@ -76,7 +76,7 @@ export default async function OrganisationOverviewPage({
           }
         >
           {recent.length === 0 ? (
-            <EmptyState title="No commits yet">Team commits appear here as tasks reach Done.</EmptyState>
+            <EmptyState title="No commits yet" />
           ) : (
             <div className="-mx-3">
               <CommitLedger commits={recent} tz={viewer.tz} now={new Date()} hrefFor={(id) => withParam(base, query, "commit", id)} showAuthor />

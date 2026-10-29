@@ -10,10 +10,10 @@ export default async function OrganisationsPage() {
   const viewer = await getViewer();
   return (
     <>
-      <PageHeader label="Work" title="Organisations" description="Teams you belong to. Each has shared boards, projects and team metrics." />
+      <PageHeader label="Work" title="Organisations" />
       <Panel>
         {viewer.orgs.length === 0 ? (
-          <EmptyState title="No organisations">Accept an invitation, or create an organisation, to execute with a team.</EmptyState>
+          <EmptyState title="No teams yet" />
         ) : (
           <ul className="-mx-3">
             {viewer.orgs.map((o) => (

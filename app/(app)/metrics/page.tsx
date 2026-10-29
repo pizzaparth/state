@@ -12,9 +12,8 @@ export default async function MetricsPage({ searchParams }: { searchParams: Page
   return (
     <>
       <PageHeader
-        label="Measurement"
+        label="Numbers"
         title="Metrics"
-        description="Your own execution across every workspace. Each number shows the formula and inputs that produced it."
       />
       <MetricsView
         scope={{ workspaceIds: viewer.workspaceIds, userId: viewer.id }}

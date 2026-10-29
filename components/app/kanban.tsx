@@ -23,7 +23,7 @@ import * as Menu from "@radix-ui/react-dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
 import type { DueState } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { Avatar, DueLabel, PriorityMark, WeightMark } from "./primitives";
+import { Avatar, DISPLAY, DueLabel, PriorityMark, TICK, WeightMark } from "./primitives";
 import { moveTaskAction } from "@/app/(app)/actions";
 import { useNotice } from "./notice";
 
@@ -176,10 +176,19 @@ export function Kanban({
           const isDone = column.id === doneId;
           return (
             <Column key={column.id} column={column} highlighted={overColumn === column.id && dragging?.columnId !== startColumn.current}>
-              <div className="mb-3 flex items-baseline justify-between px-1">
-                <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{column.name}</h2>
-                <span className="font-mono text-[13px] tabular-nums text-[#9A9A96]">
-                  {isDone ? `${columnCards.length} in ${doneWindowDays}d` : columnCards.length}
+              {/* Count and Σ weight: what the column holds, in execution */}
+              <div className="mb-3 flex items-baseline justify-between gap-3 px-1">
+                <h2 className={cn(DISPLAY, "text-lg leading-none text-[#F2F2EF]")}>{column.name}</h2>
+                <span
+                  className="font-mono text-[13px] tabular-nums text-[#9A9A96]"
+                  title={isDone ? `${columnCards.length} done in ${doneWindowDays} days, ${sumWeight(columnCards)} execution` : `${columnCards.length} tasks, ${sumWeight(columnCards)} execution queued`}
+                >
+                  {columnCards.length}
+                  {isDone && <span className="text-[#85857F]">/{doneWindowDays}d</span>}
+                  <span className="ml-2 font-semibold text-[#F2F2EF]">
+                    {isDone ? "+" : "Σ"}
+                    {sumWeight(columnCards)}
+                  </span>
                 </span>
               </div>
               <SortableContext items={columnCards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
@@ -198,7 +207,7 @@ export function Kanban({
                   ))}
                   {columnCards.length === 0 && (
                     <li className="rounded-[14px] border border-dashed border-white/10 px-3 py-6 text-center text-sm text-[#9A9A96]">
-                      Drop a task here
+                      drop here
                     </li>
                   )}
                 </ul>
@@ -219,6 +228,8 @@ export function Kanban({
     </DndContext>
   );
 }
+
+const sumWeight = (cards: { weight: number }[]) => cards.reduce((sum, c) => sum + c.weight, 0);
 
 function Column({ column, highlighted, children }: { column: BoardColumn; highlighted: boolean; children: React.ReactNode }) {
   const { setNodeRef } = useDroppable({ id: column.id });
@@ -328,7 +339,7 @@ function CardFace({
       ) : (
         title
       )}
-      {card.projectName && <p className="mt-1 truncate text-sm text-[#85857F]">{card.projectName}</p>}
+      {card.projectName && <p className={cn(TICK, "mt-1.5 truncate text-[11px] text-[#85857F]")}>{card.projectName}</p>}
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
         {card.due && !done && <DueLabel due={card.due} />}
         <PriorityMark priority={card.priority} />

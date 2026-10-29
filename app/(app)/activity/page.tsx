@@ -30,7 +30,6 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pag
       <PageHeader
         label="Execution"
         title="Activity"
-        description="Every day you committed work, shaded by how much execution it carried."
         actions={
           <SegmentedLinks
             label="Range"
@@ -44,15 +43,15 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pag
       </Panel>
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <Measure label="Execution" value={formatNumber(execution)} formula="Σ commit execution in range" />
-        <Measure label="Commits" value={formatNumber(commits)} formula="Task completions + manual commits" />
-        <Measure label="Active days" value={`${active}/${days.length}`} formula="Days with at least one commit" />
+        <Measure label="Execution" value={formatNumber(execution)} formula="Σ commits" />
+        <Measure label="Commits" value={formatNumber(commits)} formula="tasks + manual" />
+        <Measure label="Active days" value={`${active}/${days.length}`} formula="days with ≥1 commit" />
         <Measure label="Highest day" value={formatNumber(best?.execution ?? 0)} formula={best?.execution ? `on ${formatDate(new Date(`${best.day}T12:00:00Z`), "UTC", { weekday: "short", day: "numeric", month: "short" })}` : "No execution in range"} />
       </div>
 
       <Panel title="Last 7 days" aside={`${recent.length} commits`}>
         {recent.length === 0 ? (
-          <EmptyState title="Quiet week">Complete a task or record a manual commit to add to your history.</EmptyState>
+          <EmptyState title="Quiet week" />
         ) : (
           <div className="-mx-3">
             <CommitLedger commits={recent} tz={viewer.tz} now={new Date()} hrefFor={(id) => withParam("/activity", params, "commit", id)} />

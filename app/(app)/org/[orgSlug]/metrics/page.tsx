@@ -16,7 +16,7 @@ export default async function OrganisationMetricsPage({
   return (
     <>
       <title>{`${org.name} metrics — State`}</title>
-      <OrgHeader org={org} active="metrics" description="Team delivery: throughput, completion, cycle time and project distribution. No individual rankings." />
+      <OrgHeader org={org} active="metrics" />
       <MetricsView
         scope={{ workspaceIds: [org.workspaceId] }}
         tz={viewer.tz}

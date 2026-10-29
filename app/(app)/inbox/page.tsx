@@ -20,28 +20,20 @@ export default async function InboxPage({ searchParams }: { searchParams: PageSe
   return (
     <>
       <PageHeader
-        label="Rapid capture"
+        label="Capture"
         title="Inbox"
-        description="Write it down now, decide where it belongs later. Tasks here are not on any board yet."
       />
 
       <Panel title="Capture">
         <QuickCapture projects={projects.map((p) => ({ slug: p.slug, name: p.name }))} autoFocus showRecent={false} />
-        <dl className="mt-3 grid gap-x-8 gap-y-1 px-2 text-sm text-[#9A9A96] sm:grid-cols-2">
-          <div className="flex gap-2">
-            <dt className="font-mono text-[#F2F2EF]">#relaydb</dt>
-            <dd>assigns a project by its slug</dd>
-          </div>
-          <div className="flex gap-2">
-            <dt className="font-mono text-[#F2F2EF]">!high</dt>
-            <dd>sets priority: !critical, !high, !medium, !low</dd>
-          </div>
-        </dl>
+        <p className="mt-2 px-2 font-mono text-sm text-[#85857F]">
+          <span className="text-[#F2F2EF]">#project</span> to file · <span className="text-[#F2F2EF]">!high</span> to rank
+        </p>
       </Panel>
 
-      <Panel title="Captured" aside={`${inbox.length} to triage`}>
+      <Panel title="Captured" aside={`${inbox.length} to sort`}>
         {inbox.length === 0 ? (
-          <EmptyState title="Inbox zero">Anything you capture appears here until you move it to a board or project.</EmptyState>
+          <EmptyState title="Inbox zero" />
         ) : (
           <ul className="-mx-3">
             {inbox.map((t) => (

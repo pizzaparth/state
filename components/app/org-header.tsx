@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { ViewerOrg } from "@/lib/viewer";
-import { Chip } from "./primitives";
+import { cn } from "@/lib/utils";
+import { Chip, DISPLAY, TICK } from "./primitives";
 import { TabLinks } from "./tab-links";
 
 const TABS = [
@@ -12,16 +13,15 @@ const TABS = [
 ] as const;
 
 /** Organisation title plus section tabs (links, so every view deep-links). */
-export function OrgHeader({ org, active, description }: { org: ViewerOrg; active: (typeof TABS)[number]["key"]; description?: string }) {
+export function OrgHeader({ org, active }: { org: ViewerOrg; active: (typeof TABS)[number]["key"] }) {
   return (
     <header className="space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">Organisation</p>
-          <h1 className="mt-1 text-[clamp(2rem,4vw,2.75rem)] font-bold leading-none tracking-[-0.03em]">{org.name}</h1>
-          {description && <p className="mt-2 max-w-[62ch] text-base leading-relaxed text-[#9A9A96]">{description}</p>}
+          <p className={cn(TICK, "text-[#9A9A96]")}>Team</p>
+          <h1 className={cn(DISPLAY, "mt-2 break-words text-[clamp(2.25rem,6vw,4.25rem)] leading-[0.9] text-balance")}>{org.name}</h1>
         </div>
-        <Chip>Your role: {org.role}</Chip>
+        <Chip>{org.role}</Chip>
       </div>
       <TabLinks
         label={`${org.name} sections`}

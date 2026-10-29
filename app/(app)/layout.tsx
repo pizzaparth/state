@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { hasPaidAccess } from "@/lib/billing/access";
 import { getViewer } from "@/lib/viewer";
-import { getInboxCount, getProjects } from "@/db/queries";
+import { getInboxCount, getProjects, getTicker } from "@/db/queries";
 import { formatDate, initials } from "@/lib/format";
 import { AppShell } from "@/components/app/shell";
 
@@ -18,7 +18,11 @@ export default async function AppLayout({
   if (!(await hasPaidAccess(session.user.id))) redirect("/subscribe");
 
   const viewer = await getViewer();
-  const [inboxCount, projects] = await Promise.all([getInboxCount(viewer.personalWorkspaceId), getProjects(viewer.workspaceIds)]);
+  const [inboxCount, projects, ticker] = await Promise.all([
+    getInboxCount(viewer.personalWorkspaceId),
+    getProjects(viewer.workspaceIds),
+    getTicker({ workspaceIds: viewer.workspaceIds, userId: viewer.id }, viewer.tz),
+  ]);
   const orgByWorkspace = new Map(viewer.orgs.map((o) => [o.workspaceId, o]));
 
   return (
@@ -34,6 +38,7 @@ export default async function AppLayout({
             : { id: p.id, name: p.name, href: `/projects/${p.slug}` };
         }),
         dateLabel: formatDate(new Date(), viewer.tz, { weekday: "short", day: "numeric", month: "short" }),
+        ticker,
       }}
     >
       {children}

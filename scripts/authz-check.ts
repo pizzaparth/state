@@ -14,7 +14,7 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../db";
 import * as s from "../db/schema";
-import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail } from "../db/queries";
+import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail, getTicker } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
 import { captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
 import { captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
@@ -128,6 +128,9 @@ async function main() {
   record("R7", "Commit ledger leaks no foreign commits", xCommits.length === 0, `${xCommits.length} rows`);
   record("R8", "Inbox of a foreign workspace id is empty for its query scope", (await getInbox(outWs.id)).length === 0);
   record("R9", "Member reads organisation task", (await getTaskDetail(orgTask.id, readable(B))) !== null);
+  // Ticker: scoped by workspace and user, so another user's id inside a foreign scope sums nothing
+  const xTicker = await getTicker({ workspaceIds: readable(X), userId: parthId }, "UTC");
+  record("R10", "Top-bar ticker sums no foreign commits", xTicker.last7 + xTicker.prev7 + xTicker.today === 0, JSON.stringify(xTicker));
 
   // ------------------------------------------------------------ writes (IDOR)
   let before = await snapshot(parth.task.id);

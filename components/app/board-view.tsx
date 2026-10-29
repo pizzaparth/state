@@ -24,7 +24,7 @@ export async function BoardView({
   if (!board) {
     return (
       <Panel>
-        <EmptyState title="No board yet">Your board is created as soon as your subscription is active.</EmptyState>
+        <EmptyState title="No board yet" />
       </Panel>
     );
   }

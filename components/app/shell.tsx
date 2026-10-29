@@ -35,6 +35,7 @@ export interface ShellData {
   orgs: { name: string; slug: string }[];
   projects: { id: string; name: string; href: string }[];
   dateLabel: string;
+  ticker: { today: number; last7: number; prev7: number; activeDays7: number };
 }
 
 type NavItem = { name: string; href: string; icon: React.ComponentType<{ className?: string }>; badge?: number; shortcut?: string };
@@ -65,18 +66,6 @@ function navSections(data: ShellData): { title?: string; items: NavItem[] }[] {
     },
   ];
 }
-
-const TITLES: [RegExp, string][] = [
-  [/^\/today/, "Today"],
-  [/^\/inbox/, "Inbox"],
-  [/^\/activity/, "Activity"],
-  [/^\/history/, "History"],
-  [/^\/metrics/, "Metrics"],
-  [/^\/personal/, "Personal"],
-  [/^\/projects/, "Projects"],
-  [/^\/org/, "Organisation"],
-  [/^\/settings/, "Settings"],
-];
 
 const isActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
@@ -139,8 +128,6 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
     return () => window.removeEventListener("keydown", onKey);
   }, [router, data.orgs]);
 
-  const title = TITLES.find(([re]) => re.test(pathname))?.[1] ?? "State";
-
   return (
     <MotionConfig reducedMotion="user">
     <NoticeProvider>
@@ -163,10 +150,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
                 >
                   <MenuIcon className="size-4" aria-hidden="true" />
                 </button>
-                <p className="truncate text-base font-semibold text-[#F2F2EF]">
-                  {title}
-                  <span className="ml-3 hidden font-normal text-[#9A9A96] sm:inline">{data.dateLabel}</span>
-                </p>
+                <TickerStrip ticker={data.ticker} dateLabel={data.dateLabel} />
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -228,6 +212,52 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
   );
 }
 
+// ------------------------------------------------------------------ ticker
+/**
+ * Stat strip in the top bar on every page: today's execution, the last 7 days against the
+ * 7 before, velocity and active days. Plain sums of the viewer's commits; the arrow and sign
+ * carry direction, so colour is never the only cue. Narrow screens keep Today only.
+ */
+function TickerStrip({ ticker, dateLabel }: { ticker: ShellData["ticker"]; dateLabel: string }) {
+  const change = ticker.prev7 > 0 ? Math.round(((ticker.last7 - ticker.prev7) / ticker.prev7) * 100) : null;
+  const up = change !== null && change >= 0;
+  const items: { label: string; value: React.ReactNode; title: string; className?: string }[] = [
+    { label: "Today", value: `+${ticker.today}`, title: "Execution recorded today" },
+    {
+      label: "7D",
+      value: (
+        <>
+          {ticker.last7}
+          {change !== null && (
+            <span className={cn("ml-1.5", up ? "text-[#F2F2EF]" : "text-[#9A9A96]")}>
+              {up ? "▲" : "▼"}
+              {Math.abs(change)}%
+            </span>
+          )}
+        </>
+      ),
+      title: change === null ? "Execution in the last 7 days" : `Execution in the last 7 days: ${ticker.last7}, ${up ? "up" : "down"} ${Math.abs(change)}% on the 7 days before (${ticker.prev7})`,
+      className: "hidden sm:flex",
+    },
+    { label: "Vel", value: `${(ticker.last7 / 7).toFixed(1)}/d`, title: "Velocity: last 7 days' execution ÷ 7", className: "hidden md:flex" },
+    { label: "Active", value: `${ticker.activeDays7}/7`, title: "Days with at least one commit, last 7 days", className: "hidden xl:flex" },
+  ];
+  return (
+    <dl aria-label="Your execution, last 7 days" className="flex min-w-0 items-center gap-x-5 overflow-hidden font-mono text-[13px] uppercase tabular-nums">
+      <div className="hidden shrink-0 text-[#9A9A96] sm:block">
+        <dt className="sr-only">Date</dt>
+        <dd>{dateLabel}</dd>
+      </div>
+      {items.map((item) => (
+        <div key={item.label} title={item.title} className={cn("flex shrink-0 items-baseline gap-2 border-l border-white/[0.1] pl-5 first:border-l-0 first:pl-0 sm:first:border-l sm:first:pl-5", item.className)}>
+          <dt className="text-[11px] tracking-[0.16em] text-[#85857F]">{item.label}</dt>
+          <dd className="font-semibold text-[#F2F2EF]">{item.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 // ------------------------------------------------------------------ sidebar
 function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: string; scope: string }) {
   const router = useRouter();
@@ -237,14 +267,14 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
     <LayoutGroup id={`nav-${scope}`}>
       <div className="px-5 pb-4 pt-5">
         <Link href="/today" className="block rounded-[8px]">
-          <span className="block text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9A96]">Ksan Relay</span>
-          <span className="block text-xl font-bold tracking-[-0.03em]">STATE</span>
+          <span className="block font-mono text-[11px] uppercase tracking-[0.18em] text-[#85857F]">Ksan Relay</span>
+          <span className="block font-display text-2xl font-extrabold uppercase leading-none tracking-[-0.03em] [font-stretch:125%]">State</span>
         </Link>
       </div>
       <nav aria-label="Main" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3">
         {navSections(data).map((section, i) => (
           <div key={i}>
-            {section.title && <p className="px-3 pb-1 text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9A9A96]">{section.title}</p>}
+            {section.title && <p className="px-3 pb-1 font-mono text-[11px] uppercase tracking-[0.18em] text-[#85857F]">{section.title}</p>}
             <ul className="space-y-0.5">
               {section.items.map((item) => {
                 const active = isActive(pathname, item.href);
@@ -456,9 +486,9 @@ function CommitDialog({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content className="fixed left-1/2 top-[14vh] z-50 origin-top data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 overscroll-contain rounded-[28px] bg-[#0A0A0A] p-6 border border-white/10 outline-none">
-          <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">Record a commit</Dialog.Title>
+          <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">Log work</Dialog.Title>
           <Dialog.Description className="mt-1 text-base text-[#9A9A96]">
-            For executed work that never started as a task.
+            Done something unplanned? Log it.
           </Dialog.Description>
           <form
             className="mt-5 space-y-4"
@@ -497,7 +527,7 @@ function CommitDialog({
                 maxLength={500}
                 aria-invalid={Boolean(error)}
                 aria-describedby={error ? "commit-message-error" : undefined}
-                placeholder="Reviewed pull request #38…"
+                placeholder="Finished chapter 4…"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit();
                 }}

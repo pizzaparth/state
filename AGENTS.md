@@ -34,9 +34,16 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 ### Dual Environment Split
 - MUST: Separate marketing and product surfaces into two distinct visual environments:
   - **Public Marketing Surfaces:** Dark monochrome (`#050505` to `#1C1C1C`), editorial, technical, high-contrast, graphite materials.
-  - **Logged-in Product Application:** AMOLED black (`#000000`), flat, calm, dense. Depth comes from 1px hairlines and small tonal steps only.
+  - **Logged-in Product Application:** AMOLED black (`#000000`), flat, dense, numbers-first. Depth comes from 1px hairlines and small tonal steps only.
 - NEVER: Use neumorphism (soft extruded or inset shadows) anywhere in the product.
 - NEVER: Tint the product page grey or turn large regions white. Near-white inverse surfaces (`#F2F2EF`, black text) are reserved for focal elements: `+ COMMIT`, the Today execution instrument, the headline metric, the active nav item, tooltips and toasts.
+
+### Type & Copy (quant, short attention span)
+- MUST: Page titles, column names and headline numbers use the landing page's extended display face (`DISPLAY` in `components/app/primitives.tsx`); labels read like a ticker in mono caps (`TICK`).
+- MUST: Lead with numbers: `+4` for weight, `Σ` totals on columns, ▲/▼ with % for change (arrow and sign, never colour alone).
+- MUST: Minimal copy. No page descriptions; empty states are a short title only; labels ≤ 3 words; helper text is one mono line at most. Metrics keep a short formula line.
+- MUST: Copy works for any discipline (study, build, write, train, design), never only software.
+- NEVER: Motivational slogans in the product; punchy is fine, cheerleading is not.
 
 ### Flat Surface Hierarchy
 - MUST: Use the classes in `styles/product.css`; never hand-roll surface styles:

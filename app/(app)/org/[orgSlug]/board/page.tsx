@@ -19,7 +19,7 @@ export default async function OrgBoardPage({
   return (
     <>
       <title>{`${org.name} board — State`}</title>
-      <OrgHeader org={org} active="board" description="Work moves Queued → Active → Review → Done. Reaching Done records a commit for the assignee." />
+      <OrgHeader org={org} active="board" />
       <BoardView boardId={boardId} viewer={viewer} params={query} basePath={`/org/${org.slug}/board`} showAssignee />
       <Drawers params={query} viewer={viewer} />
     </>

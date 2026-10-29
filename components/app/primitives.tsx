@@ -12,7 +12,12 @@ import { TabLinks } from "./tab-links";
  *   Panel           #0A0A0A + hairline (columns, metric panels, toolbars)
  *   Field / Rail    #000 + stronger hairline (inputs, progress rails, segmented controls)
  *   Rows, labels    directly on the page, no surface
+ *
+ * Type: titles and big numbers use the landing page's extended display face (DISPLAY);
+ * labels read like a ticker (TICK). Copy stays to a few words.
  */
+export const DISPLAY = "font-display font-extrabold uppercase [font-stretch:125%] tracking-[-0.03em]";
+export const TICK = "font-mono text-[12px] font-medium uppercase tracking-[0.16em]";
 
 export function PageHeader({
   label,
@@ -28,11 +33,11 @@ export function PageHeader({
   return (
     <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div className="min-w-0">
-        {label && <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{label}</p>}
-        <h1 className="mt-1 scroll-mt-24 text-[clamp(2rem,4vw,2.75rem)] font-bold leading-none tracking-[-0.03em] text-[#F2F2EF]">
+        {label && <p className={cn(TICK, "text-[#9A9A96]")}>{label}</p>}
+        <h1 className={cn(DISPLAY, "mt-2 scroll-mt-24 break-words text-[clamp(2.25rem,6vw,4.25rem)] leading-[0.9] text-[#F2F2EF] text-balance")}>
           {title}
         </h1>
-        {description && <p className="mt-2 max-w-[62ch] text-base leading-relaxed text-[#9A9A96]">{description}</p>}
+        {description && <p className="mt-3 max-w-[56ch] text-base leading-relaxed text-[#9A9A96]">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </header>
@@ -70,8 +75,8 @@ export function Panel({
     <Tag className={cn("app-panel min-w-0 p-5", className)}>
       {(title || aside) && (
         <div className="mb-4 flex items-baseline justify-between gap-4">
-          {title && <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{title}</h2>}
-          {aside && <div className="text-sm text-[#85857F]">{aside}</div>}
+          {title && <h2 className={cn(TICK, "text-[#9A9A96]")}>{title}</h2>}
+          {aside && <div className="font-mono text-sm tabular-nums text-[#85857F]">{aside}</div>}
         </div>
       )}
       {children}
@@ -137,11 +142,11 @@ export function PriorityMark({ priority }: { priority: string }) {
   );
 }
 
-/** Task weight: the execution it adds when done. */
+/** Task weight as the execution it adds when done: "+4". */
 export function WeightMark({ weight }: { weight: number }) {
   return (
-    <span title={`${weightLabel(weight)} task: adds ${weight} execution when done`} className="text-[13px] tabular-nums text-[#9A9A96]">
-      Weight {weight}
+    <span title={`${weightLabel(weight)}: adds ${weight} execution when done`} className="font-mono text-[13px] font-semibold tabular-nums text-[#F2F2EF]">
+      <span className="sr-only">Weight </span>+{weight}
     </span>
   );
 }
@@ -183,8 +188,8 @@ export function Avatar({ name, initials, className }: { name: string; initials: 
 export function EmptyState({ title, children, action }: { title: string; children?: React.ReactNode; action?: React.ReactNode }) {
   return (
     <div className="px-4 py-10 text-center">
-      <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{title}</p>
-      {children && <p className="mx-auto mt-2 max-w-[44ch] text-base leading-relaxed text-[#9A9A96]">{children}</p>}
+      <p className={cn(DISPLAY, "text-xl text-[#6F6F6B]")}>{title}</p>
+      {children && <p className="mx-auto mt-2 max-w-[36ch] text-sm text-[#85857F]">{children}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
   );
@@ -208,16 +213,14 @@ export function Measure({
 }) {
   return (
     <div className={cn("min-w-0 p-5", inverse ? "app-inverse rounded-[24px]" : "app-panel")}>
-      <p className={cn("text-[13px] font-semibold uppercase tracking-[0.12em]", inverse ? "text-[#55554F]" : "text-[#9A9A96]")}>{label}</p>
-      <p className="mt-3 flex items-baseline gap-1.5">
-        <span className={cn("text-[2rem] font-semibold leading-none tracking-[-0.02em] tabular-nums", inverse ? "text-[#0A0A0A]" : "text-[#F2F2EF]")}>
-          {value}
-        </span>
-        {unit && <span className={cn("text-base", inverse ? "text-[#55554F]" : "text-[#9A9A96]")}>{unit}</span>}
+      <p className={cn(TICK, inverse ? "text-[#55554F]" : "text-[#9A9A96]")}>{label}</p>
+      <p className="mt-4 flex items-baseline gap-1.5">
+        <span className={cn(DISPLAY, "text-[2.5rem] leading-none tabular-nums", inverse ? "text-[#0A0A0A]" : "text-[#F2F2EF]")}>{value}</span>
+        {unit && <span className={cn("font-mono text-sm", inverse ? "text-[#55554F]" : "text-[#9A9A96]")}>{unit}</span>}
       </p>
-      {delta && <p className="mt-1.5 text-sm tabular-nums">{delta}</p>}
+      {delta && <p className="mt-2 font-mono text-sm tabular-nums">{delta}</p>}
       {formula && (
-        <p className={cn("mt-3 font-mono text-[13px] leading-relaxed", inverse ? "text-[#55554F]" : "text-[#85857F]")}>{formula}</p>
+        <p className={cn("mt-3 font-mono text-[12px] leading-relaxed", inverse ? "text-[#55554F]" : "text-[#85857F]")}>{formula}</p>
       )}
     </div>
   );

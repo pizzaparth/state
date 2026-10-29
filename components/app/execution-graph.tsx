@@ -142,7 +142,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
               {`: ${shown.commits} commits, ${shown.tasks} tasks completed, ${shown.execution} execution, ${shown.projects} projects touched`}
             </>
           ) : (
-            "Hover a day, or focus the graph and use the arrow keys."
+            "Hover a day · or ← → keys"
           )}
         </p>
         <span className="flex items-center gap-1.5 text-[#9A9A96]" aria-hidden="true">

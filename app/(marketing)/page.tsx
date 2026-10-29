@@ -85,8 +85,10 @@ export default function LandingPage() {
         <div className="mt-10 animate-fade-in [animation-delay:500ms]">
           <div>
             <p className="max-w-[44ch] text-lg leading-relaxed text-[#A9A9A6] text-pretty sm:text-xl">
-              Tasks are what you intend. Commits are what you actually did. State keeps both and measures the
-              difference, day after day.
+              Tasks = the plan. Commits = what you did. State does the math.
+            </p>
+            <p className="mt-4 font-mono text-sm uppercase tracking-[0.18em] text-[#6F6F6B]">
+              Study · Build · Write · Train · Design · Ship
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Magnetic>
@@ -97,7 +99,7 @@ export default function LandingPage() {
                 </Button>
               </Magnetic>
               <Button asChild variant="dark-secondary" size="lg" className="rounded-full px-7">
-                <Link href="#history">See your history</Link>
+                <Link href="#history">See the graph</Link>
               </Button>
             </div>
           </div>
@@ -111,10 +113,7 @@ export default function LandingPage() {
           <h2 id="history-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
             Your work has a history.
           </h2>
-          <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">
-            Every completed task becomes a commit, and every commit lands on one day of the graph. Hover a day, or focus the
-            graph and use the arrow keys.
-          </p>
+          <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">Every finished task lands on the graph.</p>
         </div>
         <div className="mt-16">
           <ExecutionMatrix />
@@ -126,10 +125,7 @@ export default function LandingPage() {
         <h2 id="metrics-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           Measure throughput, not busyness.
         </h2>
-        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">
-          Six numbers, each with its formula beside it. No score to take on trust. Worked here for the last 30 days of the
-          graph above.
-        </p>
+        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">Six numbers. Formulas shown. No vibes, just math.</p>
 
         <table className="mt-16 w-full border-collapse text-left">
           <caption className="sr-only">State metrics with their formulas, last 30 days</caption>
@@ -168,10 +164,7 @@ export default function LandingPage() {
         <h2 id="scope-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           Personal or organisational.
         </h2>
-        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">
-          Use State on your own or with your team. Either way, tasks move across a board and every finished task becomes a
-          commit.
-        </p>
+        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">Solo or squad. Same math.</p>
         <div className="mt-12">
           <WorkspaceScope />
         </div>
@@ -182,7 +175,7 @@ export default function LandingPage() {
         <h2 id="refusals-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           No ads. No AI noise.
         </h2>
-        <p className="mt-6 text-lg text-[#A9A9A6]">What State will never ship:</p>
+        <p className="mt-6 text-lg text-[#A9A9A6]">Never shipping:</p>
         <ul className="mt-10 space-y-1">
           {REFUSALS.map((item) => (
             <li
@@ -193,9 +186,7 @@ export default function LandingPage() {
             </li>
           ))}
         </ul>
-        <p className="mt-14 max-w-[40ch] text-xl leading-relaxed text-[#F4F4F2] text-pretty sm:text-2xl">
-          State records what needed to happen, what happened, and how consistently you execute. That is the whole product.
-        </p>
+        <p className="mt-14 max-w-[40ch] text-xl leading-relaxed text-[#F4F4F2] text-pretty sm:text-2xl">Plan. Execute. Measure. That’s it.</p>
       </section>
 
       {/* Pricing */}
@@ -203,9 +194,7 @@ export default function LandingPage() {
         <h2 id="pricing-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           Paid from day one.
         </h2>
-        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">
-          Subscriptions are the only revenue, so the product answers to you and nobody else.
-        </p>
+        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">You pay. No ads. You’re the customer, not the product.</p>
         <div className="mt-14">
           <PricingLedger />
         </div>
@@ -223,7 +212,7 @@ export default function LandingPage() {
             </Button>
           </Magnetic>
           <p className="text-base text-[#6F6F6B]">
-            From {formatInr(PLANS.individual.priceInr.monthly)} a month. Your workspace opens as soon as payment clears.
+            From {formatInr(PLANS.individual.priceInr.monthly)}/mo.
           </p>
         </div>
       </section>

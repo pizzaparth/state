@@ -54,32 +54,32 @@ export async function MetricsView({
           inverse
           label={`Execution / ${days}d`}
           value={formatNumber(m.execution)}
-          formula="Σ task weights + manual commit weights"
+          formula="Σ task + manual weights"
           delta={
             delta === null ? (
-              <span className="text-[#55554F]">No previous period to compare</span>
+              <span className="text-[#55554F]">no prior period</span>
             ) : (
               <span className="text-[#2A2A27]">
-                {delta >= 0 ? "+" : "−"}
-                {formatNumber(Math.abs(delta), 1)}% vs previous {days}d ({m.previousExecution})
+                {delta >= 0 ? "▲" : "▼"}
+                {formatNumber(Math.abs(delta), 1)}% vs prev {days}d ({m.previousExecution})
               </span>
             )
           }
         />
-        <Measure label="Velocity" value={formatNumber(velocity, 2)} unit="/ day" formula={`${m.execution} execution ÷ ${days} days`} />
-        <Measure label="Throughput" value={formatNumber(throughput, 2)} unit="tasks / day" formula={`${m.tasksCompleted} completed ÷ ${days} days`} />
+        <Measure label="Velocity" value={formatNumber(velocity, 2)} unit="/ day" formula={`${m.execution} ÷ ${days} days`} />
+        <Measure label="Throughput" value={formatNumber(throughput, 2)} unit="tasks / day" formula={`${m.tasksCompleted} ÷ ${days} days`} />
         <Measure
           label="Completion"
           value={m.plannedTasks ? `${formatNumber(completion, 1)}%` : "—"}
-          formula={`${m.plannedCompleted} of ${m.plannedTasks} tasks created in period are done`}
+          formula={`${m.plannedCompleted} ÷ ${m.plannedTasks} planned`}
         />
-        <Measure label="Median cycle time" value={formatDuration(median)} formula="median(completed_at − started_at)" />
-        <Measure label="Consistency" value={`${formatNumber(consistency)}%`} formula={`${m.activeDays} active days ÷ ${days} days`} />
-        <Measure label="Commits" value={formatNumber(m.commits)} formula="Task completions + manual commits" />
-        <Measure label="Tasks completed" value={formatNumber(m.tasksCompleted)} formula="Tasks that reached Done in period" />
+        <Measure label="Cycle time" value={formatDuration(median)} formula="median(done − started)" />
+        <Measure label="Consistency" value={`${formatNumber(consistency)}%`} formula={`${m.activeDays} ÷ ${days} days active`} />
+        <Measure label="Commits" value={formatNumber(m.commits)} formula="tasks + manual" />
+        <Measure label="Tasks done" value={formatNumber(m.tasksCompleted)} formula="reached Done" />
       </div>
 
-      <Panel title="Daily execution" aside={`Mean ${formatNumber(velocity, 1)} per day`}>
+      <Panel title="Daily execution" aside={`mean ${formatNumber(velocity, 1)}/d`}>
         <VelocityBars days={m.daily} />
       </Panel>
 
@@ -175,10 +175,10 @@ export async function ProjectView({
   return (
     <>
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <Measure inverse label="Execution rate" value={formatNumber(exec30 / 30, 2)} unit="/ day" formula={`${exec30} execution ÷ 30 days`} />
-        <Measure label="Open tasks" value={formatNumber(open.length)} formula="Not yet done" />
-        <Measure label="Completed / 91d" value={formatNumber(completed)} formula="Task commits in the last 91 days" />
-        <Measure label="Commits / 7d" value={formatNumber(commits7)} formula="All commits in the last 7 days" />
+        <Measure inverse label="Execution rate" value={formatNumber(exec30 / 30, 2)} unit="/ day" formula={`${exec30} ÷ 30 days`} />
+        <Measure label="Open" value={formatNumber(open.length)} formula="not done" />
+        <Measure label="Done / 91d" value={formatNumber(completed)} formula="task commits" />
+        <Measure label="Commits / 7d" value={formatNumber(commits7)} formula="tasks + manual" />
       </div>
 
       <Panel title="Execution graph" aside="Last 13 weeks">
@@ -188,7 +188,7 @@ export async function ProjectView({
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Panel title="Open tasks" aside={`${open.length}`}>
           {open.length === 0 ? (
-            <EmptyState title="Nothing open">Every task in {project.name} is done.</EmptyState>
+            <EmptyState title="All done" />
           ) : (
             <ul className="-mx-3">
               {open.map((t) => (
@@ -199,7 +199,7 @@ export async function ProjectView({
         </Panel>
         <Panel title="Recent commits">
           {recent.length === 0 ? (
-            <EmptyState title="No commits yet">Complete a task in {project.name} to start its history.</EmptyState>
+            <EmptyState title="No commits yet" />
           ) : (
             <div className="-mx-3">
               <CommitLedger commits={recent} tz={tz} now={now} hrefFor={commitHref} showAuthor={showPeople} />
@@ -223,7 +223,7 @@ export function ProjectTable({
   hrefFor: (slug: string) => string;
   tz: string;
 }) {
-  if (projects.length === 0) return <EmptyState title="No projects">Projects group related tasks and give them their own history.</EmptyState>;
+  if (projects.length === 0) return <EmptyState title="No projects" />;
   const sorted = [...projects].sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
   return (
     <div className="-mx-2 overflow-x-auto">

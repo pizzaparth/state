@@ -166,6 +166,31 @@ export async function getCommitDetail(commitId: string, workspaceIds: string[]) 
   return { ...row, tags: tagRows.map((t) => t.name) };
 }
 
+// ------------------------------------------------------------------ ticker
+export interface Ticker {
+  today: number;
+  last7: number;
+  prev7: number;
+  activeDays7: number;
+}
+
+/** The shell's stat strip: one pass over the viewer's last 14 local days of commits. */
+export async function getTicker(scope: Scope & { userId: string }, tz: string): Promise<Ticker> {
+  if (empty(scope)) return { today: 0, last7: 0, prev7: 0, activeDays7: 0 };
+  const day0 = localDayStart(tz, 0);
+  const day6 = localDayStart(tz, 6);
+  const [row] = await db
+    .select({
+      today: sql<number>`coalesce(sum(${commits.executionValue}) filter (where ${commits.createdAt} >= ${day0}), 0)::int`,
+      last7: sql<number>`coalesce(sum(${commits.executionValue}) filter (where ${commits.createdAt} >= ${day6}), 0)::int`,
+      prev7: sql<number>`coalesce(sum(${commits.executionValue}) filter (where ${commits.createdAt} < ${day6}), 0)::int`,
+      activeDays7: sql<number>`count(distinct (${commits.createdAt} at time zone ${tz})::date) filter (where ${commits.createdAt} >= ${day6})::int`,
+    })
+    .from(commits)
+    .where(and(...commitWhere(scope), gte(commits.createdAt, localDayStart(tz, 13))));
+  return row ?? { today: 0, last7: 0, prev7: 0, activeDays7: 0 };
+}
+
 // ------------------------------------------------------------------ tasks
 export interface TaskCard {
   id: string;

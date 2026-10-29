@@ -15,7 +15,7 @@ export default async function ProjectsPage() {
 
   return (
     <>
-      <PageHeader label="Work" title="Projects" description="Related tasks grouped into delivery streams, each with its own history." />
+      <PageHeader label="Work" title="Projects" />
       <Panel title="Personal" aside={<ProjectsAside count={personal.length} create={<NewProject organisationId={null} workspaceName="Personal" />} />}>
         <ProjectTable projects={personal} hrefFor={(slug) => `/projects/${slug}`} tz={viewer.tz} />
         <ArchivedProjects

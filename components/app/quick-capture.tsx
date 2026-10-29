@@ -14,7 +14,7 @@ export function QuickCapture({
   projects,
   autoFocus = false,
   showRecent = true,
-  placeholder = "Capture a task… (#project !high)",
+  placeholder = "Add a task… #project !high",
 }: {
   projects: { slug: string; name: string }[];
   autoFocus?: boolean;

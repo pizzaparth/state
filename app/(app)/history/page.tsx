@@ -40,9 +40,8 @@ export default async function HistoryPage({ searchParams }: { searchParams: Page
   return (
     <>
       <PageHeader
-        label="Execution ledger"
+        label="Ledger"
         title="History"
-        description="Every commit, newest first. Commit times are permanent; select one to see the task behind it."
         actions={
           <SegmentedLinks
             label="Scope"
@@ -79,7 +78,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Page
 
       <Panel title={org ? `${org.name} commits` : "Your commits"} aside={`${commits.length}${commits.length === 250 ? "+" : ""} shown`}>
         {commits.length === 0 ? (
-          <EmptyState title="No commits">Complete a task or record a manual commit to begin your execution history.</EmptyState>
+          <EmptyState title="No commits yet" />
         ) : (
           <div className="-mx-3">
             <CommitLedger commits={commits} tz={viewer.tz} now={new Date()} hrefFor={(id) => withParam("/history", params, "commit", id)} showAuthor={Boolean(org)} />

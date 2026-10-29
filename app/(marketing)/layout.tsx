@@ -1,13 +1,9 @@
 import * as React from "react";
 import Link from "next/link";
-import { Archivo } from "next/font/google";
 import { Button } from "@/components/ui/button";
 import { ParticleField } from "@/components/marketing/particle-field";
 import { Magnetic, MagneticLabel } from "@/components/marketing/magnetic";
 import { LEGAL_PAGES } from "@/lib/legal";
-
-// Expanded grotesk for display type; the wdth axis drives font-stretch
-const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
 
 export default function MarketingLayout({
   children,
@@ -16,7 +12,7 @@ export default function MarketingLayout({
 }) {
   return (
     <div
-      className={`${archivo.variable} dark relative min-h-screen bg-[#050505] text-[#F4F4F2] selection:bg-white selection:text-black`}
+      className={`dark relative min-h-screen bg-[#050505] text-[#F4F4F2] selection:bg-white selection:text-black`}
     >
       <a
         href="#content"
