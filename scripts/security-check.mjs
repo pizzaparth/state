@@ -63,7 +63,14 @@ function outbox(to) {
   } catch {
     return [];
   }
-  return files.map((f) => JSON.parse(readFileSync(path.join(OUTBOX, f), "utf8"))).filter((m) => m.to === to);
+  const messages = [];
+  for (const f of files) {
+    // A message still being written is picked up on the next poll
+    try {
+      messages.push(JSON.parse(readFileSync(path.join(OUTBOX, f), "utf8")));
+    } catch {}
+  }
+  return messages.filter((m) => m.to === to);
 }
 
 /** Waits for the next message to `to` matching `subject` (mail is sent after the response). */

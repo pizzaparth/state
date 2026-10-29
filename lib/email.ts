@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
@@ -35,8 +35,10 @@ export async function sendEmail(message: Email): Promise<void> {
   if (process.env.EMAIL_OUTBOX_DIR) {
     const dir = path.resolve(process.env.EMAIL_OUTBOX_DIR);
     await mkdir(dir, { recursive: true });
-    const file = `${Date.now()}-${crypto.randomUUID()}.json`;
-    await writeFile(path.join(dir, file), JSON.stringify({ from, ...message, sentAt: new Date().toISOString() }));
+    const file = path.join(dir, `${Date.now()}-${crypto.randomUUID()}.json`);
+    // Write then rename: readers polling for *.json never see a half-written message
+    await writeFile(`${file}.tmp`, JSON.stringify({ from, ...message, sentAt: new Date().toISOString() }));
+    await rename(`${file}.tmp`, file);
     return;
   }
 
