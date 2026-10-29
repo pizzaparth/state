@@ -64,6 +64,17 @@ export const moveTaskSchema = z.strictObject({
   afterTaskId: objectId.nullable(),
 });
 
+/** Inbox triage: puts an untriaged task into a column of a board in its own workspace. */
+export const placeTaskSchema = z.strictObject({
+  taskId: objectId,
+  columnId: objectId,
+});
+
+/** Delete and undo-delete take only the task id. */
+export const taskRefSchema = z.strictObject({
+  taskId: objectId,
+});
+
 export const captureTaskSchema = z.strictObject({
   text: z.string().trim().min(1, "Type a task first.").max(500),
 });

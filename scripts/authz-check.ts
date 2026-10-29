@@ -16,8 +16,8 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { captureTask, createManualCommit, moveTask } from "../lib/mutations";
-import { captureTaskSchema, manualCommitSchema, moveTaskSchema } from "../lib/validation";
+import { captureTask, createManualCommit, deleteTask, moveTask, placeTask, restoreTask } from "../lib/mutations";
+import { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, taskRefSchema } from "../lib/validation";
 
 const dbName = new URL(process.env.DATABASE_URL ?? "postgres://x/none").pathname.slice(1);
 if (!dbName.endsWith("_test")) {
@@ -54,7 +54,12 @@ async function personal(userId: string) {
 }
 
 async function snapshot(taskId: string) {
-  return one(db.select({ c: s.tasks.columnId, p: s.tasks.position, d: s.tasks.completedAt }).from(s.tasks).where(eq(s.tasks.id, taskId)));
+  return one(
+    db
+      .select({ b: s.tasks.boardId, c: s.tasks.columnId, p: s.tasks.position, d: s.tasks.completedAt, x: s.tasks.deletedAt })
+      .from(s.tasks)
+      .where(eq(s.tasks.id, taskId))
+  );
 }
 
 async function main() {
@@ -125,6 +130,8 @@ async function main() {
   record("W6", "Organisation viewer moves a task", ok, detail);
   [ok, detail] = await expectError(() => createManualCommit(viewer, { message: "x", projectId: orgProject.id, weight: 2 }), "forbidden");
   record("W7", "Organisation viewer records a commit in the organisation", ok, detail);
+  [ok, detail] = await expectError(() => deleteTask(viewer, { taskId: orgTask.id }), "forbidden");
+  record("W12", "Organisation viewer deletes a task", ok && (await snapshot(orgTask.id)).x === null, detail);
   await db.update(s.organisationMembers).set({ role: "member" }).where(eq(s.organisationMembers.userId, ishitaId));
 
   const commitsBefore = await one(db.select({ n: sql<number>`count(*)::int` }).from(s.commits));
@@ -148,6 +155,27 @@ async function main() {
   [ok, detail] = await expectError(() => captureTask({ ...X, personalWorkspaceId: parth.ws.id }, { text: "inject" }), "not_found");
   record("W11", "Capture into a workspace the session cannot write to", ok, detail);
 
+  // Inbox triage and delete / undo across tenants
+  const inboxTask = await captureTask(A, { text: "Inbox probe" });
+  before = await snapshot(inboxTask.id);
+  [ok, detail] = await expectError(() => placeTask(B, { taskId: inboxTask.id, columnId: aarav.col("backlog").id }), "not_found");
+  record("W13", "Place another user's Inbox task onto own board", ok && JSON.stringify(await snapshot(inboxTask.id)) === JSON.stringify(before), detail);
+  [ok, detail] = await expectError(() => placeTask(A, { taskId: inboxTask.id, columnId: aarav.col("backlog").id }), "not_found");
+  record("W14", "Place own Inbox task onto someone else's board", ok && (await snapshot(inboxTask.id)).b === null, detail);
+  [ok, detail] = await expectError(() => placeTask(A, { taskId: inboxTask.id, columnId: orgCols[0].id }), "not_found");
+  record("W15", "Place personal Inbox task onto the organisation board (cross-workspace)", ok && (await snapshot(inboxTask.id)).b === null, detail);
+  [ok, detail] = await expectError(() => deleteTask(B, { taskId: parth.task.id }), "not_found");
+  record("W16", "Delete another user's task", ok && (await snapshot(parth.task.id)).x === null, detail);
+  [ok, detail] = await expectError(() => deleteTask(X, { taskId: orgTask.id }), "not_found");
+  record("W17", "Outsider deletes organisation task", ok && (await snapshot(orgTask.id)).x === null, detail);
+  await deleteTask(A, { taskId: inboxTask.id });
+  [ok, detail] = await expectError(() => restoreTask(B, { taskId: inboxTask.id }), "not_found");
+  record("W18", "Restore another user's deleted task", ok && (await snapshot(inboxTask.id)).x !== null, detail);
+  [ok, detail] = await expectError(() => placeTask(A, { taskId: inboxTask.id, columnId: parth.col("backlog").id }), "not_found");
+  record("W19", "Deleted Inbox task cannot be placed", ok, detail);
+  await restoreTask(A, { taskId: inboxTask.id });
+  record("W20", "Owner restores own deleted task", (await snapshot(inboxTask.id)).x === null);
+
   // ------------------------------------------------------------ mass assignment / tampering
   const extra = moveTaskSchema.safeParse({ taskId: "a", columnId: "b", afterTaskId: null, workspaceId: parth.ws.id, userId: parthId });
   record("M1", "Unknown fields (workspaceId, userId) rejected on move", !extra.success);
@@ -159,6 +187,8 @@ async function main() {
   record("M5", "Oversized capture rejected", !captureTaskSchema.safeParse({ text: "x".repeat(501) }).success);
   const injected = moveTaskSchema.safeParse({ taskId: "' or 1=1 --", columnId: "x", afterTaskId: null });
   record("M6", "Id with SQL metacharacters rejected", !injected.success);
+  record("M7", "Unknown fields (boardId, workspaceId) rejected on place", !placeTaskSchema.safeParse({ taskId: "a", columnId: "b", boardId: "c", workspaceId: parth.ws.id }).success);
+  record("M8", "Unknown fields (deletedAt, userId) rejected on delete", !taskRefSchema.safeParse({ taskId: "a", deletedAt: null, userId: aaravId }).success);
 
   // ------------------------------------------------------------ lifecycle, races, replay
   const liveFor = async (taskId: string) =>
@@ -176,15 +206,26 @@ async function main() {
   const redo = await moveTask(A, { taskId: raceTask, columnId: parth.col("done").id, afterTaskId: null });
   record("L4", "Completing again records one new commit", redo.committed === parth.task.weight && (await liveFor(raceTask)) === 1);
 
+  [ok, detail] = await expectError(() => deleteTask(A, { taskId: raceTask }), "invalid");
+  record("L5", "Completed task cannot be deleted", ok && (await snapshot(raceTask)).x === null && (await liveFor(raceTask)) === 1, detail);
+
+  [ok, detail] = await expectError(() => placeTask(A, { taskId: inboxTask.id, columnId: parth.col("done").id }), "invalid");
+  record("L6", "Inbox task cannot be placed straight into Done", ok && (await snapshot(inboxTask.id)).b === null, detail);
+  await placeTask(A, { taskId: inboxTask.id, columnId: parth.col("active").id });
+  const placed = await one(db.select().from(s.tasks).where(eq(s.tasks.id, inboxTask.id)));
+  record("L7", "Placing on an active column puts it on the board and starts it", placed.boardId === parth.board.id && placed.columnId === parth.col("active").id && placed.startedAt !== null && placed.completedAt === null);
+  [ok, detail] = await expectError(() => placeTask(A, { taskId: inboxTask.id, columnId: parth.col("backlog").id }), "conflict");
+  record("L8", "Task already on a board cannot be placed again", ok, detail);
+
   await db.update(s.tasks).set({ deletedAt: new Date() }).where(eq(s.tasks.id, cap.id));
   await db.update(s.tasks).set({ boardId: parth.board.id, columnId: parth.col("backlog").id }).where(eq(s.tasks.id, cap.id));
   [ok, detail] = await expectError(() => moveTask(A, { taskId: cap.id, columnId: parth.col("active").id, afterTaskId: null }), "not_found");
-  record("L5", "Deleted task cannot be moved", ok, detail);
+  record("L9", "Deleted task cannot be moved", ok, detail);
 
   // Membership removal takes effect on the next request (actor is rebuilt per call)
   await db.delete(s.organisationMembers).where(and(eq(s.organisationMembers.userId, ishitaId), eq(s.organisationMembers.organisationId, org.id)));
   [ok, detail] = await expectError(async () => moveTask(await loadActor(ishitaId), { taskId: orgTask.id, columnId: orgCols[1].id, afterTaskId: null }), "not_found");
-  record("L6", "Removed member loses write access immediately", ok, detail);
+  record("L10", "Removed member loses write access immediately", ok, detail);
   await db.insert(s.organisationMembers).values({ organisationId: org.id, userId: ishitaId, role: "member" });
 
   await db.delete(s.users).where(eq(s.users.id, outsiderId));

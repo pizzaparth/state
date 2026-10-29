@@ -293,6 +293,8 @@ export async function getTaskDetail(taskId: string, workspaceIds: string[]) {
   const [row] = await db
     .select({
       ...taskCardFields,
+      workspaceId: tasks.workspaceId,
+      boardId: tasks.boardId,
       description: tasks.description,
       boardName: boards.name,
       columnName: columns.name,
@@ -313,6 +315,31 @@ export async function getTaskDetail(taskId: string, workspaceIds: string[]) {
     .where(and(eq(commits.taskId, taskId), isNull(commits.deletedAt)))
     .limit(1);
   return { ...withTag, commit: commit ?? null };
+}
+
+export interface BoardTarget {
+  id: string;
+  name: string;
+  columns: { id: string; name: string; stateType: string }[];
+}
+
+/** Boards in one workspace with their open (non-Done) columns: where an Inbox task can go. */
+export async function getBoardTargets(workspaceId: string, workspaceIds: string[]): Promise<BoardTarget[]> {
+  if (!workspaceIds.includes(workspaceId)) return [];
+  const rows = await db
+    .select({ boardId: boards.id, boardName: boards.name, id: columns.id, name: columns.name, stateType: columns.stateType })
+    .from(boards)
+    .innerJoin(columns, eq(columns.boardId, boards.id))
+    .where(and(eq(boards.workspaceId, workspaceId), sql`${columns.stateType} <> 'done'`))
+    .orderBy(asc(boards.createdAt), asc(boards.id), asc(columns.position))
+    .limit(200);
+  const byBoard = new Map<string, BoardTarget>();
+  for (const r of rows) {
+    const board = byBoard.get(r.boardId) ?? { id: r.boardId, name: r.boardName, columns: [] };
+    board.columns.push({ id: r.id, name: r.name, stateType: r.stateType });
+    byBoard.set(r.boardId, board);
+  }
+  return [...byBoard.values()];
 }
 
 export interface TodayData {

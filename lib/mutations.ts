@@ -1,11 +1,11 @@
-import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { auditEvents, columns, commits, projects, tasks } from "@/db/schema";
+import { auditEvents, boards, columns, commits, projects, tasks } from "@/db/schema";
 import { assertWritable, MutationError, type Actor } from "@/lib/authz";
 import { keyBetween } from "@/lib/position";
 import { parseQuickCapture } from "@/lib/validation";
 import type { z } from "zod";
-import type { captureTaskSchema, manualCommitSchema, moveTaskSchema } from "@/lib/validation";
+import type { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -160,6 +160,86 @@ export async function captureTask(actor: Actor, input: z.infer<typeof captureTas
     })
     .returning({ id: tasks.id });
   return { id: row.id, title, projectName: project?.name ?? null };
+}
+
+/**
+ * Inbox triage: puts an untriaged task at the top of a column on a board in the task's
+ * own workspace. Done columns are refused; completing happens on the board, where the
+ * commit is recorded.
+ */
+export async function placeTask(actor: Actor, input: z.infer<typeof placeTaskSchema>): Promise<{ boardName: string; columnName: string }> {
+  return db.transaction(async (tx) => {
+    const [task] = await tx
+      .select({ id: tasks.id, workspaceId: tasks.workspaceId, boardId: tasks.boardId, startedAt: tasks.startedAt })
+      .from(tasks)
+      .where(and(eq(tasks.id, input.taskId), isNull(tasks.deletedAt)))
+      .limit(1)
+      .for("update");
+    if (!task) throw new MutationError("not_found", "That task no longer exists.");
+    assertWritable(actor, task.workspaceId);
+    if (task.boardId) throw new MutationError("conflict", "This task is already on a board.");
+
+    // The column's board must live in the task's workspace
+    const [column] = await tx
+      .select({ id: columns.id, name: columns.name, stateType: columns.stateType, boardId: boards.id, boardName: boards.name })
+      .from(columns)
+      .innerJoin(boards, eq(boards.id, columns.boardId))
+      .where(and(eq(columns.id, input.columnId), eq(boards.workspaceId, task.workspaceId)))
+      .limit(1);
+    if (!column) throw new MutationError("not_found", "That column no longer exists.");
+    if (column.stateType === "done") throw new MutationError("invalid", "Move it to Done from the board so its commit is recorded.");
+
+    const [first] = await tx
+      .select({ position: tasks.position })
+      .from(tasks)
+      .where(and(eq(tasks.boardId, column.boardId), eq(tasks.columnId, column.id), isNull(tasks.deletedAt)))
+      .orderBy(asc(byPosition))
+      .limit(1);
+    const update: Partial<typeof tasks.$inferInsert> = { boardId: column.boardId, columnId: column.id, position: keyBetween(null, first?.position ?? null) };
+    if (column.stateType !== "backlog" && !task.startedAt) update.startedAt = new Date();
+    await tx.update(tasks).set(update).where(eq(tasks.id, task.id));
+    return { boardName: column.boardName, columnName: column.name };
+  });
+}
+
+/**
+ * Soft-deletes an open task (Undo restores it). Completed tasks are execution history and
+ * are refused: reopen them on the board first, which retires their commit.
+ */
+export async function deleteTask(actor: Actor, input: z.infer<typeof taskRefSchema>): Promise<{ title: string }> {
+  return db.transaction(async (tx) => {
+    const [task] = await tx
+      .select({ id: tasks.id, workspaceId: tasks.workspaceId, title: tasks.title, completedAt: tasks.completedAt })
+      .from(tasks)
+      .where(and(eq(tasks.id, input.taskId), isNull(tasks.deletedAt)))
+      .limit(1)
+      .for("update");
+    if (!task) throw new MutationError("not_found", "That task no longer exists.");
+    assertWritable(actor, task.workspaceId);
+    if (task.completedAt) throw new MutationError("invalid", "Completed tasks are part of your history. Move it out of Done first.");
+
+    await tx.update(tasks).set({ deletedAt: new Date() }).where(eq(tasks.id, task.id));
+    await tx.insert(auditEvents).values({ workspaceId: task.workspaceId, actorId: actor.id, action: "task.deleted", targetType: "task", targetId: task.id });
+    return { title: task.title };
+  });
+}
+
+/** Undo for deleteTask. */
+export async function restoreTask(actor: Actor, input: z.infer<typeof taskRefSchema>): Promise<{ title: string }> {
+  return db.transaction(async (tx) => {
+    const [task] = await tx
+      .select({ id: tasks.id, workspaceId: tasks.workspaceId, title: tasks.title })
+      .from(tasks)
+      .where(and(eq(tasks.id, input.taskId), isNotNull(tasks.deletedAt)))
+      .limit(1)
+      .for("update");
+    if (!task) throw new MutationError("not_found", "That task can no longer be restored.");
+    assertWritable(actor, task.workspaceId);
+
+    await tx.update(tasks).set({ deletedAt: null }).where(eq(tasks.id, task.id));
+    await tx.insert(auditEvents).values({ workspaceId: task.workspaceId, actorId: actor.id, action: "task.restored", targetType: "task", targetId: task.id });
+    return { title: task.title };
+  });
 }
 
 /** Manual commit: work that never started as a task. Goes to the project's workspace. */
