@@ -16,8 +16,8 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { captureTask, createManualCommit, deleteTask, moveTask, placeTask, renameTask, restoreTask } from "../lib/mutations";
-import { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, taskRefSchema } from "../lib/validation";
+import { captureTask, createManualCommit, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskPriority } from "../lib/mutations";
+import { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, taskRefSchema } from "../lib/validation";
 
 const dbName = new URL(process.env.DATABASE_URL ?? "postgres://x/none").pathname.slice(1);
 if (!dbName.endsWith("_test")) {
@@ -64,6 +64,10 @@ async function snapshot(taskId: string) {
 
 async function titleOf(taskId: string) {
   return (await one(db.select({ t: s.tasks.title }).from(s.tasks).where(eq(s.tasks.id, taskId)))).t;
+}
+
+async function priorityOf(taskId: string) {
+  return (await one(db.select({ p: s.tasks.priority }).from(s.tasks).where(eq(s.tasks.id, taskId)))).p;
 }
 
 async function main() {
@@ -138,6 +142,8 @@ async function main() {
   record("W12", "Organisation viewer deletes a task", ok && (await snapshot(orgTask.id)).x === null, detail);
   [ok, detail] = await expectError(() => renameTask(viewer, { taskId: orgTask.id, title: "viewer edit" }), "forbidden");
   record("W21", "Organisation viewer renames a task", ok && (await titleOf(orgTask.id)) === orgTask.title, detail);
+  [ok, detail] = await expectError(() => setTaskPriority(viewer, { taskId: orgTask.id, priority: "critical" }), "forbidden");
+  record("W26", "Organisation viewer changes a task's priority", ok && (await priorityOf(orgTask.id)) === orgTask.priority, detail);
   await db.update(s.organisationMembers).set({ role: "member" }).where(eq(s.organisationMembers.userId, ishitaId));
 
   const commitsBefore = await one(db.select({ n: sql<number>`count(*)::int` }).from(s.commits));
@@ -190,6 +196,12 @@ async function main() {
   await renameTask(B, { taskId: orgTask.id, title: `${orgTask.title} (edited)` });
   record("W25", "Member renames organisation task", (await titleOf(orgTask.id)) === `${orgTask.title} (edited)`);
   await db.update(s.tasks).set({ title: orgTask.title }).where(eq(s.tasks.id, orgTask.id));
+  [ok, detail] = await expectError(() => setTaskPriority(B, { taskId: parth.task.id, priority: "critical" }), "not_found");
+  record("W27", "Change another user's task priority", ok && (await priorityOf(parth.task.id)) === parth.task.priority, detail);
+  [ok, detail] = await expectError(() => setTaskPriority(X, { taskId: orgTask.id, priority: "critical" }), "not_found");
+  record("W28", "Outsider changes organisation task priority", ok && (await priorityOf(orgTask.id)) === orgTask.priority, detail);
+  await setTaskPriority(A, { taskId: inboxTask.id, priority: "high" });
+  record("W29", "Owner changes own task priority", (await priorityOf(inboxTask.id)) === "high");
 
   // ------------------------------------------------------------ mass assignment / tampering
   const extra = moveTaskSchema.safeParse({ taskId: "a", columnId: "b", afterTaskId: null, workspaceId: parth.ws.id, userId: parthId });
@@ -206,6 +218,9 @@ async function main() {
   record("M9", "Unknown fields (completedAt, weight) rejected on rename", !renameTaskSchema.safeParse({ taskId: "a", title: "x", completedAt: null, weight: 8 }).success);
   const titles = ["", "   ", "x".repeat(501)].map((title) => renameTaskSchema.safeParse({ taskId: "a", title }).success);
   record("M10", "Blank or oversized title rejected on rename", titles.every((t) => !t), JSON.stringify(titles));
+  const priorities = ["urgent", "", "HIGH", 1].map((priority) => setTaskPrioritySchema.safeParse({ taskId: "a", priority }).success);
+  record("M11", "Priority outside none/low/medium/high/critical rejected", priorities.every((p) => !p), JSON.stringify(priorities));
+  record("M12", "Unknown fields (weight, workspaceId) rejected on priority", !setTaskPrioritySchema.safeParse({ taskId: "a", priority: "low", weight: 8, workspaceId: parth.ws.id }).success);
   record("M8", "Unknown fields (deletedAt, userId) rejected on delete", !taskRefSchema.safeParse({ taskId: "a", deletedAt: null, userId: aaravId }).success);
 
   // ------------------------------------------------------------ lifecycle, races, replay

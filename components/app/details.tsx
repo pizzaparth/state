@@ -2,6 +2,7 @@ import * as React from "react";
 import type { getCommitDetail, getTaskDetail } from "@/db/queries";
 import { dueState, formatDateTime, formatDuration } from "@/lib/format";
 import { Chip, DueLabel, PriorityMark } from "./primitives";
+import { TaskPriority } from "./task-priority";
 import { TaskTitle } from "./task-title";
 
 type Task = NonNullable<Awaited<ReturnType<typeof getTaskDetail>>>;
@@ -37,7 +38,13 @@ export function TaskDetail({ task, tz, now, editable = false }: { task: Task; tz
         <Field label="Assignee">{task.assigneeName ?? "Unassigned"}</Field>
         <Field label="Creator">{task.creatorName}</Field>
         <Field label="Priority">
-          {task.priority === "none" ? "None" : <PriorityMark priority={task.priority} />}
+          {editable ? (
+            <TaskPriority taskId={task.id} priority={task.priority} />
+          ) : task.priority === "none" ? (
+            "None"
+          ) : (
+            <PriorityMark priority={task.priority} />
+          )}
         </Field>
         <Field label="Weight">
           {WEIGHT[task.weight]} <span className="tabular-nums text-[#9A9A96]">({task.weight} execution)</span>

@@ -76,6 +76,11 @@ export const renameTaskSchema = z.strictObject({
   title: z.string().trim().min(1, "Give the task a title.").max(500, "Keep the title under 500 characters."),
 });
 
+export const setTaskPrioritySchema = z.strictObject({
+  taskId: objectId,
+  priority: z.enum(PRIORITIES),
+});
+
 /** Delete and undo-delete take only the task id. */
 export const taskRefSchema = z.strictObject({
   taskId: objectId,
