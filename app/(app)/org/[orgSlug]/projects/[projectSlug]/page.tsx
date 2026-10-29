@@ -2,7 +2,7 @@ import * as React from "react";
 import { notFound } from "next/navigation";
 import { getProjectBySlug } from "@/db/queries";
 import { getViewerOrg } from "@/lib/viewer";
-import { Chip, PageHeader } from "@/components/app/primitives";
+import { BackLink, Chip, PageHeader } from "@/components/app/primitives";
 import { ProjectView } from "@/components/app/views";
 import { withParam } from "@/components/app/task-row";
 import { Drawers, type PageSearchParams } from "@/components/app/drawers";
@@ -26,6 +26,7 @@ export default async function OrganisationProjectPage({
   return (
     <>
       <title>{`${project.name} — ${org.name} — State`}</title>
+      <BackLink href={`/org/${org.slug}/projects`}>{`${org.name} projects`}</BackLink>
       <PageHeader
         label={`${org.name} project`}
         title={project.name}

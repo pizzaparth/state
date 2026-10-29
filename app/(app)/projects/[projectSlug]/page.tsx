@@ -2,7 +2,7 @@ import * as React from "react";
 import { notFound } from "next/navigation";
 import { getProjectBySlug } from "@/db/queries";
 import { getViewer } from "@/lib/viewer";
-import { Chip, PageHeader } from "@/components/app/primitives";
+import { BackLink, Chip, PageHeader } from "@/components/app/primitives";
 import { ProjectView } from "@/components/app/views";
 import { withParam } from "@/components/app/task-row";
 import { Drawers, type PageSearchParams } from "@/components/app/drawers";
@@ -25,6 +25,7 @@ export default async function ProjectPage({
   return (
     <>
       <title>{`${project.name} — State`}</title>
+      <BackLink href="/projects">Projects</BackLink>
       <PageHeader
         label="Project"
         title={project.name}

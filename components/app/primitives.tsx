@@ -1,4 +1,7 @@
 import * as React from "react";
+import Link from "next/link";
+import type { Route } from "next";
+import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DueState } from "@/lib/format";
 import { weightLabel } from "@/lib/weights";
@@ -33,6 +36,19 @@ export function PageHeader({
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </header>
+  );
+}
+
+/** "← Projects" style link back to a parent list, placed above a page header. */
+export function BackLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href as Route}
+      className="-ml-2 inline-flex min-h-9 items-center gap-1.5 rounded-[10px] px-2 text-base text-[#9A9A96] transition-colors hover:bg-white/[0.04] hover:text-[#F2F2EF]"
+    >
+      <ArrowLeft className="size-4" aria-hidden="true" />
+      {children}
+    </Link>
   );
 }
 

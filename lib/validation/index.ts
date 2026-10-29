@@ -122,6 +122,9 @@ export const manualCommitSchema = z.strictObject({
  */
 export const PROJECT_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+/** A one-line summary shown under the project's name. */
+export const PROJECT_DESCRIPTION_MAX = 128;
+
 const projectFields = {
   name: z.string().trim().min(1, "Give the project a name.").max(100, "Keep the name under 100 characters."),
   slug: z
@@ -131,7 +134,7 @@ const projectFields = {
     .min(1, "Add a slug for #capture.")
     .max(100, "Keep the slug under 100 characters.")
     .regex(PROJECT_SLUG, "Use lowercase letters, numbers and single hyphens, like relay-db."),
-  description: z.string().trim().max(2_000, "Keep the description under 2,000 characters.").nullable(),
+  description: z.string().trim().max(PROJECT_DESCRIPTION_MAX, `Keep the description to ${PROJECT_DESCRIPTION_MAX} characters.`).nullable(),
 };
 
 export const createProjectSchema = z.strictObject({

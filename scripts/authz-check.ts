@@ -321,6 +321,8 @@ async function main() {
   );
   record("M19", "Malformed or out-of-range due dates rejected", dueDates.every((v) => !v), JSON.stringify(dueDates));
   record("M20", "Unknown fields (dueAt, tz) rejected on due date", !setTaskDueSchema.safeParse({ taskId: "a", dueDate: null, dueAt: new Date(), tz: "UTC" }).success);
+  const descriptions = ["x".repeat(128), "x".repeat(129)].map((description) => createProjectSchema.safeParse({ organisationId: null, name: "x", slug: "x", description }).success);
+  record("M21", "Project description capped at 128 characters", descriptions[0] && !descriptions[1], JSON.stringify(descriptions));
   record("M8", "Unknown fields (deletedAt, userId) rejected on delete", !taskRefSchema.safeParse({ taskId: "a", deletedAt: null, userId: aaravId }).success);
 
   // ------------------------------------------------------------ lifecycle, races, replay

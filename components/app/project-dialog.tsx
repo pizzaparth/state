@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { Archive, ArchiveRestore, Loader2, Pencil, Plus } from "lucide-react";
 import { createProjectAction, setProjectArchivedAction, updateProjectAction, type ActionResult } from "@/app/(app)/actions";
-import { createProjectSchema, PROJECT_STATUSES, slugify, updateProjectSchema } from "@/lib/validation";
+import { createProjectSchema, PROJECT_DESCRIPTION_MAX, PROJECT_STATUSES, slugify, updateProjectSchema } from "@/lib/validation";
 import { useNotice } from "./notice";
 
 type FieldName = "name" | "slug" | "description" | "status";
@@ -76,7 +76,8 @@ function ProjectDialog({
     id: `project-${field}`,
     name: field,
     "aria-invalid": Boolean(errors[field]),
-    "aria-describedby": errors[field] ? `project-${field}-error` : undefined,
+    "aria-describedby":
+      [errors[field] && `project-${field}-error`, field === "description" && "project-description-count"].filter(Boolean).join(" ") || undefined,
   });
 
   const fieldError = (field: FieldName) =>
@@ -218,7 +219,7 @@ function ProjectDialog({
               <textarea
                 {...fieldProps("description")}
                 rows={3}
-                maxLength={2000}
+                maxLength={PROJECT_DESCRIPTION_MAX}
                 value={values.description}
                 onChange={(e) => set("description", e.target.value)}
                 onKeyDown={(e) => {
@@ -227,7 +228,13 @@ function ProjectDialog({
                 placeholder="What this stream of work delivers…"
                 className="app-input w-full resize-none rounded-[16px] px-4 py-3 text-base"
               />
-              {fieldError("description")}
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">{fieldError("description")}</div>
+                <p id="project-description-count" className="shrink-0 text-sm tabular-nums text-[#85857F]">
+                  <span className="sr-only">Characters used: </span>
+                  {values.description.length}/{PROJECT_DESCRIPTION_MAX}
+                </p>
+              </div>
             </div>
 
             <p aria-live="polite" className="min-h-5 text-sm text-[#F0A39B]">
