@@ -20,7 +20,7 @@ import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
 import { editCommit, acceptInvitation, setTaskRecurrence, captureTask, createManualCommit, createOrganisation, createProject, hashInvitationToken, inviteMember, leaveOrganisation, removeMember, revokeInvitation, setMemberRole, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
-import { editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, inviteMemberSchema, setMemberRoleSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { parseQuickCapture, editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, inviteMemberSchema, setMemberRoleSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
 import { buildExport } from "../lib/data/export";
 import { parseImport } from "../lib/data/import";
 import { parseCsv, toCsv } from "../lib/data/csv";
@@ -704,6 +704,50 @@ async function main() {
   record("S6", "Results are bounded", capped.filter((h) => h.kind === "task").length <= 8 && capped.filter((h) => h.kind === "commit").length <= 8, `${capped.length}`);
   await db.delete(s.tasks).where(eq(s.tasks.id, secretTask.id));
   await db.delete(s.commits).where(eq(s.commits.id, secretCommit.id));
+
+  // ------------------------------------------------------------ capture tokens (#project @person dates)
+  const taskRow = (id: string) => one(db.select().from(s.tasks).where(eq(s.tasks.id, id)));
+  const localDay = (d: Date | null) => (d ? new Intl.DateTimeFormat("en-CA", { timeZone: parthTz, year: "numeric", month: "2-digit", day: "2-digit" }).format(d) : null);
+  const todayLocal = localDay(new Date())!;
+  const tomorrowLocal = new Date(Date.parse(`${todayLocal}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+
+  const dated = await captureTask(A, { text: "Draft outline tomorrow !low" });
+  const datedRow = await taskRow(dated.id);
+  record("CP1", "Personal capture reads a due day in the person's timezone and keeps it in the Inbox", datedRow.title === "Draft outline" && localDay(datedRow.dueAt) === tomorrowLocal && datedRow.workspaceId === parth.ws.id && datedRow.boardId === null && datedRow.priority === "low", `${localDay(datedRow.dueAt)} vs ${tomorrowLocal}`);
+
+  const orgCapture = await captureTask(A, { text: `Fix ingest #${orgProject.slug} @ishita fri` });
+  const assignedRow = await taskRow(orgCapture.id);
+  const orgBacklog = orgCols.find((c) => c.stateType === "backlog")!;
+  record(
+    "CP2",
+    "Organisation #project puts the task on that board; @person assigns a member",
+    assignedRow.workspaceId === org.workspaceId && assignedRow.boardId === orgBoard.id && assignedRow.columnId === orgBacklog.id && assignedRow.assigneeId === ishitaId && assignedRow.projectId === orgProject.id && assignedRow.creatorId === parthId && orgCapture.organisationName === org.name
+  );
+
+  await db.update(s.organisationMembers).set({ role: "viewer" }).where(and(eq(s.organisationMembers.userId, ishitaId), eq(s.organisationMembers.organisationId, org.id)));
+  const viewerCapture = await captureTask(await loadActor(ishitaId), { text: `Sneak in #${orgProject.slug}` });
+  const viewerRow = await taskRow(viewerCapture.id);
+  await db.update(s.organisationMembers).set({ role: "member" }).where(and(eq(s.organisationMembers.userId, ishitaId), eq(s.organisationMembers.organisationId, org.id)));
+  record("CP3", "A viewer's capture with an organisation #project stays in their own Inbox", viewerRow.workspaceId !== org.workspaceId && viewerRow.projectId === null && viewerRow.boardId === null);
+
+  [ok, detail] = await expectError(() => captureTask(A, { text: "Personal chore @aarav" }), "invalid");
+  record("CP4", "@person on a personal task is refused (no one else can own it)", ok, detail);
+  const outsiderHandle = outsiderId.split("@")[0].toLowerCase();
+  [ok, detail] = await expectError(() => captureTask(A, { text: `Ask them #${orgProject.slug} @${outsiderHandle}` }), "invalid");
+  const [xOk, xDetail] = await expectError(() => captureTask(X, { text: `Probe #${orgProject.slug} @ishita` }), "invalid");
+  record("CP5", "@person only matches members; an outsider cannot assign into an organisation", ok && xOk, `${detail} | ${xDetail}`);
+
+  const t = "2026-10-29"; // a Thursday
+  const parses = [
+    parseQuickCapture("call thu", t).dueDate === "2026-11-05",
+    parseQuickCapture("ship 2026-02-30", t).dueDate === undefined && parseQuickCapture("ship 2026-02-30", t).title === "ship 2026-02-30",
+    parseQuickCapture("email bob@x.com today", t).assignee === undefined && parseQuickCapture("email bob@x.com today", t).title === "email bob@x.com",
+    parseQuickCapture("Sundays matter", t).dueDate === undefined,
+    parseQuickCapture("plan monday @Ana.K #ksan !HIGH", t).assignee === "ana.k" && parseQuickCapture("plan monday @Ana.K #ksan !HIGH", t).dueDate === "2026-11-02",
+    parseQuickCapture("x 1999-12-31", t).dueDate === undefined,
+  ];
+  record("CP6", "Parser: weekdays are the next one, impossible or out-of-range dates stay in the title, emails are not @people", parses.every(Boolean), JSON.stringify(parses));
+  await db.delete(s.tasks).where(inArray(s.tasks.id, [dated.id, orgCapture.id, viewerCapture.id]));
 
   // ------------------------------------------------------------ export, import, account deletion, billing
   const execution = async (workspaceId: string) =>

@@ -238,38 +238,103 @@ export function slugify(name: string): string {
     .replace(/-+$/, "");
 }
 
+/** Weekday words the capture parser reads, by day number (0 = Sunday). */
+const WEEKDAY_WORDS: Record<string, number> = {
+  sun: 0, sunday: 0,
+  mon: 1, monday: 1,
+  tue: 2, tues: 2, tuesday: 2,
+  wed: 3, wednesday: 3,
+  thu: 4, thur: 4, thurs: 4, thursday: 4,
+  fri: 5, friday: 5,
+  sat: 6, saturday: 6,
+};
+
+const DUE_TOKEN = new RegExp(`(?:^|\\s)(today|tomorrow|${Object.keys(WEEKDAY_WORDS).join("|")}|\\d{4}-\\d{2}-\\d{2})(?=\\s|$)`, "i");
+
+const shiftDay = (day: string, days: number) => {
+  const d = new Date(`${day}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
+const isRealDay = (day: string) =>
+  !Number.isNaN(Date.parse(`${day}T00:00:00Z`)) && new Date(`${day}T00:00:00Z`).toISOString().startsWith(day) && day >= "2000-01-01" && day <= "2100-12-31";
+
 /**
- * Quick Inbox capture parser (deterministic syntax without LLM)
- * e.g. "implement caching #relaydb !high"
- * TODO: date tokens (tomorrow, fri, 2026-10-30) and @person per docs/state_desc.md §9
+ * Quick Inbox capture parser (deterministic syntax, no language model), e.g.
+ * "implement caching tomorrow #relaydb !high @ana".
+ *
+ *   #project      project by slug
+ *   !priority     critical, high, medium or low
+ *   @person       owner of an organisation task (first name or email name)
+ *   due day       today, tomorrow, a weekday (the next one after today) or YYYY-MM-DD
+ *
+ * Each token is read once (the first match) and removed from the title. Dates resolve
+ * against `today` (YYYY-MM-DD in the person's timezone); an impossible date stays in the
+ * title as typed.
  */
-export function parseQuickCapture(input: string): {
+export function parseQuickCapture(input: string, today: string = new Date().toISOString().slice(0, 10)): {
   title: string;
   projectSlug?: string;
   priority?: Exclude<Priority, "none">;
+  dueDate?: string;
+  assignee?: string;
 } {
   let text = input.trim();
   let projectSlug: string | undefined;
   let priority: Exclude<Priority, "none"> | undefined;
+  let dueDate: string | undefined;
+  let assignee: string | undefined;
+  const take = (match: RegExpMatchArray) => {
+    text = (text.slice(0, match.index) + " " + text.slice(match.index! + match[0].length)).replace(/\s+/g, " ").trim();
+  };
 
   // Extract #project
   const projectMatch = text.match(/#([\w-]+)/);
   if (projectMatch) {
     projectSlug = projectMatch[1];
-    text = text.replace(projectMatch[0], "").trim();
+    take(projectMatch);
   }
 
   // Extract !priority
   const priorityMatch = text.match(/!(critical|high|medium|low)\b/i);
   if (priorityMatch) {
     priority = priorityMatch[1].toLowerCase() as Exclude<Priority, "none">;
-    text = text.replace(priorityMatch[0], "").trim();
+    take(priorityMatch);
+  }
+
+  // Extract @person (not the @ inside an email address)
+  const personMatch = text.match(/(?:^|\s)@([a-z0-9][a-z0-9._-]{0,63})(?=\s|$)/i);
+  if (personMatch) {
+    assignee = personMatch[1].toLowerCase();
+    take(personMatch);
+  }
+
+  // Extract a due day
+  const dueMatch = text.match(DUE_TOKEN);
+  if (dueMatch) {
+    const word = dueMatch[1].toLowerCase();
+    const weekday = WEEKDAY_WORDS[word];
+    const day =
+      word === "today"
+        ? today
+        : word === "tomorrow"
+          ? shiftDay(today, 1)
+          : weekday !== undefined
+            ? shiftDay(today, ((weekday - new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7) + 1)
+            : word;
+    if (isRealDay(day)) {
+      dueDate = day;
+      take(dueMatch);
+    }
   }
 
   return {
     title: text,
     projectSlug,
     priority,
+    dueDate,
+    assignee,
   };
 }
 

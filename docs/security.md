@@ -48,7 +48,7 @@ rate limits. `authz:check` refuses any database whose name does not end in `_tes
 
 ## Results
 
-`npm run authz:check`: **160 of 160 pass.**
+`npm run authz:check`: **166 of 166 pass.**
 
 | Group | Checks |
 |---|---|
@@ -61,9 +61,10 @@ rate limits. `authz:check` refuses any database whose name does not end in `_tes
 | RC1–RC8 recurring tasks | Another user or a viewer cannot set a repeat. Unknown rules, out-of-range intervals and extra keys rejected. Completing a recurring task records one commit and queues one next occurrence in the same workspace and board; reopening and completing again, or 10 parallel completions, add no second one. Due-day arithmetic never lands in the past. |
 | CE1–CE9 commit corrections | Another user, an outsider, a member (on someone else's commit) and a viewer cannot edit. The project must be live and in the commit's own workspace. Time, execution value, author, workspace, task and source cannot be sent. The author, or an organisation owner, corrects message, project and tags; time and value stay; an audit event is written. Retired commits cannot be edited. |
 | S1–S6 search | The owner finds their own tasks and commits; another user and an outsider find none of them. Members find organisation tasks. `%`, `_`, backslashes and quotes match literally. Deleted tasks and retired commits are not found. At most 8 of each. |
+| CP1–CP6 capture tokens | Due days resolve in the person's timezone. An organisation `#project` puts the task on that organisation's board, and `@person` assigns only a member of it. A viewer's organisation `#project` is ignored (personal Inbox). `@person` on a personal task, a non-member handle, or an outsider assigning into an organisation are refused. Impossible dates stay in the title; emails are not `@people`. |
 | L1–L6 lifecycle and races | 10 parallel Done moves record exactly one commit. A replayed Done records nothing. Reopen retires the commit, and completing again records one. A deleted task cannot be moved. A removed member loses write access at once. |
 
-`npm run security:check` (black box, production build): **91 of 91 pass.**
+`npm run security:check` (black box, production build): **92 of 92 pass.**
 
 Email verification and password reset (EV, PR):
 
@@ -98,6 +99,7 @@ Product and surface checks:
 | RT1 | Another user's repeat rule, invalid rules, forged `recurrenceParentId` through the raw action | Refused, nothing changed |
 | CM1–CM2 | Another user's commit edit; forged `executionValue`/`createdAt`; stored XSS in a corrected message and tags | Refused; refused; escaped, time and value unchanged |
 | SR1–SR3 | `/api/search` anonymous, with a forged session, unpaid; short, oversized and extra parameters; another user's personal task | 401, 401, 403; 400; never returned, responses `private, no-store` |
+| CT1 | Capture naming another user's `#project` and `@person` through the raw action | Refused; without `@person` it lands in the caller's own Inbox with no project |
 | SA8 | Burst of 70 writes | Write budget blocks the excess |
 | X2 | Stored XSS in a task title | Escaped on render |
 | K2 | Session token reused after sign-out | Redirected to sign-in |

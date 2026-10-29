@@ -1,8 +1,9 @@
 import { cache } from "react";
 import { redirect, notFound } from "next/navigation";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { boards, organisationMembers, organisations, users, workspaces } from "@/db/schema";
+import { boards, organisationMembers, organisations, projects, users, workspaces } from "@/db/schema";
+import { WRITE_ROLES } from "@/lib/authz";
 import { getSession } from "@/lib/auth/session";
 
 export interface ViewerOrg {
@@ -81,4 +82,24 @@ export async function getViewerOrg(slug: string): Promise<{ viewer: Viewer; org:
   const org = viewer.orgs.find((o) => o.slug === slug);
   if (!org) notFound();
   return { viewer, org };
+}
+
+/**
+ * Live projects the viewer can capture to (#slug): personal first, then each organisation
+ * they can write to, matching how the server picks between equal slugs.
+ */
+export async function getCaptureProjects(viewer: Viewer): Promise<{ slug: string; name: string; organisation: string | null }[]> {
+  const writable = viewer.orgs.filter((o) => (WRITE_ROLES as readonly string[]).includes(o.role));
+  const ids = [...(viewer.personalWorkspaceId ? [viewer.personalWorkspaceId] : []), ...writable.map((o) => o.workspaceId)];
+  if (ids.length === 0) return [];
+  const rows = await db
+    .select({ slug: projects.slug, name: projects.name, workspaceId: projects.workspaceId })
+    .from(projects)
+    .where(and(inArray(projects.workspaceId, ids), isNull(projects.archivedAt)))
+    .orderBy(asc(projects.name))
+    .limit(500);
+  const orgName = new Map(writable.map((o) => [o.workspaceId, o.name]));
+  return rows
+    .map((p) => ({ slug: p.slug, name: p.name, organisation: orgName.get(p.workspaceId) ?? null }))
+    .sort((a, b) => Number(a.organisation !== null) - Number(b.organisation !== null) || (a.organisation ?? "").localeCompare(b.organisation ?? ""));
 }

@@ -189,34 +189,99 @@ export async function moveTask(actor: Actor, input: z.infer<typeof moveTaskSchem
   });
 }
 
-/** Inbox capture in the actor's personal workspace. `#project` must name one of theirs. */
-export async function captureTask(actor: Actor, input: z.infer<typeof captureTaskSchema>): Promise<{ id: string; title: string; projectName: string | null }> {
-  assertWritable(actor, actor.personalWorkspaceId);
-  const parsed = parseQuickCapture(input.text);
-  const title = parsed.title.trim();
-  if (!title) throw new MutationError("invalid", "Add a title as well as the #project or !priority.");
+export interface CaptureResult {
+  id: string;
+  title: string;
+  projectName: string | null;
+  /** Organisation the task went to (straight onto its board), or null for the personal Inbox. */
+  organisationName: string | null;
+  dueAt: Date | null;
+  assigneeName: string | null;
+}
 
-  let project: { id: string; name: string } | undefined;
+/**
+ * Quick capture (parseQuickCapture). Without a project, or with one of the actor's
+ * personal projects, the task lands in the personal Inbox. A `#project` from an
+ * organisation the actor can write to puts it at the top of that organisation's board
+ * (organisations have no Inbox), where `@person` can name its owner among the members.
+ * Personal projects win when a slug exists in both. Due days are read in the actor's
+ * timezone and stored as the end of that day.
+ */
+export async function captureTask(actor: Actor, input: z.infer<typeof captureTaskSchema>): Promise<CaptureResult> {
+  assertWritable(actor, actor.personalWorkspaceId);
+  const personalWorkspaceId = actor.personalWorkspaceId;
+  const [{ tz }] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
+  const parsed = parseQuickCapture(input.text, dayIn(new Date(), tz));
+  const title = parsed.title.trim();
+  if (!title) throw new MutationError("invalid", "Add a title as well as the #project, !priority, @person or date.");
+
+  let project: { id: string; name: string; workspaceId: string; organisationId: string | null; organisationName: string | null } | undefined;
   if (parsed.projectSlug) {
     [project] = await db
-      .select({ id: projects.id, name: projects.name })
+      .select({ id: projects.id, name: projects.name, workspaceId: projects.workspaceId, organisationId: organisations.id, organisationName: organisations.name })
       .from(projects)
-      .where(and(eq(projects.workspaceId, actor.personalWorkspaceId), eq(projects.slug, parsed.projectSlug.toLowerCase()), isNull(projects.archivedAt)))
+      .leftJoin(organisations, eq(organisations.workspaceId, projects.workspaceId))
+      .where(and(inArray(projects.workspaceId, [...actor.writable]), eq(projects.slug, parsed.projectSlug.toLowerCase()), isNull(projects.archivedAt)))
+      .orderBy(sql`${projects.workspaceId} = ${personalWorkspaceId} desc`, asc(organisations.name))
       .limit(1);
+  }
+  const organisationId = project?.organisationId ?? null;
+  const workspaceId = project?.workspaceId ?? personalWorkspaceId;
+  assertWritable(actor, workspaceId);
+
+  // @person: yourself anywhere; other people only on organisation tasks, among its members
+  let assignee = { id: actor.id, name: null as string | null };
+  if (parsed.assignee && parsed.assignee !== "me") {
+    if (!organisationId) throw new MutationError("invalid", `@${parsed.assignee} needs an organisation #project, so the task has someone to go to.`);
+    const people = await db
+      .select({ id: users.id, name: users.name, email: users.email })
+      .from(organisationMembers)
+      .innerJoin(users, eq(users.id, organisationMembers.userId))
+      .where(eq(organisationMembers.organisationId, organisationId))
+      .limit(500);
+    const handle = parsed.assignee;
+    const matches = people.filter(
+      (u) => u.email.toLowerCase().split("@")[0] === handle || u.name.toLowerCase().split(/\s+/)[0] === handle || u.name.toLowerCase().replace(/\s+/g, "") === handle
+    );
+    if (matches.length === 0) throw new MutationError("invalid", `No one called @${handle} in ${project!.organisationName}.`);
+    if (matches.length > 1) throw new MutationError("invalid", `@${handle} matches ${matches.length} people. Use their email name instead.`);
+    assignee = matches[0];
+  }
+
+  // Organisation tasks go straight to the top of the board's first queued column
+  let place: { boardId: string; columnId: string; position: string } | null = null;
+  if (organisationId) {
+    const [column] = await db
+      .select({ id: columns.id, boardId: boards.id })
+      .from(columns)
+      .innerJoin(boards, eq(boards.id, columns.boardId))
+      .where(and(eq(boards.workspaceId, workspaceId), eq(columns.stateType, "backlog")))
+      .orderBy(asc(boards.createdAt), asc(columns.position))
+      .limit(1);
+    if (!column) throw new MutationError("invalid", `${project!.organisationName} has no board to capture to.`);
+    const [first] = await db
+      .select({ position: tasks.position })
+      .from(tasks)
+      .where(and(eq(tasks.boardId, column.boardId), eq(tasks.columnId, column.id), isNull(tasks.deletedAt)))
+      .orderBy(asc(byPosition))
+      .limit(1);
+    place = { boardId: column.boardId, columnId: column.id, position: keyBetween(null, first?.position ?? null) };
   }
 
   const [row] = await db
     .insert(tasks)
     .values({
-      workspaceId: actor.personalWorkspaceId,
+      workspaceId,
       creatorId: actor.id,
-      assigneeId: actor.id,
+      assigneeId: assignee.id,
       projectId: project?.id ?? null,
       title,
       priority: parsed.priority ?? "none",
+      dueAt: parsed.dueDate ? sql<Date>`((${parsed.dueDate})::date + time '23:59') at time zone ${tz}` : null,
+      ...(place ?? {}),
     })
-    .returning({ id: tasks.id });
-  return { id: row.id, title, projectName: project?.name ?? null };
+    .returning({ id: tasks.id, dueAt: tasks.dueAt });
+  return { id: row.id, title, projectName: project?.name ?? null, organisationName: project?.organisationName ?? null, dueAt: row.dueAt, assigneeName: assignee.name };
 }
 
 /**

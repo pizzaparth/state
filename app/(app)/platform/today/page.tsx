@@ -1,6 +1,6 @@
 import * as React from "react";
-import { getProjects, getTicker, getToday } from "@/db/queries";
-import { getViewer } from "@/lib/viewer";
+import { getTicker, getToday } from "@/db/queries";
+import { getCaptureProjects, getViewer } from "@/lib/viewer";
 import { formatDate } from "@/lib/format";
 import { DISPLAY, PageHeader, Panel, EmptyState, TICK } from "@/components/app/primitives";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,7 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
   const scope = { workspaceIds: viewer.workspaceIds, userId: viewer.id };
   const [today, projects, ticker] = await Promise.all([
     getToday(scope, viewer.tz),
-    getProjects(viewer.personalWorkspaceId ? [viewer.personalWorkspaceId] : []),
+    getCaptureProjects(viewer),
     getTicker(scope, viewer.tz),
   ]);
   const done = today.executionToday;
@@ -63,7 +63,7 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
         </section>
 
         <Panel title="Capture">
-          <QuickCapture projects={projects.map((p) => ({ slug: p.slug, name: p.name }))} />
+          <QuickCapture projects={projects} tz={viewer.tz} />
           <p className="mt-1 px-2 font-mono text-sm text-[#85857F]">
             <kbd>C</kbd> commit · <kbd>⌘&nbsp;K</kbd> everything
           </p>

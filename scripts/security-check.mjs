@@ -654,6 +654,19 @@ async function checkServerActions() {
     `owner ${ownerFound} other ${otherFound} ${ownerSearch.headers.get("cache-control")}`
   );
 
+  // Capture tokens: another user's #project never pulls the task into that workspace
+  const parthTasks = async () => Number((await db.query("select count(*) from tasks where workspace_id = 'seed-ws-parth'")).rows[0].count);
+  const parthBefore = await parthTasks();
+  const crossCapture = await callAction(ids.captureTaskAction, [{ text: "Plant #relaydb @demo tomorrow" }], { cookie: other, path: "/platform/inbox" });
+  const plainCrossCapture = await callAction(ids.captureTaskAction, [{ text: "Plant #relaydb tomorrow" }], { cookie: other, path: "/platform/inbox" });
+  const { rows: [planted] } = await db.query("select workspace_id, project_id from tasks where title = 'Plant' order by created_at desc limit 1");
+  record(
+    "CT1",
+    "Capture with another user's #project and @person cannot reach their workspace",
+    !crossCapture.ok && plainCrossCapture.ok && (await parthTasks()) === parthBefore && planted?.workspace_id !== "seed-ws-parth" && planted?.project_id === null,
+    `${crossCapture.error} | ${planted?.workspace_id}`
+  );
+
   // Write budget: 60 per user per minute, shared across instances. Invalid calls count too.
   const burst = await Promise.all(Array.from({ length: 70 }, () => callAction(ids.moveTaskAction, [{}], { cookie: other })));
   const limited = burst.filter((r) => /Too many changes/.test(r.error ?? "")).length;

@@ -1,6 +1,6 @@
 import * as React from "react";
-import { getInbox, getProjects } from "@/db/queries";
-import { getViewer } from "@/lib/viewer";
+import { getInbox } from "@/db/queries";
+import { getCaptureProjects, getViewer } from "@/lib/viewer";
 import { EmptyState, PageHeader, Panel } from "@/components/app/primitives";
 import { QuickCapture } from "@/components/app/quick-capture";
 import { TaskRow, withParam } from "@/components/app/task-row";
@@ -13,7 +13,7 @@ export default async function InboxPage({ searchParams }: { searchParams: PageSe
   const viewer = await getViewer();
   const [inbox, projects] = await Promise.all([
     getInbox(viewer.personalWorkspaceId),
-    getProjects(viewer.personalWorkspaceId ? [viewer.personalWorkspaceId] : []),
+    getCaptureProjects(viewer),
   ]);
   const now = new Date();
 
@@ -25,9 +25,9 @@ export default async function InboxPage({ searchParams }: { searchParams: PageSe
       />
 
       <Panel title="Capture">
-        <QuickCapture projects={projects.map((p) => ({ slug: p.slug, name: p.name }))} autoFocus showRecent={false} />
+        <QuickCapture projects={projects} tz={viewer.tz} autoFocus showRecent={false} />
         <p className="mt-2 px-2 font-mono text-sm text-[#85857F]">
-          <span className="text-[#F2F2EF]">#project</span> to file · <span className="text-[#F2F2EF]">!high</span> to rank
+          <span className="text-[#F2F2EF]">#project</span> to file · <span className="text-[#F2F2EF]">!high</span> to rank · <span className="text-[#F2F2EF]">fri</span> to date · <span className="text-[#F2F2EF]">@name</span> to assign
         </p>
       </Panel>
 
