@@ -21,6 +21,9 @@ Thumbs.db
 /build
 /dist
 
+# Test email outbox (single-use links)
+/.email-outbox/
+
 # Environment Variables
 .env
 .env*.local

@@ -52,7 +52,8 @@ State features two visually unified yet deliberately distinct environments:
 | **Kanban Drag & Drop** | `@dnd-kit` | Optimistic column reordering & card movement |
 | **Database** | PostgreSQL / Neon | Relational execution ledger and snapshots |
 | **ORM** | Drizzle ORM + Drizzle Kit | Type-safe SQL queries, migrations, and aggregations |
-| **Authentication** | Better Auth | Email/Password, OAuth (Google, GitHub), session management |
+| **Authentication** | Better Auth | Email/Password with required email verification, password reset, OAuth (Google, GitHub), sessions |
+| **Email** | Resend (HTTP API) | Verification and password reset links (`lib/email.ts`) |
 | **Payments** | Razorpay + Stripe | India-first subscriptions (Razorpay) & global billing (Stripe) |
 | **Validation** | Zod | Server actions, forms, webhooks, and deterministic input parsing |
 | **Forms** | React Hook Form | Account, organisation, and project configuration |
@@ -71,7 +72,10 @@ state/
 │   │   └── principles/page.tsx  # Non-negotiable product manifesto
 │   ├── (auth)/                  # Dark inset authentication flows
 │   │   ├── login/page.tsx       # Email / OAuth authentication
-│   │   └── register/page.tsx    # Workspace registration
+│   │   ├── register/page.tsx    # Workspace registration (sends a verification link)
+│   │   ├── verify-email/        # Landing for the emailed verification link
+│   │   ├── forgot-password/     # Request a reset link
+│   │   └── reset-password/      # Choose a new password from the emailed link
 │   ├── (app)/                   # AMOLED black logged-in workspace
 │   │   ├── today/page.tsx       # Default daily work surface & targets
 │   │   ├── inbox/page.tsx       # Rapid capture & deterministic syntax triage
@@ -236,13 +240,20 @@ All three have an active subscription, so sign-in goes straight to Today. Board 
 Inbox captures and manual commits are saved to the database. These accounts exist only in
 databases you seed yourself; the seed refuses remote databases.
 
+### Email in development
+
+Without `RESEND_API_KEY`, `npm run dev` prints every verification and reset email (with its
+link) to the dev server console. Accounts created before verification was required can sign
+in once they open the link sent on their next sign-in attempt. Production refuses to start
+without `RESEND_API_KEY` and `EMAIL_FROM`.
+
 ---
 
 ## 7. Billing (paid from day one)
 
 State has no free plan and no trial. The flow is:
 
-1. `/register` creates the account, then forwards to `/subscribe` (plan and interval carry over from the pricing CTA).
+1. `/register` creates the account and emails a verification link. No session exists until it is opened; the link signs the user in and forwards to `/subscribe` (plan and interval carry over from the pricing CTA).
 2. `POST /api/billing/checkout` opens Razorpay Checkout for India (`x-vercel-ip-country: IN`, also the local default) or a Stripe Checkout session elsewhere.
 3. Razorpay success is signature-checked at `POST /api/billing/razorpay/verify`; both providers' webhooks (`/api/webhooks/*`) upsert the `subscriptions` row.
 4. First activation provisions the personal workspace, board and columns.

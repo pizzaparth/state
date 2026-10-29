@@ -18,7 +18,7 @@ export default async function RegisterPage({
     <div className="space-y-6">
       <div className="space-y-2">
         <h1 className="text-xl font-bold tracking-tight text-[#F4F4F2]">Create your State account</h1>
-        <p className="text-xs text-[#A9A9A6]">Step 1 of 2. Next you choose a plan and pay; your workspace opens right after.</p>
+        <p className="text-xs text-[#A9A9A6]">Step 1 of 2. After you verify your email you choose a plan and pay; your workspace opens right after.</p>
       </div>
 
       <CredentialsForm mode="sign-up" redirectTo={redirectTo} />

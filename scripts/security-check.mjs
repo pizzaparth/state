@@ -10,7 +10,8 @@
  * Exits non-zero if any check fails. Never point it at production: it creates
  * accounts and deliberately triggers rate limits.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
 import pg from "pg";
 import { isSafeRedirectPath } from "../lib/auth/redirect.ts";
 
@@ -48,6 +49,43 @@ const sessionCookie = (res) =>
     .map((c) => c.split(";")[0])
     .filter((c) => c.includes("session_token"))
     .join("; ");
+
+// ---------------------------------------------------------------- email outbox
+// The server under test runs with EMAIL_OUTBOX_DIR (local URLs only, see lib/env.ts) and
+// writes each message as JSON there; these helpers read links out of it.
+const OUTBOX = process.env.EMAIL_OUTBOX_DIR ? path.resolve(process.env.EMAIL_OUTBOX_DIR) : null;
+
+function outbox(to) {
+  if (!OUTBOX) return [];
+  let files = [];
+  try {
+    files = readdirSync(OUTBOX).filter((f) => f.endsWith(".json")).sort();
+  } catch {
+    return [];
+  }
+  return files.map((f) => JSON.parse(readFileSync(path.join(OUTBOX, f), "utf8"))).filter((m) => m.to === to);
+}
+
+/** Waits for the next message to `to` matching `subject` (mail is sent after the response). */
+async function nextEmail(to, subject, seen = 0) {
+  for (let i = 0; i < 50; i++) {
+    const matching = outbox(to).filter((m) => subject.test(m.subject));
+    if (matching.length > seen) return matching.at(-1);
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return null;
+}
+
+const linkIn = (message) => message?.text.match(/https?:\/\/\S+/)?.[0] ?? null;
+
+/** Signs up and follows the emailed verification link; returns the session cookie. */
+async function verifiedSignUp(email, password = "correct-horse-battery-1", extra = {}) {
+  const res = await authPost("/sign-up/email", { name: "Test User", email, password, callbackURL: "/verify-email", ...extra });
+  const link = linkIn(await nextEmail(email, /Verify your email/));
+  if (!link) return { res, cookie: "", link: null };
+  const verify = await req(new URL(link).pathname + new URL(link).search);
+  return { res, cookie: sessionCookie(verify), link, verify };
+}
 
 const uniqueEmail = (tag) => `sec-${tag}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.test`;
 
@@ -174,6 +212,7 @@ async function checkAuth() {
     id: "attacker-chosen-id",
   });
   record("M0", "Sign-up with valid input succeeds", signUp.status === 200, `${signUp.status} ${signUp.text.slice(0, 120)}`);
+  record("EV1", "Sign-up opens no session before the email is verified", sessionCookie(signUp) === "", sessionCookie(signUp) ? "session cookie set" : "");
   if (db) {
     const { rows } = await db.query(
       "select id, subscription_status, subscription_plan, email_verified, default_workspace_id from users where email = $1",
@@ -192,13 +231,17 @@ async function checkAuth() {
     record("M1", "Sign-up ignores privileged fields (mass assignment)", bad.length === 0, bad.join(", "));
   }
 
+  // The verification link is what signs a new user in
+  const massLink = linkIn(await nextEmail(email, /Verify your email/));
+  const verified = massLink ? await req(new URL(massLink).pathname + new URL(massLink).search) : null;
+
   // Session cookie flags
-  const cookie = (signUp.headers.getSetCookie?.() ?? []).find((c) => c.includes("session_token")) || "";
+  const cookie = (verified?.headers.getSetCookie?.() ?? []).find((c) => c.includes("session_token")) || "";
   const flags = [!/HttpOnly/i.test(cookie) && "HttpOnly", !/SameSite=(Lax|Strict)/i.test(cookie) && "SameSite", !/Path=\//i.test(cookie) && "Path"].filter(Boolean);
   record("K1", "Session cookie is HttpOnly + SameSite", cookie !== "" && flags.length === 0, cookie ? `missing ${flags.join(", ")}` : "no cookie set");
 
   // Paywall: an authenticated but unpaid user cannot reach the product
-  const session = sessionCookie(signUp);
+  const session = verified ? sessionCookie(verified) : "";
   if (session) {
     const today = await req("/today", { headers: { cookie: session } });
     record("A6", "Unpaid session is sent to checkout", [303, 307, 308].includes(today.status) && /\/subscribe/.test(today.headers.get("location") || ""), `${today.status} ${today.headers.get("location")}`);
@@ -253,6 +296,96 @@ async function checkAuth() {
   const broken = await req("/api/auth/sign-in/email", { method: "POST", body: "{not json", raw: true, headers: { "content-type": "application/json", origin: ORIGIN } });
   const leak = /at .*\.(js|ts):\d+|node_modules|stack/i.test(broken.text);
   record("I1", "Malformed request does not leak stack traces", broken.status < 500 && !leak, `${broken.status}${leak ? " stack leaked" : ""}`);
+}
+
+// ---------------------------------------------------------------- email verification and password reset
+async function checkEmailFlows() {
+  if (!OUTBOX) {
+    record("EV0", "Email flow checks need EMAIL_OUTBOX_DIR on the server and this script", false);
+    return;
+  }
+  const email = uniqueEmail("verify");
+  const password = "correct-horse-battery-2";
+  const signUp = await authPost("/sign-up/email", { name: "<img src=x onerror=alert(1)>", email, password, callbackURL: "/verify-email" });
+
+  const early = await authPost("/sign-in/email", { email, password });
+  record("EV2", "Unverified account cannot sign in", early.status === 403 && /EMAIL_NOT_VERIFIED/.test(early.text) && !sessionCookie(early), `${early.status}`);
+
+  const forged = await req("/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InhAeC54In0.forged&callbackURL=/verify-email");
+  record("EV3", "Forged verification token is rejected", !sessionCookie(forged) && /error=/.test(forged.headers.get("location") || ""), `${forged.status} ${forged.headers.get("location")}`);
+
+  const link = linkIn(await nextEmail(email, /Verify your email/));
+  const linkUrl = link ? new URL(link) : null;
+  const first = linkUrl ? await req(linkUrl.pathname + linkUrl.search) : null;
+  const second = linkUrl ? await req(linkUrl.pathname + linkUrl.search) : null;
+  record(
+    "EV4",
+    "Verification link signs in once; replaying it opens no session",
+    Boolean(first && sessionCookie(first)) && Boolean(second) && !sessionCookie(second),
+    `first ${first?.status} ${first ? Boolean(sessionCookie(first)) : "-"}, second ${second ? Boolean(sessionCookie(second)) : "-"}`
+  );
+  record("EV5", "Verification link points at the configured origin", Boolean(linkUrl) && linkUrl.origin === ORIGIN, link ?? "no email");
+
+  // Enumeration: an existing address answers exactly like a new one, and its owner is told
+  const fresh = await authPost("/sign-up/email", { name: "New", email: uniqueEmail("fresh"), password });
+  const dupe = await authPost("/sign-up/email", { name: "Dupe", email, password });
+  const shape = (r) => `${r.status}:${Object.keys(JSON.parse(r.text || "{}")).sort().join(",")}:${Boolean(sessionCookie(r))}`;
+  const notice = await nextEmail(email, /already have a State account/);
+  record("EV6", "Sign-up with a registered email is indistinguishable (no enumeration)", shape(fresh) === shape(dupe) && Boolean(notice), `${shape(fresh)} vs ${shape(dupe)}`);
+  void signUp;
+
+  // ---- password reset
+  const reset = (body, headers = {}) => authPost("/request-password-reset", body, headers);
+  const known = await reset({ email, redirectTo: "/reset-password" });
+  const unknown = await reset({ email: uniqueEmail("nobody"), redirectTo: "/reset-password" });
+  record("PR1", "Reset request answers the same for unknown emails", known.status === unknown.status && known.text === unknown.text, `${known.status} vs ${unknown.status}`);
+  const mailA = await nextEmail(email, /Reset your State password/);
+
+  // Poisoning: the link must use the configured origin, never a forged Host
+  const poisoned = await reset({ email, redirectTo: "/reset-password" }, { host: "evil.example", "x-forwarded-host": "evil.example" });
+  const mailB = await nextEmail(email, /Reset your State password/, 1);
+  const linkB = linkIn(mailB);
+  record("PR2", "Reset link ignores forged Host / X-Forwarded-Host (reset poisoning)", Boolean(linkB) && new URL(linkB).origin === ORIGIN, `${poisoned.status} ${linkB}`);
+
+  const offsite = await reset({ email, redirectTo: "https://evil.example/steal" });
+  record("PR3", "Reset redirect to another origin is refused", offsite.status === 403 || offsite.status === 400, `${offsite.status}`);
+
+  // Limit is 3 per address per hour; every request comes from a different IP
+  const statuses = [];
+  for (let i = 0; i < 3; i++) statuses.push((await reset({ email, redirectTo: "/reset-password" })).status);
+  record("PR4", "Reset mail per address is throttled across IPs", statuses.includes(429), statuses.join(","));
+
+  // Token from the emailed link: /api/auth/reset-password/<token>?callbackURL=…
+  const tokenOf = (link) => link && new URL(link).pathname.split("/").pop();
+  const tokenA = tokenOf(linkIn(mailA));
+  const landing = await req(new URL(linkIn(mailA)).pathname + new URL(linkIn(mailA)).search);
+  record("PR5", "Reset link lands on the reset page with the token", /\/reset-password\?token=/.test(landing.headers.get("location") || ""), landing.headers.get("location") || `${landing.status}`);
+
+  const sessionBefore = await signIn(email, password);
+  const liveBefore = (await req("/api/auth/get-session", { headers: { cookie: sessionBefore } })).text.includes(email);
+  const weak = await authPost("/reset-password", { newPassword: "short", token: tokenA });
+  record("PR6", "Reset rejects a weak new password", weak.status === 400, `${weak.status}`);
+  const newPassword = "brand-new-password-3";
+  const used = await authPost("/reset-password", { newPassword, token: tokenA });
+  const reused = await authPost("/reset-password", { newPassword: "another-password-4", token: tokenA });
+  record("PR7", "Reset token works once", used.status === 200 && reused.status === 400, `${used.status} then ${reused.status}`);
+
+  const oldSession = await req("/api/auth/get-session", { headers: { cookie: sessionBefore } });
+  record("PR8", "Reset signs out every existing session", liveBefore && oldSession.status === 200 && oldSession.text.trim() === "null", `${oldSession.status} ${oldSession.text.slice(0, 60)}`);
+  const oldPassword = await authPost("/sign-in/email", { email, password });
+  const newLogin = await authPost("/sign-in/email", { email, password: newPassword });
+  record("PR9", "Old password stops working, new one works", oldPassword.status === 401 && newLogin.status === 200, `${oldPassword.status} / ${newLogin.status}`);
+
+  const tokenB = tokenOf(linkB);
+  if (db && tokenB) await db.query("update verifications set expires_at = now() - interval '1 minute' where identifier = $1", [`reset-password:${tokenB}`]);
+  const expired = await authPost("/reset-password", { newPassword: "expired-token-pass-5", token: tokenB });
+  record("PR10", "Expired reset token is refused", expired.status === 400, `${expired.status}`);
+
+  const guessed = await authPost("/reset-password", { newPassword: "guessed-token-pass", token: "a".repeat(24) });
+  record("PR11", "Guessed reset token is refused", guessed.status === 400, `${guessed.status}`);
+
+  const leaked = outbox(email).some((m) => /<img src=x onerror/i.test(m.html));
+  record("PR12", "Emails escape user-supplied names", !leaked);
 }
 
 // ---------------------------------------------------------------- product Server Actions
@@ -346,8 +479,7 @@ async function checkServerActions() {
 
   // Unpaid account: signs up fine, then every write is refused
   const email = uniqueEmail("unpaid");
-  const signup = await authPost("/sign-up/email", { name: "Unpaid", email, password: "correct-horse-battery" });
-  const unpaid = sessionCookie(signup);
+  const { cookie: unpaid } = await verifiedSignUp(email);
   const free = await callAction(ids.createCommitAction, [{ message: "free ride", projectId: null, weight: 8 }], { cookie: unpaid });
   record("SA6", "Unpaid account cannot write through the raw action", !free.ok && (await commitCount()) === commitsBefore, free.error ?? `${free.status}`);
 
@@ -467,6 +599,7 @@ async function main() {
   await checkAccessControl();
   await checkWebhooks();
   await checkAuth();
+  await checkEmailFlows();
   await checkServerActions();
   await checkSurface();
   if (db) await db.end();

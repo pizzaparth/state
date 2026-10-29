@@ -23,5 +23,9 @@ export function assertServerEnv(env: NodeJS.ProcessEnv = process.env) {
     // Fixed public origin: auth callbacks and payment return URLs never come from the Host header
     if (!/^https:\/\//.test(value) && !isLocalUrl(value)) problems.push(`${key} must be the public https:// origin`);
   }
+  const publicUrl = env.BETTER_AUTH_URL ?? "";
+  if (!env.RESEND_API_KEY && !(env.EMAIL_OUTBOX_DIR && isLocalUrl(publicUrl))) problems.push("RESEND_API_KEY is required: verification and password reset emails cannot be sent");
+  if (env.EMAIL_OUTBOX_DIR && !isLocalUrl(publicUrl)) problems.push("EMAIL_OUTBOX_DIR is for local test runs only; it writes single-use links to disk");
+  if (env.RESEND_API_KEY && !env.EMAIL_FROM) problems.push("EMAIL_FROM is required (a sender on a domain verified with Resend)");
   if (problems.length) throw new Error(`Unsafe production configuration:\n- ${problems.join("\n- ")}`);
 }

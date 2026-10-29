@@ -4,8 +4,8 @@ import { isSafeRedirectPath } from "@/lib/auth/redirect";
 
 export const metadata = { title: "Sign in — State" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
-  const { next } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reset?: string }> }) {
+  const { next, reset } = await searchParams;
   const redirectTo = isSafeRedirectPath(next) ? next : "/today";
 
   return (
@@ -14,6 +14,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <h1 className="text-xl font-bold tracking-tight text-[#F4F4F2]">Sign in to State</h1>
         <p className="text-xs text-[#A9A9A6]">Enter your credentials to open your workspace.</p>
       </div>
+
+      {reset === "1" && (
+        <p role="status" className="rounded-input border border-white/[0.1] bg-[#151515] px-4 py-3 text-xs text-[#F4F4F2]">
+          Password changed and every other device signed out. Sign in with your new password.
+        </p>
+      )}
 
       <CredentialsForm mode="sign-in" redirectTo={redirectTo} />
 

@@ -2,11 +2,10 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/client";
-
-const inputClasses =
-  "w-full h-11 px-4 text-sm bg-[#151515] text-[#F4F4F2] rounded-input border border-white/[0.1] focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40 placeholder:text-[#6F6F6B] transition-[border-color,box-shadow] touch-manipulation aria-[invalid=true]:border-[#E5A3A3]/60";
+import { AuthField, SentNotice } from "./auth-field";
 
 type Mode = "sign-in" | "sign-up";
 type Field = "name" | "email" | "password";
@@ -25,6 +24,8 @@ export function CredentialsForm({ mode, redirectTo }: { mode: Mode; redirectTo: 
   const [pending, setPending] = React.useState(false);
   const [errors, setErrors] = React.useState<Partial<Record<Field, string>>>({});
   const [formError, setFormError] = React.useState<string | null>(null);
+  // Address a verification link was just sent to (sign-up, or sign-in before verifying)
+  const [sentTo, setSentTo] = React.useState<string | null>(null);
   const formRef = React.useRef<HTMLFormElement>(null);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -45,13 +46,26 @@ export function CredentialsForm({ mode, redirectTo }: { mode: Mode; redirectTo: 
     }
 
     setPending(true);
+    // The emailed link signs the user in and lands here, then continues to redirectTo
+    const callbackURL = `/verify-email?next=${encodeURIComponent(redirectTo)}`;
     const result =
       mode === "sign-up"
-        ? await authClient.signUp.email({ name: values.name, email: values.email, password: values.password })
-        : await authClient.signIn.email({ email: values.email, password: values.password });
+        ? await authClient.signUp.email({ name: values.name, email: values.email, password: values.password, callbackURL })
+        : await authClient.signIn.email({ email: values.email, password: values.password, callbackURL });
 
     if (result.error) {
+      setPending(false);
+      if (result.error.code === "EMAIL_NOT_VERIFIED") {
+        setSentTo(values.email);
+        return;
+      }
       setFormError(result.error.message ?? (mode === "sign-up" ? "Could not create account." : "Email or password is incorrect."));
+      return;
+    }
+    // Sign-up never opens a session before the email is verified; existing and new
+    // addresses get the same answer
+    if (mode === "sign-up") {
+      setSentTo(values.email);
       setPending(false);
       return;
     }
@@ -59,25 +73,20 @@ export function CredentialsForm({ mode, redirectTo }: { mode: Mode; redirectTo: 
     router.refresh();
   }
 
-  const field = (name: Field, label: string, props: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <div className="space-y-1">
-      <label htmlFor={name} className="block text-xs font-medium text-[#A9A9A6]">
-        {label}
-      </label>
-      <input
-        id={name}
-        name={name}
-        aria-invalid={Boolean(errors[name])}
-        aria-describedby={errors[name] ? `${name}-error` : undefined}
-        className={inputClasses}
-        {...props}
-      />
-      {errors[name] && (
-        <p id={`${name}-error`} className="text-xs text-[#E5A3A3]">
-          {errors[name]}
+  if (sentTo) {
+    return (
+      <SentNotice title={mode === "sign-up" ? "Check your inbox" : "Verify your email first"}>
+        <p>
+          We sent a link to <span className="font-medium text-[#F4F4F2]">{sentTo}</span>.{" "}
+          {mode === "sign-up" ? "Open it to verify your address and continue to your plan." : "Open it to verify your address; it signs you in."}
         </p>
-      )}
-    </div>
+        <p>The link expires in 24 hours. Nothing there? Check spam, or sign in again to get a new one.</p>
+      </SentNotice>
+    );
+  }
+
+  const field = (name: Field, label: string, props: React.InputHTMLAttributes<HTMLInputElement>, aside?: React.ReactNode) => (
+    <AuthField name={name} label={label} error={errors[name]} aside={aside} {...props} />
   );
 
   return (
@@ -90,11 +99,20 @@ export function CredentialsForm({ mode, redirectTo }: { mode: Mode; redirectTo: 
         spellCheck: false,
         placeholder: "you@domain.com…",
       })}
-      {field("password", "Password", {
-        type: "password",
-        autoComplete: mode === "sign-up" ? "new-password" : "current-password",
-        placeholder: "••••••••…",
-      })}
+      {field(
+        "password",
+        "Password",
+        {
+          type: "password",
+          autoComplete: mode === "sign-up" ? "new-password" : "current-password",
+          placeholder: "••••••••…",
+        },
+        mode === "sign-in" && (
+          <Link href="/forgot-password" className="text-xs text-[#A9A9A6] hover:text-white hover:underline">
+            Forgot password?
+          </Link>
+        )
+      )}
       <p aria-live="polite" className="min-h-4 text-xs text-[#E5A3A3]">
         {formError}
       </p>
