@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, primaryKey, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, primaryKey, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { workspaces } from "./workspaces";
 import { users } from "./users";
 
@@ -40,6 +41,7 @@ export const organisationInvitations = pgTable(
     email: text("email").notNull(),
     role: text("role").notNull().default("member"),
     invitedById: text("invited_by_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    // SHA-256 of the emailed token; the token itself is never stored
     token: text("token").notNull().unique(),
     status: text("status").notNull().default("pending"), // "pending" | "accepted" | "revoked" | "expired"
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
@@ -49,5 +51,7 @@ export const organisationInvitations = pgTable(
     index("organisation_invitations_org_idx").on(table.organisationId),
     index("organisation_invitations_email_idx").on(table.email),
     index("organisation_invitations_invited_by_idx").on(table.invitedById),
+    // One live invitation per address per organisation; inviting again refreshes it
+    uniqueIndex("organisation_invitations_pending_uidx").on(table.organisationId, table.email).where(sql`${table.status} = 'pending'`),
   ]
 );

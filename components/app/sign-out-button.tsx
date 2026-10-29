@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { Loader2, LogOut } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 
-export function SignOutButton() {
+/** Signs out and goes to sign-in, which continues to `next` (a same-site path) afterwards. */
+export function SignOutButton({ next }: { next?: string }) {
   const router = useRouter();
   const [signingOut, setSigningOut] = React.useState(false);
   return (
@@ -16,7 +17,7 @@ export function SignOutButton() {
       onClick={async () => {
         setSigningOut(true);
         await authClient.signOut();
-        router.replace("/login" as Route);
+        router.replace((next ? `/login?next=${encodeURIComponent(next)}` : "/login") as Route);
         router.refresh();
       }}
       className="app-btn inline-flex h-10 items-center gap-2 rounded-[12px] px-4 text-base font-medium disabled:opacity-70"

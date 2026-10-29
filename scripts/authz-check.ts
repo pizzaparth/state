@@ -11,13 +11,16 @@
  * Refuses to run unless the database name ends in `_test`: it changes roles and data.
  * Exits non-zero if any check fails.
  */
+import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail, getTicker } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { captureTask, createManualCommit, createOrganisation, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
-import { captureTaskSchema, createOrganisationSchema, createProjectSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { acceptInvitation, captureTask, createManualCommit, createOrganisation, createProject, hashInvitationToken, inviteMember, leaveOrganisation, removeMember, revokeInvitation, setMemberRole, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
+import { acceptInvitationSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, inviteMemberSchema, setMemberRoleSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
 import { buildExport } from "../lib/data/export";
 import { parseImport } from "../lib/data/import";
 import { parseCsv, toCsv } from "../lib/data/csv";
@@ -428,6 +431,132 @@ async function main() {
   [ok, detail] = await expectError(() => createOrganisation(B, { name: "One too many", slug: `authz-cap-${Date.now()}` }), "invalid");
   record("O6", "Owning more than 20 organisations is refused", ok, detail);
   await db.delete(s.workspaces).where(inArray(s.workspaces.id, [...filler.map((f) => f.id), madeWs.id]));
+
+  // ------------------------------------------------------------ invitations and members
+  // Invitation emails land here so the suite can read the link like the invitee would
+  const outbox = mkdtempSync(path.join(tmpdir(), "state-authz-outbox-"));
+  process.env.EMAIL_OUTBOX_DIR = outbox;
+  const lastLinkTo = (email: string) => {
+    const mails = readdirSync(outbox)
+      .filter((f) => f.endsWith(".json"))
+      .sort()
+      .map((f) => JSON.parse(readFileSync(path.join(outbox, f), "utf8")) as { to: string; text: string });
+    return mails.filter((m) => m.to === email).at(-1)?.text.match(/\/invite\/([A-Za-z0-9_-]{43})/)?.[1] ?? null;
+  };
+  const pendingFor = (email: string) =>
+    db.select().from(s.organisationInvitations).where(and(eq(s.organisationInvitations.organisationId, org.id), eq(s.organisationInvitations.email, email), eq(s.organisationInvitations.status, "pending")));
+  const roleIn = async (userId: string) =>
+    (await one(db.select({ r: s.organisationMembers.role }).from(s.organisationMembers).where(and(eq(s.organisationMembers.organisationId, org.id), eq(s.organisationMembers.userId, userId)))))?.r ?? null;
+
+  const stamp = Date.now();
+  const inviteeId = `authz-invitee-${stamp}`;
+  const inviteeEmail = `${inviteeId}@example.test`;
+  const strangerId = `authz-stranger-${stamp}`;
+  await db.insert(s.users).values([
+    { id: inviteeId, name: "Invitee", email: inviteeEmail, emailVerified: true },
+    { id: strangerId, name: "Stranger", email: `${strangerId}@example.test`, emailVerified: true },
+  ]);
+  const invitee = { id: inviteeId, email: inviteeEmail, emailVerified: true };
+  const stranger = { id: strangerId, email: `${strangerId}@example.test`, emailVerified: true };
+  const M = await loadActor(ishitaId); // member of the organisation
+
+  [ok, detail] = await expectError(() => inviteMember(X, { organisationId: org.id, email: inviteeEmail, role: "member" }), "not_found");
+  record("I1", "Outsider invites to an organisation", ok && (await pendingFor(inviteeEmail)).length === 0, detail);
+  [ok, detail] = await expectError(() => inviteMember(M, { organisationId: org.id, email: inviteeEmail, role: "member" }), "forbidden");
+  record("I2", "Member (not owner or admin) invites", ok && (await pendingFor(inviteeEmail)).length === 0, detail);
+  [ok, detail] = await expectError(() => inviteMember(B, { organisationId: org.id, email: inviteeEmail, role: "admin" }), "forbidden");
+  record("I3", "Admin invites an admin (owner only)", ok && (await pendingFor(inviteeEmail)).length === 0, detail);
+
+  await inviteMember(B, { organisationId: org.id, email: inviteeEmail, role: "member" });
+  const firstToken = lastLinkTo(inviteeEmail);
+  const [stored] = await pendingFor(inviteeEmail);
+  record("I4", "Invitation stores only a hash of the emailed token", Boolean(firstToken) && stored?.token === hashInvitationToken(firstToken!) && /^[0-9a-f]{64}$/.test(stored.token) && stored.invitedById === aaravId);
+
+  await inviteMember(A, { organisationId: org.id, email: inviteeEmail.toUpperCase(), role: "viewer" });
+  const secondToken = lastLinkTo(inviteeEmail);
+  [ok, detail] = await expectError(() => acceptInvitation(invitee, { token: firstToken! }), "not_found");
+  const pendingAnyCase = await db.select({ id: s.organisationInvitations.id }).from(s.organisationInvitations).where(and(eq(s.organisationInvitations.organisationId, org.id), sql`lower(${s.organisationInvitations.email}) = ${inviteeEmail}`, eq(s.organisationInvitations.status, "pending")));
+  record("I5", "Inviting again (any letter case) keeps one pending row and retires the old link", ok && pendingAnyCase.length === 1 && Boolean(secondToken) && secondToken !== firstToken, detail);
+
+  [ok, detail] = await expectError(() => acceptInvitation(stranger, { token: secondToken! }), "forbidden");
+  record("I6", "Accepting with a different account's email is refused", ok && (await roleIn(strangerId)) === null && (await pendingFor(inviteeEmail)).length === 1, detail);
+  [ok, detail] = await expectError(() => acceptInvitation({ ...invitee, emailVerified: false }, { token: secondToken! }), "forbidden");
+  record("I7", "Accepting with an unverified email is refused", ok && (await roleIn(inviteeId)) === null, detail);
+
+  const joined = await acceptInvitation(invitee, { token: secondToken! });
+  const inviteeActor = await loadActor(inviteeId);
+  record("I8", "Invitee joins with the invited role", joined.slug === org.slug && (await roleIn(inviteeId)) === "viewer" && inviteeActor.readable.has(org.workspaceId) && !inviteeActor.writable.has(org.workspaceId));
+  [ok, detail] = await expectError(() => acceptInvitation(invitee, { token: secondToken! }), "not_found");
+  record("I9", "Replaying an accepted link does nothing", ok, detail);
+
+  const expiredToken = "e".repeat(43);
+  await db.insert(s.organisationInvitations).values({ organisationId: org.id, email: stranger.email, role: "admin", invitedById: parthId, token: hashInvitationToken(expiredToken), expiresAt: new Date(Date.now() - 1000) });
+  [ok, detail] = await expectError(() => acceptInvitation(stranger, { token: expiredToken }), "not_found");
+  record("I10", "Expired link is refused", ok && (await roleIn(strangerId)) === null, detail);
+  await db.delete(s.organisationInvitations).where(eq(s.organisationInvitations.email, stranger.email));
+
+  await inviteMember(A, { organisationId: org.id, email: stranger.email, role: "member" });
+  const strangerToken = lastLinkTo(stranger.email);
+  const [strangerInvite] = await pendingFor(stranger.email);
+  const [revokeOutsider] = await expectError(() => revokeInvitation(X, { invitationId: strangerInvite.id }), "not_found");
+  const [revokeMember] = await expectError(() => revokeInvitation(M, { invitationId: strangerInvite.id }), "forbidden");
+  await revokeInvitation(B, { invitationId: strangerInvite.id });
+  [ok, detail] = await expectError(() => acceptInvitation(stranger, { token: strangerToken! }), "not_found");
+  record("I11", "Only owners and admins revoke; a revoked link is refused", revokeOutsider && revokeMember && ok && (await roleIn(strangerId)) === null, detail);
+
+  [ok, detail] = await expectError(() => inviteMember(A, { organisationId: org.id, email: inviteeEmail, role: "member" }), "conflict");
+  record("I12", "Inviting an existing member is refused", ok, detail);
+
+  const badInvites = [
+    inviteMemberSchema.safeParse({ organisationId: org.id, email: "a@b.co", role: "owner" }).success,
+    inviteMemberSchema.safeParse({ organisationId: org.id, email: "a@b.co", role: "member", invitedById: aaravId }).success,
+    inviteMemberSchema.safeParse({ organisationId: org.id, email: "not-an-email", role: "member" }).success,
+    acceptInvitationSchema.safeParse({ token: secondToken, userId: strangerId }).success,
+    acceptInvitationSchema.safeParse({ token: "' or 1=1 --" }).success,
+    setMemberRoleSchema.safeParse({ organisationId: org.id, userId: aaravId, role: "owner" }).success,
+  ];
+  record("I13", "Member inputs reject the owner role, extra keys, bad emails and malformed tokens", badInvites.every((v) => !v), JSON.stringify(badInvites));
+
+  // Roles: the owner is untouchable, nobody changes themselves, only the owner touches admins
+  [ok, detail] = await expectError(() => setMemberRole(X, { organisationId: org.id, userId: inviteeId, role: "member" }), "not_found");
+  record("MR1", "Outsider changes a member's role", ok && (await roleIn(inviteeId)) === "viewer", detail);
+  [ok, detail] = await expectError(() => setMemberRole(M, { organisationId: org.id, userId: inviteeId, role: "member" }), "forbidden");
+  record("MR2", "Member changes another member's role", ok && (await roleIn(inviteeId)) === "viewer", detail);
+  [ok, detail] = await expectError(() => setMemberRole(B, { organisationId: org.id, userId: parthId, role: "viewer" }), "forbidden");
+  record("MR3", "Admin demotes the owner", ok && (await roleIn(parthId)) === "owner", detail);
+  [ok, detail] = await expectError(() => setMemberRole(B, { organisationId: org.id, userId: inviteeId, role: "admin" }), "forbidden");
+  record("MR4", "Admin promotes someone to admin", ok && (await roleIn(inviteeId)) === "viewer", detail);
+  [ok, detail] = await expectError(() => setMemberRole(B, { organisationId: org.id, userId: aaravId, role: "member" }), "invalid");
+  record("MR5", "Changing your own role is refused", ok && (await roleIn(aaravId)) === "admin", detail);
+  await setMemberRole(B, { organisationId: org.id, userId: inviteeId, role: "member" });
+  const promoted = await loadActor(inviteeId);
+  record("MR6", "Admin changes viewer to member; write access follows at once", (await roleIn(inviteeId)) === "member" && promoted.writable.has(org.workspaceId));
+
+  // Removal and leaving
+  const [assigned] = await db
+    .insert(s.tasks)
+    .values({ workspaceId: org.workspaceId, boardId: orgBoard.id, columnId: orgCols[0].id, creatorId: inviteeId, assigneeId: inviteeId, title: "Invitee's open task" })
+    .returning();
+  const [inviteeCommit] = await db.insert(s.commits).values({ workspaceId: org.workspaceId, userId: inviteeId, message: "Invitee's commit", executionValue: 2 }).returning();
+  [ok, detail] = await expectError(() => removeMember(B, { organisationId: org.id, userId: parthId }), "forbidden");
+  const [removeByMember] = await expectError(() => removeMember(M, { organisationId: org.id, userId: inviteeId }), "forbidden");
+  const [removeByOutsider] = await expectError(() => removeMember(X, { organisationId: org.id, userId: inviteeId }), "not_found");
+  record("MR7", "Admin cannot remove the owner; members and outsiders cannot remove anyone", ok && removeByMember && removeByOutsider && (await roleIn(parthId)) === "owner" && (await roleIn(inviteeId)) === "member", detail);
+  await removeMember(B, { organisationId: org.id, userId: inviteeId });
+  const afterRemoval = await one(db.select({ a: s.tasks.assigneeId }).from(s.tasks).where(eq(s.tasks.id, assigned.id)));
+  const commitKept = await one(db.select({ id: s.commits.id }).from(s.commits).where(eq(s.commits.id, inviteeCommit.id)));
+  [ok, detail] = await expectError(async () => moveTask(await loadActor(inviteeId), { taskId: orgTask.id, columnId: orgCols[1].id, afterTaskId: null }), "not_found");
+  record("MR8", "Removed member loses access; their open tasks are unassigned and commits kept", ok && (await roleIn(inviteeId)) === null && afterRemoval.a === null && Boolean(commitKept), detail);
+  await db.delete(s.tasks).where(eq(s.tasks.id, assigned.id));
+  await db.delete(s.commits).where(eq(s.commits.id, inviteeCommit.id));
+
+  [ok, detail] = await expectError(() => leaveOrganisation(A, { organisationId: org.id }), "invalid");
+  record("MR9", "Owner cannot leave their own organisation", ok && (await roleIn(parthId)) === "owner", detail);
+  await leaveOrganisation(M, { organisationId: org.id });
+  [ok, detail] = await expectError(() => leaveOrganisation(X, { organisationId: org.id }), "not_found");
+  record("MR10", "Member leaves; an outsider cannot 'leave' an organisation they are not in", ok && (await roleIn(ishitaId)) === null, detail);
+  await db.insert(s.organisationMembers).values({ organisationId: org.id, userId: ishitaId, role: "member" });
+  await db.delete(s.users).where(inArray(s.users.id, [inviteeId, strangerId]));
 
   // ------------------------------------------------------------ export, import, account deletion, billing
   const execution = async (workspaceId: string) =>

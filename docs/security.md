@@ -48,7 +48,7 @@ rate limits. `authz:check` refuses any database whose name does not end in `_tes
 
 ## Results
 
-`npm run authz:check`: **114 of 114 pass.**
+`npm run authz:check`: **137 of 137 pass.**
 
 | Group | Checks |
 |---|---|
@@ -56,9 +56,11 @@ rate limits. `authz:check` refuses any database whose name does not end in `_tes
 | W1–W11 writes | Move another user's task. An outsider moves an organisation task. Move into a column on someone else's board, or across workspaces. A foreign `afterTaskId` is ignored. Viewer-role moves and commits. A commit into another user's project. A commit lands in the right workspace with the session user as author. A capture with a foreign `#project` stays in the user's own Inbox. A mis-built actor still cannot write outside its writable set. |
 | M1–M6 tampering | Extra `workspaceId`/`userId`/`source`/`createdAt` keys rejected. Commit weight outside 1/2/4/8 rejected (0, negative, 1 000 000, string, fraction). Oversized message and capture rejected. Ids with SQL metacharacters rejected. |
 | O1–O6 organisations | Creating one without the Organisation plan. Creator becomes the only member and owner, with a board. A taken address leaves no orphan workspace. Extra `ownerId`/`workspaceId` keys and bad addresses rejected. Another user cannot read or write the new organisation. At most 20 owned. |
+| I1–I13 invitations | Outsiders, members and admins (for admin roles) cannot invite. Only a SHA-256 of the emailed token is stored. Inviting again keeps one pending row and retires the old link. Accepting needs the invited, verified address; links work once and expire. Revocation is owner/admin only. Owner role, extra keys, bad emails and malformed tokens rejected. |
+| MR1–MR10 member management | Outsiders and members cannot change roles. The owner cannot be demoted or removed; nobody changes their own role; only the owner promotes or demotes admins. Role changes and removal take effect on the next request; a removed member's open tasks are unassigned and their commits kept. The owner cannot leave. |
 | L1–L6 lifecycle and races | 10 parallel Done moves record exactly one commit. A replayed Done records nothing. Reopen retires the commit, and completing again records one. A deleted task cannot be moved. A removed member loses write access at once. |
 
-`npm run security:check` (black box, production build): **80 of 80 pass.**
+`npm run security:check` (black box, production build): **85 of 85 pass.**
 
 Email verification and password reset (EV, PR):
 
@@ -89,6 +91,7 @@ Product and surface checks:
 | SA7 | The owner's own move | Saved |
 | SK1 | Calling the development “Skip payment” action on a production build | Hidden and refused on the server; no subscription created |
 | OR1–OR3 | Unpaid organisation creation; forged `ownerId`; stored XSS in the organisation name | Refused; refused; owner is the session user and the name is escaped |
+| IV1–IV5 | Guessed or malformed invitation links; link poisoning through forwarded Host; anonymous or wrong-account acceptance; replay; mail bombing one address | Nothing revealed; fixed origin and forged Host refused; refused; single use; 3 per address per hour |
 | SA8 | Burst of 70 writes | Write budget blocks the excess |
 | X2 | Stored XSS in a task title | Escaped on render |
 | K2 | Session token reused after sign-out | Redirected to sign-in |
@@ -173,8 +176,8 @@ verified after the overrides.
 
 ## Known residual risks
 
-- **No 2FA yet.** It is planned in the spec. Organisation invitations have no acceptance
-  flow yet; when they do, accepting must require a verified email that matches the invite.
+- **No 2FA yet.** It is planned in the spec. Organisation invitations require a verified
+  email that matches the invite (I6, I7, IV3).
 - **Unverified sign-in.** With the correct password, an unverified account answers
   `EMAIL_NOT_VERIFIED`. This needs the password, so it reveals nothing to someone who only
   has the email.

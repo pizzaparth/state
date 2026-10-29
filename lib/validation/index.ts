@@ -171,6 +171,39 @@ export const createOrganisationSchema = z.strictObject({
     .regex(PROJECT_SLUG, "Use lowercase letters, numbers and single hyphens, like ksan-relay."),
 });
 
+/** Roles that can be given to someone. Ownership is never handed out through these. */
+export const ASSIGNABLE_ROLES = ["admin", "member", "viewer"] as const;
+
+export const inviteMemberSchema = z.strictObject({
+  organisationId: objectId,
+  email: z.string().trim().toLowerCase().max(254, "Use a shorter email address.").pipe(z.email("Enter an email address, like ana@example.com.")),
+  role: z.enum(ASSIGNABLE_ROLES),
+});
+
+export const invitationRefSchema = z.strictObject({
+  invitationId: objectId,
+});
+
+/** Invitation links carry 32 random bytes as base64url. */
+export const acceptInvitationSchema = z.strictObject({
+  token: z.string().regex(/^[A-Za-z0-9_-]{43}$/, "This invitation link is not valid."),
+});
+
+export const setMemberRoleSchema = z.strictObject({
+  organisationId: objectId,
+  userId: objectId,
+  role: z.enum(ASSIGNABLE_ROLES),
+});
+
+export const memberRefSchema = z.strictObject({
+  organisationId: objectId,
+  userId: objectId,
+});
+
+export const organisationRefSchema = z.strictObject({
+  organisationId: objectId,
+});
+
 /** Slug suggested from a project name: "Relay DB v2" becomes "relay-db-v2". */
 export function slugify(name: string): string {
   return name

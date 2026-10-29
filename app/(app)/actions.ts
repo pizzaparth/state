@@ -8,9 +8,9 @@ import { hasPaidAccess } from "@/lib/billing/access";
 import { loadActor, MutationError, type Actor } from "@/lib/authz";
 import { deleteAccount, IdentityError, verifyIdentity } from "@/lib/accounts/delete";
 import { setAutoRenew } from "@/lib/billing/manage";
-import { captureTask, createManualCommit, createOrganisation, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "@/lib/mutations";
+import { acceptInvitation, captureTask, createManualCommit, createOrganisation, createProject, inviteMember, leaveOrganisation, removeMember, revokeInvitation, setMemberRole, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "@/lib/mutations";
 import { consumeThrottle } from "@/lib/security/throttle";
-import { captureTaskSchema, createOrganisationSchema, createProjectSchema, deleteAccountSchema, setAutoRenewSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import { acceptInvitationSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, invitationRefSchema, inviteMemberSchema, memberRefSchema, organisationRefSchema, setMemberRoleSchema, deleteAccountSchema, setAutoRenewSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Server Actions for the product. Each one re-verifies everything itself: Server Actions
@@ -94,6 +94,56 @@ export async function setProjectArchivedAction(input: unknown) {
 
 export async function createOrganisationAction(input: unknown) {
   return run(createOrganisationSchema, input, createOrganisation);
+}
+
+export async function inviteMemberAction(input: unknown) {
+  return run(inviteMemberSchema, input, async (actor, data) => {
+    // Each invitation sends an email: cap them per sender and per address
+    if (!(await consumeThrottle(`invite:${actor.id}`, 30, 60 * 60)) || !(await consumeThrottle(`invite-to:${data.email}`, 3, 60 * 60))) {
+      throw new MutationError("rate_limited", "Too many invitations. Try again in an hour.");
+    }
+    return inviteMember(actor, data);
+  });
+}
+
+export async function revokeInvitationAction(input: unknown) {
+  return run(invitationRefSchema, input, revokeInvitation);
+}
+
+export async function setMemberRoleAction(input: unknown) {
+  return run(setMemberRoleSchema, input, setMemberRole);
+}
+
+export async function removeMemberAction(input: unknown) {
+  return run(memberRefSchema, input, removeMember);
+}
+
+export async function leaveOrganisationAction(input: unknown) {
+  return run(organisationRefSchema, input, leaveOrganisation);
+}
+
+/**
+ * Accepts an organisation invitation. Needs a signed-in account whose verified email is
+ * the invited address, but not a subscription: joining comes before paying. Not run
+ * through run(), which requires paid access.
+ */
+export async function acceptInvitationAction(input: unknown): Promise<ActionResult<{ slug: string }>> {
+  try {
+    const session = await getSession();
+    if (!session) throw new MutationError("unauthenticated", "Your session has ended. Sign in again.");
+    if (!(await consumeThrottle(`accept-invite:${session.user.id}`, 10, 15 * 60))) {
+      throw new MutationError("rate_limited", "Too many attempts. Try again in 15 minutes.");
+    }
+    const parsed = acceptInvitationSchema.safeParse(input);
+    if (!parsed.success) throw new MutationError("invalid", parsed.error.issues[0]?.message ?? "This invitation link is not valid.");
+    const data = await acceptInvitation(session.user, parsed.data);
+    revalidatePath("/", "layout");
+    return { ok: true, data };
+  } catch (error) {
+    if (error instanceof MutationError) return { ok: false, error: error.message };
+    console.error("[action] accept invitation", error);
+    return { ok: false, error: "Something went wrong. You have not joined yet." };
+  }
 }
 
 export async function createCommitAction(input: unknown) {

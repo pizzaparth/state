@@ -318,6 +318,8 @@ async function checkEmailFlows() {
   const early = await authPost("/sign-in/email", { email, password });
   record("EV2", "Unverified account cannot sign in", early.status === 403 && /EMAIL_NOT_VERIFIED/.test(early.text) && !sessionCookie(early), `${early.status}`);
 
+  // A deliberately forged token: the check is that the server refuses it
+  // nosemgrep: generic.secrets.security.detected-jwt-token.detected-jwt-token
   const forged = await req("/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InhAeC54In0.forged&callbackURL=/verify-email");
   record("EV3", "Forged verification token is rejected", !sessionCookie(forged) && /error=/.test(forged.headers.get("location") || ""), `${forged.status} ${forged.headers.get("location")}`);
 
@@ -424,14 +426,16 @@ async function actionIdOn(path, name, cookie) {
   const page = await req(path, { headers: { cookie } });
   for (const m of page.text.matchAll(/<script[^>]+src="([^"]+\.js)"/g)) {
     const js = (await req(m[1].startsWith("http") ? new URL(m[1]).pathname : m[1])).text;
+    // `name` is one of this script's own action names, never outside input
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
     const id = js.match(new RegExp(`"([0-9a-f]{40,42})",[^"]{0,120}?"${name}"`))?.[1];
     if (id) return id;
   }
   return null;
 }
 
-async function callAction(id, args, { cookie, origin = ORIGIN, path = "/platform/personal" } = {}) {
-  const headers = { "next-action": id, "content-type": "text/plain;charset=UTF-8", accept: "text/x-component" };
+async function callAction(id, args, { cookie, origin = ORIGIN, path = "/platform/personal", extraHeaders = {} } = {}) {
+  const headers = { "next-action": id, "content-type": "text/plain;charset=UTF-8", accept: "text/x-component", ...extraHeaders };
   if (cookie) headers.cookie = cookie;
   if (origin) headers.origin = origin;
   const res = await req(path, { method: "POST", body: JSON.stringify(args), raw: true, headers });
@@ -547,6 +551,51 @@ async function checkServerActions() {
     xssOrg?.error ?? `owner ${madeOrg?.owner_id}`
   );
   if (madeOrg) await db.query("delete from workspaces where id = (select workspace_id from organisations where id = $1)", [madeOrg.id]);
+
+  // Invitations: single-use links from a fixed origin, accepted only by the invited address
+  const junk = await Promise.all([`/invite/${"A".repeat(43)}`, "/invite/x'or'1=1", "/invite/%2e%2e%2fadmin"].map((p) => req(p)));
+  record("IV1", "Unknown or malformed invitation links reveal nothing", junk.every((r) => r.status === 404 || (r.status === 200 && /Invitation expired/.test(r.text))), junk.map((r) => r.status).join(","));
+
+  const membersPath = "/platform/org/ksan-relay/members";
+  const inviteId = await actionIdOn(membersPath, "inviteMemberAction", owner);
+  const newcomer = uniqueEmail("invitee");
+  const { cookie: newcomerCookie } = await verifiedSignUp(newcomer);
+  const inviteArgs = [{ organisationId: "seed-org-ksan", email: newcomer, role: "member" }];
+  // A forwarded Host that disagrees with Origin fails Next's action check; the link itself always uses the configured origin
+  const poisoned = inviteId ? await callAction(inviteId, inviteArgs, { cookie: owner, path: membersPath, extraHeaders: { "x-forwarded-host": "evil.example" } }) : null;
+  const poisonedMail = await nextEmail(newcomer, /Join .* on State/);
+  const invite = inviteId ? await callAction(inviteId, inviteArgs, { cookie: owner, path: membersPath }) : null;
+  const inviteLink = linkIn(await nextEmail(newcomer, /Join .* on State/));
+  record(
+    "IV2",
+    "Invitation link uses the fixed origin; a forged forwarded Host sends nothing",
+    Boolean(poisoned) && !poisoned.ok && !poisonedMail && Boolean(invite?.ok) && Boolean(inviteLink) && new URL(inviteLink).origin === ORIGIN,
+    invite?.error ?? `poisoned ${poisoned?.status}, link ${inviteLink}`
+  );
+
+  const token = inviteLink ? new URL(inviteLink).pathname.split("/").pop() : "";
+  const invitePath = `/invite/${token}`;
+  const acceptId = inviteLink ? await actionIdOn(invitePath, "acceptInvitationAction", newcomerCookie) : null;
+  const memberRow = async () => (await db.query("select m.role from organisation_members m join users u on u.id = m.user_id where m.organisation_id = 'seed-org-ksan' and u.email = $1", [newcomer])).rows[0] ?? null;
+  const anonAccept = acceptId ? await callAction(acceptId, [{ token }], { path: invitePath }) : null;
+  const wrongAccept = acceptId ? await callAction(acceptId, [{ token }], { cookie: other, path: invitePath }) : null;
+  const aaravRole = (await db.query("select role from organisation_members where organisation_id = 'seed-org-ksan' and user_id = 'demo-aarav'")).rows[0]?.role;
+  record(
+    "IV3",
+    "Invitation cannot be accepted anonymously or by another account",
+    Boolean(acceptId) && !anonAccept.ok && !wrongAccept.ok && (await memberRow()) === null && aaravRole === "admin",
+    acceptId ? `anon ${anonAccept.error ?? anonAccept.status}, other ${wrongAccept.error ?? wrongAccept.status}` : "action id not found"
+  );
+  const accepted = acceptId ? await callAction(acceptId, [{ token }], { cookie: newcomerCookie, path: invitePath }) : null;
+  const replayed = acceptId ? await callAction(acceptId, [{ token }], { cookie: newcomerCookie, path: invitePath }) : null;
+  record("IV4", "Invited address joins once; the link cannot be replayed", Boolean(accepted?.ok) && (await memberRow())?.role === "member" && !replayed?.ok, accepted?.error ?? replayed?.error ?? "");
+
+  const spamTarget = uniqueEmail("spam");
+  const spam = [];
+  for (let i = 0; i < 4; i++) spam.push(inviteId ? await callAction(inviteId, [{ organisationId: "seed-org-ksan", email: spamTarget, role: "viewer" }], { cookie: owner, path: membersPath }) : null);
+  record("IV5", "Invitations to one address are capped (mail bombing)", spam.slice(0, 3).every((r) => r?.ok) && /Too many invitations/.test(spam[3]?.error ?? ""), spam.map((r) => r?.error ?? (r?.ok ? "ok" : "?")).join(" | "));
+  await db.query("delete from organisation_members where organisation_id = 'seed-org-ksan' and user_id = (select id from users where email = $1)", [newcomer]);
+  await db.query("delete from organisation_invitations where email = $1", [spamTarget]);
 
   // Write budget: 60 per user per minute, shared across instances. Invalid calls count too.
   const burst = await Promise.all(Array.from({ length: 70 }, () => callAction(ids.moveTaskAction, [{}], { cookie: other })));

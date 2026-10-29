@@ -715,14 +715,17 @@ export async function getOrgMembers(organisationId: string, workspaceId: string)
     .leftJoin(stats, eq(stats.userId, users.id))
     .leftJoin(open, eq(open.userId, users.id))
     .where(eq(organisationMembers.organisationId, organisationId))
-    .orderBy(asc(users.name));
+    .orderBy(asc(users.name))
+    .limit(500);
 }
 
 export async function getPendingInvitations(organisationId: string) {
   return db
-    .select({ email: organisationInvitations.email, role: organisationInvitations.role, expiresAt: organisationInvitations.expiresAt })
+    .select({ id: organisationInvitations.id, email: organisationInvitations.email, role: organisationInvitations.role, expiresAt: organisationInvitations.expiresAt })
     .from(organisationInvitations)
-    .where(and(eq(organisationInvitations.organisationId, organisationId), eq(organisationInvitations.status, "pending")));
+    .where(and(eq(organisationInvitations.organisationId, organisationId), eq(organisationInvitations.status, "pending"), gte(organisationInvitations.expiresAt, sql`now()`)))
+    .orderBy(asc(organisationInvitations.email))
+    .limit(100);
 }
 
 // ------------------------------------------------------------------ objectives, account

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CredentialsForm } from "@/components/auth/credentials-form";
+import { isSafeRedirectPath } from "@/lib/auth/redirect";
 import { DISPLAY } from "@/lib/type";
 
 export const metadata = {
@@ -11,13 +12,14 @@ export const metadata = {
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string; interval?: string }>;
+  searchParams: Promise<{ plan?: string; interval?: string; next?: string }>;
 }) {
-  const { plan, interval } = await searchParams;
+  const { plan, interval, next } = await searchParams;
   const query = new URLSearchParams();
   if (plan === "individual" || plan === "organisation") query.set("plan", plan);
   if (interval === "monthly" || interval === "yearly") query.set("interval", interval);
-  const redirectTo = `/subscribe${query.size ? `?${query}` : ""}`;
+  // An invitation link sends new people back to it once their email is verified
+  const redirectTo = isSafeRedirectPath(next) && next.startsWith("/invite/") ? next : `/subscribe${query.size ? `?${query}` : ""}`;
 
   return (
     <div className="space-y-6">
