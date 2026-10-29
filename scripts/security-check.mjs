@@ -667,6 +667,25 @@ async function checkServerActions() {
     `${crossCapture.error} | ${planted?.workspace_id}`
   );
 
+  // Overdue past the grace period: pages and search stay readable, every write is refused
+  const subsBackup = (await db.query("select id, status, past_due_since from subscriptions where user_id = 'demo-aarav'")).rows;
+  await db.query("update subscriptions set status = 'past_due', past_due_since = now() - interval '8 days' where user_id = 'demo-aarav'");
+  const roPage = await req("/platform/today", { headers: { cookie: other } });
+  const roSearch = await req("/api/search?q=relay", { headers: { cookie: other } });
+  const roWrite = await callAction(ids.createCommitAction, [{ message: "while overdue", projectId: null, weight: 2 }], { cookie: other });
+  const roWrote = Number((await db.query("select count(*) from commits where message = 'while overdue'")).rows[0].count);
+  record(
+    "RO1",
+    "Past due beyond the grace period: reads work, writes are refused on the server",
+    roPage.status === 200 && /Read-only/.test(roPage.text) && roSearch.status === 200 && !roWrite.ok && /Read-only/.test(roWrite.error ?? "") && roWrote === 0,
+    `page ${roPage.status} search ${roSearch.status} write ${roWrite.error}`
+  );
+  await db.query("update subscriptions set past_due_since = now() - interval '2 days' where user_id = 'demo-aarav'");
+  const graceWrite = await callAction(ids.createCommitAction, [{ message: "within grace", projectId: null, weight: 2 }], { cookie: other });
+  record("RO2", "Within the grace period writes still work", graceWrite.ok, graceWrite.error ?? "");
+  await db.query("delete from commits where message = 'within grace'");
+  for (const row of subsBackup) await db.query("update subscriptions set status = $2, past_due_since = $3 where id = $1", [row.id, row.status, row.past_due_since]);
+
   // Write budget: 60 per user per minute, shared across instances. Invalid calls count too.
   const burst = await Promise.all(Array.from({ length: 70 }, () => callAction(ids.moveTaskAction, [{}], { cookie: other })));
   const limited = burst.filter((r) => /Too many changes/.test(r.error ?? "")).length;

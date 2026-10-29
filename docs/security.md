@@ -40,7 +40,7 @@ rate limits. `authz:check` refuses any database whose name does not end in `_tes
 |---|---|
 | Identity | Comes only from the Better Auth session (`getSession`). No request body or query carries a user id that is trusted. |
 | Reads | `getViewer()` lists the viewer's workspaces: their personal workspace plus their organisation memberships. Every query in `db/queries` filters by those ids. A foreign id returns nothing, so the page 404s or shows no panel. |
-| Writes | Server Actions (`app/(app)/actions.ts`) check the session, paid access, a per-user write budget (60 a minute, in Postgres) and a strict Zod schema. Unknown keys are rejected. The actions then call `lib/mutations.ts`. |
+| Writes | Server Actions (`app/(app)/actions.ts`) check the session, full paid access (read-only accounts are refused), a per-user write budget (60 a minute, in Postgres) and a strict Zod schema. Unknown keys are rejected. The actions then call `lib/mutations.ts`. |
 | Object checks | `lib/mutations.ts` loads each referenced object (task, column, neighbour card, project) and checks it with `assertWritable` against workspaces re-read from the database on every call. The column must belong to the task's own board. A neighbour card from another board is ignored. |
 | Roles | Personal workspace: owner only. Organisation: owner, admin and member write; viewer reads only and gets “view-only access”. Removing a member takes effect on their next request. |
 | Server-derived fields | Workspace, author, timestamps, commit source and execution value are never taken from the request. A commit's value is the task weight (1/2/4/8). |
@@ -48,7 +48,7 @@ rate limits. `authz:check` refuses any database whose name does not end in `_tes
 
 ## Results
 
-`npm run authz:check`: **166 of 166 pass.**
+`npm run authz:check`: **169 of 169 pass.**
 
 | Group | Checks |
 |---|---|
@@ -62,9 +62,10 @@ rate limits. `authz:check` refuses any database whose name does not end in `_tes
 | CE1–CE9 commit corrections | Another user, an outsider, a member (on someone else's commit) and a viewer cannot edit. The project must be live and in the commit's own workspace. Time, execution value, author, workspace, task and source cannot be sent. The author, or an organisation owner, corrects message, project and tags; time and value stay; an audit event is written. Retired commits cannot be edited. |
 | S1–S6 search | The owner finds their own tasks and commits; another user and an outsider find none of them. Members find organisation tasks. `%`, `_`, backslashes and quotes match literally. Deleted tasks and retired commits are not found. At most 8 of each. |
 | CP1–CP6 capture tokens | Due days resolve in the person's timezone. An organisation `#project` puts the task on that organisation's board, and `@person` assigns only a member of it. A viewer's organisation `#project` is ignored (personal Inbox). `@person` on a personal task, a non-member handle, or an outsider assigning into an organisation are refused. Impossible dates stay in the title; emails are not `@people`. |
+| AC1–AC3 access levels | Full while paid, within 7 days past due, or until a canceled period ends; read-only after; none before paying. Organisation-plan checks ignore other plans. The grace period starts at the first past_due event, is not restarted by provider retries, and clears when paid. |
 | L1–L6 lifecycle and races | 10 parallel Done moves record exactly one commit. A replayed Done records nothing. Reopen retires the commit, and completing again records one. A deleted task cannot be moved. A removed member loses write access at once. |
 
-`npm run security:check` (black box, production build): **92 of 92 pass.**
+`npm run security:check` (black box, production build): **94 of 94 pass.**
 
 Email verification and password reset (EV, PR):
 
@@ -100,6 +101,7 @@ Product and surface checks:
 | CM1–CM2 | Another user's commit edit; forged `executionValue`/`createdAt`; stored XSS in a corrected message and tags | Refused; refused; escaped, time and value unchanged |
 | SR1–SR3 | `/api/search` anonymous, with a forged session, unpaid; short, oversized and extra parameters; another user's personal task | 401, 401, 403; 400; never returned, responses `private, no-store` |
 | CT1 | Capture naming another user's `#project` and `@person` through the raw action | Refused; without `@person` it lands in the caller's own Inbox with no project |
+| RO1–RO2 | Account past due beyond the grace period; within it | Pages and search answer with a read-only notice, raw writes refused; writes still allowed |
 | SA8 | Burst of 70 writes | Write budget blocks the excess |
 | X2 | Stored XSS in a task title | Escaped on render |
 | K2 | Session token reused after sign-out | Redirected to sign-in |

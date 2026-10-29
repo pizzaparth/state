@@ -34,6 +34,8 @@ export interface ShellData {
   projects: { id: string; name: string; href: string }[];
   dateLabel: string;
   ticker: { today: number; last7: number; prev7: number; activeDays7: number };
+  /** Set when the plan is overdue past its grace period or has ended: reads only. */
+  readOnly: "past_due" | "ended" | null;
 }
 
 type NavItem = { name: string; href: string; icon: React.ComponentType<{ className?: string }>; badge?: number; shortcut?: string };
@@ -180,7 +182,20 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
             </header>
 
             <main id="content" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-16 pt-4 sm:px-6 lg:px-8">
-              <div className="mx-auto max-w-6xl">{children}</div>
+              <div className="mx-auto max-w-6xl">
+                {data.readOnly && (
+                  <p role="status" className="app-panel mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-[16px] px-4 py-3 text-base">
+                    <span>
+                      <span className="font-mono text-sm uppercase tracking-[0.14em] text-[#9A9A96]">Read-only</span>
+                      <span className="ml-3 text-[#F2F2EF]">{data.readOnly === "past_due" ? "Payment overdue. Changes are paused." : "Plan ended. Changes are paused."}</span>
+                    </span>
+                    <Link href={data.readOnly === "past_due" ? "/platform/settings/billing" : "/subscribe"} className="text-sm font-medium text-[#F2F2EF] underline underline-offset-4 hover:text-white">
+                      {data.readOnly === "past_due" ? "Update billing" : "Subscribe again"}
+                    </Link>
+                  </p>
+                )}
+                {children}
+              </div>
             </main>
           </div>
         </div>

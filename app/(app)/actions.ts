@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import type { z } from "zod";
 import { getSession } from "@/lib/auth/session";
-import { hasPaidAccess } from "@/lib/billing/access";
+import { getAccess } from "@/lib/billing/access";
 import { loadActor, MutationError, type Actor } from "@/lib/authz";
 import { deleteAccount, IdentityError, verifyIdentity } from "@/lib/accounts/delete";
 import { setAutoRenew } from "@/lib/billing/manage";
@@ -27,7 +27,10 @@ async function run<S extends z.ZodType, T>(schema: S, input: unknown, fn: (actor
   try {
     const session = await getSession();
     if (!session) throw new MutationError("unauthenticated", "Your session has ended. Sign in again.");
-    if (!(await hasPaidAccess(session.user.id))) throw new MutationError("forbidden", "Your subscription is not active.");
+    const { access, reason } = await getAccess(session.user.id);
+    if (access !== "full") {
+      throw new MutationError("forbidden", access === "none" ? "Your subscription is not active." : reason === "past_due" ? "Read-only: your payment is overdue. Update billing to make changes." : "Read-only: your plan has ended. Subscribe again to make changes.");
+    }
     if (!(await consumeThrottle(`write:${session.user.id}`, WRITES_PER_MINUTE, 60))) {
       throw new MutationError("rate_limited", "Too many changes at once. Wait a minute and try again.");
     }

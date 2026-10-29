@@ -16,6 +16,8 @@ export const subscriptions = pgTable(
     status: text("status").notNull(), // "incomplete" | "active" | "past_due" | "canceled" | "expired"
     seats: integer("seats").notNull().default(1), // organisation plan is billed per member
     cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+    // When the subscription last became past_due; null otherwise. Starts the grace period.
+    pastDueSince: timestamp("past_due_since", { withTimezone: true }),
     currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
     currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

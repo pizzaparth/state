@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { payments, subscriptions, users } from "@/db/schema";
 import { provisionAccount } from "@/lib/accounts/provision";
@@ -74,10 +74,13 @@ export async function syncSubscription(snapshot: SubscriptionSnapshot): Promise<
   // its events leave the flag as set by lib/billing/manage.ts; Stripe always reports it
   const cancel = snapshot.cancelAtPeriodEnd === undefined ? {} : { cancelAtPeriodEnd: snapshot.cancelAtPeriodEnd };
 
+  // The grace period runs from the first past_due event; later deliveries keep that start
+  const pastDueSince =
+    snapshot.status === "past_due" ? sql`coalesce(${subscriptions.pastDueSince}, now())` : null;
   await db
     .insert(subscriptions)
-    .values({ ...values, cancelAtPeriodEnd: snapshot.cancelAtPeriodEnd ?? false })
-    .onConflictDoUpdate({ target: subscriptions.providerSubscriptionId, set: { ...values, ...cancel } });
+    .values({ ...values, cancelAtPeriodEnd: snapshot.cancelAtPeriodEnd ?? false, pastDueSince: snapshot.status === "past_due" ? new Date() : null })
+    .onConflictDoUpdate({ target: subscriptions.providerSubscriptionId, set: { ...values, ...cancel, pastDueSince } });
 
   await db
     .update(users)

@@ -27,6 +27,8 @@ import { parseCsv, toCsv } from "../lib/data/csv";
 import { deleteAccount } from "../lib/accounts/delete";
 import { nextDueDay } from "../lib/recurrence";
 import { setAutoRenew } from "../lib/billing/manage";
+import { accessFrom, getAccess } from "../lib/billing/access";
+import { syncSubscription } from "../lib/billing/sync";
 
 const dbName = new URL(process.env.DATABASE_URL ?? "postgres://x/none").pathname.slice(1);
 if (!dbName.endsWith("_test")) {
@@ -748,6 +750,44 @@ async function main() {
   ];
   record("CP6", "Parser: weekdays are the next one, impossible or out-of-range dates stay in the title, emails are not @people", parses.every(Boolean), JSON.stringify(parses));
   await db.delete(s.tasks).where(inArray(s.tasks.id, [dated.id, orgCapture.id, viewerCapture.id]));
+
+  // ------------------------------------------------------------ access levels (past due, lapsed)
+  const now = new Date();
+  const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000);
+  const sub = (status: string, extra: Partial<{ plan: string; currentPeriodEnd: Date | null; pastDueSince: Date | null }> = {}) => ({ plan: "individual", currentPeriodEnd: null, pastDueSince: null, status, ...extra });
+  const matrix: [string, ReturnType<typeof accessFrom>["access"], ReturnType<typeof accessFrom>][] = [
+    ["active", "full", accessFrom([sub("active")], now)],
+    ["past_due 2 days", "full", accessFrom([sub("past_due", { pastDueSince: daysAgo(2) })], now)],
+    ["past_due 8 days", "read_only", accessFrom([sub("past_due", { pastDueSince: daysAgo(8) })], now)],
+    ["canceled, period running", "full", accessFrom([sub("canceled", { currentPeriodEnd: daysAgo(-3) })], now)],
+    ["canceled, period over", "read_only", accessFrom([sub("canceled", { currentPeriodEnd: daysAgo(1) })], now)],
+    ["expired", "read_only", accessFrom([sub("expired")], now)],
+    ["incomplete only", "none", accessFrom([sub("incomplete")], now)],
+    ["no subscription", "none", accessFrom([], now)],
+    ["expired + new active", "full", accessFrom([sub("expired"), sub("active")], now)],
+  ];
+  const wrong = matrix.filter(([, want, got]) => got.access !== want).map(([name, , got]) => `${name}: ${got.access}`);
+  record("AC1", "Access: full while paid or within 7 days past due; read-only after; none before paying", wrong.length === 0, wrong.join("; "));
+  const orgPlan = accessFrom([sub("active"), sub("canceled", { plan: "organisation", currentPeriodEnd: daysAgo(1) })], now, "organisation");
+  record("AC2", "Organisation-plan checks ignore an active Individual plan", orgPlan.access === "read_only");
+
+  const graceUser = `authz-grace-${Date.now()}`;
+  await db.insert(s.users).values({ id: graceUser, name: "Grace", email: `${graceUser}@example.test`, emailVerified: true });
+  const snap = { userId: graceUser, provider: "razorpay" as const, providerSubscriptionId: `sub_${graceUser}`, plan: "individual" as const };
+  await syncSubscription({ ...snap, status: "past_due" });
+  const [graceStart] = await db.select({ p: s.subscriptions.pastDueSince }).from(s.subscriptions).where(eq(s.subscriptions.userId, graceUser));
+  await db.update(s.subscriptions).set({ pastDueSince: daysAgo(8) }).where(eq(s.subscriptions.userId, graceUser));
+  await syncSubscription({ ...snap, status: "past_due" }); // a provider retry must not restart the grace period
+  const lapsed = await getAccess(graceUser);
+  await syncSubscription({ ...snap, status: "active" });
+  const [cleared] = await db.select({ p: s.subscriptions.pastDueSince }).from(s.subscriptions).where(eq(s.subscriptions.userId, graceUser));
+  record(
+    "AC3",
+    "Grace starts at the first past_due event, survives retries, and clears when paid",
+    graceStart.p !== null && lapsed.access === "read_only" && lapsed.reason === "past_due" && cleared.p === null && (await getAccess(graceUser)).access === "full",
+    `${lapsed.access}/${lapsed.reason}`
+  );
+  await db.delete(s.users).where(eq(s.users.id, graceUser));
 
   // ------------------------------------------------------------ export, import, account deletion, billing
   const execution = async (workspaceId: string) =>
