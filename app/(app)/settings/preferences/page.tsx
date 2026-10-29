@@ -2,6 +2,7 @@ import * as React from "react";
 import { getViewer } from "@/lib/viewer";
 import { PageHeader, Panel } from "@/components/app/primitives";
 import { Row, SettingsNav } from "@/components/app/settings-nav";
+import { WEIGHT_LEVELS } from "@/lib/weights";
 
 export const metadata = { title: "Preferences — State" };
 
@@ -19,13 +20,6 @@ const SHORTCUTS = [
   ["G O", "Organisation"],
 ] as const;
 
-const WEIGHTS = [
-  ["Small", 1],
-  ["Normal", 2],
-  ["Major", 4],
-  ["Milestone", 8],
-] as const;
-
 export default async function PreferencesSettingsPage() {
   const viewer = await getViewer();
   return (
@@ -39,13 +33,14 @@ export default async function PreferencesSettingsPage() {
               <span className="tabular-nums">{viewer.dailyExecutionTarget ?? "Not set"}</span>
             </Row>
             <Row label="Task weights" hint="Execution = Σ completed task weights + manual commit weights.">
-              <span className="flex flex-wrap gap-x-4 gap-y-1 tabular-nums">
-                {WEIGHTS.map(([name, w]) => (
-                  <span key={name}>
-                    {name} <span className="text-[#9A9A96]">{w}</span>
-                  </span>
+              <ul className="space-y-2">
+                {WEIGHT_LEVELS.map((w) => (
+                  <li key={w.value}>
+                    {w.label} <span className="tabular-nums text-[#9A9A96]">{w.value}</span>
+                    <span className="block text-sm leading-relaxed text-[#9A9A96]">{w.hint}</span>
+                  </li>
                 ))}
-              </span>
+              </ul>
             </Row>
           </dl>
         </Panel>

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { DueState } from "@/lib/format";
+import { weightLabel } from "@/lib/weights";
 import { TabLinks } from "./tab-links";
 
 /**
@@ -120,12 +121,10 @@ export function PriorityMark({ priority }: { priority: string }) {
   );
 }
 
-const WEIGHT: Record<number, string> = { 1: "Small", 2: "Normal", 4: "Major", 8: "Milestone" };
-
 /** Task weight: the execution it adds when done. */
 export function WeightMark({ weight }: { weight: number }) {
   return (
-    <span title={`${WEIGHT[weight] ?? "Custom"} task: adds ${weight} execution when done`} className="text-[13px] tabular-nums text-[#9A9A96]">
+    <span title={`${weightLabel(weight)} task: adds ${weight} execution when done`} className="text-[13px] tabular-nums text-[#9A9A96]">
       Weight {weight}
     </span>
   );

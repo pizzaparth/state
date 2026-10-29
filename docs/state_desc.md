@@ -1448,6 +1448,22 @@ Milestone   8
 
 The UI should display both label and numeric value when needed.
 
+Each level is roughly double the one below. Weights are relative effort, chosen by the person doing the work; nothing infers or adjusts them. The rubric shown wherever a weight is chosen (`lib/weights.ts`):
+
+```text
+Small       1   A quick, contained change. Under about an hour, no planning needed.
+Normal      2   A typical piece of work, a few hours. Pick this when unsure.
+Major       4   About twice a normal piece of work. A day or more, several steps.
+Milestone   8   A finished outcome, not a step: a release or a shipped feature.
+```
+
+Guidance for choosing:
+
+- compare against your own past work rather than counting hours
+- consistency matters more than precision; the number is for comparing your own periods
+- do not round up: the scale doubles, so inflation compounds
+- a completed task's weight is fixed by its commit and cannot be changed afterwards
+
 Users should be able to keep the default system without configuring anything.
 
 Organisation-specific custom weight schemes can be added later.

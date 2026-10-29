@@ -3,7 +3,8 @@
 import * as React from "react";
 import { Loader2 } from "lucide-react";
 import { setTaskPriorityAction, setTaskWeightAction, type ActionResult } from "@/app/(app)/actions";
-import { PRIORITIES, WEIGHTS, type Priority } from "@/lib/validation";
+import { PRIORITIES, type Priority } from "@/lib/validation";
+import { WEIGHT_LEVELS, weightHint, weightLabel, type Weight } from "@/lib/weights";
 import { useNotice } from "./notice";
 
 /** Select in the task panel that saves on change and rolls back if the save fails. */
@@ -14,6 +15,7 @@ function InlineSelect<T extends string | number>({
   options,
   save,
   savedMessage,
+  describe,
 }: {
   name: string;
   label: string;
@@ -21,6 +23,8 @@ function InlineSelect<T extends string | number>({
   options: readonly { value: T; label: string }[];
   save: (value: T) => Promise<ActionResult<unknown>>;
   savedMessage: (value: T) => string;
+  /** Help line under the select for the current value. */
+  describe?: (value: T) => string;
 }) {
   const notify = useNotice();
   const [value, setValue] = React.useState(saved);
@@ -33,6 +37,8 @@ function InlineSelect<T extends string | number>({
     if (!pending) setValue(saved);
   }
   const errorId = `task-${name}-error`;
+  const hintId = `task-${name}-hint`;
+  const describedBy = [describe && hintId, error && errorId].filter(Boolean).join(" ") || undefined;
 
   return (
     <div>
@@ -41,7 +47,7 @@ function InlineSelect<T extends string | number>({
           name={name}
           aria-label={label}
           aria-invalid={Boolean(error)}
-          aria-describedby={error ? errorId : undefined}
+          aria-describedby={describedBy}
           value={String(value)}
           disabled={pending}
           onChange={(e) => {
@@ -70,6 +76,11 @@ function InlineSelect<T extends string | number>({
         </select>
         {pending && <Loader2 className="size-4 animate-spin text-[#9A9A96]" aria-label="Saving…" />}
       </div>
+      {describe && (
+        <p id={hintId} className="mt-1.5 text-sm leading-relaxed text-[#9A9A96]">
+          {describe(value)}
+        </p>
+      )}
       {error && (
         <p id={errorId} aria-live="polite" className="mt-1.5 text-sm text-[#F0A39B]">
           {error}
@@ -95,8 +106,7 @@ export function TaskPriority({ taskId, priority }: { taskId: string; priority: s
   );
 }
 
-const WEIGHT_LABEL: Record<(typeof WEIGHTS)[number], string> = { 1: "Small", 2: "Normal", 4: "Major", 8: "Milestone" };
-const WEIGHT_OPTIONS = WEIGHTS.map((w) => ({ value: w, label: `${WEIGHT_LABEL[w]}, ${w}` }));
+const WEIGHT_OPTIONS = WEIGHT_LEVELS.map((w) => ({ value: w.value as Weight, label: `${w.label}, ${w.value}` }));
 
 /** Weight of an open task; completed tasks show it read-only (their commit fixed it). */
 export function TaskWeight({ taskId, weight }: { taskId: string; weight: number }) {
@@ -104,10 +114,11 @@ export function TaskWeight({ taskId, weight }: { taskId: string; weight: number 
     <InlineSelect
       name="weight"
       label="Weight"
-      value={weight as (typeof WEIGHTS)[number]}
+      value={weight as Weight}
       options={WEIGHT_OPTIONS}
       save={(next) => setTaskWeightAction({ taskId, weight: next })}
-      savedMessage={(next) => `Weight set to ${WEIGHT_LABEL[next].toLowerCase()}, ${next} execution.`}
+      savedMessage={(next) => `Weight set to ${weightLabel(next).toLowerCase()}, ${next} execution.`}
+      describe={weightHint}
     />
   );
 }

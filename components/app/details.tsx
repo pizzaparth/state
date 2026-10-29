@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { getCommitDetail, getTaskDetail } from "@/db/queries";
 import { dueState, formatDateTime, formatDuration } from "@/lib/format";
+import { weightLabel } from "@/lib/weights";
 import { Chip, DueLabel, PriorityMark } from "./primitives";
 import { TaskPriority, TaskWeight } from "./task-fields";
 import { TaskTitle } from "./task-title";
@@ -16,8 +17,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
-
-const WEIGHT: Record<number, string> = { 1: "Small", 2: "Normal", 4: "Major", 8: "Milestone" };
 
 export function TaskDetail({ task, tz, now, editable = false }: { task: Task; tz: string; now: Date; editable?: boolean }) {
   const state = task.completedAt ? "Done" : (task.columnName ?? "Inbox");
@@ -51,7 +50,7 @@ export function TaskDetail({ task, tz, now, editable = false }: { task: Task; tz
             <TaskWeight taskId={task.id} weight={task.weight} />
           ) : (
             <>
-              {WEIGHT[task.weight]} <span className="tabular-nums text-[#9A9A96]">({task.weight} execution)</span>
+              {weightLabel(task.weight)} <span className="tabular-nums text-[#9A9A96]">({task.weight} execution)</span>
             </>
           )}
         </Field>

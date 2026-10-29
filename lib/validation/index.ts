@@ -81,8 +81,6 @@ export const setTaskPrioritySchema = z.strictObject({
   priority: z.enum(PRIORITIES),
 });
 
-export const WEIGHTS = [1, 2, 4, 8] as const;
-
 /** Weight of an open task; a completed task's weight is fixed by its commit. */
 export const setTaskWeightSchema = z.strictObject({
   taskId: objectId,

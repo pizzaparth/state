@@ -26,6 +26,7 @@ import {
 import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 import { createCommitAction } from "@/app/(app)/actions";
+import { WEIGHT_LEVELS, weightHint } from "@/lib/weights";
 import { NoticeProvider, useNotice } from "./notice";
 
 export interface ShellData {
@@ -447,10 +448,11 @@ function CommitDialog({
 }) {
   const notify = useNotice();
   const [error, setError] = React.useState<string | null>(null);
+  const [weight, setWeight] = React.useState(2);
   const [pending, startTransition] = React.useTransition();
 
   return (
-    <Dialog.Root open={open} onOpenChange={(o) => (setError(null), onOpenChange(o))}>
+    <Dialog.Root open={open} onOpenChange={(o) => (setError(null), setWeight(2), onOpenChange(o))}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content className="fixed left-1/2 top-[14vh] z-50 origin-top data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 overscroll-contain rounded-[28px] bg-[#0A0A0A] p-6 border border-white/10 outline-none">
@@ -472,7 +474,6 @@ function CommitDialog({
                 return;
               }
               if (pending) return;
-              const weight = Number(form.get("weight"));
               startTransition(async () => {
                 const result = await createCommitAction({ message, projectId: String(form.get("project") ?? "") || null, weight });
                 if (!result.ok) {
@@ -524,16 +525,27 @@ function CommitDialog({
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="commit-weight" className="text-sm font-medium text-[#9A9A96]">
-                  Execution
+                  Weight
                 </label>
-                <select id="commit-weight" name="weight" className={selectClass} defaultValue="2">
-                  <option value="1">Small, 1</option>
-                  <option value="2">Normal, 2</option>
-                  <option value="4">Major, 4</option>
-                  <option value="8">Milestone, 8</option>
+                <select
+                  id="commit-weight"
+                  name="weight"
+                  className={selectClass}
+                  value={weight}
+                  onChange={(e) => setWeight(Number(e.target.value))}
+                  aria-describedby="commit-weight-hint"
+                >
+                  {WEIGHT_LEVELS.map((w) => (
+                    <option key={w.value} value={w.value}>
+                      {w.label}, {w.value}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
+            <p id="commit-weight-hint" className="-mt-1 text-sm leading-relaxed text-[#9A9A96]">
+              {weightHint(weight)}
+            </p>
             <div className="flex items-center justify-between gap-3 pt-2">
               <p className="text-sm text-[#9A9A96]">
                 <kbd className="font-mono">⌘&nbsp;Enter</kbd> to commit
