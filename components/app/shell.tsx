@@ -48,9 +48,9 @@ function navSections(data: ShellData): { title?: string; items: NavItem[] }[] {
     {
       title: "Execution",
       items: [
+        { name: "Metrics", href: "/platform/metrics", icon: BarChart3, shortcut: "G M" },
         { name: "Activity", href: "/platform/activity", icon: Activity, shortcut: "G A" },
         { name: "History", href: "/platform/history", icon: History, shortcut: "G H" },
-        { name: "Metrics", href: "/platform/metrics", icon: BarChart3, shortcut: "G M" },
       ],
     },
     {

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { getViewer } from "@/lib/viewer";
 import { PageHeader } from "@/components/app/primitives";
-import { MetricsView, toPeriod } from "@/components/app/views";
+import { MetricsView, toPeriod } from "@/components/app/metrics-view";
 import type { PageSearchParams } from "@/components/app/drawers";
 
 export const metadata = { title: "Metrics — State" };

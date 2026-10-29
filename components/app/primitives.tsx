@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { DISPLAY, TICK } from "@/lib/type";
 import type { DueState } from "@/lib/format";
 import { weightLabel } from "@/lib/weights";
+import { Sparkline } from "./charts";
 import { TabLinks } from "./tab-links";
 
 /**
@@ -203,6 +204,7 @@ export function Measure({
   formula,
   delta,
   inverse,
+  spark,
 }: {
   label: string;
   value: string;
@@ -210,10 +212,15 @@ export function Measure({
   formula?: string;
   delta?: React.ReactNode;
   inverse?: boolean;
+  /** Recent values drawn as a trend line beside the label. */
+  spark?: number[];
 }) {
   return (
     <div className={cn("min-w-0 p-5", inverse ? "app-inverse rounded-[24px]" : "app-panel")}>
-      <p className={cn(TICK, inverse ? "text-[#55554F]" : "text-[#9A9A96]")}>{label}</p>
+      <div className="flex items-start justify-between gap-3">
+        <p className={cn(TICK, inverse ? "text-[#55554F]" : "text-[#9A9A96]")}>{label}</p>
+        {spark && <Sparkline values={spark} inverse={inverse} />}
+      </div>
       <p className="mt-4 flex items-baseline gap-1.5">
         <span className={cn(DISPLAY, "text-[2.5rem] leading-none tabular-nums", inverse ? "text-[#0A0A0A]" : "text-[#F2F2EF]")}>{value}</span>
         {unit && <span className={cn("font-mono text-sm", inverse ? "text-[#55554F]" : "text-[#9A9A96]")}>{unit}</span>}

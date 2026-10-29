@@ -480,6 +480,99 @@ async function countCompletedWithoutStart(scope: Scope, start: SQL) {
   return row.n;
 }
 
+export interface MetricSeries {
+  /** Daily execution over `history` days (the period, the prior period and SMA warm-up). */
+  history: DailyExecution[];
+  /** Commits by local ISO weekday (1 = Monday) and hour, current period. */
+  punchcard: { dow: number; hour: number; commits: number; execution: number }[];
+  /** Commits grouped by execution value, current period. */
+  weights: { weight: number; commits: number; execution: number }[];
+  /** Tasks created and completed per local day, current period. */
+  flow: { day: string; created: number; completed: number }[];
+  /** Cycle times of tasks completed in the current and prior periods. */
+  cycles: { day: string; ms: number }[];
+  /** Execution per project, current and prior period. */
+  projects: { name: string; execution: number; previous: number; commits: number; activeDays: number }[];
+}
+
+/** Time-series inputs for the Metrics page; every list is bounded. */
+export async function getMetricSeries(scope: Scope, tz: string, days: number): Promise<MetricSeries> {
+  const historyDays = Math.max(2 * days, days + 27);
+  const history = await getDailyExecution(scope, tz, historyDays);
+  if (empty(scope)) return { history, punchcard: [], weights: [], flow: [], cycles: [], projects: [] };
+  const start = localDayStart(tz, days - 1);
+  const previousStart = localDayStart(tz, 2 * days - 1);
+  const localDay = (column: typeof tasks.createdAt | typeof tasks.completedAt) => sql<string>`to_char(${column} at time zone ${tz}, 'YYYY-MM-DD')`;
+
+  const [punchcard, weights, created, completed, cycles, byProject] = await Promise.all([
+    db
+      .select({
+        dow: sql<number>`extract(isodow from ${commits.createdAt} at time zone ${tz})::int`,
+        hour: sql<number>`extract(hour from ${commits.createdAt} at time zone ${tz})::int`,
+        commits: sql<number>`count(*)::int`,
+        execution: sql<number>`coalesce(sum(${commits.executionValue}), 0)::int`,
+      })
+      .from(commits)
+      .where(and(...commitWhere(scope), gte(commits.createdAt, start)))
+      .groupBy(sql`1`, sql`2`)
+      .limit(168),
+    db
+      .select({
+        weight: commits.executionValue,
+        commits: sql<number>`count(*)::int`,
+        execution: sql<number>`coalesce(sum(${commits.executionValue}), 0)::int`,
+      })
+      .from(commits)
+      .where(and(...commitWhere(scope), gte(commits.createdAt, start)))
+      .groupBy(commits.executionValue)
+      .orderBy(asc(commits.executionValue))
+      .limit(50),
+    db
+      .select({ day: localDay(tasks.createdAt), n: sql<number>`count(*)::int` })
+      .from(tasks)
+      .where(and(...taskWhere(scope), gte(tasks.createdAt, start)))
+      .groupBy(sql`1`)
+      .limit(400),
+    db
+      .select({ day: localDay(tasks.completedAt), n: sql<number>`count(*)::int` })
+      .from(tasks)
+      .where(and(...taskWhere(scope), gte(tasks.completedAt, start)))
+      .groupBy(sql`1`)
+      .limit(400),
+    db
+      .select({ day: localDay(tasks.completedAt), ms: sql<number>`extract(epoch from (${tasks.completedAt} - ${tasks.startedAt})) * 1000` })
+      .from(tasks)
+      .where(and(...taskWhere(scope), gte(tasks.completedAt, previousStart), isNotNull(tasks.startedAt)))
+      .orderBy(asc(tasks.completedAt))
+      .limit(5000),
+    db
+      .select({
+        name: sql<string>`coalesce(${projects.name}, 'No project')`,
+        execution: sql<number>`coalesce(sum(${commits.executionValue}) filter (where ${commits.createdAt} >= ${start}), 0)::int`,
+        previous: sql<number>`coalesce(sum(${commits.executionValue}) filter (where ${commits.createdAt} < ${start}), 0)::int`,
+        commits: sql<number>`count(*) filter (where ${commits.createdAt} >= ${start})::int`,
+        activeDays: sql<number>`count(distinct (${commits.createdAt} at time zone ${tz})::date) filter (where ${commits.createdAt} >= ${start})::int`,
+      })
+      .from(commits)
+      .leftJoin(projects, eq(projects.id, commits.projectId))
+      .where(and(...commitWhere(scope), gte(commits.createdAt, previousStart)))
+      .groupBy(sql`1`)
+      .orderBy(sql`2 desc`, sql`3 desc`)
+      .limit(50),
+  ]);
+
+  const createdBy = new Map(created.map((r) => [r.day, r.n]));
+  const completedBy = new Map(completed.map((r) => [r.day, r.n]));
+  return {
+    history,
+    punchcard,
+    weights,
+    flow: history.slice(-days).map((d) => ({ day: d.day, created: createdBy.get(d.day) ?? 0, completed: completedBy.get(d.day) ?? 0 })),
+    cycles: cycles.map((c) => ({ day: c.day, ms: Number(c.ms) })),
+    projects: byProject,
+  };
+}
+
 // ------------------------------------------------------------------ projects
 export interface ProjectSummary {
   id: string;

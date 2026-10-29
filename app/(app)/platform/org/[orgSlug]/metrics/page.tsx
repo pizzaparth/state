@@ -1,6 +1,6 @@
 import * as React from "react";
 import { getViewerOrg } from "@/lib/viewer";
-import { MetricsView, toPeriod } from "@/components/app/views";
+import { MetricsView, toPeriod } from "@/components/app/metrics-view";
 import { OrgHeader } from "@/components/app/org-header";
 import type { PageSearchParams } from "@/components/app/drawers";
 

@@ -1,61 +1,5 @@
 import * as React from "react";
-import type { DailyExecution } from "@/db/queries";
 import { formatNumber } from "@/lib/format";
-
-const dayText = (key: string, opts: Intl.DateTimeFormatOptions) => {
-  const [y, m, d] = key.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", ...opts }).format(new Date(Date.UTC(y, m - 1, d)));
-};
-
-/**
- * Daily execution as compact bars with the mean as a dashed rule. Monochrome, thin
- * axes, tabular labels (docs/style.md §31). Includes a text table for screen readers.
- */
-export function VelocityBars({ days }: { days: DailyExecution[] }) {
-  const max = Math.max(1, ...days.map((d) => d.execution));
-  const mean = days.reduce((s, d) => s + d.execution, 0) / days.length;
-  const every = Math.ceil(days.length / 8);
-  return (
-    <figure>
-      <div className="relative h-44" aria-hidden="true">
-        <div className="absolute inset-0 flex items-end gap-[2px] border-b border-white/15">
-          {days.map((d, i) => (
-            <div
-              key={d.day}
-              title={`${dayText(d.day, { day: "numeric", month: "short" })}: ${d.execution} execution`}
-              className="min-w-0 flex-1 origin-bottom animate-grow-y rounded-t-[3px] bg-[#F2F2EF]"
-              // Light stagger, capped so long ranges finish quickly
-              style={{ height: `${(d.execution / max) * 100}%`, animationDelay: `${Math.min(i * 12, 360)}ms` }}
-            />
-          ))}
-        </div>
-        <div className="absolute inset-x-0 border-t border-dashed border-[#9A9A96]" style={{ bottom: `${(mean / max) * 100}%` }}>
-          <span className="absolute -top-5 right-0 rounded-[6px] bg-[#0A0A0A]/90 px-1.5 text-[13px] tabular-nums text-[#D4D4D0]">
-            mean {formatNumber(mean, 1)}/d
-          </span>
-        </div>
-      </div>
-      <div className="mt-1.5 flex gap-[2px] text-[12px] text-[#9A9A96]" aria-hidden="true">
-        {days.map((d, i) => (
-          <span key={d.day} className="min-w-0 flex-1 overflow-visible whitespace-nowrap">
-            {i % every === 0 ? dayText(d.day, { day: "numeric", month: "short" }) : ""}
-          </span>
-        ))}
-      </div>
-      <table className="sr-only">
-        <caption>Daily execution, mean {formatNumber(mean, 1)} per day</caption>
-        <tbody>
-          {days.map((d) => (
-            <tr key={d.day}>
-              <th scope="row">{d.day}</th>
-              <td>{d.execution}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </figure>
-  );
-}
 
 const BUCKETS = [
   { label: "< 4h", max: 4 },
@@ -89,28 +33,66 @@ export function CycleHistogram({ durationsMs }: { durationsMs: number[] }) {
   );
 }
 
-/** Share of execution by project. */
-export function Distribution({ rows }: { rows: { name: string; execution: number }[] }) {
-  const total = rows.reduce((s, r) => s + r.execution, 0);
-  if (total === 0) return <p className="text-base text-[#9A9A96]">No execution in this period.</p>;
+/** Inline trend line for a KPI card: shape only, scaled to its own min and max. */
+export function Sparkline({ values, inverse }: { values: number[]; inverse?: boolean }) {
+  if (values.length < 2) return null;
+  const w = 96;
+  const h = 28;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const points = values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - 2 - ((v - min) / span) * (h - 4)).toFixed(1)}`);
+  const color = inverse ? "#0A0A0A" : "#F2F2EF";
   return (
-    <ul className="space-y-3">
-      {rows.map((r) => {
-        const share = r.execution / total;
-        return (
-          <li key={r.name} className="text-base">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="truncate text-[#F2F2EF]">{r.name}</span>
-              <span className="shrink-0 font-mono text-sm tabular-nums text-[#9A9A96]">
-                {formatNumber(share * 100)}% <span className="text-[#85857F]">({r.execution})</span>
-              </span>
-            </div>
-            <span className="app-field mt-1.5 block h-2 overflow-hidden rounded-full">
-              <span className="block h-full origin-left animate-grow-x rounded-full bg-[#F2F2EF]" style={{ transform: `scaleX(${share})` }} />
-            </span>
+    <svg viewBox={`0 0 ${w} ${h}`} className="h-7 w-24 shrink-0" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points={points.join(" ")} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      <circle cx={w} cy={points.at(-1)!.split(",")[1]} r="2.5" fill={color} />
+    </svg>
+  );
+}
+
+const MIX_FILL = ["#F2F2EF", "#A3A39F", "#5C5C59", "#2E2E2C"];
+
+/** 100% stacked bar with a labelled row per part, so share never relies on fill alone. */
+export function MixBar({ label, parts }: { label: string; parts: { name: string; value: number; detail?: string }[] }) {
+  const total = parts.reduce((s, p) => s + p.value, 0);
+  if (total === 0) return <p className="font-mono text-sm text-[#85857F]">No data</p>;
+  return (
+    <div>
+      <div className="flex h-3 gap-[2px] overflow-hidden rounded-full" role="img" aria-label={`${label}: ${parts.map((p) => `${p.name} ${formatNumber((p.value / total) * 100)}%`).join(", ")}`}>
+        {parts.map((p, i) =>
+          p.value > 0 ? (
+            <span key={p.name} className="h-full origin-left animate-grow-x first:rounded-l-full last:rounded-r-full" style={{ flexGrow: p.value, backgroundColor: MIX_FILL[i % MIX_FILL.length] }} />
+          ) : null
+        )}
+      </div>
+      <ul className="mt-3 space-y-1.5">
+        {parts.map((p, i) => (
+          <li key={p.name} className="grid grid-cols-[0.75rem_minmax(0,1fr)_auto_3.5rem] items-center gap-2.5 text-sm">
+            <span className="size-2.5 rounded-[2px] border border-white/15" style={{ backgroundColor: MIX_FILL[i % MIX_FILL.length] }} aria-hidden="true" />
+            <span className="truncate text-[#F2F2EF]">{p.name}</span>
+            <span className="font-mono text-[12px] tabular-nums text-[#85857F]">{p.detail}</span>
+            <span className="text-right font-mono tabular-nums text-[#F2F2EF]">{formatNumber((p.value / total) * 100)}%</span>
           </li>
-        );
-      })}
-    </ul>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Dense grid of named statistics, each with its formula. */
+export function StatGrid({ stats }: { stats: { label: string; value: string; formula: string }[] }) {
+  return (
+    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-white/[0.08] bg-white/[0.08] sm:grid-cols-3 xl:grid-cols-4">
+      {stats.map((s) => (
+        <div key={s.label} className="min-w-0 bg-[#0A0A0A] px-4 py-3.5">
+          <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-[#9A9A96]">{s.label}</dt>
+          <dd className="mt-1.5 font-display text-xl font-extrabold tabular-nums tracking-[-0.02em] text-[#F2F2EF] [font-stretch:125%]">{s.value}</dd>
+          <dd className="mt-1 truncate font-mono text-[11px] text-[#85857F]" title={s.formula}>
+            {s.formula}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }
