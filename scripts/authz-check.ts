@@ -11,13 +11,13 @@
  * Refuses to run unless the database name ends in `_test`: it changes roles and data.
  * Exits non-zero if any check fails.
  */
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { captureTask, createManualCommit, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskPriority, setTaskWeight } from "../lib/mutations";
-import { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { captureTask, createManualCommit, createProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskPriority, setTaskWeight } from "../lib/mutations";
+import { captureTaskSchema, createProjectSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
 
 const dbName = new URL(process.env.DATABASE_URL ?? "postgres://x/none").pathname.slice(1);
 if (!dbName.endsWith("_test")) {
@@ -72,6 +72,10 @@ async function priorityOf(taskId: string) {
 
 async function weightOf(taskId: string) {
   return (await one(db.select({ w: s.tasks.weight }).from(s.tasks).where(eq(s.tasks.id, taskId)))).w;
+}
+
+async function projectCount(workspaceId: string, slug: string) {
+  return (await one(db.select({ n: sql<number>`count(*)::int` }).from(s.projects).where(and(eq(s.projects.workspaceId, workspaceId), eq(s.projects.slug, slug))))).n;
 }
 
 async function main() {
@@ -150,6 +154,8 @@ async function main() {
   record("W26", "Organisation viewer changes a task's priority", ok && (await priorityOf(orgTask.id)) === orgTask.priority, detail);
   [ok, detail] = await expectError(() => setTaskWeight(viewer, { taskId: orgTask.id, weight: 8 }), "forbidden");
   record("W30", "Organisation viewer changes a task's weight", ok && (await weightOf(orgTask.id)) === orgTask.weight, detail);
+  [ok, detail] = await expectError(() => createProject(viewer, { organisationId: org.id, name: "Viewer project", slug: "viewer-project", description: null }), "forbidden");
+  record("W34", "Organisation viewer creates a project in the organisation", ok && (await projectCount(org.workspaceId, "viewer-project")) === 0, detail);
   await db.update(s.organisationMembers).set({ role: "member" }).where(eq(s.organisationMembers.userId, ishitaId));
 
   const commitsBefore = await one(db.select({ n: sql<number>`count(*)::int` }).from(s.commits));
@@ -215,6 +221,21 @@ async function main() {
   await setTaskWeight(A, { taskId: inboxTask.id, weight: 4 });
   record("W33", "Owner changes own open task weight", (await weightOf(inboxTask.id)) === 4);
 
+  [ok, detail] = await expectError(() => createProject(X, { organisationId: org.id, name: "Probe", slug: "outsider-probe", description: null }), "not_found");
+  record("W35", "Outsider creates a project in an organisation", ok && (await projectCount(org.workspaceId, "outsider-probe")) === 0, detail);
+  [ok, detail] = await expectError(() => createProject(X, { organisationId: "no-such-org", name: "Probe", slug: "missing-org", description: null }), "not_found");
+  const [, foreignDetail] = await expectError(() => createProject(X, { organisationId: org.id, name: "Probe", slug: "outsider-probe", description: null }), "not_found");
+  record("W36", "Missing and foreign organisations give the same error", ok && detail === foreignDetail, detail);
+  const mine = await createProject(A, { organisationId: null, name: "Authz probe", slug: "authz-probe", description: null });
+  const mineRow = await one(db.select().from(s.projects).where(eq(s.projects.id, mine.id)));
+  record("W37", "Personal project lands in the actor's own workspace", mineRow.workspaceId === parth.ws.id && mine.href === "/projects/authz-probe");
+  const theirs = await createProject(B, { organisationId: null, name: "Authz probe", slug: "authz-probe", description: null });
+  record("W38", "Same slug in another user's workspace is independent", theirs.id !== mine.id && (await projectCount(aarav.ws.id, "authz-probe")) === 1);
+  [ok, detail] = await expectError(() => createProject(A, { organisationId: null, name: "Again", slug: "authz-probe", description: null }), "conflict");
+  record("W39", "Duplicate slug in the same workspace is refused", ok && (await projectCount(parth.ws.id, "authz-probe")) === 1, detail);
+  const orgMade = await createProject(B, { organisationId: org.id, name: "Member project", slug: "member-project", description: "From a member" });
+  record("W40", "Member creates an organisation project", (await projectCount(org.workspaceId, "member-project")) === 1 && orgMade.href === `/org/${org.slug}/projects/member-project`);
+
   // ------------------------------------------------------------ mass assignment / tampering
   const extra = moveTaskSchema.safeParse({ taskId: "a", columnId: "b", afterTaskId: null, workspaceId: parth.ws.id, userId: parthId });
   record("M1", "Unknown fields (workspaceId, userId) rejected on move", !extra.success);
@@ -235,6 +256,9 @@ async function main() {
   record("M12", "Unknown fields (weight, workspaceId) rejected on priority", !setTaskPrioritySchema.safeParse({ taskId: "a", priority: "low", weight: 8, workspaceId: parth.ws.id }).success);
   const taskWeights = [0, 3, 16, "4", 2.5].map((weight) => setTaskWeightSchema.safeParse({ taskId: "a", weight }).success);
   record("M13", "Task weight outside 1/2/4/8 rejected", taskWeights.every((w) => !w), JSON.stringify(taskWeights));
+  record("M14", "Unknown fields (workspaceId, status) rejected on project create", !createProjectSchema.safeParse({ organisationId: null, name: "x", slug: "x", description: null, workspaceId: aarav.ws.id, status: "archived" }).success);
+  const slugs = ["Relay DB", "-x", "x-", "a--b", "a_b", "", "x".repeat(101)].map((slug) => createProjectSchema.safeParse({ organisationId: null, name: "x", slug, description: null }).success);
+  record("M15", "Malformed project slugs rejected", slugs.every((v) => !v), JSON.stringify(slugs));
   record("M8", "Unknown fields (deletedAt, userId) rejected on delete", !taskRefSchema.safeParse({ taskId: "a", deletedAt: null, userId: aaravId }).success);
 
   // ------------------------------------------------------------ lifecycle, races, replay
@@ -279,6 +303,7 @@ async function main() {
   record("L10", "Removed member loses write access immediately", ok, detail);
   await db.insert(s.organisationMembers).values({ organisationId: org.id, userId: ishitaId, role: "member" });
 
+  await db.delete(s.projects).where(inArray(s.projects.id, [mine.id, theirs.id, orgMade.id]));
   await db.delete(s.users).where(eq(s.users.id, outsiderId));
 
   const failed = results.filter((r) => !r.pass);

@@ -1,11 +1,11 @@
 import { and, asc, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { auditEvents, boards, columns, commits, projects, tasks } from "@/db/schema";
+import { auditEvents, boards, columns, commits, organisations, projects, tasks } from "@/db/schema";
 import { assertWritable, MutationError, type Actor } from "@/lib/authz";
 import { keyBetween } from "@/lib/position";
 import { parseQuickCapture } from "@/lib/validation";
 import type { z } from "zod";
-import type { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import type { captureTaskSchema, createProjectSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -293,6 +293,34 @@ export async function restoreTask(actor: Actor, input: z.infer<typeof taskRefSch
     await tx.insert(auditEvents).values({ workspaceId: task.workspaceId, actorId: actor.id, action: "task.restored", targetType: "task", targetId: task.id });
     return { title: task.title };
   });
+}
+
+/**
+ * New project in the actor's personal workspace, or in an organisation they can write to.
+ * Slugs are unique per workspace (archived projects included), enforced by an index.
+ */
+export async function createProject(actor: Actor, input: z.infer<typeof createProjectSchema>): Promise<{ id: string; slug: string; href: string }> {
+  let workspaceId = actor.personalWorkspaceId;
+  let orgSlug: string | null = null;
+  if (input.organisationId) {
+    const [org] = await db
+      .select({ workspaceId: organisations.workspaceId, slug: organisations.slug })
+      .from(organisations)
+      .where(eq(organisations.id, input.organisationId))
+      .limit(1);
+    // A missing organisation and a foreign one fail identically in assertWritable
+    workspaceId = org?.workspaceId ?? null;
+    orgSlug = org?.slug ?? null;
+  }
+  assertWritable(actor, workspaceId);
+
+  const [row] = await db
+    .insert(projects)
+    .values({ workspaceId, name: input.name, slug: input.slug, description: input.description || null })
+    .onConflictDoNothing({ target: [projects.workspaceId, projects.slug] })
+    .returning({ id: projects.id, slug: projects.slug });
+  if (!row) throw new MutationError("conflict", `#${input.slug} is already used here. Choose another slug.`);
+  return { ...row, href: orgSlug ? `/org/${orgSlug}/projects/${row.slug}` : `/projects/${row.slug}` };
 }
 
 /** Manual commit: work that never started as a task. Goes to the project's workspace. */

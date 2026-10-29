@@ -105,17 +105,35 @@ export const manualCommitSchema = z.strictObject({
 });
 
 /**
- * Project creation schema
+ * Project creation. The workspace is derived on the server: null organisationId means
+ * the actor's personal workspace. The slug is what `#slug` matches in quick capture.
  */
-export const projectSchema = z.object({
-  name: z.string().trim().min(1, "Project name is required").max(100),
-  slug: z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens").max(100),
-  description: z.string().trim().max(2_000).optional(),
-  workspaceId: z.string().min(1),
-  status: z.enum(["planned", "active", "paused", "completed", "archived"]).default("active"),
+export const PROJECT_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export const createProjectSchema = z.strictObject({
+  organisationId: objectId.nullable(),
+  name: z.string().trim().min(1, "Give the project a name.").max(100, "Keep the name under 100 characters."),
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(1, "Add a slug for #capture.")
+    .max(100, "Keep the slug under 100 characters.")
+    .regex(PROJECT_SLUG, "Use lowercase letters, numbers and single hyphens, like relay-db."),
+  description: z.string().trim().max(2_000, "Keep the description under 2,000 characters.").nullable(),
 });
 
-export type ProjectInput = z.infer<typeof projectSchema>;
+/** Slug suggested from a project name: "Relay DB v2" becomes "relay-db-v2". */
+export function slugify(name: string): string {
+  return name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 100)
+    .replace(/-+$/, "");
+}
 
 /**
  * Quick Inbox capture parser (deterministic syntax without LLM)
