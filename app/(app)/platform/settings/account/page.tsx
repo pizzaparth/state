@@ -4,6 +4,7 @@ import { getViewer } from "@/lib/viewer";
 import { formatDate } from "@/lib/format";
 import { PageHeader, Panel } from "@/components/app/primitives";
 import { Row, SettingsNav } from "@/components/app/settings-nav";
+import { SignOutButton } from "@/components/app/sign-out-button";
 
 export const metadata = { title: "Account — State" };
 
@@ -28,6 +29,9 @@ export default async function AccountSettingsPage() {
         <p className="font-mono text-sm text-[#9A9A96]">
           <span className="text-[#F2F2EF]">100% yours.</span> CSV/JSON export · kept 90 days after you cancel.
         </p>
+      </Panel>
+      <Panel title="Session">
+        <SignOutButton />
       </Panel>
     </>
   );

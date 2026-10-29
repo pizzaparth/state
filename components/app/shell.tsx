@@ -14,7 +14,6 @@ import {
   History,
   Inbox,
   Loader2,
-  LogOut,
   Menu as MenuIcon,
   Plus,
   Search,
@@ -23,14 +22,12 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 import { createCommitAction } from "@/app/(app)/actions";
 import { WEIGHT_LEVELS, weightHint } from "@/lib/weights";
 import { NoticeProvider, useNotice } from "./notice";
 
 export interface ShellData {
-  user: { name: string; email: string; initials: string };
   inboxCount: number;
   orgs: { name: string; slug: string }[];
   projects: { id: string; name: string; href: string }[];
@@ -260,9 +257,6 @@ function TickerStrip({ ticker, dateLabel }: { ticker: ShellData["ticker"]; dateL
 
 // ------------------------------------------------------------------ sidebar
 function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: string; scope: string }) {
-  const router = useRouter();
-  const [signingOut, setSigningOut] = React.useState(false);
-
   return (
     <LayoutGroup id={`nav-${scope}`}>
       <div className="px-5 pb-4 pt-5">
@@ -295,34 +289,11 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
           </div>
         ))}
       </nav>
-      <div className="space-y-1 border-t border-white/[0.08] p-3">
+      <div className="border-t border-white/[0.08] p-3">
         <NavLink href="/platform/settings" active={isActive(pathname, "/platform/settings")}>
           <Settings className="size-4" aria-hidden="true" />
           Settings
         </NavLink>
-        <div className="flex items-center gap-3 px-3 pt-2">
-          <span className="grid size-8 shrink-0 place-items-center rounded-full border border-white/15 bg-[#1F1F1F] font-display text-[12px] font-extrabold [font-stretch:125%]" aria-hidden="true">
-            {data.user.initials}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[15px] font-semibold">{data.user.name}</span>
-            <span className="block truncate font-mono text-[12px] text-[#85857F]">{data.user.email}</span>
-          </span>
-          <button
-            type="button"
-            disabled={signingOut}
-            onClick={async () => {
-              setSigningOut(true);
-              await authClient.signOut();
-              router.replace("/login" as Route);
-              router.refresh();
-            }}
-            aria-label="Sign out"
-            className="grid size-8 place-items-center rounded-full text-[#9A9A96] transition-colors hover:bg-white/[0.06] hover:text-[#F2F2EF] disabled:opacity-50"
-          >
-            <LogOut className="size-4" aria-hidden="true" />
-          </button>
-        </div>
       </div>
     </LayoutGroup>
   );

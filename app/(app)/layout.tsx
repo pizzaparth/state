@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { hasPaidAccess } from "@/lib/billing/access";
 import { getViewer } from "@/lib/viewer";
 import { getInboxCount, getProjects, getTicker } from "@/db/queries";
-import { formatDate, initials } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import { AppShell } from "@/components/app/shell";
 
 export default async function AppLayout({
@@ -28,7 +28,6 @@ export default async function AppLayout({
   return (
     <AppShell
       data={{
-        user: { name: viewer.name, email: viewer.email, initials: initials(viewer.name) },
         inboxCount,
         orgs: viewer.orgs.map((o) => ({ name: o.name, slug: o.slug })),
         projects: projects.map((p) => {
