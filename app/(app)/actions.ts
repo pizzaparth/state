@@ -5,9 +5,9 @@ import type { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { hasPaidAccess } from "@/lib/billing/access";
 import { loadActor, MutationError, type Actor } from "@/lib/authz";
-import { captureTask, createManualCommit, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskPriority } from "@/lib/mutations";
+import { captureTask, createManualCommit, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskPriority, setTaskWeight } from "@/lib/mutations";
 import { consumeThrottle } from "@/lib/security/throttle";
-import { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, taskRefSchema } from "@/lib/validation";
+import { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Server Actions for the product. Each one re-verifies everything itself: Server Actions
@@ -55,6 +55,10 @@ export async function renameTaskAction(input: unknown) {
 
 export async function setTaskPriorityAction(input: unknown) {
   return run(setTaskPrioritySchema, input, setTaskPriority);
+}
+
+export async function setTaskWeightAction(input: unknown) {
+  return run(setTaskWeightSchema, input, setTaskWeight);
 }
 
 export async function deleteTaskAction(input: unknown) {

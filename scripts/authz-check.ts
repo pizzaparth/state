@@ -16,8 +16,8 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { captureTask, createManualCommit, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskPriority } from "../lib/mutations";
-import { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, taskRefSchema } from "../lib/validation";
+import { captureTask, createManualCommit, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskPriority, setTaskWeight } from "../lib/mutations";
+import { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
 
 const dbName = new URL(process.env.DATABASE_URL ?? "postgres://x/none").pathname.slice(1);
 if (!dbName.endsWith("_test")) {
@@ -68,6 +68,10 @@ async function titleOf(taskId: string) {
 
 async function priorityOf(taskId: string) {
   return (await one(db.select({ p: s.tasks.priority }).from(s.tasks).where(eq(s.tasks.id, taskId)))).p;
+}
+
+async function weightOf(taskId: string) {
+  return (await one(db.select({ w: s.tasks.weight }).from(s.tasks).where(eq(s.tasks.id, taskId)))).w;
 }
 
 async function main() {
@@ -144,6 +148,8 @@ async function main() {
   record("W21", "Organisation viewer renames a task", ok && (await titleOf(orgTask.id)) === orgTask.title, detail);
   [ok, detail] = await expectError(() => setTaskPriority(viewer, { taskId: orgTask.id, priority: "critical" }), "forbidden");
   record("W26", "Organisation viewer changes a task's priority", ok && (await priorityOf(orgTask.id)) === orgTask.priority, detail);
+  [ok, detail] = await expectError(() => setTaskWeight(viewer, { taskId: orgTask.id, weight: 8 }), "forbidden");
+  record("W30", "Organisation viewer changes a task's weight", ok && (await weightOf(orgTask.id)) === orgTask.weight, detail);
   await db.update(s.organisationMembers).set({ role: "member" }).where(eq(s.organisationMembers.userId, ishitaId));
 
   const commitsBefore = await one(db.select({ n: sql<number>`count(*)::int` }).from(s.commits));
@@ -202,6 +208,12 @@ async function main() {
   record("W28", "Outsider changes organisation task priority", ok && (await priorityOf(orgTask.id)) === orgTask.priority, detail);
   await setTaskPriority(A, { taskId: inboxTask.id, priority: "high" });
   record("W29", "Owner changes own task priority", (await priorityOf(inboxTask.id)) === "high");
+  [ok, detail] = await expectError(() => setTaskWeight(B, { taskId: parth.task.id, weight: 8 }), "not_found");
+  record("W31", "Change another user's task weight", ok && (await weightOf(parth.task.id)) === parth.task.weight, detail);
+  [ok, detail] = await expectError(() => setTaskWeight(X, { taskId: orgTask.id, weight: 8 }), "not_found");
+  record("W32", "Outsider changes organisation task weight", ok && (await weightOf(orgTask.id)) === orgTask.weight, detail);
+  await setTaskWeight(A, { taskId: inboxTask.id, weight: 4 });
+  record("W33", "Owner changes own open task weight", (await weightOf(inboxTask.id)) === 4);
 
   // ------------------------------------------------------------ mass assignment / tampering
   const extra = moveTaskSchema.safeParse({ taskId: "a", columnId: "b", afterTaskId: null, workspaceId: parth.ws.id, userId: parthId });
@@ -221,6 +233,8 @@ async function main() {
   const priorities = ["urgent", "", "HIGH", 1].map((priority) => setTaskPrioritySchema.safeParse({ taskId: "a", priority }).success);
   record("M11", "Priority outside none/low/medium/high/critical rejected", priorities.every((p) => !p), JSON.stringify(priorities));
   record("M12", "Unknown fields (weight, workspaceId) rejected on priority", !setTaskPrioritySchema.safeParse({ taskId: "a", priority: "low", weight: 8, workspaceId: parth.ws.id }).success);
+  const taskWeights = [0, 3, 16, "4", 2.5].map((weight) => setTaskWeightSchema.safeParse({ taskId: "a", weight }).success);
+  record("M13", "Task weight outside 1/2/4/8 rejected", taskWeights.every((w) => !w), JSON.stringify(taskWeights));
   record("M8", "Unknown fields (deletedAt, userId) rejected on delete", !taskRefSchema.safeParse({ taskId: "a", deletedAt: null, userId: aaravId }).success);
 
   // ------------------------------------------------------------ lifecycle, races, replay
@@ -238,6 +252,10 @@ async function main() {
   record("L3", "Reopening retires the commit", reopen.reopened && (await liveFor(raceTask)) === 0);
   const redo = await moveTask(A, { taskId: raceTask, columnId: parth.col("done").id, afterTaskId: null });
   record("L4", "Completing again records one new commit", redo.committed === parth.task.weight && (await liveFor(raceTask)) === 1);
+
+  [ok, detail] = await expectError(() => setTaskWeight(A, { taskId: raceTask, weight: 8 }), "invalid");
+  const raceCommit = await one(db.select({ v: s.commits.executionValue }).from(s.commits).where(and(eq(s.commits.taskId, raceTask), isNull(s.commits.deletedAt))));
+  record("L11", "Completed task weight is fixed; its commit keeps its execution", ok && (await weightOf(raceTask)) === parth.task.weight && raceCommit.v === parth.task.weight, detail);
 
   [ok, detail] = await expectError(() => deleteTask(A, { taskId: raceTask }), "invalid");
   record("L5", "Completed task cannot be deleted", ok && (await snapshot(raceTask)).x === null && (await liveFor(raceTask)) === 1, detail);

@@ -5,7 +5,7 @@ import { assertWritable, MutationError, type Actor } from "@/lib/authz";
 import { keyBetween } from "@/lib/position";
 import { parseQuickCapture } from "@/lib/validation";
 import type { z } from "zod";
-import type { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, taskRefSchema } from "@/lib/validation";
+import type { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -231,6 +231,28 @@ export async function setTaskPriority(actor: Actor, input: z.infer<typeof setTas
 
   await db.update(tasks).set({ priority: input.priority }).where(and(eq(tasks.id, task.id), isNull(tasks.deletedAt)));
   return { priority: input.priority };
+}
+
+/**
+ * Sets an open task's weight. Refused once the task is done: its commit recorded the
+ * execution value, and commit execution is immutable. The row lock orders this against
+ * a concurrent move to Done, which reads the weight inside its own lock.
+ */
+export async function setTaskWeight(actor: Actor, input: z.infer<typeof setTaskWeightSchema>): Promise<{ weight: number }> {
+  return db.transaction(async (tx) => {
+    const [task] = await tx
+      .select({ id: tasks.id, workspaceId: tasks.workspaceId, completedAt: tasks.completedAt })
+      .from(tasks)
+      .where(and(eq(tasks.id, input.taskId), isNull(tasks.deletedAt)))
+      .limit(1)
+      .for("update");
+    if (!task) throw new MutationError("not_found", "That task no longer exists.");
+    assertWritable(actor, task.workspaceId);
+    if (task.completedAt) throw new MutationError("invalid", "Weight is fixed once a task is done. Its commit already recorded the execution.");
+
+    await tx.update(tasks).set({ weight: input.weight }).where(eq(tasks.id, task.id));
+    return { weight: input.weight };
+  });
 }
 
 /**
