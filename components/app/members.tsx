@@ -73,7 +73,7 @@ export function InviteMember({ organisationId, managerRole }: { organisationId: 
           placeholder="ana@example.com…"
           aria-invalid={Boolean(error)}
           aria-describedby={error ? "invite-error" : undefined}
-          className="app-input h-11 min-w-0 flex-1 rounded-[14px] px-3 text-base"
+          className="app-input h-11 w-full min-w-0 rounded-[14px] px-3 text-base sm:flex-1"
         />
         <label htmlFor="invite-role" className="sr-only">
           Role
