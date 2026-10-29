@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { createHash, randomBytes } from "node:crypto";
-import { auditEvents, boards, columns, commitTags, commits, organisationInvitations, organisationMembers, organisations, projects, tags, taskTags, tasks, users, workspaces } from "@/db/schema";
+import { auditEvents, objectiveProjects, objectives, boards, columns, commitTags, commits, organisationInvitations, organisationMembers, organisations, projects, tags, taskTags, tasks, users, workspaces } from "@/db/schema";
 import { actionEmail, sendEmail } from "@/lib/email";
 import { hasOrganisationPlan } from "@/lib/billing/access";
 import { assertWritable, MutationError, type Actor } from "@/lib/authz";
@@ -9,7 +9,7 @@ import { keyBetween } from "@/lib/position";
 import { dayIn, nextDueDay } from "@/lib/recurrence";
 import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
 import type { z } from "zod";
-import type { editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, invitationRefSchema, inviteMemberSchema, memberRefSchema, organisationRefSchema, setMemberRoleSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import type { createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, invitationRefSchema, inviteMemberSchema, memberRefSchema, organisationRefSchema, setMemberRoleSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -962,6 +962,88 @@ export async function editCommit(actor: Actor, input: z.infer<typeof editCommitS
     });
     return { message: input.message };
   });
+}
+
+const LIVE_OBJECTIVES_MAX = 50;
+
+/**
+ * New objective in the actor's personal workspace or an organisation they can write to.
+ * It starts now; the deadline is the end of that day in the actor's timezone and must not
+ * be in the past. An optional project (live, same workspace) narrows what it measures.
+ */
+export async function createObjective(actor: Actor, input: z.infer<typeof createObjectiveSchema>): Promise<{ id: string }> {
+  let workspaceId = actor.personalWorkspaceId;
+  if (input.organisationId) {
+    const [org] = await db.select({ workspaceId: organisations.workspaceId }).from(organisations).where(eq(organisations.id, input.organisationId)).limit(1);
+    workspaceId = org?.workspaceId ?? null;
+  }
+  assertWritable(actor, workspaceId);
+
+  if (input.projectId) {
+    const [project] = await db
+      .select({ id: projects.id })
+      .from(projects)
+      .where(and(eq(projects.id, input.projectId), eq(projects.workspaceId, workspaceId), isNull(projects.archivedAt)))
+      .limit(1);
+    if (!project) throw new MutationError("not_found", "That project no longer exists.");
+  }
+  const [{ tz }] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
+  if (input.deadline && input.deadline < dayIn(new Date(), tz)) throw new MutationError("invalid", "Pick a deadline from today on.");
+
+  return db.transaction(async (tx) => {
+    // Serialise per workspace so the cap holds under concurrent creates
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`objectives:${workspaceId}`}))`);
+    const [{ n }] = await tx.select({ n: sql<number>`count(*)::int` }).from(objectives).where(and(eq(objectives.workspaceId, workspaceId), isNull(objectives.archivedAt)));
+    if (n >= LIVE_OBJECTIVES_MAX) throw new MutationError("invalid", `Up to ${LIVE_OBJECTIVES_MAX} objectives at once. Archive some first.`);
+    const [row] = await tx
+      .insert(objectives)
+      .values({
+        workspaceId,
+        ownerId: actor.id,
+        name: input.name,
+        measure: input.measure,
+        unit: input.measure === "execution" ? "execution" : input.unit,
+        targetValue: input.targetValue,
+        deadlineAt: input.deadline ? sql<Date>`((${input.deadline})::date + time '23:59') at time zone ${tz}` : null,
+      })
+      .returning({ id: objectives.id });
+    if (input.projectId) await tx.insert(objectiveProjects).values({ objectiveId: row.id, projectId: input.projectId });
+    return row;
+  });
+}
+
+async function writableObjective(actor: Actor, objectiveId: string) {
+  const [objective] = await db
+    .select({ id: objectives.id, workspaceId: objectives.workspaceId, name: objectives.name, measure: objectives.measure, targetValue: objectives.targetValue, archivedAt: objectives.archivedAt })
+    .from(objectives)
+    .where(eq(objectives.id, objectiveId))
+    .limit(1);
+  if (!objective) throw new MutationError("not_found", "That objective no longer exists.");
+  assertWritable(actor, objective.workspaceId);
+  return objective;
+}
+
+/** Sets a hand-counted objective's current value; reaching the target marks it completed. */
+export async function setObjectiveProgress(actor: Actor, input: z.infer<typeof setObjectiveProgressSchema>): Promise<{ currentValue: number; completed: boolean }> {
+  const objective = await writableObjective(actor, input.objectiveId);
+  if (objective.archivedAt) throw new MutationError("invalid", "Unarchive this objective to update it.");
+  if (objective.measure !== "manual") throw new MutationError("invalid", "This objective counts execution from commits; log a commit instead.");
+  const completed = input.currentValue >= objective.targetValue;
+  await db
+    .update(objectives)
+    .set({ currentValue: input.currentValue, completedAt: completed ? sql`coalesce(${objectives.completedAt}, now())` : null })
+    .where(eq(objectives.id, objective.id));
+  return { currentValue: input.currentValue, completed };
+}
+
+/** Archives or restores an objective. Archived objectives leave the Metrics page. */
+export async function setObjectiveArchived(actor: Actor, input: z.infer<typeof setObjectiveArchivedSchema>): Promise<{ name: string; archived: boolean }> {
+  const objective = await writableObjective(actor, input.objectiveId);
+  await db
+    .update(objectives)
+    .set({ archivedAt: input.archived ? sql`coalesce(${objectives.archivedAt}, now())` : null })
+    .where(eq(objectives.id, objective.id));
+  return { name: objective.name, archived: input.archived };
 }
 
 export interface ImportResult {

@@ -7,6 +7,7 @@ import {
   commitTags,
   commits,
   notifications,
+  objectiveProjects,
   objectives,
   organisationInvitations,
   organisationMembers,
@@ -745,13 +746,44 @@ export async function getPendingInvitations(organisationId: string) {
 }
 
 // ------------------------------------------------------------------ objectives, account
+/**
+ * Live objectives with their linked project. An "execution" objective's current value is
+ * worked out here: the sum of commit execution since it started, in its linked project
+ * when it has one, otherwise across its workspace.
+ */
 export async function getObjectives(workspaceIds: string[]) {
   if (workspaceIds.length === 0) return [];
-  return db
+  const rows = await db
     .select()
     .from(objectives)
     .where(and(inArray(objectives.workspaceId, workspaceIds), isNull(objectives.archivedAt)))
-    .orderBy(asc(objectives.deadlineAt));
+    .orderBy(asc(objectives.deadlineAt), asc(objectives.createdAt))
+    .limit(50);
+  if (rows.length === 0) return [];
+  const links = await db
+    .select({ objectiveId: objectiveProjects.objectiveId, projectId: projects.id, name: projects.name })
+    .from(objectiveProjects)
+    .innerJoin(projects, eq(projects.id, objectiveProjects.projectId))
+    .where(inArray(objectiveProjects.objectiveId, rows.map((o) => o.id)))
+    .limit(500);
+  return Promise.all(
+    rows.map(async (o) => {
+      const linked = links.filter((l) => l.objectiveId === o.id);
+      if (o.measure !== "execution") return { ...o, projectName: linked[0]?.name ?? null };
+      const [{ total }] = await db
+        .select({ total: sql<number>`coalesce(sum(${commits.executionValue}), 0)::int` })
+        .from(commits)
+        .where(
+          and(
+            eq(commits.workspaceId, o.workspaceId),
+            isNull(commits.deletedAt),
+            gte(commits.createdAt, o.startAt),
+            linked.length ? inArray(commits.projectId, linked.map((l) => l.projectId)) : undefined
+          )
+        );
+      return { ...o, currentValue: total, completedAt: total >= o.targetValue ? (o.completedAt ?? new Date()) : null, projectName: linked[0]?.name ?? null };
+    })
+  );
 }
 
 export async function getNotifications(userId: string, limit = 10) {

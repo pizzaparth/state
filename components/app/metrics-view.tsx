@@ -7,7 +7,8 @@ import { weightLabel } from "@/lib/weights";
 import { cn } from "@/lib/utils";
 import { CycleHistogram, MixBar, StatGrid } from "./charts";
 import { ExecutionGraph } from "./execution-graph";
-import { Measure, Panel, ProgressRail, SegmentedLinks, TICK } from "./primitives";
+import { EmptyState, Measure, Panel, ProgressRail, SegmentedLinks, TICK } from "./primitives";
+import { ArchiveObjective, NewObjective, ObjectiveProgress } from "./objectives";
 import { Punchcard, SeriesChart } from "./series-chart";
 
 export const PERIODS = { "7d": 7, "30d": 30, "90d": 90, "180d": 180, "1y": 365 } as const;
@@ -56,19 +57,27 @@ export async function MetricsView({
   period,
   basePath,
   objectiveWorkspaceIds,
+  objectiveControls = null,
 }: {
   scope: Scope;
   tz: string;
   period: PeriodKey;
   basePath: string;
   objectiveWorkspaceIds: string[];
+  /** Set when the viewer can create and update objectives in that workspace. */
+  objectiveControls?: ObjectiveControls | null;
 }) {
   const days = PERIODS[period];
   const [m, s, objectives] = await Promise.all([getMetrics(scope, tz, days), getMetricSeries(scope, tz, days), getObjectives(objectiveWorkspaceIds)]);
-  return <MetricsReport metrics={m} series={s} objectives={objectives} tz={tz} period={period} basePath={basePath} />;
+  return <MetricsReport metrics={m} series={s} objectives={objectives} objectiveControls={objectiveControls} tz={tz} period={period} basePath={basePath} />;
 }
 
 type Objective = Awaited<ReturnType<typeof getObjectives>>[number];
+
+export interface ObjectiveControls {
+  organisationId: string | null;
+  projects: { id: string; name: string }[];
+}
 
 /**
  * Renders already-loaded metrics. `basePath` null hides the period switch; `overview`
@@ -78,6 +87,7 @@ export function MetricsReport({
   metrics: m,
   series: s,
   objectives,
+  objectiveControls = null,
   tz,
   period,
   basePath,
@@ -86,6 +96,7 @@ export function MetricsReport({
   metrics: MetricsData;
   series: MetricSeries;
   objectives: Objective[];
+  objectiveControls?: ObjectiveControls | null;
   tz: string;
   period: PeriodKey;
   basePath: string | null;
@@ -531,40 +542,58 @@ export function MetricsReport({
             )}
           </Panel>
 
-          {objectives.length > 0 && (
-            <Panel title="Objectives">
-              <ul className="divide-y divide-white/[0.08]">
-                {objectives.map((o) => {
-                  const pos = objectivePosition(o, now);
-                  return (
-                    <li key={o.id} className="grid gap-4 py-4 first:pt-0 last:pb-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center">
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">{o.name}</p>
-                        <p className="mt-0.5 text-sm text-[#85857F] tabular-nums">
-                          {formatNumber(o.currentValue)} / {formatNumber(o.targetValue)} {o.unit}
-                          {o.deadlineAt && `, due ${formatDate(o.deadlineAt, tz, { day: "numeric", month: "short", year: "numeric" })}`}
-                        </p>
-                        <div className="mt-2.5">
-                          <ProgressRail value={o.currentValue} max={o.targetValue} label={`${o.name} progress`} />
+          {(objectives.length > 0 || objectiveControls) && (
+            <Panel
+              title="Objectives"
+              aside={objectiveControls && <NewObjective organisationId={objectiveControls.organisationId} projects={objectiveControls.projects} />}
+            >
+              {objectives.length === 0 ? (
+                <EmptyState title="No objectives" />
+              ) : (
+                <ul className="divide-y divide-white/[0.08]">
+                  {objectives.map((o) => {
+                    const pos = objectivePosition(o, now);
+                    return (
+                      <li key={o.id} className="grid gap-4 py-4 first:pt-0 last:pb-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{o.name}</p>
+                          <p className="mt-0.5 text-sm text-[#85857F] tabular-nums">
+                            {formatNumber(o.currentValue)} / {formatNumber(o.targetValue)} {o.unit}
+                            {o.projectName && ` · ${o.projectName}`}
+                            {o.deadlineAt && `, due ${formatDate(o.deadlineAt, tz, { day: "numeric", month: "short", year: "numeric" })}`}
+                          </p>
+                          <div className="mt-2.5">
+                            <ProgressRail value={o.currentValue} max={o.targetValue} label={`${o.name} progress`} />
+                          </div>
                         </div>
-                      </div>
-                      <p className="font-mono text-sm leading-relaxed tabular-nums text-[#9A9A96]">
-                        velocity {formatNumber(pos.velocity, 2)}/d
-                        <br />
-                        required {pos.required === null ? "—" : pos.required === Infinity ? "past deadline" : `${formatNumber(pos.required, 2)}/d`}
-                      </p>
-                      <span
-                        className={cn(
-                          "justify-self-start rounded-full px-2.5 py-1 text-[12px] font-semibold uppercase tracking-[0.12em] md:justify-self-end",
-                          pos.status === "behind" ? "app-inverse" : "app-field text-[#D4D4D0]"
-                        )}
-                      >
-                        {pos.status}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
+                        <p className="font-mono text-sm leading-relaxed tabular-nums text-[#9A9A96]">
+                          velocity {formatNumber(pos.velocity, 2)}/d
+                          <br />
+                          required {pos.required === null ? "—" : pos.required === Infinity ? "past deadline" : `${formatNumber(pos.required, 2)}/d`}
+                          {pos.projected && pos.status !== "completed" && (
+                            <>
+                              <br />
+                              eta {formatDate(pos.projected, tz, { day: "numeric", month: "short", year: "numeric" })}
+                            </>
+                          )}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                          {objectiveControls && o.measure === "manual" && <ObjectiveProgress objectiveId={o.id} name={o.name} value={o.currentValue} unit={o.unit} />}
+                          <span
+                            className={cn(
+                              "rounded-full px-2.5 py-1 text-[12px] font-semibold uppercase tracking-[0.12em]",
+                              pos.status === "behind" ? "app-inverse" : "app-field text-[#D4D4D0]"
+                            )}
+                          >
+                            {pos.status}
+                          </span>
+                          {objectiveControls && <ArchiveObjective objectiveId={o.id} name={o.name} />}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </Panel>
           )}
         </>

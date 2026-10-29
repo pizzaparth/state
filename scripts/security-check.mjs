@@ -686,6 +686,21 @@ async function checkServerActions() {
   await db.query("delete from commits where message = 'within grace'");
   for (const row of subsBackup) await db.query("update subscriptions set status = $2, past_due_since = $3 where id = $1", [row.id, row.status, row.past_due_since]);
 
+  // Objectives: the owner's to change; values come from a fixed schema
+  const metricsPath = "/platform/metrics";
+  const objectiveId = await actionIdOn(metricsPath, "setObjectiveProgressAction", owner);
+  const { rows: [goal] } = await db.query("select id, current_value from objectives where id = 'seed-obj-ml'");
+  const goalNow = async () => Number((await db.query("select current_value from objectives where id = 'seed-obj-ml'")).rows[0].current_value);
+  const goalIdor = objectiveId ? await callAction(objectiveId, [{ objectiveId: goal.id, currentValue: 99 }], { cookie: other, path: metricsPath }) : null;
+  const goalForged = objectiveId ? await callAction(objectiveId, [{ objectiveId: goal.id, currentValue: 99, targetValue: 1 }], { cookie: owner, path: metricsPath }) : null;
+  const goalNegative = objectiveId ? await callAction(objectiveId, [{ objectiveId: goal.id, currentValue: -5 }], { cookie: owner, path: metricsPath }) : null;
+  record(
+    "OJ1",
+    "Objective progress: another user's call, forged target and negative values are refused",
+    Boolean(objectiveId) && !goalIdor.ok && !goalForged.ok && !goalNegative.ok && (await goalNow()) === Number(goal.current_value),
+    objectiveId ? `${goalIdor.error} | ${goalForged.error} | ${goalNegative.error}` : "action id not found"
+  );
+
   // Write budget: 60 per user per minute, shared across instances. Invalid calls count too.
   const burst = await Promise.all(Array.from({ length: 70 }, () => callAction(ids.moveTaskAction, [{}], { cookie: other })));
   const limited = burst.filter((r) => /Too many changes/.test(r.error ?? "")).length;

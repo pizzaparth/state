@@ -15,6 +15,9 @@ export const objectives = pgTable(
     currentValue: doublePrecision("current_value").notNull().default(0),
     targetValue: doublePrecision("target_value").notNull(),
     unit: text("unit").notNull(), // e.g. "modules"
+    // "manual": current value is set by hand; "execution": the sum of commit execution
+    // since startAt (in the linked projects, if any), computed on read and never stored
+    measure: text("measure").notNull().default("manual"),
     startAt: timestamp("start_at", { withTimezone: true }).defaultNow().notNull(),
     deadlineAt: timestamp("deadline_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),

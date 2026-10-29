@@ -139,6 +139,42 @@ export const editCommitSchema = z.strictObject({
 });
 
 /**
+ * Objectives (docs/state_desc.md §24): a measurable position with a target. "manual"
+ * counts any unit by hand; "execution" sums commit execution since the objective started.
+ */
+export const OBJECTIVE_MEASURES = ["manual", "execution"] as const;
+
+const calendarDay = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date.")
+  .refine((d) => !Number.isNaN(Date.parse(`${d}T00:00:00Z`)) && new Date(`${d}T00:00:00Z`).toISOString().startsWith(d), "Pick a real date.")
+  .refine((d) => d >= "2000-01-01" && d <= "2100-12-31", "Pick a date between 2000 and 2100.");
+
+const objectiveAmount = z.number({ error: "Enter a whole number." }).int("Enter a whole number.").min(0).max(1_000_000, "Keep it under 1,000,000.");
+
+export const createObjectiveSchema = z
+  .strictObject({
+    organisationId: objectId.nullable(),
+    name: z.string().trim().min(1, "Name the objective.").max(100, "Keep the name under 100 characters."),
+    measure: z.enum(OBJECTIVE_MEASURES),
+    unit: z.string().trim().max(24, "Keep the unit under 24 characters."),
+    targetValue: objectiveAmount.min(1, "Set a target above 0."),
+    deadline: calendarDay.nullable(),
+    projectId: objectId.nullable(),
+  })
+  .refine((o) => o.measure === "execution" || o.unit.length > 0, { path: ["unit"], message: "Name what you count, like modules." });
+
+export const setObjectiveProgressSchema = z.strictObject({
+  objectiveId: objectId,
+  currentValue: objectiveAmount,
+});
+
+export const setObjectiveArchivedSchema = z.strictObject({
+  objectiveId: objectId,
+  archived: z.boolean(),
+});
+
+/**
  * Project creation. The workspace is derived on the server: null organisationId means
  * the actor's personal workspace. The slug is what `#slug` matches in quick capture.
  */

@@ -17,10 +17,10 @@ import path from "node:path";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../db";
 import * as s from "../db/schema";
-import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
+import { getBoard, getCommitDetail, getCommits, getInbox, getObjectives, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { editCommit, acceptInvitation, setTaskRecurrence, captureTask, createManualCommit, createOrganisation, createProject, hashInvitationToken, inviteMember, leaveOrganisation, removeMember, revokeInvitation, setMemberRole, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
-import { parseQuickCapture, editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, inviteMemberSchema, setMemberRoleSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, acceptInvitation, setTaskRecurrence, captureTask, createManualCommit, createOrganisation, createProject, hashInvitationToken, inviteMember, leaveOrganisation, removeMember, revokeInvitation, setMemberRole, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
+import { createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, inviteMemberSchema, setMemberRoleSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
 import { buildExport } from "../lib/data/export";
 import { parseImport } from "../lib/data/import";
 import { parseCsv, toCsv } from "../lib/data/csv";
@@ -788,6 +788,79 @@ async function main() {
     `${lapsed.access}/${lapsed.reason}`
   );
   await db.delete(s.users).where(eq(s.users.id, graceUser));
+
+  // ------------------------------------------------------------ objectives
+  const goal = (extra: Partial<Parameters<typeof createObjective>[1]> = {}) => ({ organisationId: null, name: "Read 12 papers", measure: "manual" as const, unit: "papers", targetValue: 12, deadline: null, projectId: null, ...extra });
+  const objectiveCount = async (workspaceId: string) => (await one(db.select({ n: sql<number>`count(*)::int` }).from(s.objectives).where(eq(s.objectives.workspaceId, workspaceId)))).n;
+  const orgGoalsBefore = await objectiveCount(org.workspaceId);
+  [ok, detail] = await expectError(() => createObjective(X, goal({ organisationId: org.id })), "not_found");
+  await db.update(s.organisationMembers).set({ role: "viewer" }).where(and(eq(s.organisationMembers.userId, ishitaId), eq(s.organisationMembers.organisationId, org.id)));
+  const [viewerGoal, viewerDetail] = await expectError(async () => createObjective(await loadActor(ishitaId), goal({ organisationId: org.id })), "forbidden");
+  await db.update(s.organisationMembers).set({ role: "member" }).where(and(eq(s.organisationMembers.userId, ishitaId), eq(s.organisationMembers.organisationId, org.id)));
+  const [foreignProject] = await expectError(() => createObjective(A, goal({ projectId: aarav.project.id })), "not_found");
+  const [crossProject] = await expectError(() => createObjective(A, goal({ organisationId: org.id, projectId: parth.project.id })), "not_found");
+  record("OB1", "Outsiders, viewers and foreign or cross-workspace projects cannot create objectives", ok && viewerGoal && foreignProject && crossProject && (await objectiveCount(org.workspaceId)) === orgGoalsBefore, `${detail} | ${viewerDetail}`);
+
+  const badGoals = [
+    { ...goal(), ownerId: aaravId },
+    { ...goal(), workspaceId: aarav.ws.id },
+    { ...goal(), currentValue: 12 },
+    { ...goal(), startAt: "2020-01-01" },
+    goal({ targetValue: -1 }),
+    goal({ targetValue: 1.5 }),
+    goal({ targetValue: 2_000_000 }),
+    goal({ unit: "" }),
+    goal({ deadline: "2026-02-30" }),
+  ].map((v) => createObjectiveSchema.safeParse(v).success);
+  const [pastDeadline, pastDetail] = await expectError(() => createObjective(A, goal({ deadline: "2020-01-01" })), "invalid");
+  record("OB2", "Objective input rejects owner, workspace, current value, start, bad numbers, a missing unit and past deadlines", badGoals.every((v) => !v) && pastDeadline && !setObjectiveProgressSchema.safeParse({ objectiveId: "x", currentValue: 3, targetValue: 1 }).success, `${JSON.stringify(badGoals)} ${pastDetail}`);
+
+  const manual = await createObjective(A, goal());
+  [ok, detail] = await expectError(() => setObjectiveProgress(B, { objectiveId: manual.id, currentValue: 12 }), "not_found");
+  const [archiveForeign] = await expectError(() => setObjectiveArchived(X, { objectiveId: manual.id, archived: true }), "not_found");
+  const orgGoal = await createObjective(B, goal({ organisationId: org.id, name: "Ship 0.5" }));
+  await db.update(s.organisationMembers).set({ role: "viewer" }).where(and(eq(s.organisationMembers.userId, ishitaId), eq(s.organisationMembers.organisationId, org.id)));
+  const [viewerProgress] = await expectError(async () => setObjectiveProgress(await loadActor(ishitaId), { objectiveId: orgGoal.id, currentValue: 3 }), "forbidden");
+  await db.update(s.organisationMembers).set({ role: "member" }).where(and(eq(s.organisationMembers.userId, ishitaId), eq(s.organisationMembers.organisationId, org.id)));
+  const manualRow = async () => one(db.select().from(s.objectives).where(eq(s.objectives.id, manual.id)));
+  record("OB3", "Another user, an outsider and a viewer cannot update or archive an objective", ok && archiveForeign && viewerProgress && (await manualRow()).currentValue === 0 && (await manualRow()).archivedAt === null, detail);
+
+  const reached = await setObjectiveProgress(A, { objectiveId: manual.id, currentValue: 12 });
+  const goalBack = await setObjectiveProgress(A, { objectiveId: manual.id, currentValue: 5 });
+  record("OB4", "Reaching the target completes a counted objective; going back reopens it", reached.completed && !goalBack.completed && (await manualRow()).completedAt === null && (await manualRow()).currentValue === 5);
+
+  // Execution objective: sums commits since it started, in its linked project only
+  const execGoal = await createObjective(A, goal({ measure: "execution", unit: "", targetValue: 10, projectId: parth.project.id, name: "Execution goal" }));
+  const [otherProject] = await db.insert(s.projects).values({ workspaceId: parth.ws.id, name: "Elsewhere", slug: `authz-elsewhere-${Date.now()}` }).returning();
+  const commitsMade = await db
+    .insert(s.commits)
+    .values([
+      { workspaceId: parth.ws.id, userId: parthId, projectId: parth.project.id, message: "counts 4", executionValue: 4 },
+      { workspaceId: parth.ws.id, userId: parthId, projectId: parth.project.id, message: "counts 2", executionValue: 2 },
+      { workspaceId: parth.ws.id, userId: parthId, projectId: otherProject.id, message: "other project", executionValue: 8 },
+      { workspaceId: parth.ws.id, userId: parthId, projectId: parth.project.id, message: "before start", executionValue: 8, createdAt: daysAgo(30) },
+      { workspaceId: parth.ws.id, userId: parthId, projectId: parth.project.id, message: "retired", executionValue: 8, deletedAt: new Date() },
+    ])
+    .returning({ id: s.commits.id });
+  const execListed = (await getObjectives([parth.ws.id])).find((o) => o.id === execGoal.id);
+  const [execProgress, execDetail] = await expectError(() => setObjectiveProgress(A, { objectiveId: execGoal.id, currentValue: 10 }), "invalid");
+  record("OB5", "Execution objective = Σ live commit execution since it started, in its project; it cannot be set by hand", execListed?.currentValue === 6 && execListed.unit === "execution" && execProgress, `${execListed?.currentValue} ${execDetail}`);
+
+  await setObjectiveArchived(A, { objectiveId: manual.id, archived: true });
+  const hidden = !(await getObjectives([parth.ws.id])).some((o) => o.id === manual.id);
+  const [archivedUpdate] = await expectError(() => setObjectiveProgress(A, { objectiveId: manual.id, currentValue: 6 }), "invalid");
+  await setObjectiveArchived(A, { objectiveId: manual.id, archived: false });
+  record("OB6", "Archived objectives leave the list, cannot be updated, and restore", hidden && archivedUpdate && (await getObjectives([parth.ws.id])).some((o) => o.id === manual.id) && !(await getObjectives(readable(B))).some((o) => o.id === manual.id));
+
+  const fillerGoals = await db
+    .insert(s.objectives)
+    .values(Array.from({ length: 50 }, (_, i) => ({ workspaceId: aarav.ws.id, ownerId: aaravId, name: `Filler ${i}`, targetValue: 1, unit: "x" })))
+    .returning({ id: s.objectives.id });
+  [ok, detail] = await expectError(() => createObjective(B, goal()), "invalid");
+  record("OB7", "At most 50 live objectives per workspace", ok, detail);
+  await db.delete(s.objectives).where(inArray(s.objectives.id, [...fillerGoals.map((g) => g.id), manual.id, execGoal.id, orgGoal.id]));
+  await db.delete(s.commits).where(inArray(s.commits.id, commitsMade.map((c) => c.id)));
+  await db.delete(s.projects).where(eq(s.projects.id, otherProject.id));
 
   // ------------------------------------------------------------ export, import, account deletion, billing
   const execution = async (workspaceId: string) =>

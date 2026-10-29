@@ -1,0 +1,1 @@
+ALTER TABLE "objectives" ADD COLUMN "measure" text DEFAULT 'manual' NOT NULL;
