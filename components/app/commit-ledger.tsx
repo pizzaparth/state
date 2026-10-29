@@ -20,7 +20,8 @@ export function CommitLedger({
   commits: CommitRow[];
   tz: string;
   now: Date;
-  hrefFor: (commitId: string) => string;
+  /** Opens a commit's detail; without it rows are plain (landing page demo). */
+  hrefFor?: (commitId: string) => string;
   showAuthor?: boolean;
   grouped?: boolean;
 }) {
@@ -52,11 +53,7 @@ export function CommitLedger({
               <span aria-hidden="true" className="absolute bottom-3 left-[4.4rem] top-3 w-px bg-white/[0.08]" />
               {group.rows.map((c) => (
                 <li key={c.id}>
-                  <Link
-                    href={hrefFor(c.id) as Route}
-                    scroll={false}
-                    className="grid grid-cols-[3.25rem_1rem_minmax(0,1fr)_auto] items-center gap-x-2 rounded-[12px] px-3 py-2 transition-colors hover:bg-white/[0.04]"
-                  >
+                  <Row href={hrefFor?.(c.id)}>
                     <time dateTime={c.createdAt.toISOString()} className="font-mono text-sm tabular-nums text-[#9A9A96]">
                       {formatTime(c.createdAt, tz)}
                     </time>
@@ -71,7 +68,7 @@ export function CommitLedger({
                       </span>
                     </span>
                     <span className="font-mono text-sm font-semibold tabular-nums text-[#F2F2EF]">+{c.executionValue}</span>
-                  </Link>
+                  </Row>
                 </li>
               ))}
             </ol>
@@ -79,5 +76,17 @@ export function CommitLedger({
         );
       })}
     </div>
+  );
+}
+
+const ROW = "grid grid-cols-[3.25rem_1rem_minmax(0,1fr)_auto] items-center gap-x-2 rounded-[12px] px-3 py-2";
+
+function Row({ href, children }: { href?: string; children: React.ReactNode }) {
+  return href ? (
+    <Link href={href as Route} scroll={false} className={cn(ROW, "transition-colors hover:bg-white/[0.04]")}>
+      {children}
+    </Link>
+  ) : (
+    <div className={ROW}>{children}</div>
   );
 }

@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Magnetic, MagneticLabel } from "@/components/marketing/magnetic";
-import { ExecutionMatrix } from "@/components/marketing/execution-matrix";
 import { WorkspaceScope } from "@/components/marketing/workspace-scope";
 import { PricingLedger } from "@/components/marketing/pricing-ledger";
-import { DEMO_DAYS, formatNumber } from "@/components/marketing/demo-data";
+import { ProductFrame } from "@/components/marketing/product-frame";
+import { ExecutionGraph } from "@/components/app/execution-graph";
+import { CommitLedger } from "@/components/app/commit-ledger";
+import { MetricsReport } from "@/components/app/metrics-view";
+import { Panel } from "@/components/app/primitives";
+import { DEMO_TZ, demoBoard, demoCommits, demoDaily, demoMetrics, demoSeries, demoWorkspaces } from "@/lib/demo/workspace";
+import { formatNumber } from "@/lib/format";
 import { PLANS, formatInr } from "@/lib/billing/plans";
 
 const silver = "bg-gradient-to-b from-white via-[#D9D9D5] to-[#6F6F6B] bg-clip-text text-transparent";
@@ -12,51 +17,8 @@ const displayHeading =
   "font-display font-extrabold uppercase leading-[0.92] tracking-[-0.03em] [font-stretch:125%] text-balance";
 const sectionPad = "mx-auto w-full max-w-[1320px] px-5 sm:px-8 lg:px-12";
 
-// Worked metric examples, computed from the same seeded history the graph shows
-const last30 = DEMO_DAYS.slice(-30);
-const execution = last30.reduce((s, d) => s + d.execution, 0);
-const tasks = last30.reduce((s, d) => s + d.tasks, 0);
-const planned = tasks + 31;
-const activeDays = last30.filter((d) => d.commits > 0).length;
-
-const METRICS = [
-  {
-    name: "Execution",
-    value: formatNumber(execution),
-    formula: "Σ completed task weights + manual commit weights",
-    worked: "Small 1, normal 2, major 4, milestone 8",
-  },
-  {
-    name: "Velocity",
-    value: `${formatNumber(execution / 30, 2)}/day`,
-    formula: "Execution ÷ days in period",
-    worked: `${execution} ÷ 30`,
-  },
-  {
-    name: "Throughput",
-    value: `${formatNumber(tasks / 30, 2)}/day`,
-    formula: "Completed tasks ÷ days in period",
-    worked: `${tasks} ÷ 30`,
-  },
-  {
-    name: "Completion",
-    value: `${formatNumber((tasks / planned) * 100, 1)}%`,
-    formula: "Completed planned tasks ÷ planned tasks",
-    worked: `${tasks} ÷ ${planned}`,
-  },
-  {
-    name: "Cycle time",
-    value: "1.8d",
-    formula: "Median of completed_at − started_at",
-    worked: `Median of ${tasks} durations`,
-  },
-  {
-    name: "Consistency",
-    value: `${formatNumber((activeDays / 30) * 100)}%`,
-    formula: "Days with at least one commit ÷ eligible days",
-    worked: `${activeDays} ÷ 30`,
-  },
-];
+// Board cards finished in the last two days stay in Done
+const DONE_WINDOW_DAYS = 2;
 
 const REFUSALS = [
   "Advertising",
@@ -69,6 +31,16 @@ const REFUSALS = [
 
 
 export default function LandingPage() {
+  // The real product screens, fed by a generated demo workspace (lib/demo/workspace.ts)
+  const { personal, organisation } = demoWorkspaces();
+  const year = demoDaily(personal, 371);
+  const yearCommits = year.reduce((n, d) => n + d.commits, 0);
+  const yearExecution = year.reduce((n, d) => n + d.execution, 0);
+  const boards = {
+    personal: demoBoard(personal, "personal", DONE_WINDOW_DAYS),
+    organisation: demoBoard(organisation, "organisation", DONE_WINDOW_DAYS),
+  };
+
   return (
     <>
       {/* Hero: type is the graphic; the particle field sits behind */}
@@ -115,9 +87,14 @@ export default function LandingPage() {
           </h2>
           <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">Every finished task lands on the graph.</p>
         </div>
-        <div className="mt-16">
-          <ExecutionMatrix />
-        </div>
+        <ProductFrame path="/platform/history" caption="Execution graph and commit ledger in the State app, with demo data" className="mt-16">
+          <Panel title="Execution · 1y" aside={`${formatNumber(yearCommits)} commits · +${formatNumber(yearExecution)}`}>
+            <ExecutionGraph days={year} />
+          </Panel>
+          <Panel title="Commits">
+            <CommitLedger commits={demoCommits(personal, 8)} tz={DEMO_TZ} now={personal.now} />
+          </Panel>
+        </ProductFrame>
       </section>
 
       {/* Metrics */}
@@ -125,38 +102,11 @@ export default function LandingPage() {
         <h2 id="metrics-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           Measure throughput, not busyness.
         </h2>
-        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">Six numbers. Formulas shown. No vibes, just math.</p>
+        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">Every number shows its formula. No vibes, just math.</p>
 
-        <table className="mt-16 w-full border-collapse text-left">
-          <caption className="sr-only">State metrics with their formulas, last 30 days</caption>
-          <thead className="max-md:sr-only">
-            <tr className="text-sm text-[#6F6F6B]">
-              <th scope="col" className="pb-3 font-normal">Metric</th>
-              <th scope="col" className="pb-3 pr-12 text-right font-normal">Value</th>
-              <th scope="col" className="pb-3 font-normal">Formula</th>
-              <th scope="col" className="pb-3 font-normal">Worked</th>
-            </tr>
-          </thead>
-          <tbody>
-            {METRICS.map((metric) => (
-              <tr
-                key={metric.name}
-                className="group border-t border-white/[0.08] transition-colors hover:border-white/25 max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-4 max-md:py-4"
-              >
-                <th scope="row" className="py-5 text-base font-medium text-[#F4F4F2] max-md:py-0">
-                  {metric.name}
-                </th>
-                <td className="py-5 pr-12 text-right font-display text-[clamp(1.75rem,3.5vw,3rem)] font-bold leading-none tabular-nums [font-stretch:110%] text-[#F4F4F2] max-md:row-span-2 max-md:self-center max-md:py-0 max-md:pr-0">
-                  {metric.value}
-                </td>
-                <td className="py-5 text-base text-[#A9A9A6] max-md:py-0">{metric.formula}</td>
-                <td className="py-5 font-mono text-sm tabular-nums text-[#6F6F6B] transition-colors group-hover:text-[#A9A9A6] max-md:col-span-2 max-md:py-0 max-md:pt-1">
-                  {metric.worked}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ProductFrame path="/platform/metrics?period=30d" caption="Metrics page in the State app, last 30 days of demo data" className="mt-16">
+          <MetricsReport metrics={demoMetrics(personal, 30)} series={demoSeries(personal, 30)} objectives={[]} tz={DEMO_TZ} period="30d" basePath={null} overview />
+        </ProductFrame>
       </section>
 
       {/* Personal / organisation */}
@@ -166,7 +116,7 @@ export default function LandingPage() {
         </h2>
         <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">Solo or squad. Same math.</p>
         <div className="mt-12">
-          <WorkspaceScope />
+          <WorkspaceScope boards={boards} doneWindowDays={DONE_WINDOW_DAYS} />
         </div>
       </section>
 

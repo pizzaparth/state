@@ -1,5 +1,5 @@
 import * as React from "react";
-import { getMetrics, getMetricSeries, getObjectives, type DailyExecution, type Scope } from "@/db/queries";
+import { getMetrics, getMetricSeries, getObjectives, type DailyExecution, type MetricSeries, type MetricsData, type Scope } from "@/db/queries";
 import { formatDate, formatDuration, formatNumber } from "@/lib/format";
 import { calculateCompletionRate, calculateConsistency, mean, objectivePosition, percentile } from "@/lib/metrics";
 import { autocorrelation, byWeek, change, cumulative, drawdown, linearTrend, rollingMean, stdev, streaks, sum } from "@/lib/metrics/series";
@@ -65,6 +65,33 @@ export async function MetricsView({
 }) {
   const days = PERIODS[period];
   const [m, s, objectives] = await Promise.all([getMetrics(scope, tz, days), getMetricSeries(scope, tz, days), getObjectives(objectiveWorkspaceIds)]);
+  return <MetricsReport metrics={m} series={s} objectives={objectives} tz={tz} period={period} basePath={basePath} />;
+}
+
+type Objective = Awaited<ReturnType<typeof getObjectives>>[number];
+
+/**
+ * Renders already-loaded metrics. `basePath` null hides the period switch; `overview`
+ * stops after the headline numbers, execution series and statistics (landing page).
+ */
+export function MetricsReport({
+  metrics: m,
+  series: s,
+  objectives,
+  tz,
+  period,
+  basePath,
+  overview = false,
+}: {
+  metrics: MetricsData;
+  series: MetricSeries;
+  objectives: Objective[];
+  tz: string;
+  period: PeriodKey;
+  basePath: string | null;
+  overview?: boolean;
+}) {
+  const days = PERIODS[period];
   const now = new Date();
 
   // ---------------------------------------------------------------- series
@@ -183,10 +210,12 @@ export async function MetricsView({
 
   return (
     <>
-      <SegmentedLinks
-        label="Period"
-        items={Object.keys(PERIODS).map((key) => ({ href: `${basePath}?period=${key}`, label: key.toUpperCase(), active: key === period }))}
-      />
+      {basePath !== null && (
+        <SegmentedLinks
+          label="Period"
+          items={Object.keys(PERIODS).map((key) => ({ href: `${basePath}?period=${key}`, label: key.toUpperCase(), active: key === period }))}
+        />
+      )}
 
       <div className="app-stagger grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <Measure
@@ -262,277 +291,283 @@ export async function MetricsView({
         />
       </Panel>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Panel title="Cumulative" aside={<Delta pct={change(sum(exec), sum(prevExec))} days={days} />}>
-          <SeriesChart
-            title="Running total of execution, this period against the prior period"
-            labels={cur.map((d, i) => `Day ${i + 1} · ${dayText(d.day)}${prev[i] ? ` vs ${dayText(prev[i].day)}` : ""}`)}
-            ticks={spacedTicks(cur.map((_, i) => `D${i + 1}`))}
-            series={[
-              { label: "This period", kind: "area", tone: "hi", values: cumulative(exec) },
-              { label: "Prior period", kind: "line", tone: "mid", dashed: true, values: cumulative(prevExec) },
-            ]}
-          />
-        </Panel>
-        <Panel title="Rolling velocity" aside="per day">
-          <SeriesChart
-            title="7-day and 28-day rolling mean of daily execution"
-            labels={labels}
-            ticks={ticks}
-            digits={2}
-            series={[
-              { label: "7D mean", kind: "line", tone: "hi", values: sma7 },
-              { label: "28D mean", kind: "line", tone: "mid", dashed: true, values: sma28 },
-            ]}
-          />
-        </Panel>
-      </div>
+      {!overview && (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Panel title="Cumulative" aside={<Delta pct={change(sum(exec), sum(prevExec))} days={days} />}>
+            <SeriesChart
+              title="Running total of execution, this period against the prior period"
+              labels={cur.map((d, i) => `Day ${i + 1} · ${dayText(d.day)}${prev[i] ? ` vs ${dayText(prev[i].day)}` : ""}`)}
+              ticks={spacedTicks(cur.map((_, i) => `D${i + 1}`))}
+              series={[
+                { label: "This period", kind: "area", tone: "hi", values: cumulative(exec) },
+                { label: "Prior period", kind: "line", tone: "mid", dashed: true, values: cumulative(prevExec) },
+              ]}
+            />
+          </Panel>
+          <Panel title="Rolling velocity" aside="per day">
+            <SeriesChart
+              title="7-day and 28-day rolling mean of daily execution"
+              labels={labels}
+              ticks={ticks}
+              digits={2}
+              series={[
+                { label: "7D mean", kind: "line", tone: "hi", values: sma7 },
+                { label: "28D mean", kind: "line", tone: "mid", dashed: true, values: sma28 },
+              ]}
+            />
+          </Panel>
+        </div>
+      )}
 
       <Panel title="Statistics" aside={`n = ${days} days`}>
         <StatGrid stats={stats} />
       </Panel>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Panel title="Drawdown" aside={`max ${formatNumber(maxDrawdown, 1)}% · now ${formatNumber(dd.at(-1) ?? 0, 1)}%`}>
-          <SeriesChart
-            title="Rolling 7-day execution, percent below its running peak"
-            labels={labels}
-            ticks={ticks}
-            unit="%"
-            digits={1}
-            series={[{ label: "From peak", kind: "area", tone: "mid", values: dd }]}
-          />
-          <p className="mt-2 font-mono text-[12px] text-[#85857F]">(Σ7D − peak) ÷ peak</p>
-        </Panel>
-        <Panel title="Day distribution" aside={`σ ${sd === null ? "—" : formatNumber(sd, 2)}`}>
-          <SeriesChart
-            title="Number of days by daily execution"
-            labels={HISTOGRAM.map((b) => `${b.label} execution`)}
-            ticks={HISTOGRAM.map((b) => b.label)}
-            series={[{ label: "Days", kind: "bar", tone: "hi", values: histogram }]}
-          />
-          <p className="mt-2 font-mono text-[12px] text-[#85857F]">days per execution band</p>
-        </Panel>
-      </div>
-
-      {days >= 30 && (
-        <Panel title="Calendar" aside={`${m.activeDays}/${days} active`}>
-          <ExecutionGraph days={cur} />
-        </Panel>
-      )}
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Panel title="Weekday profile" aside={rho7 === null ? undefined : `ρ7 ${formatNumber(rho7, 2)}`}>
-          <SeriesChart
-            title="Mean execution by weekday"
-            labels={WEEKDAYS.map((d, i) => `${d} (${weekdayTotals[i].n} days)`)}
-            ticks={WEEKDAYS}
-            digits={2}
-            refs={[{ value: avgDay, label: `mean ${formatNumber(avgDay, 1)}` }]}
-            series={[{ label: "Mean", kind: "bar", tone: "hi", values: weekdayMeans }]}
-          />
-        </Panel>
-        <Panel title="Mix">
-          <div className="space-y-6">
-            <div>
-              <h3 className={cn(TICK, "mb-3 text-[#85857F]")}>By weight · Σ</h3>
-              <MixBar label="Execution by weight" parts={weightParts} />
-            </div>
-            <div>
-              <h3 className={cn(TICK, "mb-3 text-[#85857F]")}>By source · commits</h3>
-              <MixBar label="Commits by source" parts={sourceParts} />
-            </div>
+      {!overview && (
+        <>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <Panel title="Drawdown" aside={`max ${formatNumber(maxDrawdown, 1)}% · now ${formatNumber(dd.at(-1) ?? 0, 1)}%`}>
+              <SeriesChart
+                title="Rolling 7-day execution, percent below its running peak"
+                labels={labels}
+                ticks={ticks}
+                unit="%"
+                digits={1}
+                series={[{ label: "From peak", kind: "area", tone: "mid", values: dd }]}
+              />
+              <p className="mt-2 font-mono text-[12px] text-[#85857F]">(Σ7D − peak) ÷ peak</p>
+            </Panel>
+            <Panel title="Day distribution" aside={`σ ${sd === null ? "—" : formatNumber(sd, 2)}`}>
+              <SeriesChart
+                title="Number of days by daily execution"
+                labels={HISTOGRAM.map((b) => `${b.label} execution`)}
+                ticks={HISTOGRAM.map((b) => b.label)}
+                series={[{ label: "Days", kind: "bar", tone: "hi", values: histogram }]}
+              />
+              <p className="mt-2 font-mono text-[12px] text-[#85857F]">days per execution band</p>
+            </Panel>
           </div>
-        </Panel>
-      </div>
 
-      <Panel title="Commit hours" aside={`${allCommits} commits · local time`}>
-        <Punchcard cells={s.punchcard} />
-      </Panel>
+          {days >= 30 && (
+            <Panel title="Calendar" aside={`${m.activeDays}/${days} active`}>
+              <ExecutionGraph days={cur} />
+            </Panel>
+          )}
 
-      <Panel title="Flow" aside={`${created} in · ${completed} out · net ${signed(created - completed, 0)} open`}>
-        <SeriesChart
-          title={`Tasks created and completed per ${flowDaily ? "day" : "week"}`}
-          labels={flowRows.map((r) => r.label)}
-          ticks={spacedTicks(flowRows.map((r) => r.tick), 8)}
-          series={[
-            { label: "Created", kind: "bar", tone: "mid", values: flowRows.map((r) => r.created) },
-            { label: "Completed", kind: "bar", tone: "hi", values: flowRows.map((r) => r.completed) },
-          ]}
-        />
-      </Panel>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Panel title="Cycle time" aside={`${m.cycleTimesMs.length} tasks`}>
-          <dl className="mb-5 grid grid-cols-3 gap-3">
-            {(
-              [
-                ["Median", median],
-                ["Average", mean(m.cycleTimesMs)],
-                ["75th pct", percentile(m.cycleTimesMs, 75)],
-              ] as const
-            ).map(([label, v]) => (
-              <div key={label} className="app-field rounded-[14px] px-3 py-2.5">
-                <dt className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{label}</dt>
-                <dd className="mt-1 text-lg font-semibold tabular-nums">{formatDuration(v)}</dd>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <Panel title="Weekday profile" aside={rho7 === null ? undefined : `ρ7 ${formatNumber(rho7, 2)}`}>
+              <SeriesChart
+                title="Mean execution by weekday"
+                labels={WEEKDAYS.map((d, i) => `${d} (${weekdayTotals[i].n} days)`)}
+                ticks={WEEKDAYS}
+                digits={2}
+                refs={[{ value: avgDay, label: `mean ${formatNumber(avgDay, 1)}` }]}
+                series={[{ label: "Mean", kind: "bar", tone: "hi", values: weekdayMeans }]}
+              />
+            </Panel>
+            <Panel title="Mix">
+              <div className="space-y-6">
+                <div>
+                  <h3 className={cn(TICK, "mb-3 text-[#85857F]")}>By weight · Σ</h3>
+                  <MixBar label="Execution by weight" parts={weightParts} />
+                </div>
+                <div>
+                  <h3 className={cn(TICK, "mb-3 text-[#85857F]")}>By source · commits</h3>
+                  <MixBar label="Commits by source" parts={sourceParts} />
+                </div>
               </div>
-            ))}
-          </dl>
-          <CycleHistogram durationsMs={cycleCur} />
-        </Panel>
-        <Panel title="Cycle trend" aside="hours, weekly">
-          <SeriesChart
-            title="Weekly median and 75th percentile cycle time, in hours"
-            labels={cycleTrend.map((w) => `${w.label} · ${w.n} tasks`)}
-            ticks={spacedTicks(cycleTrend.map((w) => w.tick))}
-            unit="h"
-            digits={1}
-            series={[
-              { label: "Median", kind: "line", tone: "hi", values: cycleTrend.map((w) => toHours(w.median)) },
-              { label: "P75", kind: "line", tone: "mid", dashed: true, values: cycleTrend.map((w) => toHours(w.p75)) },
-            ]}
-          />
-        </Panel>
-      </div>
+            </Panel>
+          </div>
 
-      <Panel title="Weekly ledger" aside={`${weeks.length} weeks`}>
-        <div className="-mx-2 overflow-x-auto">
-          <table className="w-full min-w-[40rem] border-collapse text-base tabular-nums">
-            <thead>
-              <tr className={cn(TICK, "text-left text-[#9A9A96]")}>
-                <th scope="col" className="px-2 pb-2 font-medium">Week</th>
-                <th scope="col" className="px-2 pb-2 text-right font-medium">Σ</th>
-                <th scope="col" className="px-2 pb-2 text-right font-medium">WoW</th>
-                <th scope="col" className="px-2 pb-2 text-right font-medium">Commits</th>
-                <th scope="col" className="px-2 pb-2 text-right font-medium">Done</th>
-                <th scope="col" className="px-2 pb-2 text-right font-medium">Active</th>
-                <th scope="col" className="px-2 pb-2 text-right font-medium">Vel</th>
-                <th scope="col" className="w-[22%] px-2 pb-2 font-medium">
-                  <span className="sr-only">Execution bar</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...weeks].reverse().map((w, i, rows) => {
-                const before = rows[i + 1];
-                const wow = before ? change(w.execution / w.span, before.execution / before.span) : null;
-                return (
-                  <tr key={w.week} className="border-t border-white/[0.08]">
-                    <th scope="row" className="px-2 py-2.5 text-left font-medium">
-                      {dayText(w.week, { day: "numeric", month: "short", year: "2-digit" })}
-                      {w.span < 7 && <span className="ml-1.5 font-mono text-[12px] font-normal text-[#85857F]">{w.span}d</span>}
+          <Panel title="Commit hours" aside={`${allCommits} commits · local time`}>
+            <Punchcard cells={s.punchcard} />
+          </Panel>
+
+          <Panel title="Flow" aside={`${created} in · ${completed} out · net ${signed(created - completed, 0)} open`}>
+            <SeriesChart
+              title={`Tasks created and completed per ${flowDaily ? "day" : "week"}`}
+              labels={flowRows.map((r) => r.label)}
+              ticks={spacedTicks(flowRows.map((r) => r.tick), 8)}
+              series={[
+                { label: "Created", kind: "bar", tone: "mid", values: flowRows.map((r) => r.created) },
+                { label: "Completed", kind: "bar", tone: "hi", values: flowRows.map((r) => r.completed) },
+              ]}
+            />
+          </Panel>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            <Panel title="Cycle time" aside={`${m.cycleTimesMs.length} tasks`}>
+              <dl className="mb-5 grid grid-cols-3 gap-3">
+                {(
+                  [
+                    ["Median", median],
+                    ["Average", mean(m.cycleTimesMs)],
+                    ["75th pct", percentile(m.cycleTimesMs, 75)],
+                  ] as const
+                ).map(([label, v]) => (
+                  <div key={label} className="app-field rounded-[14px] px-3 py-2.5">
+                    <dt className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{label}</dt>
+                    <dd className="mt-1 text-lg font-semibold tabular-nums">{formatDuration(v)}</dd>
+                  </div>
+                ))}
+              </dl>
+              <CycleHistogram durationsMs={cycleCur} />
+            </Panel>
+            <Panel title="Cycle trend" aside="hours, weekly">
+              <SeriesChart
+                title="Weekly median and 75th percentile cycle time, in hours"
+                labels={cycleTrend.map((w) => `${w.label} · ${w.n} tasks`)}
+                ticks={spacedTicks(cycleTrend.map((w) => w.tick))}
+                unit="h"
+                digits={1}
+                series={[
+                  { label: "Median", kind: "line", tone: "hi", values: cycleTrend.map((w) => toHours(w.median)) },
+                  { label: "P75", kind: "line", tone: "mid", dashed: true, values: cycleTrend.map((w) => toHours(w.p75)) },
+                ]}
+              />
+            </Panel>
+          </div>
+
+          <Panel title="Weekly ledger" aside={`${weeks.length} weeks`}>
+            <div className="-mx-2 overflow-x-auto">
+              <table className="w-full min-w-[40rem] border-collapse text-base tabular-nums">
+                <thead>
+                  <tr className={cn(TICK, "text-left text-[#9A9A96]")}>
+                    <th scope="col" className="px-2 pb-2 font-medium">Week</th>
+                    <th scope="col" className="px-2 pb-2 text-right font-medium">Σ</th>
+                    <th scope="col" className="px-2 pb-2 text-right font-medium">WoW</th>
+                    <th scope="col" className="px-2 pb-2 text-right font-medium">Commits</th>
+                    <th scope="col" className="px-2 pb-2 text-right font-medium">Done</th>
+                    <th scope="col" className="px-2 pb-2 text-right font-medium">Active</th>
+                    <th scope="col" className="px-2 pb-2 text-right font-medium">Vel</th>
+                    <th scope="col" className="w-[22%] px-2 pb-2 font-medium">
+                      <span className="sr-only">Execution bar</span>
                     </th>
-                    <td className="px-2 py-2.5 text-right font-semibold">{w.execution}</td>
-                    <td className="px-2 py-2.5 text-right font-mono text-sm text-[#9A9A96]">
-                      {wow === null ? "—" : `${wow >= 0 ? "▲" : "▼"}${formatNumber(Math.abs(wow))}%`}
-                    </td>
-                    <td className="px-2 py-2.5 text-right">{w.commits}</td>
-                    <td className="px-2 py-2.5 text-right">{w.tasks}</td>
-                    <td className="px-2 py-2.5 text-right text-[#9A9A96]">
-                      {w.active}/{w.span}
-                    </td>
-                    <td className="px-2 py-2.5 text-right">{formatNumber(w.velocity, 2)}</td>
-                    <td className="px-2 py-2.5">
-                      <span className="app-field block h-2 overflow-hidden rounded-full" aria-hidden="true">
-                        <span className="block h-full origin-left rounded-full bg-[#F2F2EF]" style={{ transform: `scaleX(${w.execution / maxWeek})` }} />
-                      </span>
-                    </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <p className="mt-3 font-mono text-[12px] text-[#85857F]">WoW = change in Σ ÷ days; partial weeks marked</p>
-      </Panel>
-
-      <Panel title="Projects" aside="Share of execution">
-        {s.projects.length === 0 ? (
-          <p className="font-mono text-sm text-[#85857F]">No execution</p>
-        ) : (
-          <div className="-mx-2 overflow-x-auto">
-            <table className="w-full min-w-[40rem] border-collapse text-base tabular-nums">
-              <thead>
-                <tr className={cn(TICK, "text-left text-[#9A9A96]")}>
-                  <th scope="col" className="px-2 pb-2 font-medium">Project</th>
-                  <th scope="col" className="px-2 pb-2 text-right font-medium">Σ</th>
-                  <th scope="col" className="w-[22%] px-2 pb-2 font-medium">Share</th>
-                  <th scope="col" className="px-2 pb-2 text-right font-medium">Prior</th>
-                  <th scope="col" className="px-2 pb-2 text-right font-medium">Δ</th>
-                  <th scope="col" className="px-2 pb-2 text-right font-medium">Commits</th>
-                  <th scope="col" className="px-2 pb-2 text-right font-medium">Active</th>
-                </tr>
-              </thead>
-              <tbody>
-                {s.projects.map((p) => {
-                  const share = projectTotal ? p.execution / projectTotal : 0;
-                  const delta = change(p.execution, p.previous);
-                  return (
-                    <tr key={p.name} className="border-t border-white/[0.08]">
-                      <th scope="row" className="max-w-[16rem] truncate px-2 py-2.5 text-left font-medium">
-                        {p.name}
-                      </th>
-                      <td className="px-2 py-2.5 text-right font-semibold">{p.execution}</td>
-                      <td className="px-2 py-2.5">
-                        <span className="flex items-center gap-2">
-                          <span className="app-field block h-2 flex-1 overflow-hidden rounded-full" aria-hidden="true">
-                            <span className="block h-full origin-left rounded-full bg-[#F2F2EF]" style={{ transform: `scaleX(${share})` }} />
+                </thead>
+                <tbody>
+                  {[...weeks].reverse().map((w, i, rows) => {
+                    const before = rows[i + 1];
+                    const wow = before ? change(w.execution / w.span, before.execution / before.span) : null;
+                    return (
+                      <tr key={w.week} className="border-t border-white/[0.08]">
+                        <th scope="row" className="px-2 py-2.5 text-left font-medium">
+                          {dayText(w.week, { day: "numeric", month: "short", year: "2-digit" })}
+                          {w.span < 7 && <span className="ml-1.5 font-mono text-[12px] font-normal text-[#85857F]">{w.span}d</span>}
+                        </th>
+                        <td className="px-2 py-2.5 text-right font-semibold">{w.execution}</td>
+                        <td className="px-2 py-2.5 text-right font-mono text-sm text-[#9A9A96]">
+                          {wow === null ? "—" : `${wow >= 0 ? "▲" : "▼"}${formatNumber(Math.abs(wow))}%`}
+                        </td>
+                        <td className="px-2 py-2.5 text-right">{w.commits}</td>
+                        <td className="px-2 py-2.5 text-right">{w.tasks}</td>
+                        <td className="px-2 py-2.5 text-right text-[#9A9A96]">
+                          {w.active}/{w.span}
+                        </td>
+                        <td className="px-2 py-2.5 text-right">{formatNumber(w.velocity, 2)}</td>
+                        <td className="px-2 py-2.5">
+                          <span className="app-field block h-2 overflow-hidden rounded-full" aria-hidden="true">
+                            <span className="block h-full origin-left rounded-full bg-[#F2F2EF]" style={{ transform: `scaleX(${w.execution / maxWeek})` }} />
                           </span>
-                          <span className="w-10 text-right font-mono text-sm text-[#9A9A96]">{formatNumber(share * 100)}%</span>
-                        </span>
-                      </td>
-                      <td className="px-2 py-2.5 text-right text-[#9A9A96]">{p.previous}</td>
-                      <td className="px-2 py-2.5 text-right font-mono text-sm text-[#9A9A96]">
-                        {delta === null ? (p.execution > 0 ? "new" : "—") : `${delta >= 0 ? "▲" : "▼"}${formatNumber(Math.abs(delta))}%`}
-                      </td>
-                      <td className="px-2 py-2.5 text-right">{p.commits}</td>
-                      <td className="px-2 py-2.5 text-right text-[#9A9A96]">
-                        {p.activeDays}/{days}
-                      </td>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-3 font-mono text-[12px] text-[#85857F]">WoW = change in Σ ÷ days; partial weeks marked</p>
+          </Panel>
+
+          <Panel title="Projects" aside="Share of execution">
+            {s.projects.length === 0 ? (
+              <p className="font-mono text-sm text-[#85857F]">No execution</p>
+            ) : (
+              <div className="-mx-2 overflow-x-auto">
+                <table className="w-full min-w-[40rem] border-collapse text-base tabular-nums">
+                  <thead>
+                    <tr className={cn(TICK, "text-left text-[#9A9A96]")}>
+                      <th scope="col" className="px-2 pb-2 font-medium">Project</th>
+                      <th scope="col" className="px-2 pb-2 text-right font-medium">Σ</th>
+                      <th scope="col" className="w-[22%] px-2 pb-2 font-medium">Share</th>
+                      <th scope="col" className="px-2 pb-2 text-right font-medium">Prior</th>
+                      <th scope="col" className="px-2 pb-2 text-right font-medium">Δ</th>
+                      <th scope="col" className="px-2 pb-2 text-right font-medium">Commits</th>
+                      <th scope="col" className="px-2 pb-2 text-right font-medium">Active</th>
                     </tr>
+                  </thead>
+                  <tbody>
+                    {s.projects.map((p) => {
+                      const share = projectTotal ? p.execution / projectTotal : 0;
+                      const delta = change(p.execution, p.previous);
+                      return (
+                        <tr key={p.name} className="border-t border-white/[0.08]">
+                          <th scope="row" className="max-w-[16rem] truncate px-2 py-2.5 text-left font-medium">
+                            {p.name}
+                          </th>
+                          <td className="px-2 py-2.5 text-right font-semibold">{p.execution}</td>
+                          <td className="px-2 py-2.5">
+                            <span className="flex items-center gap-2">
+                              <span className="app-field block h-2 flex-1 overflow-hidden rounded-full" aria-hidden="true">
+                                <span className="block h-full origin-left rounded-full bg-[#F2F2EF]" style={{ transform: `scaleX(${share})` }} />
+                              </span>
+                              <span className="w-10 text-right font-mono text-sm text-[#9A9A96]">{formatNumber(share * 100)}%</span>
+                            </span>
+                          </td>
+                          <td className="px-2 py-2.5 text-right text-[#9A9A96]">{p.previous}</td>
+                          <td className="px-2 py-2.5 text-right font-mono text-sm text-[#9A9A96]">
+                            {delta === null ? (p.execution > 0 ? "new" : "—") : `${delta >= 0 ? "▲" : "▼"}${formatNumber(Math.abs(delta))}%`}
+                          </td>
+                          <td className="px-2 py-2.5 text-right">{p.commits}</td>
+                          <td className="px-2 py-2.5 text-right text-[#9A9A96]">
+                            {p.activeDays}/{days}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Panel>
+
+          {objectives.length > 0 && (
+            <Panel title="Objectives">
+              <ul className="divide-y divide-white/[0.08]">
+                {objectives.map((o) => {
+                  const pos = objectivePosition(o, now);
+                  return (
+                    <li key={o.id} className="grid gap-4 py-4 first:pt-0 last:pb-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{o.name}</p>
+                        <p className="mt-0.5 text-sm text-[#85857F] tabular-nums">
+                          {formatNumber(o.currentValue)} / {formatNumber(o.targetValue)} {o.unit}
+                          {o.deadlineAt && `, due ${formatDate(o.deadlineAt, tz, { day: "numeric", month: "short", year: "numeric" })}`}
+                        </p>
+                        <div className="mt-2.5">
+                          <ProgressRail value={o.currentValue} max={o.targetValue} label={`${o.name} progress`} />
+                        </div>
+                      </div>
+                      <p className="font-mono text-sm leading-relaxed tabular-nums text-[#9A9A96]">
+                        velocity {formatNumber(pos.velocity, 2)}/d
+                        <br />
+                        required {pos.required === null ? "—" : pos.required === Infinity ? "past deadline" : `${formatNumber(pos.required, 2)}/d`}
+                      </p>
+                      <span
+                        className={cn(
+                          "justify-self-start rounded-full px-2.5 py-1 text-[12px] font-semibold uppercase tracking-[0.12em] md:justify-self-end",
+                          pos.status === "behind" ? "app-inverse" : "app-field text-[#D4D4D0]"
+                        )}
+                      >
+                        {pos.status}
+                      </span>
+                    </li>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Panel>
-
-      {objectives.length > 0 && (
-        <Panel title="Objectives">
-          <ul className="divide-y divide-white/[0.08]">
-            {objectives.map((o) => {
-              const pos = objectivePosition(o, now);
-              return (
-                <li key={o.id} className="grid gap-4 py-4 first:pt-0 last:pb-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{o.name}</p>
-                    <p className="mt-0.5 text-sm text-[#85857F] tabular-nums">
-                      {formatNumber(o.currentValue)} / {formatNumber(o.targetValue)} {o.unit}
-                      {o.deadlineAt && `, due ${formatDate(o.deadlineAt, tz, { day: "numeric", month: "short", year: "numeric" })}`}
-                    </p>
-                    <div className="mt-2.5">
-                      <ProgressRail value={o.currentValue} max={o.targetValue} label={`${o.name} progress`} />
-                    </div>
-                  </div>
-                  <p className="font-mono text-sm leading-relaxed tabular-nums text-[#9A9A96]">
-                    velocity {formatNumber(pos.velocity, 2)}/d
-                    <br />
-                    required {pos.required === null ? "—" : pos.required === Infinity ? "past deadline" : `${formatNumber(pos.required, 2)}/d`}
-                  </p>
-                  <span
-                    className={cn(
-                      "justify-self-start rounded-full px-2.5 py-1 text-[12px] font-semibold uppercase tracking-[0.12em] md:justify-self-end",
-                      pos.status === "behind" ? "app-inverse" : "app-field text-[#D4D4D0]"
-                    )}
-                  >
-                    {pos.status}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </Panel>
+              </ul>
+            </Panel>
+          )}
+        </>
       )}
     </>
   );

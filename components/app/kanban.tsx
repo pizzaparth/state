@@ -24,7 +24,8 @@ import { MoreHorizontal } from "lucide-react";
 import type { DueState } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Avatar, DISPLAY, DueLabel, PriorityMark, TICK, WeightMark } from "./primitives";
-import { moveTaskAction } from "@/app/(app)/actions";
+import { moveTaskAction, type ActionResult } from "@/app/(app)/actions";
+import type { MoveResult } from "@/lib/mutations";
 import { useNotice } from "./notice";
 
 export interface BoardCard {
@@ -47,10 +48,15 @@ export interface BoardColumn {
   total: number;
 }
 
+export type MoveTask = (input: { taskId: string; columnId: string; afterTaskId: string | null }) => Promise<ActionResult<MoveResult>>;
+
 /**
  * Kanban with optimistic moves (drag, keyboard drag via space + arrows, or the per-card
  * "Move to" menu). The card moves at once; the server then checks access, places it and
  * records the commit for Done. A rejected move snaps the board back.
+ *
+ * `move` defaults to the real Server Action; the landing page's demo board passes a
+ * local one. Without `taskHref`, card titles are plain text.
  */
 export function Kanban({
   columns,
@@ -58,12 +64,14 @@ export function Kanban({
   taskHref,
   showAssignee,
   doneWindowDays,
+  move = moveTaskAction,
 }: {
   columns: BoardColumn[];
   cards: BoardCard[];
-  taskHref: Record<string, string>;
+  taskHref?: Record<string, string>;
   showAssignee: boolean;
   doneWindowDays: number;
+  move?: MoveTask;
 }) {
   const [cards, setCards] = React.useState(initial);
   // Fresh server data (after a save or a refresh) replaces the optimistic copy
@@ -91,7 +99,7 @@ export function Kanban({
   const persist = async (card: BoardCard, fromColumn: string | null, toColumn: string, next: BoardCard[], before: BoardCard[]) => {
     const inColumn = next.filter((c) => c.columnId === toColumn);
     const index = inColumn.findIndex((c) => c.id === card.id);
-    const result = await moveTaskAction({ taskId: card.id, columnId: toColumn, afterTaskId: inColumn[index - 1]?.id ?? null });
+    const result = await move({ taskId: card.id, columnId: toColumn, afterTaskId: inColumn[index - 1]?.id ?? null });
     if (!result.ok) {
       setCards(before);
       notify(result.error);
@@ -201,7 +209,7 @@ export function Kanban({
                       key={card.id}
                       card={card}
                       flash={flashId === card.id}
-                      href={taskHref[card.id]}
+                      href={taskHref?.[card.id]}
                       done={isDone}
                       showAssignee={showAssignee}
                       columns={columns}
@@ -261,7 +269,7 @@ function SortableCard({
 }: {
   card: BoardCard;
   flash: boolean;
-  href: string;
+  href?: string;
   done: boolean;
   showAssignee: boolean;
   columns: BoardColumn[];
