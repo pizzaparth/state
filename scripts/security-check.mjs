@@ -701,6 +701,37 @@ async function checkServerActions() {
     objectiveId ? `${goalIdor.error} | ${goalForged.error} | ${goalNegative.error}` : "action id not found"
   );
 
+  // First-run setup: a new paid account starts at /platform/start; setup writes stay in its own board
+  const freshEmail = uniqueEmail("fresh");
+  const { cookie: fresh } = await verifiedSignUp(freshEmail);
+  const { rows: [freshUser] } = await db.query("select id from users where email = $1", [freshEmail]);
+  // Stand in for a cleared payment: an active subscription and the provisioned personal board
+  await db.query(
+    `with s as (insert into subscriptions (id, user_id, provider, plan, status) values (md5(random()::text), $1, 'razorpay', 'individual', 'active')),
+          w as (insert into workspaces (id, name, slug, type, owner_id) values (md5(random()::text), 'Personal', 'personal-' || $1, 'personal', $1) returning id),
+          b as (insert into boards (id, workspace_id, name, type) select md5(random()::text), w.id, 'Personal', 'personal' from w returning id)
+     insert into columns (id, board_id, name, position, state_type)
+     select md5(random()::text || c.n), b.id, c.n, c.p, c.t from b, (values ('Queued', 0, 'backlog'), ('Active', 1, 'active'), ('Done', 2, 'done')) as c(n, p, t)`,
+    [freshUser.id]
+  );
+  const firstVisit = await req("/platform/today", { headers: { cookie: fresh } });
+  const startPage = await req("/platform/start", { headers: { cookie: fresh } });
+  const addId = await actionIdOn("/platform/start", "addBoardTaskAction", fresh);
+  const forgedFirst = addId ? await callAction(addId, [{ title: "planted", weight: 2, columnId: done.id }], { cookie: fresh, path: "/platform/start" }) : null;
+  const plantedInVictim = Number((await db.query("select count(*) from tasks where title = 'planted'")).rows[0].count);
+  const realFirst = addId ? await callAction(addId, [{ title: "My first task", weight: 2 }], { cookie: fresh, path: "/platform/start" }) : null;
+  const { rows: [placed] } = await db.query("select w.owner_id from tasks t join workspaces w on w.id = t.workspace_id where t.title = 'My first task' and t.creator_id = $1", [freshUser.id]);
+  const finishId = await actionIdOn("/platform/start", "finishOnboardingAction", fresh);
+  const finished = finishId ? await callAction(finishId, [{}], { cookie: fresh, path: "/platform/start" }) : null;
+  const afterFinish = await req("/platform/today", { headers: { cookie: fresh } });
+  record(
+    "ON1",
+    "New paid account starts at setup; its setup task stays on its own board; finishing opens Today",
+    // Today streams behind a loading skeleton, so the redirect arrives as Next's in-page redirect
+    (/\/platform\/start/.test(firstVisit.headers.get("location") ?? "") || /NEXT_REDIRECT[^"]*\/platform\/start/.test(firstVisit.text)) && startPage.status === 200 && Boolean(forgedFirst) && !forgedFirst.ok && plantedInVictim === 0 && Boolean(realFirst?.ok) && placed?.owner_id === freshUser.id && Boolean(finished?.ok) && afterFinish.status === 200 && !/NEXT_REDIRECT[^"]*\/platform\/start/.test(afterFinish.text),
+    `first ${firstVisit.status}, forged ${forgedFirst?.error}, real ${realFirst?.ok}, placed ${placed?.owner_id === freshUser.id}, finish ${finished?.ok}, after ${afterFinish.status} ${/NEXT_REDIRECT/.test(afterFinish.text)}`
+  );
+
   // Write budget: 60 per user per minute, shared across instances. Invalid calls count too.
   const burst = await Promise.all(Array.from({ length: 70 }, () => callAction(ids.moveTaskAction, [{}], { cookie: other })));
   const limited = burst.filter((r) => /Too many changes/.test(r.error ?? "")).length;

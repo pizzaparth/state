@@ -109,6 +109,7 @@ async function main() {
         subscriptionStatus: "active",
         subscriptionPlan: "organisation",
         createdAt: ist(120, 10),
+        onboardedAt: ist(120, 10),
       }))
     );
     await tx.insert(s.accounts).values(

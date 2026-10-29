@@ -922,3 +922,33 @@ export async function searchWork(q: string, workspaceIds: string[]): Promise<Sea
     })),
   ];
 }
+
+/** Whether a person has recorded any commit, anywhere. */
+export async function hasCommits(userId: string): Promise<boolean> {
+  const [row] = await db.select({ id: commits.id }).from(commits).where(and(eq(commits.userId, userId), isNull(commits.deletedAt))).limit(1);
+  return Boolean(row);
+}
+
+/**
+ * First-run setup state from the person's own personal board: their newest open task
+ * there, their newest commit, and the board's Done column.
+ */
+export async function getOnboardingState(userId: string, personalWorkspaceId: string | null, personalBoardId: string | null) {
+  if (!personalWorkspaceId || !personalBoardId) return { task: null, commit: null, doneColumnId: null };
+  const [[task], [commit], [done]] = await Promise.all([
+    db
+      .select({ id: tasks.id, title: tasks.title, weight: tasks.weight })
+      .from(tasks)
+      .where(and(eq(tasks.boardId, personalBoardId), eq(tasks.workspaceId, personalWorkspaceId), eq(tasks.creatorId, userId), isNull(tasks.completedAt), isNull(tasks.deletedAt)))
+      .orderBy(desc(tasks.createdAt))
+      .limit(1),
+    db
+      .select({ message: commits.message, executionValue: commits.executionValue })
+      .from(commits)
+      .where(and(eq(commits.workspaceId, personalWorkspaceId), eq(commits.userId, userId), isNull(commits.deletedAt)))
+      .orderBy(desc(commits.createdAt))
+      .limit(1),
+    db.select({ id: columns.id }).from(columns).where(and(eq(columns.boardId, personalBoardId), eq(columns.stateType, "done"))).limit(1),
+  ]);
+  return { task: task ?? null, commit: commit ?? null, doneColumnId: done?.id ?? null };
+}

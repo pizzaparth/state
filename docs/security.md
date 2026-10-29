@@ -48,7 +48,7 @@ rate limits. `authz:check` refuses any database whose name does not end in `_tes
 
 ## Results
 
-`npm run authz:check`: **176 of 176 pass.**
+`npm run authz:check`: **179 of 179 pass.**
 
 | Group | Checks |
 |---|---|
@@ -64,9 +64,10 @@ rate limits. `authz:check` refuses any database whose name does not end in `_tes
 | CP1–CP6 capture tokens | Due days resolve in the person's timezone. An organisation `#project` puts the task on that organisation's board, and `@person` assigns only a member of it. A viewer's organisation `#project` is ignored (personal Inbox). `@person` on a personal task, a non-member handle, or an outsider assigning into an organisation are refused. Impossible dates stay in the title; emails are not `@people`. |
 | AC1–AC3 access levels | Full while paid, within 7 days past due, or until a canceled period ends; read-only after; none before paying. Organisation-plan checks ignore other plans. The grace period starts at the first past_due event, is not restarted by provider retries, and clears when paid. |
 | OB1–OB7 objectives | Outsiders, viewers and foreign or cross-workspace projects cannot create one. Owner, workspace, current value, start, negative, fractional and oversized numbers and past deadlines rejected. Other users cannot update or archive. Reaching the target completes it. Execution objectives sum only live commits since they started in their project and cannot be set by hand. Archived ones leave the list. At most 50 live per workspace. |
+| ON1–ON3 first-run setup | The setup task lands at the top of the person's own Queued column and cannot target another board, column or workspace. Finishing setup marks only the session user, once. |
 | L1–L6 lifecycle and races | 10 parallel Done moves record exactly one commit. A replayed Done records nothing. Reopen retires the commit, and completing again records one. A deleted task cannot be moved. A removed member loses write access at once. |
 
-`npm run security:check` (black box, production build): **95 of 95 pass.**
+`npm run security:check` (black box, production build): **96 of 96 pass.**
 
 Email verification and password reset (EV, PR):
 
@@ -104,6 +105,7 @@ Product and surface checks:
 | CT1 | Capture naming another user's `#project` and `@person` through the raw action | Refused; without `@person` it lands in the caller's own Inbox with no project |
 | RO1–RO2 | Account past due beyond the grace period; within it | Pages and search answer with a read-only notice, raw writes refused; writes still allowed |
 | OJ1 | Another user's objective progress; forged `targetValue`; negative values through the raw action | Refused, nothing changed |
+| ON1 | New paid account: first visit, a setup task with a forged `columnId`, finishing setup | Sent to `/platform/start`; forged field refused, real task on its own board; Today opens after finishing |
 | SA8 | Burst of 70 writes | Write budget blocks the excess |
 | X2 | Stored XSS in a task title | Escaped on render |
 | K2 | Session token reused after sign-out | Redirected to sign-in |

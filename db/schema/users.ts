@@ -12,6 +12,8 @@ export const users = pgTable("users", {
   subscriptionPlan: text("subscription_plan"), // individual, organisation
   theme: text("theme").default("light").notNull(), // light neumorphic (product) vs dark (marketing/settings)
   defaultWorkspaceId: text("default_workspace_id"),
+  // Set when first-run setup (/platform/start) is finished or skipped
+  onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

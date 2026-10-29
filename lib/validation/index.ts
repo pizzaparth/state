@@ -107,6 +107,15 @@ export const setTaskRecurrenceSchema = z.strictObject({
   rule: z.string().regex(RECURRENCE_RULES, "Pick how often it repeats.").nullable(),
 });
 
+/** A task straight onto the personal board's Queued column (first-run setup). */
+export const addBoardTaskSchema = z.strictObject({
+  title: z.string().trim().min(1, "Give the task a title.").max(500, "Keep the title under 500 characters."),
+  weight: z.union([z.literal(1), z.literal(2), z.literal(4), z.literal(8)]),
+});
+
+/** First-run setup done or skipped; takes nothing. */
+export const finishOnboardingSchema = z.strictObject({});
+
 /** Delete and undo-delete take only the task id. */
 export const taskRefSchema = z.strictObject({
   taskId: objectId,

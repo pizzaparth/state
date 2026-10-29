@@ -9,7 +9,7 @@ import { keyBetween } from "@/lib/position";
 import { dayIn, nextDueDay } from "@/lib/recurrence";
 import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
 import type { z } from "zod";
-import type { createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, invitationRefSchema, inviteMemberSchema, memberRefSchema, organisationRefSchema, setMemberRoleSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, invitationRefSchema, inviteMemberSchema, memberRefSchema, organisationRefSchema, setMemberRoleSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -282,6 +282,45 @@ export async function captureTask(actor: Actor, input: z.infer<typeof captureTas
     })
     .returning({ id: tasks.id, dueAt: tasks.dueAt });
   return { id: row.id, title, projectName: project?.name ?? null, organisationName: project?.organisationName ?? null, dueAt: row.dueAt, assigneeName: assignee.name };
+}
+
+/** New task at the top of the actor's personal board's Queued column. */
+export async function addBoardTask(actor: Actor, input: z.infer<typeof addBoardTaskSchema>): Promise<{ id: string; columnId: string }> {
+  assertWritable(actor, actor.personalWorkspaceId);
+  const [column] = await db
+    .select({ id: columns.id, boardId: boards.id })
+    .from(columns)
+    .innerJoin(boards, eq(boards.id, columns.boardId))
+    .where(and(eq(boards.workspaceId, actor.personalWorkspaceId), eq(boards.type, "personal"), eq(columns.stateType, "backlog")))
+    .orderBy(asc(columns.position))
+    .limit(1);
+  if (!column) throw new MutationError("not_found", "Your board is still being set up. Try again in a moment.");
+  const [first] = await db
+    .select({ position: tasks.position })
+    .from(tasks)
+    .where(and(eq(tasks.boardId, column.boardId), eq(tasks.columnId, column.id), isNull(tasks.deletedAt)))
+    .orderBy(asc(byPosition))
+    .limit(1);
+  const [row] = await db
+    .insert(tasks)
+    .values({
+      workspaceId: actor.personalWorkspaceId,
+      boardId: column.boardId,
+      columnId: column.id,
+      position: keyBetween(null, first?.position ?? null),
+      creatorId: actor.id,
+      assigneeId: actor.id,
+      title: input.title,
+      weight: input.weight,
+    })
+    .returning({ id: tasks.id });
+  return { id: row.id, columnId: column.id };
+}
+
+/** Marks first-run setup as finished (or skipped). Idempotent. */
+export async function finishOnboarding(actor: Actor): Promise<{ done: true }> {
+  await db.update(users).set({ onboardedAt: sql`coalesce(${users.onboardedAt}, now())` }).where(eq(users.id, actor.id));
+  return { done: true };
 }
 
 /**

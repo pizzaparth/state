@@ -19,8 +19,8 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getObjectives, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, acceptInvitation, setTaskRecurrence, captureTask, createManualCommit, createOrganisation, createProject, hashInvitationToken, inviteMember, leaveOrganisation, removeMember, revokeInvitation, setMemberRole, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
-import { createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, inviteMemberSchema, setMemberRoleSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, acceptInvitation, setTaskRecurrence, captureTask, createManualCommit, createOrganisation, createProject, hashInvitationToken, inviteMember, leaveOrganisation, removeMember, revokeInvitation, setMemberRole, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
+import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, inviteMemberSchema, setMemberRoleSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
 import { buildExport } from "../lib/data/export";
 import { parseImport } from "../lib/data/import";
 import { parseCsv, toCsv } from "../lib/data/csv";
@@ -861,6 +861,36 @@ async function main() {
   await db.delete(s.objectives).where(inArray(s.objectives.id, [...fillerGoals.map((g) => g.id), manual.id, execGoal.id, orgGoal.id]));
   await db.delete(s.commits).where(inArray(s.commits.id, commitsMade.map((c) => c.id)));
   await db.delete(s.projects).where(eq(s.projects.id, otherProject.id));
+
+  // ------------------------------------------------------------ first-run setup
+  const firstTask = await addBoardTask(A, { title: "First task", weight: 4 });
+  const firstRow = await one(db.select().from(s.tasks).where(eq(s.tasks.id, firstTask.id)));
+  const [topOfQueued] = await db
+    .select({ id: s.tasks.id })
+    .from(s.tasks)
+    .where(and(eq(s.tasks.columnId, parth.col("backlog").id), isNull(s.tasks.deletedAt)))
+    .orderBy(sql`${s.tasks.position} collate "C"`)
+    .limit(1);
+  record("ON1", "Setup task lands at the top of the person's own Queued column", firstRow.workspaceId === parth.ws.id && firstRow.boardId === parth.board.id && firstRow.columnId === parth.col("backlog").id && firstRow.creatorId === parthId && firstRow.weight === 4 && topOfQueued.id === firstTask.id);
+  [ok, detail] = await expectError(() => addBoardTask({ id: outsiderId, personalWorkspaceId: parth.ws.id, readable: new Set(), writable: new Set() }, { title: "x", weight: 2 }), "not_found");
+  const badFirst = [
+    { title: "x", weight: 2, boardId: aarav.board.id },
+    { title: "x", weight: 2, columnId: aarav.col("done").id },
+    { title: "x", weight: 2, workspaceId: aarav.ws.id },
+    { title: "x", weight: 3 },
+    { title: " ", weight: 2 },
+  ].map((v) => addBoardTaskSchema.safeParse(v).success);
+  record("ON2", "Setup task cannot target another board, column or workspace", ok && badFirst.every((v) => !v) && !finishOnboardingSchema.safeParse({ userId: aaravId }).success, `${detail} ${JSON.stringify(badFirst)}`);
+  await db.delete(s.tasks).where(eq(s.tasks.id, firstTask.id));
+
+  await db.update(s.users).set({ onboardedAt: null }).where(inArray(s.users.id, [parthId, aaravId]));
+  await finishOnboarding(A);
+  const [stampA] = await db.select({ t: s.users.onboardedAt }).from(s.users).where(eq(s.users.id, parthId));
+  await finishOnboarding(A);
+  const [stampA2] = await db.select({ t: s.users.onboardedAt }).from(s.users).where(eq(s.users.id, parthId));
+  const [stampB] = await db.select({ t: s.users.onboardedAt }).from(s.users).where(eq(s.users.id, aaravId));
+  record("ON3", "Finishing setup marks only the session user, once", stampA.t !== null && stampA2.t?.getTime() === stampA.t.getTime() && stampB.t === null);
+  await db.update(s.users).set({ onboardedAt: new Date() }).where(eq(s.users.id, aaravId));
 
   // ------------------------------------------------------------ export, import, account deletion, billing
   const execution = async (workspaceId: string) =>

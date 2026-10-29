@@ -14,9 +14,9 @@ type FieldName = "name" | "slug";
 /**
  * "New organisation…": name and address. Validates with the server's Zod schema before
  * sending; a taken address from the server lands on the slug field. Opens the new
- * organisation's board once created.
+ * organisation once created, unless `openAfter` is false (first-run setup stays put).
  */
-export function NewOrganisation() {
+export function NewOrganisation({ openAfter = true }: { openAfter?: boolean } = {}) {
   const router = useRouter();
   const notify = useNotice();
   const [open, setOpen] = React.useState(false);
@@ -98,7 +98,8 @@ export function NewOrganisation() {
                 if (result.ok) {
                   setOpen(false);
                   notify(`Created ${parsed.data.name}.`);
-                  router.push(result.data.href as Route);
+                  if (openAfter) router.push(result.data.href as Route);
+                  else router.refresh();
                   return;
                 }
                 if (result.error.includes("taken")) {

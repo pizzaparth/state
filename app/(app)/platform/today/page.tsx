@@ -1,5 +1,6 @@
 import * as React from "react";
-import { getTicker, getToday } from "@/db/queries";
+import { getTicker, getToday, hasCommits } from "@/db/queries";
+import { redirect } from "next/navigation";
 import { getCaptureProjects, getViewer } from "@/lib/viewer";
 import { formatDate } from "@/lib/format";
 import { DISPLAY, PageHeader, Panel, EmptyState, TICK } from "@/components/app/primitives";
@@ -15,6 +16,8 @@ export const metadata = { title: "Today" };
 export default async function TodayPage({ searchParams }: { searchParams: PageSearchParams }) {
   const params = await searchParams;
   const viewer = await getViewer();
+  // A new account with nothing recorded yet starts with first-run setup
+  if (!viewer.onboardedAt && !(await hasCommits(viewer.id))) redirect("/platform/start");
   const now = new Date();
   const scope = { workspaceIds: viewer.workspaceIds, userId: viewer.id };
   const [today, projects, ticker] = await Promise.all([
