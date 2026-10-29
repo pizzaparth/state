@@ -35,7 +35,7 @@ export default async function InboxPage({ searchParams }: { searchParams: PageSe
         {inbox.length === 0 ? (
           <EmptyState title="Inbox zero" />
         ) : (
-          <ul className="-mx-3">
+          <ul className="app-stagger -mx-3">
             {inbox.map((t) => (
               <TaskRow key={t.id} task={t} tz={viewer.tz} now={now} href={withParam("/platform/inbox", params, "task", t.id)} />
             ))}

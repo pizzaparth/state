@@ -188,7 +188,7 @@ export async function MetricsView({
         items={Object.keys(PERIODS).map((key) => ({ href: `${basePath}?period=${key}`, label: key.toUpperCase(), active: key === period }))}
       />
 
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="app-stagger grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <Measure
           inverse
           label={`Execution / ${days}d`}

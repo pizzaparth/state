@@ -86,6 +86,7 @@ export function SeriesChart({
   refs?: { value: number; label: string }[];
 }) {
   const [ref, width] = useWidth<HTMLDivElement>();
+  const clipId = React.useId();
   const [active, setActive] = React.useState<number | null>(null);
   const n = labels.length;
   const fmt = (v: number | null) => (v === null || !Number.isFinite(v) ? "—" : `${formatNumber(v, digits)}${unit}`);
@@ -152,6 +153,12 @@ export function SeriesChart({
       >
         {width > 0 && n > 0 && (
           <svg width={width} height={height} className="block touch-pan-y select-none" onPointerMove={pointer} onPointerLeave={() => setActive(null)} aria-hidden="true">
+            <defs>
+              {/* Lines and areas draw in left to right as the clip widens */}
+              <clipPath id={clipId}>
+                <rect x={0} y={0} width={width} height={height} className="app-mark origin-left animate-grow-x" />
+              </clipPath>
+            </defs>
             {ticksY.map((t) => (
               <g key={t}>
                 <line x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} stroke={t === 0 ? "rgba(255,255,255,.22)" : "rgba(255,255,255,.07)"} />
@@ -180,6 +187,8 @@ export function SeriesChart({
                     rx={barW > 6 ? 2 : 0}
                     fill={TONE[s.tone ?? "hi"]}
                     opacity={active === null || active === i ? 1 : 0.55}
+                    className={cn("app-mark animate-grow-y transition-opacity duration-150", v < 0 ? "origin-top" : "origin-bottom")}
+                    style={{ animationDelay: `${i * Math.min(12, 360 / n)}ms` }}
                   />
                 )
               )
@@ -191,7 +200,7 @@ export function SeriesChart({
               const d = linePath(s.values, x, y);
               if (!d) return null;
               return (
-                <g key={s.label}>
+                <g key={s.label} clipPath={`url(#${clipId})`}>
                   {s.kind === "area" && <path d={`${d}V${y(0)}H${x(s.values.findIndex((v) => v !== null))}Z`} fill={color} opacity={0.14} />}
                   <path d={d} fill="none" stroke={color} strokeWidth={2} strokeDasharray={s.dashed ? "5 4" : undefined} strokeLinejoin="round" strokeLinecap="round" />
                 </g>
@@ -323,10 +332,13 @@ export function Punchcard({ cells }: { cells: { dow: number; hour: number; commi
                     key={`${r}-${c}`}
                     onPointerEnter={() => setActive([r, c])}
                     className={cn(
-                      "relative aspect-square rounded-[3px]",
+                      "relative aspect-square animate-cell-in rounded-[3px]",
                       active?.[0] === r && active?.[1] === c && "z-[1] outline outline-2 outline-offset-1 outline-[#F2F2EF]"
                     )}
-                    style={{ backgroundColor: RAMP[cell.commits === 0 ? 0 : Math.min(4, 1 + Math.floor((cell.commits / max) * 3.999))] }}
+                    style={{
+                      backgroundColor: RAMP[cell.commits === 0 ? 0 : Math.min(4, 1 + Math.floor((cell.commits / max) * 3.999))],
+                      animationDelay: `${c * 14}ms`,
+                    }}
                   />
                 ))
               )}

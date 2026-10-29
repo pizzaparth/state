@@ -25,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import { createCommitAction } from "@/app/(app)/actions";
 import { WEIGHT_LEVELS, weightHint } from "@/lib/weights";
+import { CountUp } from "./count-up";
 import { NoticeProvider, useNotice } from "./notice";
 
 export interface ShellData {
@@ -219,12 +220,12 @@ function TickerStrip({ ticker, dateLabel }: { ticker: ShellData["ticker"]; dateL
   const change = ticker.prev7 > 0 ? Math.round(((ticker.last7 - ticker.prev7) / ticker.prev7) * 100) : null;
   const up = change !== null && change >= 0;
   const items: { label: string; value: React.ReactNode; title: string; className?: string }[] = [
-    { label: "Today", value: `+${ticker.today}`, title: "Execution recorded today" },
+    { label: "Today", value: <CountUp value={`+${ticker.today}`} />, title: "Execution recorded today" },
     {
       label: "7D",
       value: (
         <>
-          {ticker.last7}
+          <CountUp value={String(ticker.last7)} />
           {change !== null && (
             <span className={cn("ml-1.5", up ? "text-[#F2F2EF]" : "text-[#9A9A96]")}>
               {up ? "▲" : "▼"}
@@ -236,8 +237,8 @@ function TickerStrip({ ticker, dateLabel }: { ticker: ShellData["ticker"]; dateL
       title: change === null ? "Execution in the last 7 days" : `Execution in the last 7 days: ${ticker.last7}, ${up ? "up" : "down"} ${Math.abs(change)}% on the 7 days before (${ticker.prev7})`,
       className: "hidden sm:flex",
     },
-    { label: "Vel", value: `${(ticker.last7 / 7).toFixed(1)}/d`, title: "Velocity: last 7 days' execution ÷ 7", className: "hidden md:flex" },
-    { label: "Active", value: `${ticker.activeDays7}/7`, title: "Days with at least one commit, last 7 days", className: "hidden xl:flex" },
+    { label: "Vel", value: <CountUp value={`${(ticker.last7 / 7).toFixed(1)}/d`} />, title: "Velocity: last 7 days' execution ÷ 7", className: "hidden md:flex" },
+    { label: "Active", value: <CountUp value={`${ticker.activeDays7}/7`} />, title: "Days with at least one commit, last 7 days", className: "hidden xl:flex" },
   ];
   return (
     <dl aria-label="Your execution, last 7 days" className="flex min-w-0 items-center gap-x-5 overflow-hidden font-mono text-[13px] uppercase tabular-nums">

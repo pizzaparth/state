@@ -35,6 +35,7 @@ export function CycleHistogram({ durationsMs }: { durationsMs: number[] }) {
 
 /** Inline trend line for a KPI card: shape only, scaled to its own min and max. */
 export function Sparkline({ values, inverse }: { values: number[]; inverse?: boolean }) {
+  const clipId = React.useId();
   if (values.length < 2) return null;
   const w = 96;
   const h = 28;
@@ -45,8 +46,16 @@ export function Sparkline({ values, inverse }: { values: number[]; inverse?: boo
   const color = inverse ? "#0A0A0A" : "#F2F2EF";
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="h-7 w-24 shrink-0" preserveAspectRatio="none" aria-hidden="true">
-      <polyline points={points.join(" ")} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-      <circle cx={w} cy={points.at(-1)!.split(",")[1]} r="2.5" fill={color} />
+      {/* The line draws in left to right; the end dot lands after it */}
+      <defs>
+        <clipPath id={clipId}>
+          <rect x={-3} y={-3} width={w + 6} height={h + 6} className="app-mark origin-left animate-grow-x" />
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${clipId})`}>
+        <polyline points={points.join(" ")} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        <circle cx={w} cy={points.at(-1)!.split(",")[1]} r="2.5" fill={color} />
+      </g>
     </svg>
   );
 }

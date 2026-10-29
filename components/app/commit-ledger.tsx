@@ -47,7 +47,7 @@ export function CommitLedger({
                 </span>
               </h3>
             )}
-            <ol className="relative">
+            <ol className="app-stagger relative">
               {/* Thin connector behind the markers */}
               <span aria-hidden="true" className="absolute bottom-3 left-[4.4rem] top-3 w-px bg-white/[0.08]" />
               {group.rows.map((c) => (

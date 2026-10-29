@@ -101,3 +101,30 @@ select.app-field {
 select.app-field:disabled {
   cursor: not-allowed;
 }
+
+/* Entrance stagger: direct children rise in order on mount (rows, metric grids, lists).
+   Transform/opacity only; steps cap at 8 so long lists don't trail. Items added later
+   (a new commit, a captured task) rise on their own. Reduced motion zeroes this globally. */
+@keyframes app-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.app-stagger > * {
+  animation: app-rise var(--duration-slow) var(--ease-restrained) both;
+}
+
+.app-stagger > :nth-child(2) { animation-delay: 30ms; }
+.app-stagger > :nth-child(3) { animation-delay: 60ms; }
+.app-stagger > :nth-child(4) { animation-delay: 90ms; }
+.app-stagger > :nth-child(5) { animation-delay: 120ms; }
+.app-stagger > :nth-child(6) { animation-delay: 150ms; }
+.app-stagger > :nth-child(7) { animation-delay: 180ms; }
+.app-stagger > :nth-child(n + 8) { animation-delay: 210ms; }
+
+/* SVG chart marks: scale from their own box (bars from the baseline, reveals from the left) */
+.app-mark {
+  transform-box: fill-box;
+}

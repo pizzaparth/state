@@ -7,6 +7,7 @@ import { DISPLAY, TICK } from "@/lib/type";
 import type { DueState } from "@/lib/format";
 import { weightLabel } from "@/lib/weights";
 import { Sparkline } from "./charts";
+import { CountUp } from "./count-up";
 import { TabLinks } from "./tab-links";
 
 /**
@@ -222,7 +223,9 @@ export function Measure({
         {spark && <Sparkline values={spark} inverse={inverse} />}
       </div>
       <p className="mt-4 flex items-baseline gap-1.5">
-        <span className={cn(DISPLAY, "text-[2.5rem] leading-none tabular-nums", inverse ? "text-[#0A0A0A]" : "text-[#F2F2EF]")}>{value}</span>
+        <span className={cn(DISPLAY, "text-[2.5rem] leading-none tabular-nums", inverse ? "text-[#0A0A0A]" : "text-[#F2F2EF]")}>
+          <CountUp value={value} />
+        </span>
         {unit && <span className={cn("font-mono text-sm", inverse ? "text-[#55554F]" : "text-[#9A9A96]")}>{unit}</span>}
       </p>
       {delta && <p className="mt-2 font-mono text-sm tabular-nums">{delta}</p>}

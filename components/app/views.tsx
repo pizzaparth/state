@@ -38,7 +38,7 @@ export async function ProjectView({
 
   return (
     <>
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="app-stagger grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <Measure inverse label="Execution rate" value={formatNumber(exec30 / 30, 2)} unit="/ day" formula={`${exec30} ÷ 30 days`} />
         <Measure label="Open" value={formatNumber(open.length)} formula="not done" />
         <Measure label="Done / 91d" value={formatNumber(completed)} formula="task commits" />
@@ -54,7 +54,7 @@ export async function ProjectView({
           {open.length === 0 ? (
             <EmptyState title="All done" />
           ) : (
-            <ul className="-mx-3">
+            <ul className="app-stagger -mx-3">
               {open.map((t) => (
                 <TaskRow key={t.id} task={t} tz={tz} now={now} href={taskHref(t.id)} showAssignee={showPeople} />
               ))}

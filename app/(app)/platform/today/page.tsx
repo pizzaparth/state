@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { TaskRow, withParam } from "@/components/app/task-row";
 import { CommitLedger } from "@/components/app/commit-ledger";
 import { QuickCapture } from "@/components/app/quick-capture";
+import { CountUp } from "@/components/app/count-up";
 import { Drawers, type PageSearchParams } from "@/components/app/drawers";
 
 export const metadata = { title: "Today — State" };
@@ -36,19 +37,27 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
           <h2 id="execution-today" className={cn(TICK, "text-[#55554F]")}>
             Execution today
           </h2>
-          <p className={cn(DISPLAY, "mt-5 text-[clamp(4rem,9vw,6.5rem)] leading-[0.85] tabular-nums")}>+{done}</p>
+          <p className={cn(DISPLAY, "mt-5 text-[clamp(4rem,9vw,6.5rem)] leading-[0.85] tabular-nums")}>
+            <CountUp value={`+${done}`} />
+          </p>
           <dl className="mt-6 grid grid-cols-3 gap-3 border-t border-black/10 pt-4 font-mono text-sm tabular-nums">
             <div>
               <dt className="text-[11px] uppercase tracking-[0.16em] text-[#55554F]">Commits</dt>
-              <dd className="mt-1 text-lg font-semibold">{today.commits.length}</dd>
+              <dd className="mt-1 text-lg font-semibold">
+                <CountUp value={String(today.commits.length)} />
+              </dd>
             </div>
             <div>
               <dt className="text-[11px] uppercase tracking-[0.16em] text-[#55554F]">Done</dt>
-              <dd className="mt-1 text-lg font-semibold">{today.completed.length}</dd>
+              <dd className="mt-1 text-lg font-semibold">
+                <CountUp value={String(today.completed.length)} />
+              </dd>
             </div>
             <div title="Average daily execution over the last 7 days">
               <dt className="text-[11px] uppercase tracking-[0.16em] text-[#55554F]">7D avg</dt>
-              <dd className="mt-1 text-lg font-semibold">{avg.toFixed(1)}</dd>
+              <dd className="mt-1 text-lg font-semibold">
+                <CountUp value={avg.toFixed(1)} />
+              </dd>
             </div>
           </dl>
         </section>
@@ -65,7 +74,7 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
         <div className="space-y-5">
           {today.overdue.length > 0 && (
             <Panel title="Overdue" aside={`${today.overdue.length}`}>
-              <ul className="-mx-3">
+              <ul className="app-stagger -mx-3">
                 {today.overdue.map((t) => (
                   <TaskRow key={t.id} task={t} tz={viewer.tz} now={now} href={href("task")(t.id)} />
                 ))}
@@ -76,7 +85,7 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
             {today.active.length === 0 ? (
               <EmptyState title="Nothing active" />
             ) : (
-              <ul className="-mx-3">
+              <ul className="app-stagger -mx-3">
                 {today.active.map((t) => (
                   <TaskRow key={t.id} task={t} tz={viewer.tz} now={now} href={href("task")(t.id)} />
                 ))}
@@ -87,7 +96,7 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
             {today.queued.length === 0 ? (
               <EmptyState title="Queue clear" />
             ) : (
-              <ul className="-mx-3">
+              <ul className="app-stagger -mx-3">
                 {today.queued.map((t) => (
                   <TaskRow key={t.id} task={t} tz={viewer.tz} now={now} href={href("task")(t.id)} />
                 ))}
@@ -101,7 +110,7 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
             {today.completed.length === 0 ? (
               <EmptyState title="None yet" />
             ) : (
-              <ul className="-mx-3">
+              <ul className="app-stagger -mx-3">
                 {today.completed.map((t) => (
                   <TaskRow key={t.id} task={t} tz={viewer.tz} now={now} href={href("task")(t.id)} />
                 ))}

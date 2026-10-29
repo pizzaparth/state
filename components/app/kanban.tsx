@@ -276,7 +276,7 @@ function SortableCard({
       inert={isDragging || undefined}
       className={cn("relative", isDragging && "opacity-40")}
     >
-      <div {...attributes} {...listeners} aria-roledescription="draggable task" className="cursor-grab rounded-[16px] active:cursor-grabbing">
+      <div {...attributes} {...listeners} aria-roledescription="draggable task" className="animate-row-in cursor-grab rounded-[16px] active:cursor-grabbing">
         <CardFace card={card} done={done} showAssignee={showAssignee} href={href} flash={flash} />
       </div>
       <Menu.Root>
