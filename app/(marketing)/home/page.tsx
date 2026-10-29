@@ -26,6 +26,7 @@ const silver = "bg-gradient-to-b from-white via-[#D9D9D5] to-[#6F6F6B] bg-clip-t
 const displayHeading =
   "font-display font-extrabold uppercase leading-[0.92] tracking-[-0.03em] [font-stretch:125%] text-balance";
 const sectionPad = "mx-auto w-full max-w-[1320px] px-5 sm:px-8 lg:px-12";
+const kicker = "mb-6 font-mono text-sm uppercase tracking-[0.18em] text-[#85857F]";
 
 // Board cards finished in the last two days stay in Done
 const DONE_WINDOW_DAYS = 2;
@@ -107,7 +108,7 @@ export default function LandingPage() {
 
       {/* Hero: type is the graphic; the particle field sits behind */}
       <section className={`${sectionPad} flex min-h-[100svh] flex-col justify-end pb-[10vh] pt-32`}>
-        <p className="mb-6 font-mono text-sm uppercase tracking-[0.18em] text-[#85857F] animate-fade-in">To-do list · Kanban · Metrics</p>
+        <p className={`${kicker} animate-fade-in`}>To-do list · Kanban · Metrics</p>
         <h1 className={`${displayHeading} ${silver} text-[clamp(2.25rem,10vw,9.5rem)] leading-[0.86]`}>
           <span className="block overflow-hidden pb-[0.04em]">
             <span className="block animate-line-rise">Execution,</span>
@@ -119,7 +120,10 @@ export default function LandingPage() {
 
         <div className="mt-10 animate-fade-in [animation-delay:500ms]">
           <div>
-            <p className="max-w-[44ch] text-lg leading-relaxed text-[#A9A9A6] text-pretty sm:text-xl">
+            <p className="max-w-[44ch] text-xl leading-snug text-[#F4F4F2] text-pretty sm:text-2xl">
+              Applying quantitative methods to human execution.
+            </p>
+            <p className="mt-3 max-w-[44ch] text-lg leading-relaxed text-[#A9A9A6] text-pretty sm:text-xl">
               Tasks = the plan. Commits = what you did. State does the math.
             </p>
             <p className="mt-4 font-mono text-sm uppercase tracking-[0.18em] text-[#6F6F6B]">
@@ -145,6 +149,7 @@ export default function LandingPage() {
       {/* History */}
       <section id="history" aria-labelledby="history-title" className={`${sectionPad} scroll-mt-16 py-[16vh]`}>
         <div className="max-w-3xl">
+          <p className={kicker}>Execution is a time series.</p>
           <h2 id="history-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
             Your work has a history.
           </h2>
@@ -162,6 +167,7 @@ export default function LandingPage() {
 
       {/* Metrics */}
       <section aria-labelledby="metrics-title" className={`${sectionPad} py-[16vh]`}>
+        <p className={kicker}>Operational metrics for personal execution.</p>
         <h2 id="metrics-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           Measure throughput, not busyness.
         </h2>
@@ -174,6 +180,7 @@ export default function LandingPage() {
 
       {/* Personal / organisation */}
       <section aria-labelledby="scope-title" className={`${sectionPad} py-[16vh]`}>
+        <p className={kicker}>Human execution, measured like a system.</p>
         <h2 id="scope-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           Personal or organisational.
         </h2>
@@ -185,6 +192,7 @@ export default function LandingPage() {
 
       {/* Refusals */}
       <section aria-labelledby="refusals-title" className={`${sectionPad} py-[16vh]`}>
+        <p className={kicker}>Productivity, without the productivity language.</p>
         <h2 id="refusals-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           No ads. No AI noise.
         </h2>
@@ -204,6 +212,7 @@ export default function LandingPage() {
 
       {/* Pricing */}
       <section id="pricing" aria-labelledby="pricing-title" className={`${sectionPad} scroll-mt-24 py-[16vh]`}>
+        <p className={kicker}>Quantitative infrastructure for getting work done.</p>
         <h2 id="pricing-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           Paid from day one.
         </h2>
@@ -215,6 +224,7 @@ export default function LandingPage() {
 
       {/* Switching from: internal links to the comparison pages */}
       <section aria-labelledby="compare-title" className={`${sectionPad} py-[16vh]`}>
+        <p className={kicker}>From tasks to telemetry.</p>
         <h2 id="compare-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           Switching from…
         </h2>
@@ -238,6 +248,7 @@ export default function LandingPage() {
 
       {/* FAQ */}
       <section aria-labelledby="faq-title" className={`${sectionPad} py-[16vh]`}>
+        <p className={kicker}>A measurement system for execution.</p>
         <h2 id="faq-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           Questions.
         </h2>
@@ -253,6 +264,7 @@ export default function LandingPage() {
 
       {/* Closing */}
       <section className={`${sectionPad} flex min-h-[80svh] flex-col justify-center py-[12vh]`}>
+        <p className={kicker}>Where execution becomes data.</p>
         <h2 className={`${displayHeading} ${silver} text-[clamp(2.25rem,10vw,9.5rem)] leading-[0.88]`}>Start measuring.</h2>
         <div className="mt-10 flex flex-wrap items-center gap-6">
           <Magnetic strength={0.45} radius={160}>
