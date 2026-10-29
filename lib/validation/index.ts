@@ -110,8 +110,7 @@ export const manualCommitSchema = z.strictObject({
  */
 export const PROJECT_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-export const createProjectSchema = z.strictObject({
-  organisationId: objectId.nullable(),
+const projectFields = {
   name: z.string().trim().min(1, "Give the project a name.").max(100, "Keep the name under 100 characters."),
   slug: z
     .string()
@@ -121,6 +120,25 @@ export const createProjectSchema = z.strictObject({
     .max(100, "Keep the slug under 100 characters.")
     .regex(PROJECT_SLUG, "Use lowercase letters, numbers and single hyphens, like relay-db."),
   description: z.string().trim().max(2_000, "Keep the description under 2,000 characters.").nullable(),
+};
+
+export const createProjectSchema = z.strictObject({
+  organisationId: objectId.nullable(),
+  ...projectFields,
+});
+
+/** Statuses set by hand. Archiving is separate (archivedAt) and has its own action. */
+export const PROJECT_STATUSES = ["planned", "active", "paused", "completed"] as const;
+
+export const updateProjectSchema = z.strictObject({
+  projectId: objectId,
+  ...projectFields,
+  status: z.enum(PROJECT_STATUSES),
+});
+
+export const setProjectArchivedSchema = z.strictObject({
+  projectId: objectId,
+  archived: z.boolean(),
 });
 
 /** Slug suggested from a project name: "Relay DB v2" becomes "relay-db-v2". */

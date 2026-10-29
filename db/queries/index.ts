@@ -516,6 +516,17 @@ export async function getProjects(workspaceIds: string[]): Promise<ProjectSummar
   return rows.map((r) => ({ ...r, lastCommitAt: r.lastCommitAt ? new Date(r.lastCommitAt) : null }));
 }
 
+/** Archived projects in the given workspaces, most recently archived first. */
+export async function getArchivedProjects(workspaceIds: string[], limit = 100) {
+  if (workspaceIds.length === 0) return [];
+  return db
+    .select({ id: projects.id, name: projects.name, slug: projects.slug, workspaceId: projects.workspaceId, archivedAt: projects.archivedAt })
+    .from(projects)
+    .where(and(inArray(projects.workspaceId, workspaceIds), isNotNull(projects.archivedAt)))
+    .orderBy(desc(projects.archivedAt))
+    .limit(limit);
+}
+
 export async function getProjectBySlug(workspaceId: string, slug: string) {
   const [project] = await db
     .select()

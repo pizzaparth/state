@@ -5,7 +5,7 @@ import { assertWritable, MutationError, type Actor } from "@/lib/authz";
 import { keyBetween } from "@/lib/position";
 import { parseQuickCapture } from "@/lib/validation";
 import type { z } from "zod";
-import type { captureTaskSchema, createProjectSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import type { captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -321,6 +321,73 @@ export async function createProject(actor: Actor, input: z.infer<typeof createPr
     .returning({ id: projects.id, slug: projects.slug });
   if (!row) throw new MutationError("conflict", `#${input.slug} is already used here. Choose another slug.`);
   return { ...row, href: orgSlug ? `/org/${orgSlug}/projects/${row.slug}` : `/projects/${row.slug}` };
+}
+
+/** Where a project lives in the app: /projects/<slug> or /org/<org>/projects/<slug>. */
+async function projectHref(workspaceId: string, slug: string): Promise<string> {
+  const [org] = await db.select({ slug: organisations.slug }).from(organisations).where(eq(organisations.workspaceId, workspaceId)).limit(1);
+  return org ? `/org/${org.slug}/projects/${slug}` : `/projects/${slug}`;
+}
+
+const isUniqueViolation = (error: unknown): boolean =>
+  typeof error === "object" && error !== null && ((error as { code?: string }).code === "23505" || isUniqueViolation((error as { cause?: unknown }).cause));
+
+/**
+ * Edits a project's name, slug, description and status. A new slug changes what #slug
+ * matches in capture and the project's URL; the result carries the new href.
+ */
+export async function updateProject(actor: Actor, input: z.infer<typeof updateProjectSchema>): Promise<{ slug: string; href: string }> {
+  const [project] = await db.select({ id: projects.id, workspaceId: projects.workspaceId }).from(projects).where(eq(projects.id, input.projectId)).limit(1);
+  if (!project) throw new MutationError("not_found", "That project no longer exists.");
+  assertWritable(actor, project.workspaceId);
+
+  const taken = new MutationError("conflict", `#${input.slug} is already used here. Choose another slug.`);
+  const [clash] = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(and(eq(projects.workspaceId, project.workspaceId), eq(projects.slug, input.slug), ne(projects.id, project.id)))
+    .limit(1);
+  if (clash) throw taken;
+  try {
+    await db
+      .update(projects)
+      .set({ name: input.name, slug: input.slug, description: input.description || null, status: input.status })
+      .where(eq(projects.id, project.id));
+  } catch (error) {
+    // A concurrent rename to the same slug loses at the unique index
+    if (isUniqueViolation(error)) throw taken;
+    throw error;
+  }
+  return { slug: input.slug, href: await projectHref(project.workspaceId, input.slug) };
+}
+
+/**
+ * Archives or restores a project. Archived projects leave the project lists, #capture and
+ * the commit dialog; their tasks, commits and history stay as they are.
+ */
+export async function setProjectArchived(actor: Actor, input: z.infer<typeof setProjectArchivedSchema>): Promise<{ name: string; archived: boolean }> {
+  const [project] = await db
+    .select({ id: projects.id, workspaceId: projects.workspaceId, name: projects.name })
+    .from(projects)
+    .where(eq(projects.id, input.projectId))
+    .limit(1);
+  if (!project) throw new MutationError("not_found", "That project no longer exists.");
+  assertWritable(actor, project.workspaceId);
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(projects)
+      .set({ archivedAt: input.archived ? sql`coalesce(${projects.archivedAt}, now())` : null })
+      .where(eq(projects.id, project.id));
+    await tx.insert(auditEvents).values({
+      workspaceId: project.workspaceId,
+      actorId: actor.id,
+      action: input.archived ? "project.archived" : "project.unarchived",
+      targetType: "project",
+      targetId: project.id,
+    });
+  });
+  return { name: project.name, archived: input.archived };
 }
 
 /** Manual commit: work that never started as a task. Goes to the project's workspace. */

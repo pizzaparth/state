@@ -16,8 +16,8 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { captureTask, createManualCommit, createProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskPriority, setTaskWeight } from "../lib/mutations";
-import { captureTaskSchema, createProjectSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskPriority, setTaskWeight } from "../lib/mutations";
+import { captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
 
 const dbName = new URL(process.env.DATABASE_URL ?? "postgres://x/none").pathname.slice(1);
 if (!dbName.endsWith("_test")) {
@@ -76,6 +76,10 @@ async function weightOf(taskId: string) {
 
 async function projectCount(workspaceId: string, slug: string) {
   return (await one(db.select({ n: sql<number>`count(*)::int` }).from(s.projects).where(and(eq(s.projects.workspaceId, workspaceId), eq(s.projects.slug, slug))))).n;
+}
+
+async function projectRow(id: string) {
+  return one(db.select().from(s.projects).where(eq(s.projects.id, id)));
 }
 
 async function main() {
@@ -155,6 +159,11 @@ async function main() {
   [ok, detail] = await expectError(() => setTaskWeight(viewer, { taskId: orgTask.id, weight: 8 }), "forbidden");
   record("W30", "Organisation viewer changes a task's weight", ok && (await weightOf(orgTask.id)) === orgTask.weight, detail);
   [ok, detail] = await expectError(() => createProject(viewer, { organisationId: org.id, name: "Viewer project", slug: "viewer-project", description: null }), "forbidden");
+  const orgProjectBefore = JSON.stringify(await projectRow(orgProject.id));
+  [ok, detail] = await expectError(() => updateProject(viewer, { projectId: orgProject.id, name: "x", slug: "viewer-edit", description: null, status: "paused" }), "forbidden");
+  record("W41", "Organisation viewer edits a project", ok && JSON.stringify(await projectRow(orgProject.id)) === orgProjectBefore, detail);
+  [ok, detail] = await expectError(() => setProjectArchived(viewer, { projectId: orgProject.id, archived: true }), "forbidden");
+  record("W42", "Organisation viewer archives a project", ok && (await projectRow(orgProject.id)).archivedAt === null, detail);
   record("W34", "Organisation viewer creates a project in the organisation", ok && (await projectCount(org.workspaceId, "viewer-project")) === 0, detail);
   await db.update(s.organisationMembers).set({ role: "member" }).where(eq(s.organisationMembers.userId, ishitaId));
 
@@ -233,6 +242,33 @@ async function main() {
   record("W38", "Same slug in another user's workspace is independent", theirs.id !== mine.id && (await projectCount(aarav.ws.id, "authz-probe")) === 1);
   [ok, detail] = await expectError(() => createProject(A, { organisationId: null, name: "Again", slug: "authz-probe", description: null }), "conflict");
   record("W39", "Duplicate slug in the same workspace is refused", ok && (await projectCount(parth.ws.id, "authz-probe")) === 1, detail);
+  // Project edit and archive
+  const parthProjectBefore = JSON.stringify(await projectRow(parth.project.id));
+  [ok, detail] = await expectError(() => updateProject(B, { projectId: parth.project.id, name: "Hijacked", slug: "hijacked", description: null, status: "paused" }), "not_found");
+  record("W43", "Edit another user's project", ok && JSON.stringify(await projectRow(parth.project.id)) === parthProjectBefore, detail);
+  [ok, detail] = await expectError(() => updateProject(X, { projectId: orgProject.id, name: "Hijacked", slug: "hijacked", description: null, status: "paused" }), "not_found");
+  record("W44", "Outsider edits organisation project", ok && (await projectRow(orgProject.id)).slug === orgProject.slug, detail);
+  [ok, detail] = await expectError(() => setProjectArchived(B, { projectId: parth.project.id, archived: true }), "not_found");
+  record("W45", "Archive another user's project", ok && (await projectRow(parth.project.id)).archivedAt === null, detail);
+  [ok, detail] = await expectError(() => updateProject(A, { projectId: mine.id, name: "Authz probe", slug: parth.project.slug, description: null, status: "active" }), "conflict");
+  record("W46", "Renaming to a slug used in the same workspace is refused", ok && (await projectRow(mine.id)).slug === "authz-probe", detail);
+  const edited = await updateProject(A, { projectId: mine.id, name: "Authz probe 2", slug: "authz-probe-2", description: "Edited", status: "paused" });
+  const editedRow = await projectRow(mine.id);
+  const recaptured = await captureTask(A, { text: "After rename #authz-probe-2" });
+  record(
+    "W47",
+    "Owner edits own project; #capture follows the new slug",
+    edited.href === "/projects/authz-probe-2" && editedRow.name === "Authz probe 2" && editedRow.status === "paused" && recaptured.projectName === "Authz probe 2"
+  );
+  await setProjectArchived(A, { projectId: mine.id, archived: true });
+  const archivedCapture = await captureTask(A, { text: "After archive #authz-probe-2" });
+  [ok, detail] = await expectError(() => createManualCommit(A, { message: "x", projectId: mine.id, weight: 1 }), "not_found");
+  const listed = (await getProjects([parth.ws.id])).some((p) => p.id === mine.id);
+  record("W48", "Archived project leaves lists, #capture and commits", ok && archivedCapture.projectName === null && !listed && (await projectRow(mine.id)).archivedAt !== null, detail);
+  await setProjectArchived(A, { projectId: mine.id, archived: false });
+  record("W49", "Unarchive restores the project", (await projectRow(mine.id)).archivedAt === null && (await getProjects([parth.ws.id])).some((p) => p.id === mine.id));
+  await db.update(s.tasks).set({ deletedAt: new Date() }).where(inArray(s.tasks.id, [recaptured.id, archivedCapture.id]));
+
   const orgMade = await createProject(B, { organisationId: org.id, name: "Member project", slug: "member-project", description: "From a member" });
   record("W40", "Member creates an organisation project", (await projectCount(org.workspaceId, "member-project")) === 1 && orgMade.href === `/org/${org.slug}/projects/member-project`);
 
@@ -259,6 +295,11 @@ async function main() {
   record("M14", "Unknown fields (workspaceId, status) rejected on project create", !createProjectSchema.safeParse({ organisationId: null, name: "x", slug: "x", description: null, workspaceId: aarav.ws.id, status: "archived" }).success);
   const slugs = ["Relay DB", "-x", "x-", "a--b", "a_b", "", "x".repeat(101)].map((slug) => createProjectSchema.safeParse({ organisationId: null, name: "x", slug, description: null }).success);
   record("M15", "Malformed project slugs rejected", slugs.every((v) => !v), JSON.stringify(slugs));
+  const projectEdit = { projectId: "a", name: "x", slug: "x", description: null, status: "active" };
+  record("M16", "Unknown fields (workspaceId, archivedAt) rejected on project edit", !updateProjectSchema.safeParse({ ...projectEdit, workspaceId: aarav.ws.id, archivedAt: null }).success);
+  record("M17", "Status 'archived' is not set through edit", !updateProjectSchema.safeParse({ ...projectEdit, status: "archived" }).success);
+  const archivedFlags = ["true", 1, null].map((archived) => setProjectArchivedSchema.safeParse({ projectId: "a", archived }).success);
+  record("M18", "Non-boolean archive flag rejected", archivedFlags.every((v) => !v), JSON.stringify(archivedFlags));
   record("M8", "Unknown fields (deletedAt, userId) rejected on delete", !taskRefSchema.safeParse({ taskId: "a", deletedAt: null, userId: aaravId }).success);
 
   // ------------------------------------------------------------ lifecycle, races, replay

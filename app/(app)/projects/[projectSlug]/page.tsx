@@ -6,6 +6,8 @@ import { Chip, PageHeader } from "@/components/app/primitives";
 import { ProjectView } from "@/components/app/views";
 import { withParam } from "@/components/app/task-row";
 import { Drawers, type PageSearchParams } from "@/components/app/drawers";
+import { ProjectActions } from "@/components/app/project-dialog";
+import { ArchivedNotice } from "@/components/app/views";
 
 export default async function ProjectPage({
   params,
@@ -23,7 +25,20 @@ export default async function ProjectPage({
   return (
     <>
       <title>{`${project.name} — State`}</title>
-      <PageHeader label="Project" title={project.name} description={project.description} actions={<Chip>{project.status}</Chip>} />
+      <PageHeader
+        label="Project"
+        title={project.name}
+        description={project.description}
+        actions={
+          <>
+            <Chip>{project.archivedAt ? "archived" : project.status}</Chip>
+            <ProjectActions
+              project={{ id: project.id, name: project.name, slug: project.slug, description: project.description, status: project.status, archived: Boolean(project.archivedAt) }}
+            />
+          </>
+        }
+      />
+      {project.archivedAt && <ArchivedNotice archivedAt={project.archivedAt} tz={viewer.tz} />}
       <ProjectView
         project={project}
         scope={{ workspaceIds: [project.workspaceId] }}

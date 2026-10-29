@@ -1,16 +1,16 @@
 import * as React from "react";
-import { getProjects } from "@/db/queries";
+import { getArchivedProjects, getProjects } from "@/db/queries";
 import { getViewerOrg } from "@/lib/viewer";
 import { Panel } from "@/components/app/primitives";
-import { ProjectTable } from "@/components/app/views";
+import { ArchivedProjects, ProjectTable } from "@/components/app/views";
 import { OrgHeader } from "@/components/app/org-header";
-import { NewProject } from "@/components/app/new-project";
+import { NewProject } from "@/components/app/project-dialog";
 import { WRITE_ROLES } from "@/lib/authz";
 
 export default async function OrganisationProjectsPage({ params }: { params: Promise<{ orgSlug: string }> }) {
   const { orgSlug } = await params;
   const { viewer, org } = await getViewerOrg(orgSlug);
-  const projects = await getProjects([org.workspaceId]);
+  const [projects, archived] = await Promise.all([getProjects([org.workspaceId]), getArchivedProjects([org.workspaceId])]);
   return (
     <>
       <title>{`${org.name} projects — State`}</title>
@@ -24,6 +24,7 @@ export default async function OrganisationProjectsPage({ params }: { params: Pro
         }
       >
         <ProjectTable projects={projects} hrefFor={(slug) => `/org/${org.slug}/projects/${slug}`} tz={viewer.tz} />
+        <ArchivedProjects projects={archived} hrefFor={(slug) => `/org/${org.slug}/projects/${slug}`} tz={viewer.tz} />
       </Panel>
     </>
   );
