@@ -2,15 +2,30 @@ import * as React from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { getViewer } from "@/lib/viewer";
+import { hasOrganisationPlan } from "@/lib/billing/access";
+import { NewOrganisation } from "@/components/app/organisation-dialog";
 import { Chip, EmptyState, PageHeader, Panel } from "@/components/app/primitives";
 
 export const metadata = { title: "Organisations" };
 
 export default async function OrganisationsPage() {
   const viewer = await getViewer();
+  const canCreate = await hasOrganisationPlan(viewer.id);
   return (
     <>
-      <PageHeader label="Work" title="Organisations" />
+      <PageHeader
+        label="Work"
+        title="Organisations"
+        actions={
+          canCreate ? (
+            <NewOrganisation />
+          ) : (
+            <Link href="/platform/settings/billing" className="inline-flex min-h-9 items-center text-sm text-[#9A9A96] underline-offset-4 hover:text-[#F2F2EF] hover:underline">
+              Needs the Organisation plan
+            </Link>
+          )
+        }
+      />
       <Panel>
         {viewer.orgs.length === 0 ? (
           <EmptyState title="No teams yet" />

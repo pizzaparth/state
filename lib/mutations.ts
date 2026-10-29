@@ -1,11 +1,12 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { auditEvents, boards, columns, commitTags, commits, organisations, projects, tags, taskTags, tasks, users } from "@/db/schema";
+import { auditEvents, boards, columns, commitTags, commits, organisationMembers, organisations, projects, tags, taskTags, tasks, users, workspaces } from "@/db/schema";
+import { hasOrganisationPlan } from "@/lib/billing/access";
 import { assertWritable, MutationError, type Actor } from "@/lib/authz";
 import { keyBetween } from "@/lib/position";
 import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
 import type { z } from "zod";
-import type { captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import type { captureTaskSchema, createOrganisationSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -412,6 +413,66 @@ export async function setProjectArchived(actor: Actor, input: z.infer<typeof set
     });
   });
   return { name: project.name, archived: input.archived };
+}
+
+// An organisation board's columns; "Queued" keeps the backlog state type
+const ORGANISATION_COLUMNS = [
+  { name: "Queued", stateType: "backlog" },
+  { name: "Active", stateType: "active" },
+  { name: "Review", stateType: "review" },
+  { name: "Done", stateType: "done" },
+] as const;
+
+/** Bounds how many organisations one person can own, so a script cannot mint them without limit. */
+const OWNED_ORGANISATIONS_MAX = 20;
+
+/**
+ * New organisation owned by the actor: its workspace, board with default columns, and the
+ * actor as owner, in one transaction. Needs the Organisation plan. Slugs are unique
+ * across State; a taken slug is reported on the slug field.
+ */
+export async function createOrganisation(actor: Actor, input: z.infer<typeof createOrganisationSchema>): Promise<{ slug: string; href: string }> {
+  assertWritable(actor, actor.personalWorkspaceId);
+  if (!(await hasOrganisationPlan(actor.id))) throw new MutationError("forbidden", "Organisations need the Organisation plan.");
+
+  const [{ owned }] = await db
+    .select({ owned: sql<number>`count(*)::int` })
+    .from(workspaces)
+    .where(and(eq(workspaces.ownerId, actor.id), eq(workspaces.type, "organisation")));
+  if (owned >= OWNED_ORGANISATIONS_MAX) throw new MutationError("invalid", `You can own up to ${OWNED_ORGANISATIONS_MAX} organisations.`);
+
+  const taken = new MutationError("conflict", `${input.slug} is taken. Choose another address.`);
+  const [{ tz }] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
+  try {
+    await db.transaction(async (tx) => {
+      const [workspace] = await tx
+        .insert(workspaces)
+        .values({ name: input.name, slug: `org-${crypto.randomUUID()}`, type: "organisation", ownerId: actor.id })
+        .returning({ id: workspaces.id });
+      const [org] = await tx
+        .insert(organisations)
+        .values({ workspaceId: workspace.id, name: input.name, slug: input.slug, timezone: tz })
+        .onConflictDoNothing({ target: organisations.slug })
+        .returning({ id: organisations.id });
+      // Rolls back the workspace too
+      if (!org) throw taken;
+      const [board] = await tx.insert(boards).values({ workspaceId: workspace.id, name: input.name, type: "organisation" }).returning({ id: boards.id });
+      await tx.insert(columns).values(ORGANISATION_COLUMNS.map((column, position) => ({ boardId: board.id, position, ...column })));
+      await tx.insert(organisationMembers).values({ organisationId: org.id, userId: actor.id, role: "owner" });
+      await tx.insert(auditEvents).values({
+        workspaceId: workspace.id,
+        organisationId: org.id,
+        actorId: actor.id,
+        action: "organisation.created",
+        targetType: "organisation",
+        targetId: org.id,
+      });
+    });
+  } catch (error) {
+    if (isUniqueViolation(error)) throw taken;
+    throw error;
+  }
+  return { slug: input.slug, href: `/platform/org/${input.slug}` };
 }
 
 /** Manual commit: work that never started as a task. Goes to the project's workspace. */

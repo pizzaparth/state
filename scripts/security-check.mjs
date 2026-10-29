@@ -419,6 +419,17 @@ async function findActionIds(cookie) {
   return ids;
 }
 
+/** One action's id from the client chunks a page loads, or null. */
+async function actionIdOn(path, name, cookie) {
+  const page = await req(path, { headers: { cookie } });
+  for (const m of page.text.matchAll(/<script[^>]+src="([^"]+\.js)"/g)) {
+    const js = (await req(m[1].startsWith("http") ? new URL(m[1]).pathname : m[1])).text;
+    const id = js.match(new RegExp(`"([0-9a-f]{40,42})",[^"]{0,120}?"${name}"`))?.[1];
+    if (id) return id;
+  }
+  return null;
+}
+
 async function callAction(id, args, { cookie, origin = ORIGIN, path = "/platform/personal" } = {}) {
   const headers = { "next-action": id, "content-type": "text/plain;charset=UTF-8", accept: "text/x-component" };
   if (cookie) headers.cookie = cookie;
@@ -517,6 +528,25 @@ async function checkServerActions() {
   const xssCapture = await callAction(ids.captureTaskAction, [{ text: payload }], { cookie: owner, path: "/platform/inbox" });
   const inboxHtml = (await req("/platform/inbox", { headers: { cookie: owner } })).text;
   record("X2", "Stored XSS in a captured task title is escaped", xssCapture.ok && !inboxHtml.includes("<img src=x onerror") && !inboxHtml.includes("<script>alert(2)"), xssCapture.error ?? "");
+
+  // Organisations: created only by paid Organisation-plan accounts; owner and workspace come from the session
+  const createOrgId = await actionIdOn("/platform/org", "createOrganisationAction", owner);
+  const orgRows = async (slug) => (await db.query("select o.id, w.owner_id from organisations o join workspaces w on w.id = o.workspace_id where o.slug = $1", [slug])).rows;
+  const unpaidOrg = createOrgId ? await callAction(createOrgId, [{ name: "Free Co", slug: "sa-free-co" }], { cookie: unpaid, path: "/platform/org" }) : null;
+  record("OR1", "Unpaid account cannot create an organisation through the raw action", Boolean(unpaidOrg) && !unpaidOrg.ok && (await orgRows("sa-free-co")).length === 0, unpaidOrg ? unpaidOrg.error ?? `${unpaidOrg.status}` : "action id not found");
+  const forgedOrg = createOrgId ? await callAction(createOrgId, [{ name: "Forged", slug: "sa-forged", ownerId: "demo-aarav" }], { cookie: owner, path: "/platform/org" }) : null;
+  record("OR2", "Extra ownerId on organisation creation is refused", Boolean(forgedOrg) && !forgedOrg.ok && (await orgRows("sa-forged")).length === 0, forgedOrg?.error ?? "");
+  const orgSlug = `sa-xss-${Date.now()}`;
+  const xssOrg = createOrgId ? await callAction(createOrgId, [{ name: payload, slug: orgSlug }], { cookie: owner, path: "/platform/org" }) : null;
+  const madeOrg = (await orgRows(orgSlug))[0];
+  const orgHtml = (await req(`/platform/org/${orgSlug}`, { headers: { cookie: owner } })).text;
+  record(
+    "OR3",
+    "Organisation is owned by the session user and its name is escaped",
+    Boolean(xssOrg?.ok) && madeOrg?.owner_id === "demo-parth" && !orgHtml.includes("<img src=x onerror") && !orgHtml.includes("<script>alert(2)"),
+    xssOrg?.error ?? `owner ${madeOrg?.owner_id}`
+  );
+  if (madeOrg) await db.query("delete from workspaces where id = (select workspace_id from organisations where id = $1)", [madeOrg.id]);
 
   // Write budget: 60 per user per minute, shared across instances. Invalid calls count too.
   const burst = await Promise.all(Array.from({ length: 70 }, () => callAction(ids.moveTaskAction, [{}], { cookie: other })));

@@ -16,8 +16,8 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail, getTicker } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
-import { captureTaskSchema, createProjectSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { captureTask, createManualCommit, createOrganisation, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
+import { captureTaskSchema, createOrganisationSchema, createProjectSchema, deleteAccountSchema, importSchema, manualCommitSchema, setAutoRenewSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
 import { buildExport } from "../lib/data/export";
 import { parseImport } from "../lib/data/import";
 import { parseCsv, toCsv } from "../lib/data/csv";
@@ -379,6 +379,55 @@ async function main() {
   await db.insert(s.organisationMembers).values({ organisationId: org.id, userId: ishitaId, role: "member" });
 
   await db.delete(s.projects).where(inArray(s.projects.id, [mine.id, theirs.id, orgMade.id]));
+
+  // ------------------------------------------------------------ organisations
+  const orgsOwnedBy = async (userId: string) =>
+    (await one(db.select({ n: sql<number>`count(*)::int` }).from(s.workspaces).where(and(eq(s.workspaces.ownerId, userId), eq(s.workspaces.type, "organisation"))))).n;
+
+  const outsiderOrgsBefore = await orgsOwnedBy(outsiderId);
+  [ok, detail] = await expectError(() => createOrganisation(X, { name: "Outsider Co", slug: "outsider-co" }), "forbidden");
+  record("O1", "Creating an organisation without the Organisation plan is refused", ok && (await orgsOwnedBy(outsiderId)) === outsiderOrgsBefore, detail);
+
+  const slug = `authz-org-${Date.now()}`;
+  const made = await createOrganisation(A, { name: "Authz Org", slug });
+  const madeOrg = await one(db.select().from(s.organisations).where(eq(s.organisations.slug, slug)));
+  const madeWs = await one(db.select().from(s.workspaces).where(eq(s.workspaces.id, madeOrg.workspaceId)));
+  const madeMembers = await db.select().from(s.organisationMembers).where(eq(s.organisationMembers.organisationId, madeOrg.id));
+  const madeBoard = await one(db.select().from(s.boards).where(eq(s.boards.workspaceId, madeWs.id)));
+  const madeCols = await db.select().from(s.columns).where(eq(s.columns.boardId, madeBoard.id));
+  const A2 = await loadActor(parthId);
+  record(
+    "O2",
+    "New organisation: creator is its only member and owner, with a board and Done column",
+    made.href === `/platform/org/${slug}` && madeWs.type === "organisation" && madeWs.ownerId === parthId && madeMembers.length === 1 && madeMembers[0].userId === parthId && madeMembers[0].role === "owner" && madeCols.some((c) => c.stateType === "done") && A2.writable.has(madeWs.id),
+    `${madeMembers.length} members, ${madeCols.length} columns`
+  );
+
+  const parthOrgsBefore = await orgsOwnedBy(parthId);
+  [ok, detail] = await expectError(() => createOrganisation(A, { name: "Clash", slug: org.slug }), "conflict");
+  record("O3", "A taken address is refused and leaves no orphan workspace", ok && (await orgsOwnedBy(parthId)) === parthOrgsBefore, detail);
+
+  const badOrgInputs = [
+    { name: "x", slug: "fine", ownerId: aaravId },
+    { name: "x", slug: "fine", workspaceId: org.workspaceId },
+    { name: "x", slug: "Bad Slug" },
+    { name: "x", slug: "a" },
+    { name: "x", slug: "../admin" },
+    { name: "", slug: "fine" },
+  ].map((v) => createOrganisationSchema.safeParse(v).success);
+  record("O4", "Organisation input rejects extra keys, bad addresses and blank names", badOrgInputs.every((v) => !v), JSON.stringify(badOrgInputs));
+
+  [ok, detail] = await expectError(() => createProject(B, { organisationId: madeOrg.id, name: "Intruder", slug: "intruder", description: null }), "not_found");
+  record("O5", "Another user cannot read or write the new organisation", ok && (await getBoard(madeBoard.id, readable(B))) === null, detail);
+
+  // Cap on owned organisations
+  const filler = await db
+    .insert(s.workspaces)
+    .values(Array.from({ length: 20 }, (_, i) => ({ name: "Filler", slug: `authz-filler-${Date.now()}-${i}`, type: "organisation", ownerId: aaravId })))
+    .returning({ id: s.workspaces.id });
+  [ok, detail] = await expectError(() => createOrganisation(B, { name: "One too many", slug: `authz-cap-${Date.now()}` }), "invalid");
+  record("O6", "Owning more than 20 organisations is refused", ok, detail);
+  await db.delete(s.workspaces).where(inArray(s.workspaces.id, [...filler.map((f) => f.id), madeWs.id]));
 
   // ------------------------------------------------------------ export, import, account deletion, billing
   const execution = async (workspaceId: string) =>

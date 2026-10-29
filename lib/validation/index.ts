@@ -156,6 +156,21 @@ export const setProjectArchivedSchema = z.strictObject({
   archived: z.boolean(),
 });
 
+/**
+ * New organisation. Its slug is its address (/platform/org/<slug>) and is unique across
+ * State; the workspace, board and owner are created on the server.
+ */
+export const createOrganisationSchema = z.strictObject({
+  name: z.string().trim().min(1, "Give the organisation a name.").max(80, "Keep the name under 80 characters."),
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(2, "Use at least 2 characters.")
+    .max(48, "Keep the address under 48 characters.")
+    .regex(PROJECT_SLUG, "Use lowercase letters, numbers and single hyphens, like ksan-relay."),
+});
+
 /** Slug suggested from a project name: "Relay DB v2" becomes "relay-db-v2". */
 export function slugify(name: string): string {
   return name

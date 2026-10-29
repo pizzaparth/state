@@ -8,6 +8,15 @@ import { subscriptions } from "@/db/schema";
  * TODO: past_due should become read-only after the grace period (docs/state_desc.md §40).
  */
 export async function hasPaidAccess(userId: string): Promise<boolean> {
+  return hasAccessFrom(userId);
+}
+
+/** Paid access on the Organisation plan, which is what lets a person create organisations. */
+export async function hasOrganisationPlan(userId: string): Promise<boolean> {
+  return hasAccessFrom(userId, "organisation");
+}
+
+async function hasAccessFrom(userId: string, plan?: string): Promise<boolean> {
   const now = new Date();
   const [row] = await db
     .select({ id: subscriptions.id })
@@ -15,6 +24,7 @@ export async function hasPaidAccess(userId: string): Promise<boolean> {
     .where(
       and(
         eq(subscriptions.userId, userId),
+        plan ? eq(subscriptions.plan, plan) : undefined,
         or(
           inArray(subscriptions.status, ["active", "past_due"]),
           and(

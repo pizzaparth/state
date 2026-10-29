@@ -48,16 +48,17 @@ rate limits. `authz:check` refuses any database whose name does not end in `_tes
 
 ## Results
 
-`npm run authz:check`: **32 of 32 pass.**
+`npm run authz:check`: **114 of 114 pass.**
 
 | Group | Checks |
 |---|---|
 | R1–R9 reads | Another user's task, commit and board by id. An outsider reading the organisation board and its tasks. Projects, commit ledger and Inbox leak no foreign rows. A member can read organisation tasks. |
 | W1–W11 writes | Move another user's task. An outsider moves an organisation task. Move into a column on someone else's board, or across workspaces. A foreign `afterTaskId` is ignored. Viewer-role moves and commits. A commit into another user's project. A commit lands in the right workspace with the session user as author. A capture with a foreign `#project` stays in the user's own Inbox. A mis-built actor still cannot write outside its writable set. |
 | M1–M6 tampering | Extra `workspaceId`/`userId`/`source`/`createdAt` keys rejected. Commit weight outside 1/2/4/8 rejected (0, negative, 1 000 000, string, fraction). Oversized message and capture rejected. Ids with SQL metacharacters rejected. |
+| O1–O6 organisations | Creating one without the Organisation plan. Creator becomes the only member and owner, with a board. A taken address leaves no orphan workspace. Extra `ownerId`/`workspaceId` keys and bad addresses rejected. Another user cannot read or write the new organisation. At most 20 owned. |
 | L1–L6 lifecycle and races | 10 parallel Done moves record exactly one commit. A replayed Done records nothing. Reopen retires the commit, and completing again records one. A deleted task cannot be moved. A removed member loses write access at once. |
 
-`npm run security:check` (black box, production build): **77 of 77 pass.**
+`npm run security:check` (black box, production build): **80 of 80 pass.**
 
 Email verification and password reset (EV, PR):
 
@@ -87,6 +88,7 @@ Product and surface checks:
 | SA6 | Unpaid account writing through the raw action | “Your subscription is not active.” |
 | SA7 | The owner's own move | Saved |
 | SK1 | Calling the development “Skip payment” action on a production build | Hidden and refused on the server; no subscription created |
+| OR1–OR3 | Unpaid organisation creation; forged `ownerId`; stored XSS in the organisation name | Refused; refused; owner is the session user and the name is escaped |
 | SA8 | Burst of 70 writes | Write budget blocks the excess |
 | X2 | Stored XSS in a task title | Escaped on render |
 | K2 | Session token reused after sign-out | Redirected to sign-in |
@@ -126,7 +128,7 @@ malformed `?task=`/`?commit=` parameters never reach a query. Tried with
 | 47–52 | Deployment, DNS, storage, third-party scripts, CSP | Only Razorpay Checkout loads, nonce-gated. No cloud storage. DNS and subdomains are for the deployer to inventory at launch. |
 | 53–58 | Unicode, TOCTOU, HPP, parsing, XS-Leaks, service workers | Row locks on moves, HPP probes, `Cross-Origin-Resource-Policy: same-origin`, COOP. No service worker. |
 | 59–60 | Client/server boundary, vibe-coding review | F1 finds no server modules in the client bundle. No auth bypasses, client-side role checks or client prices. |
-| 61–62, 66 | Tooling, multi-user test | Covered by `authz:check` and `security:check` with anonymous, user A, user B, outsider, viewer, unpaid and paid users. There is no admin role. Semgrep, gitleaks, OSV and ZAP are not installed here; run them in CI or before launch. |
+| 61–62, 66 | Tooling, multi-user test | Covered by `authz:check` and `security:check` with anonymous, user A, user B, outsider, viewer, unpaid and paid users. There is no admin role. gitleaks (history and working tree), OSV-Scanner, Trivy and Semgrep run locally: no leaks in history, no vulnerable dependencies; working-tree hits are only the untracked `.env` and gitignored build output. ZAP is not run here; run it against staging before launch. |
 
 ## Scalability
 

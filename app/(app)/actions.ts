@@ -8,9 +8,9 @@ import { hasPaidAccess } from "@/lib/billing/access";
 import { loadActor, MutationError, type Actor } from "@/lib/authz";
 import { deleteAccount, IdentityError, verifyIdentity } from "@/lib/accounts/delete";
 import { setAutoRenew } from "@/lib/billing/manage";
-import { captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "@/lib/mutations";
+import { captureTask, createManualCommit, createOrganisation, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "@/lib/mutations";
 import { consumeThrottle } from "@/lib/security/throttle";
-import { captureTaskSchema, createProjectSchema, deleteAccountSchema, setAutoRenewSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import { captureTaskSchema, createOrganisationSchema, createProjectSchema, deleteAccountSchema, setAutoRenewSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Server Actions for the product. Each one re-verifies everything itself: Server Actions
@@ -90,6 +90,10 @@ export async function updateProjectAction(input: unknown) {
 
 export async function setProjectArchivedAction(input: unknown) {
   return run(setProjectArchivedSchema, input, setProjectArchived);
+}
+
+export async function createOrganisationAction(input: unknown) {
+  return run(createOrganisationSchema, input, createOrganisation);
 }
 
 export async function createCommitAction(input: unknown) {
