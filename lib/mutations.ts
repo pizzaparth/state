@@ -5,7 +5,7 @@ import { assertWritable, MutationError, type Actor } from "@/lib/authz";
 import { keyBetween } from "@/lib/position";
 import { parseQuickCapture } from "@/lib/validation";
 import type { z } from "zod";
-import type { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, taskRefSchema } from "@/lib/validation";
+import type { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -200,6 +200,23 @@ export async function placeTask(actor: Actor, input: z.infer<typeof placeTaskSch
     await tx.update(tasks).set(update).where(eq(tasks.id, task.id));
     return { boardName: column.boardName, columnName: column.name };
   });
+}
+
+/**
+ * Changes a task's title. A completed task's commit keeps the message it was recorded
+ * with; commit messages are corrected on the commit itself.
+ */
+export async function renameTask(actor: Actor, input: z.infer<typeof renameTaskSchema>): Promise<{ title: string }> {
+  const [task] = await db
+    .select({ id: tasks.id, workspaceId: tasks.workspaceId })
+    .from(tasks)
+    .where(and(eq(tasks.id, input.taskId), isNull(tasks.deletedAt)))
+    .limit(1);
+  if (!task) throw new MutationError("not_found", "That task no longer exists.");
+  assertWritable(actor, task.workspaceId);
+
+  await db.update(tasks).set({ title: input.title }).where(and(eq(tasks.id, task.id), isNull(tasks.deletedAt)));
+  return { title: input.title };
 }
 
 /**

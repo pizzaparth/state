@@ -70,6 +70,12 @@ export const placeTaskSchema = z.strictObject({
   columnId: objectId,
 });
 
+/** Title edit from the task panel. Same length limit as a capture. */
+export const renameTaskSchema = z.strictObject({
+  taskId: objectId,
+  title: z.string().trim().min(1, "Give the task a title.").max(500, "Keep the title under 500 characters."),
+});
+
 /** Delete and undo-delete take only the task id. */
 export const taskRefSchema = z.strictObject({
   taskId: objectId,

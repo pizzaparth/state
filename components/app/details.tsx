@@ -2,6 +2,7 @@ import * as React from "react";
 import type { getCommitDetail, getTaskDetail } from "@/db/queries";
 import { dueState, formatDateTime, formatDuration } from "@/lib/format";
 import { Chip, DueLabel, PriorityMark } from "./primitives";
+import { TaskTitle } from "./task-title";
 
 type Task = NonNullable<Awaited<ReturnType<typeof getTaskDetail>>>;
 type Commit = NonNullable<Awaited<ReturnType<typeof getCommitDetail>>>;
@@ -17,11 +18,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const WEIGHT: Record<number, string> = { 1: "Small", 2: "Normal", 4: "Major", 8: "Milestone" };
 
-export function TaskDetail({ task, tz, now }: { task: Task; tz: string; now: Date }) {
+export function TaskDetail({ task, tz, now, editable = false }: { task: Task; tz: string; now: Date; editable?: boolean }) {
   const state = task.completedAt ? "Done" : (task.columnName ?? "Inbox");
   return (
     <div>
-      <h2 className="text-xl font-semibold leading-snug tracking-[-0.01em] text-[#F2F2EF]">{task.title}</h2>
+      <TaskTitle taskId={task.id} title={task.title} editable={editable} />
       <p className="mt-2 flex flex-wrap items-center gap-2">
         <Chip>{state}</Chip>
         {task.tags.map((t) => (

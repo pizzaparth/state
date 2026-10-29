@@ -16,8 +16,8 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getProjects, getTaskDetail } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { captureTask, createManualCommit, deleteTask, moveTask, placeTask, restoreTask } from "../lib/mutations";
-import { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, taskRefSchema } from "../lib/validation";
+import { captureTask, createManualCommit, deleteTask, moveTask, placeTask, renameTask, restoreTask } from "../lib/mutations";
+import { captureTaskSchema, manualCommitSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, taskRefSchema } from "../lib/validation";
 
 const dbName = new URL(process.env.DATABASE_URL ?? "postgres://x/none").pathname.slice(1);
 if (!dbName.endsWith("_test")) {
@@ -60,6 +60,10 @@ async function snapshot(taskId: string) {
       .from(s.tasks)
       .where(eq(s.tasks.id, taskId))
   );
+}
+
+async function titleOf(taskId: string) {
+  return (await one(db.select({ t: s.tasks.title }).from(s.tasks).where(eq(s.tasks.id, taskId)))).t;
 }
 
 async function main() {
@@ -132,6 +136,8 @@ async function main() {
   record("W7", "Organisation viewer records a commit in the organisation", ok, detail);
   [ok, detail] = await expectError(() => deleteTask(viewer, { taskId: orgTask.id }), "forbidden");
   record("W12", "Organisation viewer deletes a task", ok && (await snapshot(orgTask.id)).x === null, detail);
+  [ok, detail] = await expectError(() => renameTask(viewer, { taskId: orgTask.id, title: "viewer edit" }), "forbidden");
+  record("W21", "Organisation viewer renames a task", ok && (await titleOf(orgTask.id)) === orgTask.title, detail);
   await db.update(s.organisationMembers).set({ role: "member" }).where(eq(s.organisationMembers.userId, ishitaId));
 
   const commitsBefore = await one(db.select({ n: sql<number>`count(*)::int` }).from(s.commits));
@@ -173,8 +179,17 @@ async function main() {
   record("W18", "Restore another user's deleted task", ok && (await snapshot(inboxTask.id)).x !== null, detail);
   [ok, detail] = await expectError(() => placeTask(A, { taskId: inboxTask.id, columnId: parth.col("backlog").id }), "not_found");
   record("W19", "Deleted Inbox task cannot be placed", ok, detail);
+  [ok, detail] = await expectError(() => renameTask(A, { taskId: inboxTask.id, title: "Renamed while deleted" }), "not_found");
+  record("W22", "Deleted task cannot be renamed", ok && (await titleOf(inboxTask.id)) === "Inbox probe", detail);
   await restoreTask(A, { taskId: inboxTask.id });
   record("W20", "Owner restores own deleted task", (await snapshot(inboxTask.id)).x === null);
+  [ok, detail] = await expectError(() => renameTask(B, { taskId: parth.task.id, title: "hijacked" }), "not_found");
+  record("W23", "Rename another user's task", ok && (await titleOf(parth.task.id)) === parth.task.title, detail);
+  [ok, detail] = await expectError(() => renameTask(X, { taskId: orgTask.id, title: "hijacked" }), "not_found");
+  record("W24", "Outsider renames organisation task", ok && (await titleOf(orgTask.id)) === orgTask.title, detail);
+  await renameTask(B, { taskId: orgTask.id, title: `${orgTask.title} (edited)` });
+  record("W25", "Member renames organisation task", (await titleOf(orgTask.id)) === `${orgTask.title} (edited)`);
+  await db.update(s.tasks).set({ title: orgTask.title }).where(eq(s.tasks.id, orgTask.id));
 
   // ------------------------------------------------------------ mass assignment / tampering
   const extra = moveTaskSchema.safeParse({ taskId: "a", columnId: "b", afterTaskId: null, workspaceId: parth.ws.id, userId: parthId });
@@ -188,6 +203,9 @@ async function main() {
   const injected = moveTaskSchema.safeParse({ taskId: "' or 1=1 --", columnId: "x", afterTaskId: null });
   record("M6", "Id with SQL metacharacters rejected", !injected.success);
   record("M7", "Unknown fields (boardId, workspaceId) rejected on place", !placeTaskSchema.safeParse({ taskId: "a", columnId: "b", boardId: "c", workspaceId: parth.ws.id }).success);
+  record("M9", "Unknown fields (completedAt, weight) rejected on rename", !renameTaskSchema.safeParse({ taskId: "a", title: "x", completedAt: null, weight: 8 }).success);
+  const titles = ["", "   ", "x".repeat(501)].map((title) => renameTaskSchema.safeParse({ taskId: "a", title }).success);
+  record("M10", "Blank or oversized title rejected on rename", titles.every((t) => !t), JSON.stringify(titles));
   record("M8", "Unknown fields (deletedAt, userId) rejected on delete", !taskRefSchema.safeParse({ taskId: "a", deletedAt: null, userId: aaravId }).success);
 
   // ------------------------------------------------------------ lifecycle, races, replay

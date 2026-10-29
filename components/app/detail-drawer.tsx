@@ -38,6 +38,10 @@ export function DetailDrawer({ param, title, children }: { param: string; title:
         <Dialog.Content
           className="fixed inset-y-0 right-0 z-50 flex w-full data-[state=closed]:animate-drawer-out data-[state=open]:animate-drawer-in max-w-[30rem] flex-col overscroll-contain bg-[#0A0A0A] border-l border-white/10 outline-none sm:inset-y-3 sm:right-3 sm:rounded-[28px]"
           aria-describedby={undefined}
+          // Inline editors inside the panel use Escape to cancel, not to close
+          onEscapeKeyDown={(e) => {
+            if (e.target instanceof Element && e.target.closest("[data-drawer-escape]")) e.preventDefault();
+          }}
         >
           <div className="flex items-center justify-between gap-4 px-6 pb-2 pt-6">
             <Dialog.Title className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">{title}</Dialog.Title>

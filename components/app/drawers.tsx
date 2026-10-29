@@ -28,7 +28,7 @@ export async function Drawers({ params, viewer }: { params: Record<string, strin
       const targets = writable && inInbox && !task.completedAt ? await getBoardTargets(task.workspaceId, viewer.workspaceIds) : [];
       return (
         <DetailDrawer param="task" title="Task">
-          <TaskDetail task={task} tz={viewer.tz} now={new Date()} />
+          <TaskDetail task={task} tz={viewer.tz} now={new Date()} editable={writable} />
           {writable && (
             <TaskActions task={{ id: task.id, title: task.title, completed: Boolean(task.completedAt), inInbox }} targets={targets} />
           )}
