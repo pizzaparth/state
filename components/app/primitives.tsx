@@ -13,10 +13,10 @@ import { TabLinks } from "./tab-links";
 /**
  * Product-surface primitives on three flat layers (styles/product.css), with the accent
  * (#FF3D8B) as the focal layer on top:
- *   Layer 0 page    #0F1B3D: rows, labels, ledgers sit directly on it
- *   Layer 1 Panel   #16244D + hairline (columns, metric panels, toolbars)
- *   Layer 2 card    #1E2E5C + stronger hairline (task cards, buttons, menus)
- *   Field / Rail    #0F1B3D inset + stronger hairline (inputs, progress rails, segmented controls)
+ *   Layer 0 page    #00203D: rows, labels, ledgers sit directly on it
+ *   Layer 1 Panel   #08294A + hairline (columns, metric panels, toolbars)
+ *   Layer 2 card    #12324F + stronger hairline (task cards, buttons, menus)
+ *   Field / Rail    #00203D inset + stronger hairline (inputs, progress rails, segmented controls)
  *
  * Type: titles and big numbers use DISPLAY, labels TICK (lib/type.ts). Copy stays to a
  * few words.
@@ -184,7 +184,7 @@ export function Avatar({ name, initials, className }: { name: string; initials: 
     <span
       title={name}
       className={cn(
-        "grid size-6 shrink-0 place-items-center rounded-full bg-[#1E2E5C] text-[12px] font-semibold text-[#DCE2F2] border border-white/15",
+        "grid size-6 shrink-0 place-items-center rounded-full bg-[#12324F] text-[12px] font-semibold text-[#DCE2F2] border border-white/15",
         className
       )}
     >
@@ -230,7 +230,7 @@ export function Measure({
         {spark && <Sparkline values={spark} inverse={inverse} />}
       </div>
       <p className="mt-4 flex items-baseline gap-1.5">
-        <span className={cn(DISPLAY, "text-[2.5rem] leading-none tabular-nums", inverse ? "text-[#0F1B3D]" : "text-[#FFFFFF]")}>
+        <span className={cn(DISPLAY, "text-[2.5rem] leading-none tabular-nums", inverse ? "text-[#00203D]" : "text-[#FFFFFF]")}>
           <CountUp value={value} />
         </span>
         {unit && <span className={cn("font-mono text-sm", inverse ? "text-accent-muted" : "text-[#B4BEDB]")}>{unit}</span>}

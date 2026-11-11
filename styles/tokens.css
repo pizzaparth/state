@@ -4,14 +4,14 @@
      Reference: docs/style.md & docs/techstack.md
      ========================================================================== */
 
-  /* Palette: navy #0F1B3D, white #FFFFFF, accent #FF3D8B. About a quarter of every screen
-     is accent; the rest is navy and white. Navy text on the accent passes WCAG AA (5.0:1);
+  /* Palette: navy #00203D, white #FFFFFF, accent #FF3D8B. About a quarter of every screen
+     is accent; the rest is navy and white. Navy text on the accent passes WCAG AA (4.9:1);
      white text on it does not (3.3:1). Accent as small text uses --accent-text, which passes
      on every layer. */
   --accent: #FF3D8B;
   --accent-text: #FF6FA8;
   --accent-hover: #FF6FA8;
-  --accent-ink: #0F1B3D;
+  --accent-ink: #00203D;
   --accent-ink-muted: #3B0A28;
   --accent-soft: rgba(255, 61, 139, 0.12);
   --accent-line: rgba(255, 61, 139, 0.5);
@@ -20,13 +20,13 @@
      hairlines only; the accent sits on top as the focal layer. */
 
   /* Marketing surfaces (navy) */
-  --bg-0: #0F1B3D;
-  --bg-1: #0F1B3D;
-  --bg-2: #16244D;
+  --bg-0: #00203D;
+  --bg-1: #00203D;
+  --bg-2: #08294A;
 
-  --surface-1: #16244D;
-  --surface-2: #1E2E5C;
-  --surface-3: #26386B;
+  --surface-1: #08294A;
+  --surface-2: #12324F;
+  --surface-3: #193C5C;
 
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-default: rgba(255, 255, 255, 0.12);
@@ -35,17 +35,17 @@
   --text-primary: #FFFFFF;
   --text-secondary: #B4BEDB;
   --text-tertiary: #8E9AC0;
-  --text-inverse: #0F1B3D;
+  --text-inverse: #00203D;
 
   --action-primary: var(--accent);
   --action-primary-text: var(--accent-ink);
 
   /* Product theme (navy, flat: depth from hairline borders and tonal steps, never shadows) */
-  --app-bg: #0F1B3D;
-  --app-panel: #16244D;
-  --app-raised: #1E2E5C;
-  --app-raised-hover: #26386B;
-  --app-field: #0F1B3D;
+  --app-bg: #00203D;
+  --app-panel: #08294A;
+  --app-raised: #12324F;
+  --app-raised-hover: #193C5C;
+  --app-field: #00203D;
   --app-line: rgba(255, 255, 255, 0.1);
   --app-line-strong: rgba(255, 255, 255, 0.16);
   --app-line-focus: var(--accent);

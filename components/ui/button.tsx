@@ -19,7 +19,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const variantClasses = {
       "dark-cta": "bg-accent text-accent-ink hover:bg-accent-hover border border-accent font-semibold",
       "dark-secondary":
-        "bg-[#1E2E5C] text-[#FFFFFF] hover:bg-[#26386B] border border-white/[0.16] hover:border-accent-line",
+        "bg-[#12324F] text-[#FFFFFF] hover:bg-[#193C5C] border border-white/[0.16] hover:border-accent-line",
     };
 
     const sizeClasses = {

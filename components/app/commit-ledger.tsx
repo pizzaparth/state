@@ -59,7 +59,7 @@ export function CommitLedger({
                     </time>
                     <span
                       aria-hidden="true"
-                      className={cn("relative z-[1] mx-auto size-2 rounded-full", c.source === "manual" ? "border border-accent bg-[#0F1B3D]" : "bg-accent")}
+                      className={cn("relative z-[1] mx-auto size-2 rounded-full", c.source === "manual" ? "border border-accent bg-[#00203D]" : "bg-accent")}
                     />
                     <span className="min-w-0">
                       <span className="block truncate text-base font-medium text-[#FFFFFF]">{c.message}</span>

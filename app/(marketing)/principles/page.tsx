@@ -54,9 +54,9 @@ export default function PrinciplesPage() {
         </p>
       </div>
 
-      <div className="space-y-2 rounded-[28px] border border-white/[0.1] bg-[#16244D] p-2">
+      <div className="space-y-2 rounded-[28px] border border-white/[0.1] bg-[#08294A] p-2">
         {principles.map((p) => (
-          <div key={p.number} className="grid grid-cols-1 items-start gap-4 rounded-[20px] border border-white/[0.16] bg-[#1E2E5C] p-6 md:grid-cols-4">
+          <div key={p.number} className="grid grid-cols-1 items-start gap-4 rounded-[20px] border border-white/[0.16] bg-[#12324F] p-6 md:grid-cols-4">
             <span className="font-mono text-base font-semibold text-accent">{p.number}</span>
             <div className="md:col-span-3 space-y-2">
               <h2 className="text-lg font-semibold text-[#FFFFFF]">{p.title}</h2>

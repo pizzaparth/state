@@ -15,7 +15,7 @@ const config: Config = {
         accent: {
           DEFAULT: "#FF3D8B",
           hover: "#FF6FA8",
-          ink: "#0F1B3D",
+          ink: "#00203D",
           muted: "#3B0A28",
           soft: "rgba(255, 61, 139, 0.12)",
           line: "rgba(255, 61, 139, 0.5)",
@@ -23,14 +23,14 @@ const config: Config = {
         // Marketing / Brand Dark Theme
         dark: {
           bg: {
-            0: "#0F1B3D",
-            1: "#0F1B3D",
-            2: "#16244D",
+            0: "#00203D",
+            1: "#00203D",
+            2: "#08294A",
           },
           surface: {
-            1: "#16244D",
-            2: "#1E2E5C",
-            3: "#1E2E5C",
+            1: "#08294A",
+            2: "#12324F",
+            3: "#12324F",
           },
           border: {
             subtle: "rgba(255, 255, 255, 0.08)",
@@ -41,18 +41,18 @@ const config: Config = {
             primary: "#FFFFFF",
             secondary: "#B4BEDB",
             tertiary: "#8E9AC0",
-            inverse: "#0F1B3D",
+            inverse: "#00203D",
           },
           action: {
             primary: "#FF3D8B",
-            "primary-text": "#0F1B3D",
+            "primary-text": "#00203D",
           },
         },
         // Logged-in product: AMOLED black, flat
         app: {
-          bg: "#0F1B3D",
-          panel: "#16244D",
-          raised: "#1E2E5C",
+          bg: "#00203D",
+          panel: "#08294A",
+          raised: "#12324F",
           text: {
             primary: "#FFFFFF",
             secondary: "#B4BEDB",
@@ -66,7 +66,7 @@ const config: Config = {
         accent: {
           DEFAULT: "#FF6FA8",
           hover: "#FF8FBB",
-          ink: "#0F1B3D",
+          ink: "#00203D",
           muted: "#3B0A28",
         },
       },

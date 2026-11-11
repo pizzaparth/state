@@ -43,7 +43,7 @@ export function Sparkline({ values, inverse }: { values: number[]; inverse?: boo
   const max = Math.max(...values);
   const span = max - min || 1;
   const points = values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - 2 - ((v - min) / span) * (h - 4)).toFixed(1)}`);
-  const color = inverse ? "#0F1B3D" : "#FF3D8B";
+  const color = inverse ? "#00203D" : "#FF3D8B";
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="h-7 w-24 shrink-0" preserveAspectRatio="none" aria-hidden="true">
       {/* The line draws in left to right; the end dot lands after it */}
@@ -94,7 +94,7 @@ export function StatGrid({ stats }: { stats: { label: string; value: string; for
   return (
     <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-white/[0.08] bg-white/[0.08] sm:grid-cols-3 xl:grid-cols-4">
       {stats.map((s) => (
-        <div key={s.label} className="min-w-0 bg-[#0F1B3D] px-4 py-3.5">
+        <div key={s.label} className="min-w-0 bg-[#00203D] px-4 py-3.5">
           <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-[#B4BEDB]">{s.label}</dt>
           <dd className="mt-1.5 font-display text-xl font-extrabold tabular-nums tracking-[-0.02em] text-[#FFFFFF] [font-stretch:125%]">{s.value}</dd>
           <dd className="mt-1 truncate font-mono text-[11px] text-[#8E9AC0]" title={s.formula}>

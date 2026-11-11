@@ -18,12 +18,12 @@ export default function ComparePage() {
       <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#B4BEDB]">
         Other tools organise tasks. State also measures them. Here is where each one fits.
       </p>
-      <ul className="mt-16 space-y-2 rounded-[28px] border border-white/[0.1] bg-[#16244D] p-2">
+      <ul className="mt-16 space-y-2 rounded-[28px] border border-white/[0.1] bg-[#08294A] p-2">
         {COMPARISONS.map((c) => (
           <li key={c.slug}>
             <Link
               href={`/compare/${c.slug}`}
-              className="grid gap-2 rounded-[20px] border border-white/[0.16] bg-[#1E2E5C] p-6 transition-colors hover:border-accent-line hover:bg-[#26386B] md:grid-cols-[16rem_minmax(0,1fr)] md:gap-12"
+              className="grid gap-2 rounded-[20px] border border-white/[0.16] bg-[#12324F] p-6 transition-colors hover:border-accent-line hover:bg-[#193C5C] md:grid-cols-[16rem_minmax(0,1fr)] md:gap-12"
             >
               <span className="font-display text-2xl font-bold uppercase tracking-[-0.01em] [font-stretch:112%]">
                 <span className="text-accent">State vs</span> <span translate="no">{c.name}</span>

@@ -16,7 +16,7 @@ type Values = { name: string; slug: string; description: string; status: Status 
 const STATUS_LABEL: Record<Status, string> = { planned: "Planned", active: "Active", paused: "Paused", completed: "Completed" };
 
 const selectClass =
-  "app-field h-11 w-full rounded-[14px] bg-[#0F1B3D] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
+  "app-field h-11 w-full rounded-[14px] bg-[#00203D] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
 
 /**
  * Project form in a dialog, shared by create and edit. Validates with the server's Zod
@@ -98,13 +98,13 @@ function ProjectDialog({
     >
       <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#0F1B3D]/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#00203D]/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content
           onOpenAutoFocus={(e) => {
             // Desktop: focus the name field; leave mobile keyboards closed
             if (!window.matchMedia("(pointer: fine)").matches) e.preventDefault();
           }}
-          className="fixed left-1/2 top-[10vh] z-50 max-h-[85vh] w-[min(30rem,calc(100vw-2rem))] origin-top -translate-x-1/2 overflow-y-auto overscroll-contain rounded-[28px] border border-white/10 bg-[#0F1B3D] p-6 outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in"
+          className="fixed left-1/2 top-[10vh] z-50 max-h-[85vh] w-[min(30rem,calc(100vw-2rem))] origin-top -translate-x-1/2 overflow-y-auto overscroll-contain rounded-[28px] border border-white/10 bg-[#00203D] p-6 outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in"
         >
           <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">{title}</Dialog.Title>
           <Dialog.Description className="mt-1 text-base text-[#B4BEDB]">{description}</Dialog.Description>

@@ -250,7 +250,7 @@ function Column({ column, highlighted, children }: { column: BoardColumn; highli
       aria-label={column.name}
       className={cn(
         "rounded-[24px] p-3 transition-[box-shadow,background-color] duration-150",
-        highlighted ? "app-field bg-[#0F1B3D]" : "app-panel"
+        highlighted ? "app-field bg-[#00203D]" : "app-panel"
       )}
     >
       {children}
@@ -339,7 +339,7 @@ function CardFace({
     <div
       className={cn(
         "relative rounded-[16px] p-3.5",
-        lifted ? "app-card scale-[1.02] cursor-grabbing border-white/40 bg-[#1E2E5C]" : "app-card"
+        lifted ? "app-card scale-[1.02] cursor-grabbing border-white/40 bg-[#12324F]" : "app-card"
       )}
     >
       {flash && <span aria-hidden="true" className="pointer-events-none absolute inset-0 animate-flash rounded-[16px] bg-accent/25" />}

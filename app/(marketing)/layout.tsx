@@ -12,7 +12,7 @@ export default function MarketingLayout({
 }) {
   return (
     <div
-      className={`dark relative min-h-screen bg-[#0F1B3D] text-[#FFFFFF] selection:bg-accent selection:text-accent-ink`}
+      className={`dark relative min-h-screen bg-[#00203D] text-[#FFFFFF] selection:bg-accent selection:text-accent-ink`}
     >
       <a
         href="#content"
@@ -26,7 +26,7 @@ export default function MarketingLayout({
       <header className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <nav
           aria-label="Main"
-          className="flex h-12 w-full max-w-[44rem] items-center justify-between gap-2 rounded-full border border-white/[0.12] bg-[#16244D]/85 pl-5 pr-1.5 backdrop-blur-md"
+          className="flex h-12 w-full max-w-[44rem] items-center justify-between gap-2 rounded-full border border-white/[0.12] bg-[#08294A]/85 pl-5 pr-1.5 backdrop-blur-md"
         >
           <Link href="/" className="font-display text-base font-extrabold uppercase tracking-[-0.01em] [font-stretch:125%]" translate="no">
             State
@@ -61,9 +61,9 @@ export default function MarketingLayout({
         {children}
       </main>
 
-      <footer className="relative z-10 border-t border-white/[0.1] bg-[#16244D] px-5 py-12 text-base text-[#8E9AC0] sm:px-8 lg:px-12">
+      <footer className="relative z-10 border-t border-white/[0.1] bg-[#08294A] px-5 py-12 text-base text-[#8E9AC0] sm:px-8 lg:px-12">
         <div className="mx-auto grid max-w-[1320px] gap-10 md:grid-cols-[minmax(0,1fr)_auto] md:gap-16">
-          <div className="space-y-3 rounded-[20px] border border-white/[0.16] bg-[#1E2E5C] p-6">
+          <div className="space-y-3 rounded-[20px] border border-white/[0.16] bg-[#12324F] p-6">
             <p className="font-mono text-sm uppercase tracking-[0.18em] text-accent">{BYLINE}</p>
             <p>
               <span className="font-semibold text-[#FFFFFF]" translate="no">State</span> is built and used by{" "}

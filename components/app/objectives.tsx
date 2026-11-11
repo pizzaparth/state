@@ -11,7 +11,7 @@ type Measure = (typeof OBJECTIVE_MEASURES)[number];
 type FieldName = "name" | "measure" | "unit" | "targetValue" | "deadline" | "projectId";
 
 const inputClass = "app-input h-11 w-full rounded-[14px] px-3 text-base";
-const selectClass = "app-field h-11 w-full rounded-[14px] bg-[#0F1B3D] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
+const selectClass = "app-field h-11 w-full rounded-[14px] bg-[#00203D] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
 
 const empty = { name: "", measure: "manual" as Measure, unit: "", targetValue: "", deadline: "", projectId: "" };
 
@@ -70,12 +70,12 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#0F1B3D]/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#00203D]/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content
           onOpenAutoFocus={(e) => {
             if (!window.matchMedia("(pointer: fine)").matches) e.preventDefault();
           }}
-          className="fixed left-1/2 top-[8vh] z-50 max-h-[88vh] w-[min(30rem,calc(100vw-2rem))] origin-top -translate-x-1/2 overflow-y-auto overscroll-contain rounded-[28px] border border-white/10 bg-[#0F1B3D] p-6 outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in"
+          className="fixed left-1/2 top-[8vh] z-50 max-h-[88vh] w-[min(30rem,calc(100vw-2rem))] origin-top -translate-x-1/2 overflow-y-auto overscroll-contain rounded-[28px] border border-white/10 bg-[#00203D] p-6 outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in"
         >
           <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">New objective</Dialog.Title>
           <Dialog.Description className="mt-1 font-mono text-sm text-[#8E9AC0]">status = velocity vs required velocity</Dialog.Description>

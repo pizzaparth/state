@@ -24,9 +24,9 @@ const displayHeading =
   "font-display font-extrabold uppercase leading-[0.92] tracking-[-0.03em] [font-stretch:125%] text-balance";
 const sectionPad = "mx-auto w-full max-w-[1320px] px-5 sm:px-8 lg:px-12";
 const kicker = "mb-6 font-mono text-sm uppercase tracking-[0.18em] text-accent";
-// Three layers: page (#0F1B3D), panel and card; the accent marks what matters
-const layer1 = "rounded-[28px] border border-white/[0.1] bg-[#16244D]";
-const layer2 = "rounded-[20px] border border-white/[0.16] bg-[#1E2E5C]";
+// Three layers: page (#00203D), panel and card; the accent marks what matters
+const layer1 = "rounded-[28px] border border-white/[0.1] bg-[#08294A]";
+const layer2 = "rounded-[20px] border border-white/[0.16] bg-[#12324F]";
 
 // Board cards finished in the last two days stay in Done
 const DONE_WINDOW_DAYS = 2;
@@ -216,7 +216,7 @@ export default function LandingPage() {
             <li key={c.slug} className="last:col-span-2">
               <Link
                 href={`/compare/${c.slug}`}
-                className={`flex h-full min-h-24 flex-col justify-between gap-3 p-5 transition-colors hover:border-accent-line hover:bg-[#26386B] ${layer2}`}
+                className={`flex h-full min-h-24 flex-col justify-between gap-3 p-5 transition-colors hover:border-accent-line hover:bg-[#193C5C] ${layer2}`}
               >
                 <span className="min-w-0 break-words font-display text-lg font-bold uppercase tracking-[-0.01em] [font-stretch:112%] sm:text-xl" translate="no">
                   {c.name}

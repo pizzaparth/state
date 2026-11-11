@@ -30,8 +30,8 @@ How the demo is cleaned up (`lib/demo/session.ts`, `lib/demo/tab.ts`):
 
 ## 2. Visual system
 
-- **Palette:** 75% navy `#0F1B3D` and white `#FFFFFF`, 25% accent `#FF3D8B`. Text on the accent is navy (WCAG AA); white text on the accent is never used. Small accent text uses the lighter `#FF6FA8` so it passes AA on every layer.
-- **Three layers on every page:** page (`#0F1B3D`) → panel (`#16244D`) → card/control (`#1E2E5C`), separated by hairlines, never shadows. The accent is the focal layer on top: `+ COMMIT`, the Today instrument, headline metrics, active nav, primary buttons, data marks and focus rings.
+- **Palette:** 75% navy `#00203D` and white `#FFFFFF`, 25% accent `#FF3D8B`. Text on the accent is navy (WCAG AA); white text on the accent is never used. Small accent text uses the lighter `#FF6FA8` so it passes AA on every layer.
+- **Three layers on every page:** page (`#00203D`) → panel (`#08294A`) → card/control (`#12324F`), separated by hairlines, never shadows. The accent is the focal layer on top: `+ COMMIT`, the Today instrument, headline metrics, active nav, primary buttons, data marks and focus rings.
 - Tokens live in `styles/tokens.css`; surface classes in `styles/product.css`; Tailwind exposes `accent`.
 
 ---

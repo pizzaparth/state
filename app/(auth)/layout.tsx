@@ -9,7 +9,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="dark min-h-screen bg-[#0F1B3D] text-[#FFFFFF] flex flex-col justify-between p-6">
+    <div className="dark min-h-screen bg-[#00203D] text-[#FFFFFF] flex flex-col justify-between p-6">
       <header className="max-w-md mx-auto w-full pt-8 text-center">
         <Link href="/" className="inline-block rounded-[8px]">
           <span className="block font-mono text-[11px] uppercase tracking-[0.18em] text-accent" translate="no">{AUTHOR}</span>
@@ -18,8 +18,8 @@ export default function AuthLayout({
       </header>
 
       <main className="max-w-md mx-auto w-full my-auto py-8">
-        <div className="rounded-card border border-white/[0.1] bg-[#16244D] p-2">
-          <div className="rounded-[18px] border border-white/[0.16] bg-[#1E2E5C] p-6 sm:p-8">
+        <div className="rounded-card border border-white/[0.1] bg-[#08294A] p-2">
+          <div className="rounded-[18px] border border-white/[0.16] bg-[#12324F] p-6 sm:p-8">
             {children}
           </div>
         </div>

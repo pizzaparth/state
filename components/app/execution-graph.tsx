@@ -5,7 +5,7 @@ import type { DailyExecution } from "@/db/queries";
 import { cn } from "@/lib/utils";
 
 // Lightness ramp from the card layer to the accent: readable without colour vision
-const FILL = ["#1E2E5C", "#55306E", "#8C347C", "#C53985", "#FF3D8B"] as const;
+const FILL = ["#12324F", "#55306E", "#8C347C", "#C53985", "#FF3D8B"] as const;
 
 function level(execution: number): 0 | 1 | 2 | 3 | 4 {
   if (execution === 0) return 0;

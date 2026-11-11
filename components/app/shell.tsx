@@ -132,7 +132,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
     <NoticeProvider>
       <ShellContext.Provider value={{ openPalette: () => setPaletteOpen(true), openCommit: () => setCommitOpen(true) }}>
         {data.demoUserId && <DemoGuard userId={data.demoUserId} />}
-        <div className="flex h-[100dvh] w-full overflow-hidden bg-[#0F1B3D] text-[#FFFFFF]">
+        <div className="flex h-[100dvh] w-full overflow-hidden bg-[#00203D] text-[#FFFFFF]">
           <aside className="hidden w-64 shrink-0 p-3 lg:block">
             <div className="app-panel flex h-full flex-col rounded-[28px]">
               <SidebarContent data={data} pathname={pathname} scope="rail" />
@@ -201,10 +201,10 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
         {/* Mobile navigation drawer */}
         <Dialog.Root open={navOpen} onOpenChange={setNavOpen}>
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-50 bg-[#0F1B3D]/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in lg:hidden" />
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-[#00203D]/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in lg:hidden" />
             <Dialog.Content
               aria-describedby={undefined}
-              className="fixed inset-y-3 left-3 z-50 flex data-[state=closed]:animate-nav-out data-[state=open]:animate-nav-in w-[17rem] flex-col overscroll-contain rounded-[28px] bg-[#0F1B3D] border border-white/10 outline-none lg:hidden"
+              className="fixed inset-y-3 left-3 z-50 flex data-[state=closed]:animate-nav-out data-[state=open]:animate-nav-in w-[17rem] flex-col overscroll-contain rounded-[28px] bg-[#00203D] border border-white/10 outline-none lg:hidden"
             >
               <Dialog.Title className="sr-only">Navigation</Dialog.Title>
               <Dialog.Close aria-label="Close navigation" className="app-btn absolute right-3 top-3 grid size-9 place-items-center rounded-full">
@@ -334,7 +334,7 @@ function NavLink({ href, active, children }: { href: string; active: boolean; ch
       aria-current={active ? "page" : undefined}
       className={cn(
         "relative flex items-center gap-3 rounded-[12px] px-3 py-2 text-[15px] font-semibold tracking-[-0.01em] transition-colors duration-150",
-        active ? "text-[#0F1B3D]" : "text-[#DCE2F2] hover:bg-white/[0.05] hover:text-[#FFFFFF]"
+        active ? "text-[#00203D]" : "text-[#DCE2F2] hover:bg-white/[0.05] hover:text-[#FFFFFF]"
       )}
     >
       {active && (
@@ -444,7 +444,7 @@ function CommandPalette({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#0F1B3D]/75 backdrop-blur-sm data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#00203D]/75 backdrop-blur-sm data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content
           aria-describedby={undefined}
           className="app-overlay fixed left-1/2 top-[12vh] z-50 origin-top data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[24px] outline-none"
@@ -510,7 +510,7 @@ function CommandPalette({
 
 // ------------------------------------------------------------------ manual commit
 const selectClass =
-  "app-field h-11 w-full rounded-[14px] bg-[#0F1B3D] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
+  "app-field h-11 w-full rounded-[14px] bg-[#00203D] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
 
 function CommitDialog({
   open,
@@ -529,8 +529,8 @@ function CommitDialog({
   return (
     <Dialog.Root open={open} onOpenChange={(o) => (setError(null), setWeight(2), onOpenChange(o))}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#0F1B3D]/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
-        <Dialog.Content className="fixed left-1/2 top-[14vh] z-50 origin-top data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 overscroll-contain rounded-[28px] bg-[#0F1B3D] p-6 border border-white/10 outline-none">
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#00203D]/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
+        <Dialog.Content className="fixed left-1/2 top-[14vh] z-50 origin-top data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 overscroll-contain rounded-[28px] bg-[#00203D] p-6 border border-white/10 outline-none">
           <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">Log work</Dialog.Title>
           <Dialog.Description className="mt-1 text-base text-[#B4BEDB]">
             Done something unplanned? Log it.

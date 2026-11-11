@@ -33,11 +33,11 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 
 ### Dual Environment Split
 - MUST: Separate marketing and product surfaces into two distinct visual environments:
-  - **Public Marketing Surfaces:** Navy (`#0F1B3D` to `#26386B`) with white and the accent, editorial, technical, high-contrast.
-  - **Logged-in Product Application:** Navy (`#0F1B3D`), flat, dense, numbers-first. Depth comes from 1px hairlines and small tonal steps only.
+  - **Public Marketing Surfaces:** Navy (`#00203D` to `#193C5C`) with white and the accent, editorial, technical, high-contrast.
+  - **Logged-in Product Application:** Navy (`#00203D`), flat, dense, numbers-first. Depth comes from 1px hairlines and small tonal steps only.
 - NEVER: Use neumorphism (soft extruded or inset shadows) anywhere in the product.
-- MUST: Palette is 75% navy `#0F1B3D` and white `#FFFFFF`, 25% accent `#FF3D8B` (tokens in `styles/tokens.css`, Tailwind `accent`). The accent fills focal surfaces (`.app-inverse`: `+ COMMIT`, the Today execution instrument, the headline metric, the active nav item, tooltips, toasts), primary CTAs, page labels, data marks and focus rings.
-- MUST: Text on the accent is `#0F1B3D` / `#3B0A28` (AA). NEVER: White text on the accent (3.3:1 fails).
+- MUST: Palette is 75% navy `#00203D` and white `#FFFFFF`, 25% accent `#FF3D8B` (tokens in `styles/tokens.css`, Tailwind `accent`). The accent fills focal surfaces (`.app-inverse`: `+ COMMIT`, the Today execution instrument, the headline metric, the active nav item, tooltips, toasts), primary CTAs, page labels, data marks and focus rings.
+- MUST: Text on the accent is `#00203D` / `#3B0A28` (AA). NEVER: White text on the accent (3.3:1 fails).
 - MUST: Accent as small text uses Tailwind `text-accent` (`#FF6FA8`, AA on every layer); `#FF3D8B` is for fills, marks and large type.
 - NEVER: Tint the product page grey or turn large regions white.
 
@@ -50,13 +50,13 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 
 ### Flat Surface Hierarchy
 - MUST: Three layers on every page (product, marketing and auth), plus the accent as the focal layer on top. Use the classes in `styles/product.css`; never hand-roll surface styles:
-  - **Layer 0 Page:** `#0F1B3D` body, tables, text rows, ledger rows, graph labels, separators. No surface.
-  - **Layer 1 Panel (`.app-panel`):** Board columns, toolbars, metric panels (`#16244D`, 1px `rgba(255,255,255,.10)` border).
-  - **Layer 2 Card / Control (`.app-card`, `.app-btn`):** Task cards, buttons, toggles, menus (`#1E2E5C`, 1px `rgba(255,255,255,.16)` border; hover `#26386B`, accent edge).
-  - **Field (`.app-field`, `.app-input`):** Inputs, selects, progress rails, segmented troughs (`#0F1B3D`, 1px `rgba(255,255,255,.16)` border; focus border accent).
-  - **Overlay (`.app-overlay`):** Dialogs, drawers, command palette, menus (`#16244D` with a hairline).
-- MUST: Pressed controls drop to the page colour (`#0F1B3D`); no shadows, no lift.
-- MUST: Product text uses `#FFFFFF` / `#B4BEDB` / `#8E9AC0` (all pass WCAG AA on every surface); on inverse surfaces use `#0F1B3D` / `#3B0A28`.
+  - **Layer 0 Page:** `#00203D` body, tables, text rows, ledger rows, graph labels, separators. No surface.
+  - **Layer 1 Panel (`.app-panel`):** Board columns, toolbars, metric panels (`#08294A`, 1px `rgba(255,255,255,.10)` border).
+  - **Layer 2 Card / Control (`.app-card`, `.app-btn`):** Task cards, buttons, toggles, menus (`#12324F`, 1px `rgba(255,255,255,.16)` border; hover `#193C5C`, accent edge).
+  - **Field (`.app-field`, `.app-input`):** Inputs, selects, progress rails, segmented troughs (`#00203D`, 1px `rgba(255,255,255,.16)` border; focus border accent).
+  - **Overlay (`.app-overlay`):** Dialogs, drawers, command palette, menus (`#08294A` with a hairline).
+- MUST: Pressed controls drop to the page colour (`#00203D`); no shadows, no lift.
+- MUST: Product text uses `#FFFFFF` / `#B4BEDB` / `#8E9AC0` (all pass WCAG AA on every surface); on inverse surfaces use `#00203D` / `#3B0A28`.
 - NEVER: Add box-shadows, glows or inset shadows to separate surfaces; use a hairline.
 - NEVER: Use gradients or any colour other than the accent `#FF3D8B`.
 
