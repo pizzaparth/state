@@ -43,6 +43,9 @@ export default function MarketingLayout({
             </Link>
           </div>
           <div className="flex items-center gap-1">
+            <Link href="/login" className="inline-flex min-h-9 items-center px-3 text-base text-[#A9A9A6] transition-colors hover:text-white">
+              Sign in
+            </Link>
             <Magnetic strength={0.3} radius={70}>
               <Button asChild variant="dark-cta" size="sm" className="h-9 rounded-full px-4 text-sm">
                 <Link href="/demo" prefetch={false}>
