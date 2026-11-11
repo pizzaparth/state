@@ -171,7 +171,7 @@ State calculations are completely deterministic and transparent:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/ksanrelay/state.git
+   git clone https://github.com/pizzaparth/state.git
    cd state
    ```
 
