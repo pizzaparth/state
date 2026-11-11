@@ -3,7 +3,6 @@ import { db } from "@/db";
 import { accounts, auditEvents, organisationMembers, organisations, users, workspaces } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { MutationError } from "@/lib/authz";
-import { cancelAllSubscriptions } from "@/lib/billing/manage";
 
 // Accounts without a password (Google, GitHub) prove themselves by a recent sign-in
 const FRESH_SIGN_IN_MS = 10 * 60 * 1000;
@@ -41,7 +40,7 @@ export async function verifyIdentity(userId: string, sessionCreatedAt: Date, pas
  *
  * Deleting the user row cascades through every table that references it: the personal
  * workspace with its projects, boards, tasks, commits, tags and objectives; sessions and
- * linked sign-ins; subscriptions and payments; organisation memberships; and the
+ * linked sign-ins; organisation memberships; and the
  * person's own commits and created tasks in shared organisations.
  *
  * Refused while the person owns an organisation that other members still use, because
@@ -65,9 +64,6 @@ export async function deleteAccount(userId: string): Promise<void> {
       `You own ${shared.map((o) => o.name).join(", ")}, which other members use. Transfer ownership or remove them first.`
     );
   }
-
-  // Stop future charges first; if a provider refuses, the account stays as it was
-  await cancelAllSubscriptions(userId);
 
   await db.transaction(async (tx) => {
     // Operational record only: no name, email or content survives the deletion

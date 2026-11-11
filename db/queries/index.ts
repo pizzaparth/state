@@ -12,9 +12,7 @@ import {
   organisationInvitations,
   organisationMembers,
   organisations,
-  payments,
   projects,
-  subscriptions,
   tags,
   taskTags,
   tasks,
@@ -788,35 +786,6 @@ export async function getObjectives(workspaceIds: string[]) {
 
 export async function getNotifications(userId: string, limit = 10) {
   return db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt)).limit(limit);
-}
-
-export async function getSubscription(userId: string) {
-  const [row] = await db
-    .select()
-    .from(subscriptions)
-    .where(eq(subscriptions.userId, userId))
-    .orderBy(desc(subscriptions.updatedAt))
-    .limit(1);
-  return row ?? null;
-}
-
-/** Recurring charges, newest first. */
-export async function getPayments(userId: string, limit = 24) {
-  return db
-    .select({
-      id: payments.id,
-      amount: payments.amount,
-      currency: payments.currency,
-      status: payments.status,
-      periodStart: payments.periodStart,
-      periodEnd: payments.periodEnd,
-      receiptUrl: payments.receiptUrl,
-      chargedAt: payments.chargedAt,
-    })
-    .from(payments)
-    .where(eq(payments.userId, userId))
-    .orderBy(desc(payments.chargedAt))
-    .limit(limit);
 }
 
 /** Whether the account signs in with a password (deletion asks for it). */

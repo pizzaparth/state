@@ -5,7 +5,6 @@ import { TabLinks } from "./tab-links";
 
 const ITEMS = [
   { href: "/platform/settings/account", label: "Account" },
-  { href: "/platform/settings/billing", label: "Billing" },
   { href: "/platform/settings/preferences", label: "Preferences" },
 ] as const;
 

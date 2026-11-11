@@ -106,8 +106,6 @@ async function main() {
         email: u.email,
         emailVerified: true,
         timezone: TZ,
-        subscriptionStatus: "active",
-        subscriptionPlan: "organisation",
         createdAt: ist(120, 10),
         onboardedAt: ist(120, 10),
       }))
@@ -150,20 +148,6 @@ async function main() {
       status: "pending",
       expiresAt: new Date(NOW + 5 * DAY),
     });
-
-    await tx.insert(s.subscriptions).values(
-      USERS.map((u) => ({
-        userId: u.id,
-        organisationId: ORG_ID,
-        provider: "razorpay",
-        providerSubscriptionId: `sub_demo_${u.key}`,
-        plan: "organisation",
-        status: "active",
-        seats: u.id === PARTH.id ? 3 : 1,
-        currentPeriodStart: ist(12, 0),
-        currentPeriodEnd: ist(-18, 0),
-      }))
-    );
 
     // -------------------------------------------------------------- projects
     const P = personalWs[PARTH.id];

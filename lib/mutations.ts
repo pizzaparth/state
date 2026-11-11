@@ -3,7 +3,6 @@ import { db } from "@/db";
 import { createHash, randomBytes } from "node:crypto";
 import { auditEvents, objectiveProjects, objectives, boards, columns, commitTags, commits, organisationInvitations, organisationMembers, organisations, projects, tags, taskTags, tasks, users, workspaces } from "@/db/schema";
 import { actionEmail, sendEmail } from "@/lib/email";
-import { hasOrganisationPlan } from "@/lib/billing/access";
 import { assertWritable, MutationError, type Actor } from "@/lib/authz";
 import { keyBetween } from "@/lib/position";
 import { dayIn, nextDueDay } from "@/lib/recurrence";
@@ -614,7 +613,7 @@ const OWNED_ORGANISATIONS_MAX = 20;
  */
 export async function createOrganisation(actor: Actor, input: z.infer<typeof createOrganisationSchema>): Promise<{ slug: string; href: string }> {
   assertWritable(actor, actor.personalWorkspaceId);
-  if (!(await hasOrganisationPlan(actor.id))) throw new MutationError("forbidden", "Organisations need the Organisation plan.");
+  throw new MutationError("forbidden", "Organisations are not available.");
 
   const [{ owned }] = await db
     .select({ owned: sql<number>`count(*)::int` })

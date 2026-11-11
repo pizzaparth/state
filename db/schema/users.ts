@@ -7,9 +7,6 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
   timezone: text("timezone").default("UTC").notNull(),
-  // none | incomplete | active | past_due | canceled | expired (denormalised from subscriptions; no trial)
-  subscriptionStatus: text("subscription_status").default("none").notNull(),
-  subscriptionPlan: text("subscription_plan"), // individual, organisation
   theme: text("theme").default("light").notNull(), // light neumorphic (product) vs dark (marketing/settings)
   defaultWorkspaceId: text("default_workspace_id"),
   // Set when first-run setup (/platform/start) is finished or skipped

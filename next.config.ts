@@ -46,8 +46,6 @@ const nextConfig: NextConfig = {
   },
   poweredByHeader: false,
   typedRoutes: true,
-  // Billing SDKs are Node-only; keep them out of the bundler
-  serverExternalPackages: ["razorpay"],
   experimental: {
     optimizePackageImports: ["lucide-react", "date-fns", "recharts", "motion"],
     // Reuse a visited dynamic page for 30s on client navigation (Next 15 default is 0).

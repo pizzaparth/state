@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Magnetic, MagneticLabel } from "@/components/marketing/magnetic";
 import { WorkspaceScope } from "@/components/marketing/workspace-scope";
-import { PricingLedger } from "@/components/marketing/pricing-ledger";
 import { ProductFrame } from "@/components/marketing/product-frame";
 import { ExecutionGraph } from "@/components/app/execution-graph";
 import { CommitLedger } from "@/components/app/commit-ledger";
@@ -10,10 +9,8 @@ import { MetricsReport } from "@/components/app/metrics-view";
 import { Panel } from "@/components/app/primitives";
 import { DEMO_TZ, demoBoard, demoCommits, demoDaily, demoMetrics, demoSeries, demoWorkspaces } from "@/lib/demo/workspace";
 import { formatNumber } from "@/lib/format";
-import { PLANS, PLAN_IDS, formatInr } from "@/lib/billing/plans";
 import { COMPARISONS } from "@/lib/compare";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/site";
-import { LEGAL } from "@/lib/legal";
+import { AUTHOR, BYLINE, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/marketing/json-ld";
 import type { Metadata } from "next";
 
@@ -51,16 +48,20 @@ const FAQ = [
     a: "Those tools organise tasks. State also measures them: every task has a weight (Small 1, Normal 2, Major 4, Milestone 8), every finished task is logged, and every metric shows its formula.",
   },
   {
-    q: "Is it only for software teams?",
-    a: "No. It works for studying, writing, training, design or building anything, alone or with a team.",
+    q: "Who built it?",
+    a: `${AUTHOR}. State is a personal hobby project: one owner account, plus a demo anyone can open.`,
+  },
+  {
+    q: "Is it only for software?",
+    a: "No. It works for studying, writing, training, design or building anything.",
   },
   {
     q: "Does State use AI or track employees?",
     a: "No. No AI summaries or chat, no keystroke or hours-online tracking, no leaderboards and no unexplained productivity score.",
   },
   {
-    q: "How much does it cost?",
-    a: `Individual is ${formatInr(PLANS.individual.priceInr.monthly)}/month. Organisation is ${formatInr(PLANS.organisation.priceInr.monthly)} per member per month. No ads, no free tier.`,
+    q: "What happens to demo data?",
+    a: "Nothing is kept. The demo workspace survives a refresh, and is deleted when you sign out or close the tab.",
   },
 ];
 
@@ -68,8 +69,8 @@ function structuredData() {
   return {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "Organization", "@id": `${SITE_URL}/#org`, name: LEGAL.entity, url: SITE_URL },
-      { "@type": "WebSite", "@id": `${SITE_URL}/#site`, name: SITE_NAME, url: SITE_URL, publisher: { "@id": `${SITE_URL}/#org` } },
+      { "@type": "Person", "@id": `${SITE_URL}/#author`, name: AUTHOR },
+      { "@type": "WebSite", "@id": `${SITE_URL}/#site`, name: SITE_NAME, url: SITE_URL, author: { "@id": `${SITE_URL}/#author` } },
       {
         "@type": "SoftwareApplication",
         name: SITE_NAME,
@@ -78,14 +79,7 @@ function structuredData() {
         applicationCategory: "BusinessApplication",
         applicationSubCategory: "Task management",
         operatingSystem: "Web",
-        publisher: { "@id": `${SITE_URL}/#org` },
-        offers: PLAN_IDS.map((id) => ({
-          "@type": "Offer",
-          name: PLANS[id].name,
-          price: PLANS[id].priceInr.monthly,
-          priceCurrency: "INR",
-          url: `${SITE_URL}/pricing`,
-        })),
+        author: { "@id": `${SITE_URL}/#author` },
       },
     ],
   };
@@ -93,14 +87,11 @@ function structuredData() {
 
 export default function LandingPage() {
   // The real product screens, fed by a generated demo workspace (lib/demo/workspace.ts)
-  const { personal, organisation } = demoWorkspaces();
+  const { personal } = demoWorkspaces();
   const year = demoDaily(personal, 371);
   const yearCommits = year.reduce((n, d) => n + d.commits, 0);
   const yearExecution = year.reduce((n, d) => n + d.execution, 0);
-  const boards = {
-    personal: demoBoard(personal, "personal", DONE_WINDOW_DAYS),
-    organisation: demoBoard(organisation, "organisation", DONE_WINDOW_DAYS),
-  };
+  const board = demoBoard(personal, "personal", DONE_WINDOW_DAYS);
 
   return (
     <>
@@ -108,7 +99,7 @@ export default function LandingPage() {
 
       {/* Hero: type is the graphic; the particle field sits behind */}
       <section className={`${sectionPad} flex min-h-[100svh] flex-col justify-end pb-[10vh] pt-32`}>
-        <p className={`${kicker} animate-fade-in`}>To-do list · Kanban · Metrics</p>
+        <p className={`${kicker} animate-fade-in`}>{BYLINE}</p>
         <h1 className={`${displayHeading} ${silver} text-[clamp(2.25rem,10vw,9.5rem)] leading-[0.86]`}>
           <span className="block overflow-hidden pb-[0.04em]">
             <span className="block animate-line-rise">Execution,</span>
@@ -132,8 +123,8 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Magnetic>
                 <Button asChild variant="dark-cta" size="lg" className="rounded-full px-7">
-                  <Link href="/register">
-                    <MagneticLabel>Subscribe</MagneticLabel>
+                  <Link href="/demo" prefetch={false}>
+                    <MagneticLabel>Take a demo</MagneticLabel>
                   </Link>
                 </Button>
               </Magnetic>
@@ -178,15 +169,15 @@ export default function LandingPage() {
         </ProductFrame>
       </section>
 
-      {/* Personal / organisation */}
+      {/* Board */}
       <section aria-labelledby="scope-title" className={`${sectionPad} py-[16vh]`}>
         <p className={kicker}>Human execution, measured like a system.</p>
         <h2 id="scope-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
-          Personal or organisational.
+          One board. One person.
         </h2>
-        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">Solo or squad. Same math.</p>
+        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">Queued, Active, Done. Same math every day.</p>
         <div className="mt-12">
-          <WorkspaceScope boards={boards} doneWindowDays={DONE_WINDOW_DAYS} />
+          <WorkspaceScope board={board} doneWindowDays={DONE_WINDOW_DAYS} />
         </div>
       </section>
 
@@ -208,18 +199,6 @@ export default function LandingPage() {
           ))}
         </ul>
         <p className="mt-14 max-w-[40ch] text-xl leading-relaxed text-[#F4F4F2] text-pretty sm:text-2xl">Plan. Execute. Measure. That’s it.</p>
-      </section>
-
-      {/* Pricing */}
-      <section id="pricing" aria-labelledby="pricing-title" className={`${sectionPad} scroll-mt-24 py-[16vh]`}>
-        <p className={kicker}>Quantitative infrastructure for getting work done.</p>
-        <h2 id="pricing-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
-          Paid from day one.
-        </h2>
-        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">You pay. No ads. You’re the customer, not the product.</p>
-        <div className="mt-14">
-          <PricingLedger />
-        </div>
       </section>
 
       {/* Switching from: internal links to the comparison pages */}
@@ -265,18 +244,16 @@ export default function LandingPage() {
       {/* Closing */}
       <section className={`${sectionPad} flex min-h-[80svh] flex-col justify-center py-[12vh]`}>
         <p className={kicker}>Where execution becomes data.</p>
-        <h2 className={`${displayHeading} ${silver} text-[clamp(2.25rem,10vw,9.5rem)] leading-[0.88]`}>Start measuring.</h2>
+        <h2 className={`${displayHeading} ${silver} text-[clamp(2.25rem,10vw,9.5rem)] leading-[0.88]`}>Take a look.</h2>
         <div className="mt-10 flex flex-wrap items-center gap-6">
           <Magnetic strength={0.45} radius={160}>
             <Button asChild variant="dark-cta" size="lg" className="rounded-full px-8">
-              <Link href="/register">
-                <MagneticLabel>Subscribe</MagneticLabel>
+              <Link href="/demo" prefetch={false}>
+                <MagneticLabel>Take a demo</MagneticLabel>
               </Link>
             </Button>
           </Magnetic>
-          <p className="text-base text-[#6F6F6B]">
-            From {formatInr(PLANS.individual.priceInr.monthly)}/mo.
-          </p>
+          <p className="text-base text-[#85857F]">No sign-up. Nothing kept.</p>
         </div>
       </section>
     </>

@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { COMPARISONS, getComparison } from "@/lib/compare";
-import { PLANS, formatInr } from "@/lib/billing/plans";
 import { SITE_URL } from "@/lib/site";
 
 export function generateStaticParams() {
@@ -103,9 +102,7 @@ export default async function ComparisonPage({ params }: { params: Promise<{ slu
                   Price
                 </th>
                 <td className="py-5 pr-6 text-[#A9A9A6]">See their pricing page</td>
-                <td className="py-5 text-[#F4F4F2] tabular-nums">
-                  From {formatInr(PLANS.individual.priceInr.monthly)}/mo, no ads
-                </td>
+                <td className="py-5 text-[#F4F4F2]">Not for sale: a personal hobby project</td>
               </tr>
             </tbody>
           </table>
@@ -114,7 +111,7 @@ export default async function ComparisonPage({ params }: { params: Promise<{ slu
 
       <div className="mt-16 flex flex-wrap items-center gap-3">
         <Button asChild variant="dark-cta" size="lg" className="rounded-full px-7">
-          <Link href="/register">Subscribe</Link>
+          <Link href="/demo" prefetch={false}>Take a demo</Link>
         </Button>
         <Button asChild variant="dark-secondary" size="lg" className="rounded-full px-7">
           <Link href="/#history">See the graph</Link>

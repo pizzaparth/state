@@ -4,13 +4,11 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import type { z } from "zod";
 import { getSession } from "@/lib/auth/session";
-import { getAccess } from "@/lib/billing/access";
 import { loadActor, MutationError, type Actor } from "@/lib/authz";
 import { deleteAccount, IdentityError, verifyIdentity } from "@/lib/accounts/delete";
-import { setAutoRenew } from "@/lib/billing/manage";
 import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, acceptInvitation, setTaskRecurrence, captureTask, createManualCommit, createOrganisation, createProject, inviteMember, leaveOrganisation, removeMember, revokeInvitation, setMemberRole, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "@/lib/mutations";
 import { consumeThrottle } from "@/lib/security/throttle";
-import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, invitationRefSchema, inviteMemberSchema, memberRefSchema, organisationRefSchema, setMemberRoleSchema, deleteAccountSchema, setAutoRenewSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, invitationRefSchema, inviteMemberSchema, memberRefSchema, organisationRefSchema, setMemberRoleSchema, deleteAccountSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Server Actions for the product. Each one re-verifies everything itself: Server Actions
@@ -27,10 +25,6 @@ async function run<S extends z.ZodType, T>(schema: S, input: unknown, fn: (actor
   try {
     const session = await getSession();
     if (!session) throw new MutationError("unauthenticated", "Your session has ended. Sign in again.");
-    const { access, reason } = await getAccess(session.user.id);
-    if (access !== "full") {
-      throw new MutationError("forbidden", access === "none" ? "Your subscription is not active." : reason === "past_due" ? "Read-only: your payment is overdue. Update billing to make changes." : "Read-only: your plan has ended. Subscribe again to make changes.");
-    }
     if (!(await consumeThrottle(`write:${session.user.id}`, WRITES_PER_MINUTE, 60))) {
       throw new MutationError("rate_limited", "Too many changes at once. Wait a minute and try again.");
     }
@@ -179,16 +173,6 @@ export async function editCommitAction(input: unknown) {
 
 export async function createCommitAction(input: unknown) {
   return run(manualCommitSchema, input, createManualCommit);
-}
-
-export async function setAutoRenewAction(input: unknown) {
-  return run(setAutoRenewSchema, input, async (actor, { renew }) => {
-    // Each change calls the payment provider; cap them per account
-    if (!(await consumeThrottle(`billing:${actor.id}`, 10, 60 * 60))) {
-      throw new MutationError("rate_limited", "Too many billing changes. Try again in an hour.");
-    }
-    return setAutoRenew(actor.id, renew);
-  });
 }
 
 export type DeleteAccountResult = { ok: true } | { ok: false; error: string; field?: "confirm" | "password" };

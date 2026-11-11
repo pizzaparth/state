@@ -1,14 +1,16 @@
-import { LEGAL } from "@/lib/legal";
-
 /**
- * Public origin for canonical URLs, the sitemap and Open Graph tags. Production requires
- * NEXT_PUBLIC_APP_URL to be https (lib/env.ts); the fallback keeps local builds working.
+ * Public origin for canonical URLs, the sitemap and Open Graph tags. On Vercel the
+ * production domain comes from the platform when NEXT_PUBLIC_APP_URL is not set.
  */
-export const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || `https://${LEGAL.domain}`).replace(/\/$/, "");
+const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+export const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || (vercelHost ? `https://${vercelHost}` : "http://localhost:3000")).replace(/\/$/, "");
 
 export const SITE_NAME = "State";
 
+/** Who built it. Shown in the header, footer and product shell. */
+export const AUTHOR = "Parth Pancholi";
+export const BYLINE = `A personal hobby project by ${AUTHOR}`;
+
 // Shared by the root layout and the landing page so search snippets match the page
-export const SITE_TITLE = "State — To-do list and kanban app that measures your work";
-export const SITE_DESCRIPTION =
-  "A to-do list and kanban task manager with real metrics. Plan tasks, finish them, and see execution, velocity, cycle time and consistency as plain formulas. No ads, no AI, no surveillance.";
+export const SITE_TITLE = "State — a personal execution tracker";
+export const SITE_DESCRIPTION = `${BYLINE}. A to-do list and kanban board with real metrics: execution, velocity, cycle time and consistency as plain formulas. Take a demo; nothing you enter is kept.`;

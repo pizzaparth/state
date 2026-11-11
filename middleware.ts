@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
 // Every product page lives under /platform
-const PROTECTED_PREFIXES = ["/platform", "/subscribe"];
+const PROTECTED_PREFIXES = ["/platform"];
 
 function isProtected(pathname: string) {
   return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -10,18 +10,18 @@ function isProtected(pathname: string) {
 
 /**
  * Per-request nonce CSP. 'strict-dynamic' lets nonce-bearing scripts load their own
- * dependencies (Next chunks, Razorpay Checkout) while blocking injected inline script.
+ * dependencies (Next chunks) while blocking injected inline script.
  */
 function contentSecurityPolicy(nonce: string, https: boolean) {
   const dev = process.env.NODE_ENV !== "production";
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://checkout.razorpay.com${dev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://*.razorpay.com",
+    "img-src 'self' data: blob:",
     "font-src 'self'",
-    `connect-src 'self' https://*.razorpay.com${dev ? " ws: wss:" : ""}`,
-    "frame-src https://api.razorpay.com https://checkout.razorpay.com",
+    `connect-src 'self'${dev ? " ws: wss:" : ""}`,
+    "frame-src 'none'",
     "form-action 'self'",
     "frame-ancestors 'none'",
     "base-uri 'self'",

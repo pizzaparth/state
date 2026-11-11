@@ -20,14 +20,12 @@ export function assertServerEnv(env: NodeJS.ProcessEnv = process.env) {
   if (!env.DATABASE_URL) problems.push("DATABASE_URL is required");
   for (const key of ["BETTER_AUTH_URL", "NEXT_PUBLIC_APP_URL"] as const) {
     const value = env[key] ?? "";
-    // Fixed public origin: auth callbacks and payment return URLs never come from the Host header
+    // Fixed public origin: auth callbacks never come from the Host header
     if (!/^https:\/\//.test(value) && !isLocalUrl(value)) problems.push(`${key} must be the public https:// origin`);
   }
   const publicUrl = env.BETTER_AUTH_URL ?? "";
   if (!env.RESEND_API_KEY && !(env.EMAIL_OUTBOX_DIR && isLocalUrl(publicUrl))) problems.push("RESEND_API_KEY is required: verification and password reset emails cannot be sent");
   if (env.EMAIL_OUTBOX_DIR && !isLocalUrl(publicUrl)) problems.push("EMAIL_OUTBOX_DIR is for local test runs only; it writes single-use links to disk");
   if (env.RESEND_API_KEY && !env.EMAIL_FROM) problems.push("EMAIL_FROM is required (a sender on a domain verified with Resend)");
-  // Payment skip is a local development aid; never on a public deployment
-  if (env.ALLOW_PAYMENT_SKIP === "1" && !isLocalUrl(publicUrl)) problems.push("ALLOW_PAYMENT_SKIP is for local test runs only; it activates accounts without payment");
   if (problems.length) throw new Error(`Unsafe production configuration:\n- ${problems.join("\n- ")}`);
 }

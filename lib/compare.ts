@@ -23,7 +23,7 @@ const STATE_ROWS = {
   metrics: "Execution, velocity, throughput, cycle time, consistency, each with its formula",
   ai: "None, by design",
   gamification: "None: no points, badges or streak pressure",
-  scope: "Personal and organisation workspaces, same math",
+  scope: "One personal workspace, every number explained",
 } as const;
 
 export const COMPARISONS: Comparison[] = [
@@ -80,7 +80,7 @@ export const COMPARISONS: Comparison[] = [
     pickThem: "You run cross-team programs and need portfolios, approvals and workload planning.",
     pickState: "You want a lighter board where finished work is measured with formulas anyone can check.",
     rows: [
-      ["Built for", "Team and portfolio management", "Individuals and organisations measuring execution"],
+      ["Built for", "Team and portfolio management", "One person measuring their own execution"],
       ["Task model", "Tasks, subtasks and milestones", STATE_ROWS.model],
       ["Work metrics", "Dashboards and reporting", STATE_ROWS.metrics],
       ["AI", "Asana AI features", STATE_ROWS.ai],
@@ -125,7 +125,7 @@ export const COMPARISONS: Comparison[] = [
     pickThem: "You build software and want issues tied to your code, cycles and roadmaps.",
     pickState: "You want Linear-style speed for work that is not software, with commits and metrics built in.",
     rows: [
-      ["Built for", "Software product teams", "Any discipline, solo or team"],
+      ["Built for", "Software product teams", "Any discipline, solo"],
       ["Unit of work", "Issues", STATE_ROWS.model],
       ["Estimation", "Team-defined point scales", "Small 1 · Normal 2 · Major 4 · Milestone 8"],
       ["Work metrics", "Cycle and project insights", STATE_ROWS.metrics],

@@ -481,11 +481,6 @@ export const importSchema = z.object({
 
 export type ImportData = z.infer<typeof importSchema>;
 
-/** Auto-renew on (renew) or off (cancel at period end) for the current subscription. */
-export const setAutoRenewSchema = z.strictObject({
-  renew: z.boolean(),
-});
-
 /**
  * Permanent account deletion. `confirm` must be the account's email; `password` is
  * required when the account has one (checked on the server).

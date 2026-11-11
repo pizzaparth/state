@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ParticleField } from "@/components/marketing/particle-field";
 import { Magnetic, MagneticLabel } from "@/components/marketing/magnetic";
-import { LEGAL_PAGES } from "@/lib/legal";
+import { AUTHOR, BYLINE } from "@/lib/site";
 
 export default function MarketingLayout({
   children,
@@ -38,18 +38,15 @@ export default function MarketingLayout({
             <Link href="/principles" className="transition-colors hover:text-white">
               Principles
             </Link>
-            <Link href="/pricing" className="transition-colors hover:text-white">
-              Pricing
+            <Link href="/compare" className="transition-colors hover:text-white">
+              Compare
             </Link>
           </div>
           <div className="flex items-center gap-1">
-            <Link href="/login" className="px-3 py-2 text-base text-[#A9A9A6] transition-colors hover:text-white">
-              Sign in
-            </Link>
             <Magnetic strength={0.3} radius={70}>
               <Button asChild variant="dark-cta" size="sm" className="h-9 rounded-full px-4 text-sm">
-                <Link href="/register">
-                  <MagneticLabel>Subscribe</MagneticLabel>
+                <Link href="/demo" prefetch={false}>
+                  <MagneticLabel>Take a demo</MagneticLabel>
                 </Link>
               </Button>
             </Magnetic>
@@ -62,42 +59,33 @@ export default function MarketingLayout({
       </main>
 
       <footer className="relative z-10 border-t border-white/[0.08] px-5 py-12 text-base text-[#6F6F6B] sm:px-8 lg:px-12">
-        <div className="mx-auto grid max-w-[1320px] gap-10 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-16">
+        <div className="mx-auto grid max-w-[1320px] gap-10 md:grid-cols-[minmax(0,1fr)_auto] md:gap-16">
           <div className="space-y-3">
             <p>
-              <span className="font-semibold text-[#A9A9A6]" translate="no">State</span> is built by{" "}
-              <span translate="no">Ksan&nbsp;Relay</span>. No ads, no AI, no surveillance.
+              <span className="font-semibold text-[#A9A9A6]" translate="no">State</span> is {BYLINE.charAt(0).toLowerCase() + BYLINE.slice(1)}. No ads, no AI, no
+              payments.
             </p>
             <p className="max-w-[56ch] text-sm leading-relaxed">
-              Graphs, histories and figures on this site are illustrative sample data. State’s metrics describe recorded work, not people,
-              and are not intended for employment decisions.{" "}
-              <Link href="/legal/disclaimer" className="underline underline-offset-4 transition-colors hover:text-white">
-                Read the disclaimer
-              </Link>
-              .
+              Graphs, histories and figures on this site are sample data. The demo keeps nothing: its workspace is deleted when you sign out or
+              close the tab.
             </p>
-            <p className="text-sm">© {new Date().getFullYear()} Ksan&nbsp;Relay</p>
+            <p className="text-sm">
+              © {new Date().getFullYear()} <span translate="no">{AUTHOR}</span>
+            </p>
           </div>
-          <nav aria-label="Product" className="flex flex-col gap-2">
+          <nav aria-label="Site" className="flex flex-col gap-2">
             <Link href="/compare" className="transition-colors hover:text-white">
               Compare
             </Link>
             <Link href="/principles" className="transition-colors hover:text-white">
               Principles
             </Link>
-            <Link href="/pricing" className="transition-colors hover:text-white">
-              Pricing
+            <Link href="/demo" prefetch={false} className="transition-colors hover:text-white">
+              Take a demo
             </Link>
             <Link href="/login" className="transition-colors hover:text-white">
-              Sign in
+              Owner sign in
             </Link>
-          </nav>
-          <nav aria-label="Legal" className="flex flex-col gap-2">
-            {LEGAL_PAGES.map((page) => (
-              <Link key={page.href} href={page.href} className="transition-colors hover:text-white">
-                {page.title}
-              </Link>
-            ))}
           </nav>
         </div>
       </footer>

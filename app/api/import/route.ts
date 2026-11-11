@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
-import { hasPaidAccess } from "@/lib/billing/access";
 import { loadActor, MutationError } from "@/lib/authz";
 import { parseImport } from "@/lib/data/import";
 import { importData } from "@/lib/mutations";
@@ -15,7 +14,7 @@ import { IMPORT_LIMITS } from "@/lib/validation";
  *
  * A Route Handler rather than a Server Action: files run to megabytes, and raising the
  * Server Action body limit (64 kB, next.config.ts) would raise it for every action. It
- * applies the same checks as app/(app)/actions.ts: session, paid access, a per-user
+ * applies the same checks as app/(app)/actions.ts: session, a per-user
  * budget, strict validation (lib/validation importSchema) and assertWritable in
  * lib/mutations.ts importData.
  */
@@ -25,7 +24,6 @@ export async function POST(req: NextRequest) {
 
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Your session has ended. Sign in again." }, { status: 401 });
-  if (!(await hasPaidAccess(session.user.id))) return NextResponse.json({ error: "Your subscription is not active." }, { status: 403 });
   if (!(await consumeThrottle(`import:${session.user.id}`, 10, 60 * 60))) {
     return NextResponse.json({ error: "Too many imports. Try again in an hour." }, { status: 429 });
   }
