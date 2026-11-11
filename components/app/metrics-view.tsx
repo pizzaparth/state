@@ -33,7 +33,7 @@ const signed = (v: number, digits = 1) => `${v >= 0 ? "+" : "−"}${formatNumber
 function Delta({ pct, days, inverse }: { pct: number | null; days: number; inverse?: boolean }) {
   if (pct === null) return <span className={inverse ? "text-accent-muted" : "text-[#8E9AC0]"}>no prior {days}d</span>;
   return (
-    <span className={inverse ? "text-[#3B0A28]" : "text-[#B4BEDB]"}>
+    <span className={inverse ? "text-[#2A0019]" : "text-[#B4BEDB]"}>
       {pct >= 0 ? "▲" : "▼"}
       {formatNumber(Math.abs(pct), 1)}% <span className={inverse ? "text-accent-muted" : "text-[#8E9AC0]"}>vs prior {days}d</span>
     </span>

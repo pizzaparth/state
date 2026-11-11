@@ -14,12 +14,12 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "dark-secondary", size = "md", isLoading, asChild, children, disabled, ...props }, ref) => {
     const baseClasses =
-      "inline-flex items-center justify-center font-medium transition-[background-color,border-color,box-shadow,color,transform] select-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99] touch-manipulation";
+      "inline-flex items-center justify-center font-medium transition-[background-color,border-color,box-shadow,color,transform] select-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent touch-manipulation mi-lift mi-nudge";
 
     const variantClasses = {
       "dark-cta": "bg-accent text-accent-ink hover:bg-accent-hover border border-accent font-semibold",
       "dark-secondary":
-        "bg-[#12324F] text-[#FFFFFF] hover:bg-[#193C5C] border border-white/[0.16] hover:border-accent-line",
+        "bg-[#0B2A48] text-[#FFFFFF] hover:bg-[#123352] border border-white/[0.16] hover:border-accent-line",
     };
 
     const sizeClasses = {

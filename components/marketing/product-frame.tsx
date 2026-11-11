@@ -10,7 +10,7 @@ import { TICK } from "@/lib/type";
  */
 export function ProductFrame({ path, caption, children, className }: { path: string; caption: string; children: React.ReactNode; className?: string }) {
   return (
-    <figure className={cn("relative min-w-0 overflow-hidden rounded-[28px] border border-white/[0.1] bg-[#00203D]", className)}>
+    <figure className={cn("relative min-w-0 overflow-hidden rounded-[28px] border border-white/[0.1] bg-[#001A33]", className)}>
       <div className="flex items-center gap-3 border-b border-white/[0.08] px-5 py-3">
         <span aria-hidden="true" className="flex gap-1.5">
           {[0, 1, 2].map((i) => (

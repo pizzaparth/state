@@ -33,12 +33,12 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 
 ### Dual Environment Split
 - MUST: Separate marketing and product surfaces into two distinct visual environments:
-  - **Public Marketing Surfaces:** Navy (`#00203D` to `#193C5C`) with white and the accent, editorial, technical, high-contrast.
-  - **Logged-in Product Application:** Navy (`#00203D`), flat, dense, numbers-first. Depth comes from 1px hairlines and small tonal steps only.
+  - **Public Marketing Surfaces:** Navy (`#001A33` to `#123352`) with white and the accent, editorial, technical, high-contrast.
+  - **Logged-in Product Application:** Navy (`#001A33`), flat, dense, numbers-first. Depth comes from 1px hairlines and small tonal steps only.
 - NEVER: Use neumorphism (soft extruded or inset shadows) anywhere in the product.
-- MUST: Palette is 75% navy `#00203D` and white `#FFFFFF`, 25% accent `#FF3D8B` (tokens in `styles/tokens.css`, Tailwind `accent`). The accent fills focal surfaces (`.app-inverse`: `+ COMMIT`, the Today execution instrument, the headline metric, the active nav item, tooltips, toasts), primary CTAs, page labels, data marks and focus rings.
-- MUST: Text on the accent is `#00203D` / `#3B0A28` (AA). NEVER: White text on the accent (3.3:1 fails).
-- MUST: Accent as small text uses Tailwind `text-accent` (`#FF6FA8`, AA on every layer); `#FF3D8B` is for fills, marks and large type.
+- MUST: Palette is 75% navy `#001A33` and white `#FFFFFF`, 25% accent `#E8357F` (tokens in `styles/tokens.css`, Tailwind `accent`). The accent fills focal surfaces (`.app-inverse`: `+ COMMIT`, the Today execution instrument, the headline metric, the active nav item, tooltips, toasts), primary CTAs, page labels, data marks and focus rings.
+- MUST: Text on the accent is `#001A33` / `#2A0019` (AA). NEVER: White text on the accent (3.3:1 fails).
+- MUST: Accent as small text uses Tailwind `text-accent` (`#FF5C99`, AA on every layer); `#E8357F` is for fills, marks and large type.
 - NEVER: Tint the product page grey or turn large regions white.
 
 ### Type & Copy (quant, short attention span)
@@ -49,16 +49,18 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 - NEVER: Motivational slogans in the product; punchy is fine, cheerleading is not.
 
 ### Flat Surface Hierarchy
-- MUST: Three layers on every page (product, marketing and auth), plus the accent as the focal layer on top. Use the classes in `styles/product.css`; never hand-roll surface styles:
-  - **Layer 0 Page:** `#00203D` body, tables, text rows, ledger rows, graph labels, separators. No surface.
-  - **Layer 1 Panel (`.app-panel`):** Board columns, toolbars, metric panels (`#08294A`, 1px `rgba(255,255,255,.10)` border).
-  - **Layer 2 Card / Control (`.app-card`, `.app-btn`):** Task cards, buttons, toggles, menus (`#12324F`, 1px `rgba(255,255,255,.16)` border; hover `#193C5C`, accent edge).
-  - **Field (`.app-field`, `.app-input`):** Inputs, selects, progress rails, segmented troughs (`#00203D`, 1px `rgba(255,255,255,.16)` border; focus border accent).
-  - **Overlay (`.app-overlay`):** Dialogs, drawers, command palette, menus (`#08294A` with a hairline).
-- MUST: Pressed controls drop to the page colour (`#00203D`); no shadows, no lift.
-- MUST: Product text uses `#FFFFFF` / `#B4BEDB` / `#8E9AC0` (all pass WCAG AA on every surface); on inverse surfaces use `#00203D` / `#3B0A28`.
+- MUST: Multi-layer parallax on every page (`components/motion/parallax.tsx`): `ParallaxBackdrop` puts three tiled layers (far dots, mid outlines, near marks) behind the content, moving at different speeds with scroll and pointer; `data-depth` makes headings and hero type drift against the scroll. Transform only; off under reduced motion. Panels are slightly translucent with a blur so the layers read through.
+- NEVER: Nest cards inside cards to fake depth; depth comes from the parallax layers.
+- MUST: Use the classes in `styles/product.css`; never hand-roll surface styles:
+  - **Page:** `#001A33` body, tables, text rows, ledger rows, graph labels, separators. No surface.
+  - **Panel (`.app-panel`):** Board columns, toolbars, metric panels (`#05223F`, 1px `rgba(255,255,255,.10)` border).
+  - **Card / Control (`.app-card`, `.app-btn`):** Task cards, buttons, toggles, menus (`#0B2A48`, 1px `rgba(255,255,255,.16)` border; hover `#123352`, accent edge).
+  - **Field (`.app-field`, `.app-input`):** Inputs, selects, progress rails, segmented troughs (`#001A33`, 1px `rgba(255,255,255,.16)` border; focus border accent).
+  - **Overlay (`.app-overlay`):** Dialogs, drawers, command palette, menus (`#05223F` with a hairline).
+- MUST: Micro-interactions on every interactive element via `styles/motion.css` (`mi-press`, `mi-lift`, `mi-nudge`, `mi-spin`, `mi-arrow`, `mi-underline`, `mi-row`, `mi-pop`, `mi-live`): transform/opacity only, ≤ 260ms, no shadows, no endless loops.
+- MUST: Product text uses `#FFFFFF` / `#B4BEDB` / `#8E9AC0` (all pass WCAG AA on every surface); on inverse surfaces use `#001A33` / `#2A0019`.
 - NEVER: Add box-shadows, glows or inset shadows to separate surfaces; use a hairline.
-- NEVER: Use gradients or any colour other than the accent `#FF3D8B`.
+- NEVER: Use gradients or any colour other than the accent `#E8357F`.
 
 ---
 

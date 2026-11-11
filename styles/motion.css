@@ -1,0 +1,223 @@
+/* ==========================================================================
+   Micro-interactions. Transform and opacity only, 120–260ms, interruptible.
+   prefers-reduced-motion zeroes every duration (globals.css).
+     .mi-press     gives under the pointer
+     .mi-lift      rises 2px on hover
+     .mi-nudge     its icon slides right on hover
+     .mi-spin      its icon turns a quarter on hover (+ buttons)
+     .mi-arrow     slides right when its .group is hovered
+     .mi-underline accent underline grows from the left
+     .mi-row       accent bar grows on the left; content shifts right
+     .mi-pop       pops in once (done dots, new marks)
+     .mi-live      accent dot with a short ripple
+   ========================================================================== */
+
+.mi-press {
+  transition: transform var(--duration-fast) var(--ease-restrained);
+}
+.mi-press:active {
+  transform: scale(0.96);
+}
+
+.mi-lift {
+  transition: transform var(--duration-normal) var(--ease-restrained);
+}
+@media (hover: hover) {
+  .mi-lift:hover {
+    transform: translateY(-2px);
+  }
+  .mi-lift:active {
+    transform: translateY(0) scale(0.98);
+  }
+}
+
+.mi-nudge svg,
+.mi-spin svg,
+.mi-arrow {
+  transition: transform var(--duration-normal) var(--ease-restrained);
+}
+@media (hover: hover) {
+  .mi-nudge:hover svg {
+    transform: translateX(2px);
+  }
+  .mi-spin:hover svg {
+    transform: rotate(90deg);
+  }
+  .group:hover .mi-arrow,
+  .mi-arrow:hover {
+    transform: translateX(4px);
+  }
+}
+.group:focus-visible .mi-arrow {
+  transform: translateX(4px);
+}
+
+.mi-underline {
+  position: relative;
+}
+.mi-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 1.5px;
+  background-color: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--duration-slow) var(--ease-restrained);
+}
+.mi-underline:hover::after,
+.mi-underline:focus-visible::after,
+.mi-underline[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+
+.mi-row {
+  position: relative;
+  transition: background-color var(--duration-normal) var(--ease-restrained);
+}
+.mi-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 2px;
+  border-radius: 2px;
+  background-color: var(--accent);
+  transform: scaleY(0);
+  transition: transform var(--duration-slow) var(--ease-restrained);
+}
+.mi-row > * {
+  transition: transform var(--duration-slow) var(--ease-restrained);
+}
+@media (hover: hover) {
+  .mi-row:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+  .mi-row:hover::before {
+    transform: scaleY(1);
+  }
+  .mi-row:hover > * {
+    transform: translateX(6px);
+  }
+}
+.mi-row:focus-visible::before {
+  transform: scaleY(1);
+}
+
+@keyframes mi-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.mi-pop {
+  animation: mi-pop 360ms var(--ease-restrained) both;
+}
+
+/* Three ripples, then still: no endless motion beside content */
+@keyframes mi-ripple {
+  from {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+.mi-live {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background-color: var(--accent);
+}
+.mi-live::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: var(--accent);
+  animation: mi-ripple 1.4s var(--ease-restrained) 3 both;
+}
+
+/* Focus rings settle in instead of snapping */
+:focus-visible {
+  transition: outline-offset var(--duration-fast) var(--ease-restrained);
+}
+
+/* Product surfaces respond to the pointer */
+@media (hover: hover) {
+  .app-card:hover {
+    transform: translateY(-2px);
+  }
+  .app-btn:hover {
+    transform: translateY(-1px);
+  }
+  .app-panel:hover {
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+}
+.app-panel {
+  transition: border-color var(--duration-normal) var(--ease-restrained);
+}
+.app-panel:hover .panel-mark {
+  transform: scale(1.8) rotate(45deg);
+}
+.panel-mark {
+  transition: transform var(--duration-slow) var(--ease-restrained);
+}
+
+/* Heatmap and chart cells grow under the pointer from their own centre */
+.mi-cell {
+  transition: transform var(--duration-fast) var(--ease-restrained);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@media (hover: hover) {
+  .mi-cell:hover {
+    transform: scale(1.35);
+  }
+}
+
+/* Toast timer: shrinks to nothing over the notice's lifetime */
+@keyframes mi-timer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.mi-timer {
+  animation: mi-timer linear both;
+}
+
+/* Typing shows the accent */
+input,
+textarea {
+  caret-color: var(--accent);
+}
+
+/* Command palette and menu rows slide in their selection */
+[role="option"],
+[role="menuitem"] {
+  transition:
+    background-color var(--duration-fast) var(--ease-restrained),
+    transform var(--duration-fast) var(--ease-restrained);
+}
+[role="option"][aria-selected="true"],
+[role="menuitem"][data-highlighted] {
+  transform: translateX(3px);
+}

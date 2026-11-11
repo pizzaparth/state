@@ -33,7 +33,7 @@ export function TabLinks({
             aria-current={item.active ? "page" : undefined}
             scroll={scroll}
             className={cn(
-              "relative shrink-0 font-medium transition-colors duration-150",
+              "mi-press relative shrink-0 font-medium transition-colors duration-150",
               size === "md" ? "rounded-[10px] px-4 py-2 text-base" : "rounded-[9px] px-3 py-1.5 text-sm",
               item.active ? "font-semibold text-accent-ink" : "text-[#B4BEDB] hover:text-[#FFFFFF]"
             )}

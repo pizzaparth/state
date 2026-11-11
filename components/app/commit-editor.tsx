@@ -8,7 +8,7 @@ import { useNotice } from "./notice";
 
 type FieldName = "message" | "projectId" | "tags";
 
-const selectClass = "app-field h-11 w-full rounded-[14px] bg-[#00203D] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
+const selectClass = "app-field h-11 w-full rounded-[14px] bg-[#001A33] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
 
 const splitTags = (text: string) =>
   text

@@ -53,14 +53,14 @@ export default async function ComparisonPage({ params }: { params: Promise<{ slu
       </h1>
       <p className="mt-6 max-w-[60ch] text-lg leading-relaxed text-[#B4BEDB] text-pretty">{c.is}</p>
 
-      <div className="mt-14 grid gap-2 rounded-[28px] border border-white/[0.1] bg-[#08294A] p-2 md:grid-cols-2">
-        <section aria-labelledby="pick-them" className="rounded-[20px] border border-white/[0.16] bg-[#12324F] p-6 sm:p-8">
+      <div className="mt-14 grid gap-px overflow-hidden rounded-[28px] border border-white/[0.1] bg-white/[0.1] md:grid-cols-2">
+        <section aria-labelledby="pick-them" className="bg-[#05223F] p-6 sm:p-8">
           <h2 id="pick-them" className="font-mono text-sm uppercase tracking-[0.16em] text-[#8E9AC0]">
             Pick <span translate="no">{c.name}</span> if
           </h2>
           <p className="mt-4 text-xl leading-relaxed text-[#FFFFFF] text-pretty">{c.pickThem}</p>
         </section>
-        <section aria-labelledby="pick-state" className="rounded-[20px] border border-accent-line bg-[#12324F] p-6 sm:p-8">
+        <section aria-labelledby="pick-state" className="bg-[#05223F] p-6 sm:p-8">
           <h2 id="pick-state" className="font-mono text-sm uppercase tracking-[0.16em] text-accent">
             Pick State if
           </h2>
@@ -72,7 +72,7 @@ export default async function ComparisonPage({ params }: { params: Promise<{ slu
         <h2 id="side-by-side" className="font-display text-[clamp(1.5rem,4vw,3rem)] font-bold uppercase tracking-[-0.02em] [font-stretch:112%]">
           Side by side
         </h2>
-        <div className="mt-8 overflow-x-auto rounded-[28px] border border-white/[0.1] bg-[#08294A] px-6 py-2">
+        <div className="mt-8 overflow-x-auto">
           <table className="w-full min-w-[36rem] border-collapse text-left text-base">
             <thead>
               <tr className="border-b border-white/[0.14] font-mono text-sm uppercase tracking-[0.16em] text-[#8E9AC0]">
@@ -125,7 +125,7 @@ export default async function ComparisonPage({ params }: { params: Promise<{ slu
         <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-3 text-lg">
           {others.map((o) => (
             <li key={o.slug}>
-              <Link href={`/compare/${o.slug}`} className="text-[#B4BEDB] underline-offset-4 transition-colors hover:text-white hover:underline">
+              <Link href={`/compare/${o.slug}`} className="mi-underline text-[#B4BEDB] transition-colors hover:text-white">
                 State vs <span translate="no">{o.name}</span>
               </Link>
             </li>

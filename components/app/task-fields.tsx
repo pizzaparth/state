@@ -67,7 +67,7 @@ function InlineSelect<T extends string | number>({
               notify(savedMessage(next));
             });
           }}
-          className="app-field h-9 min-w-0 rounded-[12px] bg-[#00203D] px-2.5 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none disabled:opacity-60"
+          className="app-field h-9 min-w-0 rounded-[12px] bg-[#001A33] px-2.5 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none disabled:opacity-60"
         >
           {options.map((o) => (
             <option key={o.value} value={String(o.value)}>

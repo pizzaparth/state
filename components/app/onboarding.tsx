@@ -18,7 +18,7 @@ function Step({ n, title, state, children }: { n: number; title: string; state: 
         aria-hidden="true"
         className={cn(
           "grid size-10 place-items-center rounded-full font-mono text-sm tabular-nums",
-          state === "done" ? "app-inverse" : state === "current" ? "app-card text-[#FFFFFF]" : "app-field text-[#8E9AC0]"
+          state === "done" ? "app-inverse mi-pop" : state === "current" ? "app-card text-[#FFFFFF]" : "app-field text-[#8E9AC0]"
         )}
       >
         {state === "done" ? "✓" : n}

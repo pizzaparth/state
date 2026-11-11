@@ -42,7 +42,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Page
                 aria-current={active ? "page" : undefined}
                 scroll={false}
                 className={cn(
-                  "rounded-full px-3 py-1.5 text-sm font-medium transition-[box-shadow,background-color,color]",
+                  "mi-press rounded-full px-3 py-1.5 text-sm font-medium transition-[transform,background-color,color]",
                   active ? "bg-accent text-accent-ink" : "app-btn text-[#B4BEDB] hover:text-[#FFFFFF]"
                 )}
               >

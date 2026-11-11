@@ -11,7 +11,7 @@ import { useNotice } from "./notice";
 import { TICK } from "./primitives";
 
 const selectClass =
-  "app-field h-11 w-full min-w-0 rounded-[14px] bg-[#00203D] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
+  "app-field h-11 w-full min-w-0 rounded-[14px] bg-[#001A33] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
 
 /**
  * Writes available from the task panel: Inbox triage onto a board, and delete with an

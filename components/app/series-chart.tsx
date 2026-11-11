@@ -11,8 +11,8 @@ import { cn } from "@/lib/utils";
  * arrow keys, to read one index; a screen-reader table carries the same numbers.
  */
 
-// Lightness steps on #00203D panels: primary ink, secondary ink, recessive fill
-const TONE = { hi: "#FF3D8B", mid: "#FFFFFF", lo: "#5A6B99" } as const;
+// Lightness steps on #001A33 panels: primary ink, secondary ink, recessive fill
+const TONE = { hi: "#E8357F", mid: "#FFFFFF", lo: "#5A6B99" } as const;
 export type Tone = keyof typeof TONE;
 
 export interface Series {
@@ -224,7 +224,7 @@ export function SeriesChart({
                   .map((s) => {
                     const v = s.values[active];
                     return v === null || !Number.isFinite(v) ? null : (
-                      <circle key={s.label} cx={x(active)} cy={y(v)} r={4} fill={TONE[s.tone ?? "hi"]} stroke="#00203D" strokeWidth={2} />
+                      <circle key={s.label} cx={x(active)} cy={y(v)} r={4} fill={TONE[s.tone ?? "hi"]} stroke="#001A33" strokeWidth={2} />
                     );
                   })}
               </g>
@@ -243,7 +243,7 @@ export function SeriesChart({
               {series.map((s) => (
                 <li key={s.label} className="flex justify-between gap-4">
                   <span>{s.label}</span>
-                  <span className="font-semibold text-[#00203D]">{fmt(s.values[active])}</span>
+                  <span className="font-semibold text-accent-ink">{fmt(s.values[active])}</span>
                 </li>
               ))}
             </ul>
@@ -281,7 +281,7 @@ export function SeriesChart({
 }
 
 // Lightness-only ramp shared with the execution graph
-const RAMP = ["#12324F", "#55306E", "#8C347C", "#C53985", "#FF3D8B"] as const;
+const RAMP = ["#0B2A48", "#55306E", "#8C347C", "#C53985", "#E8357F"] as const;
 const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 /** Weekday × hour grid of commits in the period (local time). */

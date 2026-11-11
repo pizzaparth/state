@@ -84,7 +84,7 @@ export function QuickCapture({
         <button
           type="submit"
           disabled={!parsed?.title || pending}
-          className="app-btn inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[12px] px-4 text-base font-medium disabled:opacity-50"
+          className="app-btn mi-spin inline-flex h-10 shrink-0 items-center gap-1.5 rounded-[12px] px-4 text-base font-medium disabled:opacity-50"
         >
           {pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Plus className="size-4" aria-hidden="true" />}
           Capture

@@ -26,11 +26,11 @@ export function TaskRow({
       <Link
         href={href as Route}
         scroll={false}
-        className="group flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-[12px] px-3 py-2.5 transition-colors hover:bg-white/[0.04] sm:flex-nowrap"
+        className="mi-row group flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-[12px] px-3 py-2.5 sm:flex-nowrap"
       >
         <span
           aria-hidden="true"
-          className={cn("size-3 shrink-0 rounded-full", done ? "bg-accent" : "app-field border border-white/10")}
+          className={cn("size-3 shrink-0 rounded-full", done ? "mi-pop bg-accent" : "app-field border border-white/10")}
         />
         <span className="min-w-0 flex-1 basis-[calc(100%-2rem)] sm:basis-auto">
           <span className={cn("block truncate text-base font-medium", done ? "text-[#B4BEDB]" : "text-[#FFFFFF]")}>

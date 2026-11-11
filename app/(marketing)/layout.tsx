@@ -2,6 +2,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ParticleField } from "@/components/marketing/particle-field";
+import { ParallaxBackdrop } from "@/components/motion/parallax";
 import { Magnetic, MagneticLabel } from "@/components/marketing/magnetic";
 import { AUTHOR, BYLINE } from "@/lib/site";
 
@@ -12,7 +13,7 @@ export default function MarketingLayout({
 }) {
   return (
     <div
-      className={`dark relative min-h-screen bg-[#00203D] text-[#FFFFFF] selection:bg-accent selection:text-accent-ink`}
+      className={`dark relative min-h-screen bg-[#001A33] text-[#FFFFFF] selection:bg-accent selection:text-accent-ink`}
     >
       <a
         href="#content"
@@ -21,29 +22,30 @@ export default function MarketingLayout({
         Skip to content
       </a>
 
+      <ParallaxBackdrop />
       <ParticleField />
 
       <header className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <nav
           aria-label="Main"
-          className="flex h-12 w-full max-w-[44rem] items-center justify-between gap-2 rounded-full border border-white/[0.12] bg-[#08294A]/85 pl-5 pr-1.5 backdrop-blur-md"
+          className="flex h-12 w-full max-w-[44rem] items-center justify-between gap-2 rounded-full border border-white/[0.12] bg-[#05223F]/85 pl-5 pr-1.5 backdrop-blur-md"
         >
           <Link href="/" className="font-display text-base font-extrabold uppercase tracking-[-0.01em] [font-stretch:125%]" translate="no">
             State
           </Link>
           <div className="hidden items-center gap-6 text-base text-[#B4BEDB] sm:flex">
-            <Link href="/#history" className="transition-colors hover:text-white">
+            <Link href="/#history" className="mi-underline transition-colors hover:text-white">
               Product
             </Link>
-            <Link href="/principles" className="transition-colors hover:text-white">
+            <Link href="/principles" className="mi-underline transition-colors hover:text-white">
               Principles
             </Link>
-            <Link href="/compare" className="transition-colors hover:text-white">
+            <Link href="/compare" className="mi-underline transition-colors hover:text-white">
               Compare
             </Link>
           </div>
           <div className="flex items-center gap-1">
-            <Link href="/login" className="inline-flex min-h-9 items-center px-3 text-base text-[#B4BEDB] transition-colors hover:text-white">
+            <Link href="/login" className="mi-underline mx-3 inline-flex min-h-9 items-center text-base text-[#B4BEDB] transition-colors hover:text-white">
               Sign in
             </Link>
             <Magnetic strength={0.3} radius={70}>
@@ -61,9 +63,9 @@ export default function MarketingLayout({
         {children}
       </main>
 
-      <footer className="relative z-10 border-t border-white/[0.1] bg-[#08294A] px-5 py-12 text-base text-[#8E9AC0] sm:px-8 lg:px-12">
+      <footer className="relative z-10 border-t border-white/[0.1] bg-[#05223F]/85 backdrop-blur-md px-5 py-12 text-base text-[#8E9AC0] sm:px-8 lg:px-12">
         <div className="mx-auto grid max-w-[1320px] gap-10 md:grid-cols-[minmax(0,1fr)_auto] md:gap-16">
-          <div className="space-y-3 rounded-[20px] border border-white/[0.16] bg-[#12324F] p-6">
+          <div className="space-y-3">
             <p className="font-mono text-sm uppercase tracking-[0.18em] text-accent">{BYLINE}</p>
             <p>
               <span className="font-semibold text-[#FFFFFF]" translate="no">State</span> is built and used by{" "}
@@ -81,16 +83,16 @@ export default function MarketingLayout({
             </p>
           </div>
           <nav aria-label="Site" className="flex flex-col gap-2">
-            <Link href="/compare" className="transition-colors hover:text-white">
+            <Link href="/compare" className="mi-underline transition-colors hover:text-white">
               Compare
             </Link>
-            <Link href="/principles" className="transition-colors hover:text-white">
+            <Link href="/principles" className="mi-underline transition-colors hover:text-white">
               Principles
             </Link>
-            <Link href="/demo" prefetch={false} className="transition-colors hover:text-white">
+            <Link href="/demo" prefetch={false} className="mi-underline transition-colors hover:text-white">
               Take a demo
             </Link>
-            <Link href="/login" className="transition-colors hover:text-white">
+            <Link href="/login" className="mi-underline transition-colors hover:text-white">
               Owner sign in
             </Link>
           </nav>

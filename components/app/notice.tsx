@@ -26,7 +26,13 @@ export function NoticeProvider({ children }: { children: React.ReactNode }) {
       {children}
       <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-[70] flex justify-center px-4">
         {notice && (
-          <p key={notice.id} className="app-inverse animate-toast-in flex items-center gap-3 rounded-full px-4 py-2 text-base">
+          <p key={notice.id} className="app-inverse animate-toast-in relative flex items-center gap-3 overflow-hidden rounded-full px-4 py-2 text-base">
+            {/* Time left before the notice goes */}
+            <span
+              aria-hidden="true"
+              className="mi-timer absolute inset-x-0 bottom-0 h-[2px] origin-left bg-accent-ink/40"
+              style={{ animationDuration: notice.action ? "8000ms" : "4200ms" }}
+            />
             <span className="min-w-0 truncate">{notice.text}</span>
             {notice.action && (
               <button
@@ -36,7 +42,7 @@ export function NoticeProvider({ children }: { children: React.ReactNode }) {
                   setNotice(null);
                   notice.action?.run();
                 }}
-                className="pointer-events-auto -my-1 -mr-2 shrink-0 rounded-full px-3 py-1 font-semibold underline underline-offset-2 hover:bg-[#00203D]/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#00203D]"
+                className="pointer-events-auto -my-1 -mr-2 shrink-0 rounded-full px-3 py-1 font-semibold underline underline-offset-2 hover:bg-[#001A33]/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#001A33]"
               >
                 {notice.action.label}
               </button>

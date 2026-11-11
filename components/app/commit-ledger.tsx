@@ -59,7 +59,7 @@ export function CommitLedger({
                     </time>
                     <span
                       aria-hidden="true"
-                      className={cn("relative z-[1] mx-auto size-2 rounded-full", c.source === "manual" ? "border border-accent bg-[#00203D]" : "bg-accent")}
+                      className={cn("relative z-[1] mx-auto size-2 rounded-full", c.source === "manual" ? "border border-accent bg-[#001A33]" : "bg-accent")}
                     />
                     <span className="min-w-0">
                       <span className="block truncate text-base font-medium text-[#FFFFFF]">{c.message}</span>
@@ -83,7 +83,7 @@ const ROW = "grid grid-cols-[3.25rem_1rem_minmax(0,1fr)_auto] items-center gap-x
 
 function Row({ href, children }: { href?: string; children: React.ReactNode }) {
   return href ? (
-    <Link href={href as Route} scroll={false} className={cn(ROW, "transition-colors hover:bg-white/[0.04]")}>
+    <Link href={href as Route} scroll={false} className={cn(ROW, "mi-row")}>
       {children}
     </Link>
   ) : (

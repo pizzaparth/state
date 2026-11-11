@@ -4,29 +4,29 @@
      Reference: docs/style.md & docs/techstack.md
      ========================================================================== */
 
-  /* Palette: navy #00203D, white #FFFFFF, accent #FF3D8B. About a quarter of every screen
-     is accent; the rest is navy and white. Navy text on the accent passes WCAG AA (4.9:1);
-     white text on it does not (3.3:1). Accent as small text uses --accent-text, which passes
+  /* Palette: navy #001A33, white #FFFFFF, accent #E8357F. About a quarter of every screen
+     is accent; the rest is navy and white. Deep navy #000E1C on the accent passes WCAG AA (4.9:1);
+     white text on it does not (4.0:1). Accent as small text uses --accent-text, which passes
      on every layer. */
-  --accent: #FF3D8B;
-  --accent-text: #FF6FA8;
-  --accent-hover: #FF6FA8;
-  --accent-ink: #00203D;
-  --accent-ink-muted: #3B0A28;
-  --accent-soft: rgba(255, 61, 139, 0.12);
-  --accent-line: rgba(255, 61, 139, 0.5);
+  --accent: #E8357F;
+  --accent-text: #FF5C99;
+  --accent-hover: #FF5C99;
+  --accent-ink: #000E1C;
+  --accent-ink-muted: #2A0019;
+  --accent-soft: rgba(232, 53, 127, 0.12);
+  --accent-line: rgba(232, 53, 127, 0.5);
 
-  /* Three layers on every screen: 0 page, 1 panel, 2 card/control. Tonal steps and
-     hairlines only; the accent sits on top as the focal layer. */
+  /* Surfaces: page, panel, card/control. Depth comes from the parallax layers behind
+     the content (components/motion/parallax.tsx), not from nesting. */
 
   /* Marketing surfaces (navy) */
-  --bg-0: #00203D;
-  --bg-1: #00203D;
-  --bg-2: #08294A;
+  --bg-0: #001A33;
+  --bg-1: #001A33;
+  --bg-2: #05223F;
 
-  --surface-1: #08294A;
-  --surface-2: #12324F;
-  --surface-3: #193C5C;
+  --surface-1: #05223F;
+  --surface-2: #0B2A48;
+  --surface-3: #123352;
 
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-default: rgba(255, 255, 255, 0.12);
@@ -35,17 +35,17 @@
   --text-primary: #FFFFFF;
   --text-secondary: #B4BEDB;
   --text-tertiary: #8E9AC0;
-  --text-inverse: #00203D;
+  --text-inverse: #001A33;
 
   --action-primary: var(--accent);
   --action-primary-text: var(--accent-ink);
 
   /* Product theme (navy, flat: depth from hairline borders and tonal steps, never shadows) */
-  --app-bg: #00203D;
-  --app-panel: #08294A;
-  --app-raised: #12324F;
-  --app-raised-hover: #193C5C;
-  --app-field: #00203D;
+  --app-bg: #001A33;
+  --app-panel: #05223F;
+  --app-raised: #0B2A48;
+  --app-raised-hover: #123352;
+  --app-field: #001A33;
   --app-line: rgba(255, 255, 255, 0.1);
   --app-line-strong: rgba(255, 255, 255, 0.16);
   --app-line-focus: var(--accent);

@@ -23,7 +23,7 @@ export function SignOutButton({ demo = false, className }: { demo?: boolean; cla
         // Full load: no product page stays in the client router cache
         window.location.replace(demo ? "/?demo=ended" : "/");
       }}
-      className={className ?? "app-btn inline-flex h-10 items-center gap-2 rounded-[12px] px-4 text-base font-medium disabled:opacity-70"}
+      className={className ?? "app-btn mi-nudge inline-flex h-10 items-center gap-2 rounded-[12px] px-4 text-base font-medium disabled:opacity-70"}
     >
       {signingOut ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <LogOut className="size-4" aria-hidden="true" />}
       {demo ? "End demo" : "Sign out"}

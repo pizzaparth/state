@@ -12,11 +12,11 @@ import { TabLinks } from "./tab-links";
 
 /**
  * Product-surface primitives on three flat layers (styles/product.css), with the accent
- * (#FF3D8B) as the focal layer on top:
- *   Layer 0 page    #00203D: rows, labels, ledgers sit directly on it
- *   Layer 1 Panel   #08294A + hairline (columns, metric panels, toolbars)
- *   Layer 2 card    #12324F + stronger hairline (task cards, buttons, menus)
- *   Field / Rail    #00203D inset + stronger hairline (inputs, progress rails, segmented controls)
+ * (#E8357F) as the focal layer on top:
+ *   Layer 0 page    #001A33: rows, labels, ledgers sit directly on it
+ *   Layer 1 Panel   #05223F + hairline (columns, metric panels, toolbars)
+ *   Layer 2 card    #0B2A48 + stronger hairline (task cards, buttons, menus)
+ *   Field / Rail    #001A33 inset + stronger hairline (inputs, progress rails, segmented controls)
  *
  * Type: titles and big numbers use DISPLAY, labels TICK (lib/type.ts). Copy stays to a
  * few words.
@@ -37,8 +37,12 @@ export function PageHeader({
   return (
     <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div className="min-w-0">
-        {label && <p className={cn(TICK, "text-accent")}>{label}</p>}
-        <h1 className={cn(DISPLAY, "mt-2 scroll-mt-24 break-words text-[clamp(2.25rem,6vw,4.25rem)] leading-[0.9] text-[#FFFFFF] text-balance")}>
+        {label && (
+          <p data-depth="-0.06" suppressHydrationWarning className={cn(TICK, "text-accent")}>
+            {label}
+          </p>
+        )}
+        <h1 data-depth="0.04" suppressHydrationWarning className={cn(DISPLAY, "mt-2 scroll-mt-24 break-words text-[clamp(2.25rem,6vw,4.25rem)] leading-[0.9] text-[#FFFFFF] text-balance")}>
           {title}
         </h1>
         {description && <p className="mt-3 max-w-[56ch] text-base leading-relaxed text-[#B4BEDB]">{description}</p>}
@@ -81,7 +85,7 @@ export function Panel({
         <div className="mb-4 flex items-baseline justify-between gap-4">
           {title && (
             <h2 className={cn(TICK, "flex items-center gap-2 text-[#DCE2F2]")}>
-              <span aria-hidden="true" className="size-1.5 shrink-0 rounded-[2px] bg-accent" />
+              <span aria-hidden="true" className="panel-mark size-1.5 shrink-0 rounded-[2px] bg-accent" />
               {title}
             </h2>
           )}
@@ -184,7 +188,7 @@ export function Avatar({ name, initials, className }: { name: string; initials: 
     <span
       title={name}
       className={cn(
-        "grid size-6 shrink-0 place-items-center rounded-full bg-[#12324F] text-[12px] font-semibold text-[#DCE2F2] border border-white/15",
+        "grid size-6 shrink-0 place-items-center rounded-full bg-[#0B2A48] text-[12px] font-semibold text-[#DCE2F2] border border-white/15",
         className
       )}
     >
@@ -230,7 +234,7 @@ export function Measure({
         {spark && <Sparkline values={spark} inverse={inverse} />}
       </div>
       <p className="mt-4 flex items-baseline gap-1.5">
-        <span className={cn(DISPLAY, "text-[2.5rem] leading-none tabular-nums", inverse ? "text-[#00203D]" : "text-[#FFFFFF]")}>
+        <span className={cn(DISPLAY, "text-[2.5rem] leading-none tabular-nums", inverse ? "text-accent-ink" : "text-[#FFFFFF]")}>
           <CountUp value={value} />
         </span>
         {unit && <span className={cn("font-mono text-sm", inverse ? "text-accent-muted" : "text-[#B4BEDB]")}>{unit}</span>}

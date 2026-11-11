@@ -13,24 +13,24 @@ const config: Config = {
       colors: {
         // The one colour: about a quarter of every screen (styles/tokens.css)
         accent: {
-          DEFAULT: "#FF3D8B",
-          hover: "#FF6FA8",
-          ink: "#00203D",
-          muted: "#3B0A28",
-          soft: "rgba(255, 61, 139, 0.12)",
-          line: "rgba(255, 61, 139, 0.5)",
+          DEFAULT: "#E8357F",
+          hover: "#FF5C99",
+          ink: "#000E1C",
+          muted: "#2A0019",
+          soft: "rgba(232, 53, 127, 0.12)",
+          line: "rgba(232, 53, 127, 0.5)",
         },
         // Marketing / Brand Dark Theme
         dark: {
           bg: {
-            0: "#00203D",
-            1: "#00203D",
-            2: "#08294A",
+            0: "#001A33",
+            1: "#001A33",
+            2: "#05223F",
           },
           surface: {
-            1: "#08294A",
-            2: "#12324F",
-            3: "#12324F",
+            1: "#05223F",
+            2: "#0B2A48",
+            3: "#0B2A48",
           },
           border: {
             subtle: "rgba(255, 255, 255, 0.08)",
@@ -41,18 +41,18 @@ const config: Config = {
             primary: "#FFFFFF",
             secondary: "#B4BEDB",
             tertiary: "#8E9AC0",
-            inverse: "#00203D",
+            inverse: "#001A33",
           },
           action: {
-            primary: "#FF3D8B",
-            "primary-text": "#00203D",
+            primary: "#E8357F",
+            "primary-text": "#001A33",
           },
         },
         // Logged-in product: AMOLED black, flat
         app: {
-          bg: "#00203D",
-          panel: "#08294A",
-          raised: "#12324F",
+          bg: "#001A33",
+          panel: "#05223F",
+          raised: "#0B2A48",
           text: {
             primary: "#FFFFFF",
             secondary: "#B4BEDB",
@@ -61,13 +61,13 @@ const config: Config = {
         },
       },
       // Accent as text: a lighter tint so small pink text passes AA on every layer
-      // (#FF3D8B on the card layer is 3.9:1; #FF6FA8 is 5.1:1). Fills keep #FF3D8B.
+      // (#E8357F on the card layer is 3.9:1; #FF5C99 is 5.1:1). Fills keep #E8357F.
       textColor: {
         accent: {
-          DEFAULT: "#FF6FA8",
-          hover: "#FF8FBB",
-          ink: "#00203D",
-          muted: "#3B0A28",
+          DEFAULT: "#FF5C99",
+          hover: "#FF7AAD",
+          ink: "#000E1C",
+          muted: "#2A0019",
         },
       },
       boxShadow: {
