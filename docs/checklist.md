@@ -1,3 +1,5 @@
+> **Note (November 2026):** State now ships as a personal hobby project by Parth Pancholi. There are no payments, pricing, organisations, sign-up or email flows; the owner signs in with an access code and everyone else uses a throwaway demo. Sections below that describe those removed features are kept as historical design notes. See README.md and AGENTS.md for the current rules.
+
 # Pre-Ship Security Checklist for Vibe-Coded Websites
 
 Use this document as a **security gate before shipping** any AI-generated, vibe-coded, or rapidly assembled web application.

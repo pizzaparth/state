@@ -1,7 +1,9 @@
+> **Note (November 2026):** State now ships as a personal hobby project by Parth Pancholi. There are no payments, pricing, organisations, sign-up or email flows; the owner signs in with an access code and everyone else uses a throwaway demo. Sections below that describe those removed features are kept as historical design notes. See README.md and AGENTS.md for the current rules.
+
 # State — Visual UI/UX Style Guide
 
-**Product:** State by Ksan Relay  
-**Domain:** `state.ksanrelay.in`  
+**Product:** State by Parth Pancholi  
+**Domain:** `<your-app>.vercel.app`  
 **Document:** Visual design system / style direction  
 **Design split:** Near-black editorial brand surfaces + AMOLED black, flat application  
 **Revised:** 28 October 2026 — the product moved from pale neumorphism to AMOLED black. Neumorphism is no longer used anywhere.  
@@ -50,7 +52,7 @@ The common language is:
 - no playful SaaS illustrations
 - no gradient-heavy startup aesthetic
 
-State should feel as if **Ksan Relay built an execution terminal for humans**.
+State should feel as if **Parth Pancholi built an execution terminal for humans**.
 
 ---
 
@@ -384,7 +386,7 @@ STATE
 Product
 Principles
 Pricing
-Ksan Relay
+Parth Pancholi
 
 Sign in
 Start
@@ -427,7 +429,7 @@ Right:
 Example:
 
 ```text
-KSAN RELAY / STATE
+PARTH PANCHOLI / STATE
 
 EXECUTION,
 MEASURED.
@@ -2499,7 +2501,7 @@ soft shadows
 If this guide must be reduced to a short brief:
 
 ```text
-STATE / KSAN RELAY
+STATE / PARTH PANCHOLI
 
 MARKETING
 Near-black.

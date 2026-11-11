@@ -1,7 +1,9 @@
+> **Note (November 2026):** State now ships as a personal hobby project by Parth Pancholi. There are no payments, pricing, organisations, sign-up or email flows; the owner signs in with an access code and everyone else uses a throwaway demo. Sections below that describe those removed features are kept as historical design notes. See README.md and AGENTS.md for the current rules.
+
 # State — Final Tech Stack
 
-**Product:** State by Ksan Relay  
-**Domain:** `state.ksanrelay.in`  
+**Product:** State by Parth Pancholi  
+**Domain:** `<your-app>.vercel.app`  
 **Purpose:** MVP and initial production architecture  
 **Architecture principle:** Ship as a single full-stack application first. Split infrastructure only when usage justifies it.
 
@@ -11,7 +13,7 @@
 
 ```text
 ╭────────────────────────────────────╮
-│            KSAN RELAY STATE        │
+│               STATE  (PARTH)          │
 ├────────────────────────────────────┤
 │                                    │
 │ Frontend                           │
@@ -782,7 +784,7 @@ Deploy the Next.js application on Vercel.
 Architecture:
 
 ```text
-state.ksanrelay.in
+<your-app>.vercel.app
         │
         ▼
       Vercel
@@ -906,7 +908,7 @@ Future architecture:
                    │
 Internet ──────────┤
                    │
-                   └── api.state.ksanrelay.in
+                   └── api.<your-app>.vercel.app
                               │
                               ▼
                              Go

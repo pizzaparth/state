@@ -1,10 +1,12 @@
-# Ksan Relay State
+> **Note (November 2026):** State now ships as a personal hobby project by Parth Pancholi. There are no payments, pricing, organisations, sign-up or email flows; the owner signs in with an access code and everyone else uses a throwaway demo. Sections below that describe those removed features are kept as historical design notes. See README.md and AGENTS.md for the current rules.
+
+# Parth Pancholi State
 
 ## Product Specification
 
 **Product name:** State  
-**Parent company:** Ksan Relay  
-**Primary domain:** `state.ksanrelay.in`  
+**Parent company:** Parth Pancholi  
+**Primary domain:** `<your-app>.vercel.app`  
 **Category:** Quantitative execution system  
 **Business model:** Paid subscription only  
 **Core positioning:** Execution, measured.  
@@ -688,7 +690,7 @@ Examples:
 ```text
 RelayDB
 State
-Ksan Relay Website
+Parth Pancholi Website
 Research Paper 03
 University
 Personal
@@ -1161,7 +1163,7 @@ Active days           27/30
 ```text
 RelayDB        41%
 University     28%
-Ksan Relay     19%
+Parth Pancholi     19%
 Personal       12%
 ```
 
@@ -1471,7 +1473,7 @@ Organisation-specific custom weight schemes can be added later.
 
 ## Primary aesthetic
 
-Ksan Relay visual language should carry into State.
+Parth Pancholi visual language should carry into State.
 
 Primary palette:
 
@@ -1657,7 +1659,7 @@ No permanent free plan
 
 A trial is optional from a product-policy perspective.
 
-If Ksan Relay wants a hard paid wall from day one, State can instead require payment before workspace creation.
+If Parth Pancholi wants a hard paid wall from day one, State can instead require payment before workspace creation.
 
 ## Recommended plans
 
@@ -2167,17 +2169,17 @@ and how consistently you execute.
 
 # 56. Brand Architecture
 
-Ksan Relay product family:
+Parth Pancholi product family:
 
 ```text
-Ksan Relay
+Parth Pancholi
 │
 ├── RelayDB
 │   Quantitative temporal database
 │
 ├── State
 │   Quantitative execution system
-│   state.ksanrelay.in
+│   <your-app>.vercel.app
 │
 ├── Analyse
 │   Quantitative analysis platform
@@ -2186,7 +2188,7 @@ Ksan Relay
     Papers, models, datasets, and libraries
 ```
 
-State fits the Ksan Relay portfolio because its conceptual foundation is measurement and system state.
+State fits the Parth Pancholi portfolio because its conceptual foundation is measurement and system state.
 
 ---
 
@@ -2236,7 +2238,7 @@ RECENT COMMITS
 # 58. Organisation Example
 
 ```text
-KSAN RELAY
+PARTH PANCHOLI
 
 RESEARCH      ENGINEERING      REVIEW      COMPLETE
 ```
@@ -2632,7 +2634,7 @@ Core differentiators:
 8. deliberately minimal product scope
 9. no advertising
 10. no AI-first positioning
-11. Ksan Relay's quantitative brand identity
+11. Parth Pancholi's quantitative brand identity
 
 The strongest differentiator is the combination of:
 
@@ -2662,6 +2664,6 @@ That is the conceptual centre of the product.
 
 # 76. Final Product Definition
 
-> State by Ksan Relay is a paid quantitative execution system for individuals and organisations. It combines tasks, kanban boards, projects, commit-style completion history, a horizontal execution graph, and transparent operational metrics such as execution, velocity, throughput, completion ratio, cycle time, and consistency. It is designed to be fast, minimal, keyboard-first, ad-free, and intentionally free of generative-AI clutter.
+> State by Parth Pancholi is a paid quantitative execution system for individuals and organisations. It combines tasks, kanban boards, projects, commit-style completion history, a horizontal execution graph, and transparent operational metrics such as execution, velocity, throughput, completion ratio, cycle time, and consistency. It is designed to be fast, minimal, keyboard-first, ad-free, and intentionally free of generative-AI clutter.
 
 The product should feel more like technical infrastructure for human execution than a conventional productivity application.

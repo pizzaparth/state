@@ -1,3 +1,5 @@
+> **Note (November 2026):** State now ships as a personal hobby project by Parth Pancholi. There are no payments, pricing, organisations, sign-up or email flows; the owner signs in with an access code and everyone else uses a throwaway demo. Sections below that describe those removed features are kept as historical design notes. See README.md and AGENTS.md for the current rules.
+
 # Security testing and hardening
 
 Scope: the whole application. That covers the public pages, authentication (`/login`,
@@ -156,7 +158,7 @@ database as the demo data.
 |---|---|---|---|---|
 | `/platform/today` | 83.8 | 100.4 | 84.2 | 100.4 |
 | `/personal` (board) | 57.4 | 84.2 | 56.7 | 59.1 |
-| `/org/ksan-relay` | 105.0 | 132.6 | 105.7 | 135.9 |
+| `/org/demo` | 105.0 | 132.6 | 105.7 | 135.9 |
 | `/metrics` | 95.5 | 109.5 | 97.5 | 118.0 |
 | `/activity` | 75.9 | 133.9 | 76.3 | 121.2 |
 | Write (capture action round trip) | 9.1 | 13.0 | 12.2 | 22.4 |
