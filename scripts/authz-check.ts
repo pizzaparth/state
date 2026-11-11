@@ -472,7 +472,7 @@ async function main() {
     parseQuickCapture("ship 2026-02-30", t).dueDate === undefined && parseQuickCapture("ship 2026-02-30", t).title === "ship 2026-02-30",
     parseQuickCapture("email bob@x.com today", t).assignee === undefined && parseQuickCapture("email bob@x.com today", t).title === "email bob@x.com",
     parseQuickCapture("Sundays matter", t).dueDate === undefined,
-    parseQuickCapture("plan monday @Ana.K #ksan !HIGH", t).assignee === "ana.k" && parseQuickCapture("plan monday @Ana.K #ksan !HIGH", t).dueDate === "2026-11-02",
+    parseQuickCapture("plan monday @Ana.K #relay !HIGH", t).assignee === "ana.k" && parseQuickCapture("plan monday @Ana.K #relay !HIGH", t).dueDate === "2026-11-02",
     parseQuickCapture("x 1999-12-31", t).dueDate === undefined,
   ];
   record("CP6", "Parser: weekdays are the next one, impossible or out-of-range dates stay in the title, emails are not @people", parses.every(Boolean), JSON.stringify(parses));
