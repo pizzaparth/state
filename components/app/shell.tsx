@@ -24,7 +24,10 @@ import {
 import { cn } from "@/lib/utils";
 import { createCommitAction } from "@/app/(app)/actions";
 import { WEIGHT_LEVELS, weightHint } from "@/lib/weights";
+import { AUTHOR, BYLINE } from "@/lib/site";
 import { CountUp } from "./count-up";
+import { DemoGuard } from "./demo-guard";
+import { SignOutButton } from "./sign-out-button";
 import { NoticeProvider, useNotice } from "./notice";
 
 export interface ShellData {
@@ -32,6 +35,8 @@ export interface ShellData {
   projects: { id: string; name: string; href: string }[];
   dateLabel: string;
   ticker: { today: number; last7: number; prev7: number; activeDays7: number };
+  /** Set for a throwaway demo session (the user id); null for the owner. */
+  demoUserId: string | null;
 }
 
 type NavItem = { name: string; href: string; icon: React.ComponentType<{ className?: string }>; badge?: number; shortcut?: string };
@@ -126,6 +131,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
     <MotionConfig reducedMotion="user">
     <NoticeProvider>
       <ShellContext.Provider value={{ openPalette: () => setPaletteOpen(true), openCommit: () => setCommitOpen(true) }}>
+        {data.demoUserId && <DemoGuard userId={data.demoUserId} />}
         <div className="flex h-[100dvh] w-full overflow-hidden bg-[#000000] text-[#F2F2EF]">
           <aside className="hidden w-64 shrink-0 p-3 lg:block">
             <div className="app-panel flex h-full flex-col rounded-[28px]">
@@ -177,6 +183,15 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
 
             <main id="content" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-16 pt-4 sm:px-6 lg:px-8">
               <div className="mx-auto max-w-6xl">
+                {data.demoUserId && (
+                  <div role="status" className="app-accent-panel mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-[16px] px-4 py-3">
+                    <span className="min-w-0">
+                      <span className="font-mono text-sm font-semibold uppercase tracking-[0.14em]">Demo</span>
+                      <span className="ml-3 text-base">Sample data. Deleted when you sign out or close this tab.</span>
+                    </span>
+                    <SignOutButton demo className="app-btn inline-flex h-9 items-center gap-2 rounded-[12px] px-3 text-sm font-medium disabled:opacity-70" />
+                  </div>
+                )}
                 {children}
               </div>
             </main>
@@ -260,8 +275,12 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
     <LayoutGroup id={`nav-${scope}`}>
       <div className="px-5 pb-4 pt-5">
         <Link href="/platform/today" className="block rounded-[8px]">
-          <span className="block font-mono text-[11px] uppercase tracking-[0.18em] text-[#85857F]">Ksan Relay</span>
-          <span className="block font-display text-2xl font-extrabold uppercase leading-none tracking-[-0.03em] [font-stretch:125%]">State</span>
+          <span className="block font-mono text-[11px] uppercase tracking-[0.18em] text-[#85857F]" translate="no">
+            {AUTHOR}
+          </span>
+          <span className="block font-display text-2xl font-extrabold uppercase leading-none tracking-[-0.03em] [font-stretch:125%]" translate="no">
+            State
+          </span>
         </Link>
       </div>
       <nav aria-label="Main" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3">
@@ -288,11 +307,12 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
           </div>
         ))}
       </nav>
-      <div className="border-t border-white/[0.08] p-3">
+      <div className="space-y-2 border-t border-white/[0.08] p-3">
         <NavLink href="/platform/settings" active={isActive(pathname, "/platform/settings")}>
           <Settings className="size-4" aria-hidden="true" />
           Settings
         </NavLink>
+        <p className="px-3 font-mono text-[11px] leading-snug text-[#85857F]">{BYLINE}</p>
       </div>
     </LayoutGroup>
   );

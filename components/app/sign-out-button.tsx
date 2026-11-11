@@ -1,14 +1,12 @@
 "use client";
 
 import * as React from "react";
-import type { Route } from "next";
-import { useRouter } from "next/navigation";
 import { Loader2, LogOut } from "lucide-react";
-import { authClient } from "@/lib/auth/client";
+import { signOutAction } from "@/app/(auth)/actions";
+import { clearDemoTab } from "@/lib/demo/tab";
 
-/** Signs out and goes to sign-in, which continues to `next` (a same-site path) afterwards. */
-export function SignOutButton({ next }: { next?: string }) {
-  const router = useRouter();
+/** Signs out and returns to the landing page. A demo is deleted on the way. */
+export function SignOutButton({ demo = false, className }: { demo?: boolean; className?: string }) {
   const [signingOut, setSigningOut] = React.useState(false);
   return (
     <button
@@ -16,14 +14,19 @@ export function SignOutButton({ next }: { next?: string }) {
       disabled={signingOut}
       onClick={async () => {
         setSigningOut(true);
-        await authClient.signOut();
-        router.replace((next ? `/login?next=${encodeURIComponent(next)}` : "/login") as Route);
-        router.refresh();
+        const result = await signOutAction();
+        if (!result.ok) {
+          setSigningOut(false);
+          return;
+        }
+        clearDemoTab();
+        // Full load: no product page stays in the client router cache
+        window.location.replace(demo ? "/?demo=ended" : "/");
       }}
-      className="app-btn inline-flex h-10 items-center gap-2 rounded-[12px] px-4 text-base font-medium disabled:opacity-70"
+      className={className ?? "app-btn inline-flex h-10 items-center gap-2 rounded-[12px] px-4 text-base font-medium disabled:opacity-70"}
     >
       {signingOut ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <LogOut className="size-4" aria-hidden="true" />}
-      Sign out
+      {demo ? "End demo" : "Sign out"}
     </button>
   );
 }

@@ -406,11 +406,3 @@ export const importSchema = z.object({
 
 export type ImportData = z.infer<typeof importSchema>;
 
-/**
- * Permanent account deletion. `confirm` must be the account's email; `password` is
- * required when the account has one (checked on the server).
- */
-export const deleteAccountSchema = z.strictObject({
-  confirm: z.string().trim().max(320),
-  password: z.string().max(128).optional(),
-});

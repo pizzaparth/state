@@ -10,6 +10,8 @@ export interface Viewer {
   name: string;
   email: string;
   tz: string;
+  /** A throwaway demo visitor (lib/demo/session.ts), not the owner. */
+  isDemo: boolean;
   /** When first-run setup was finished or skipped; null for a new account. */
   onboardedAt: Date | null;
   personalWorkspaceId: string | null;
@@ -45,6 +47,7 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     name: user.name,
     email: user.email,
     tz: user.timezone,
+    isDemo: user.isDemo,
     onboardedAt: user.onboardedAt,
     personalWorkspaceId: personal?.id ?? null,
     personalBoardId: personalBoard?.id ?? null,

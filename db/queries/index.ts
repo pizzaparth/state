@@ -1,7 +1,6 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lt, sql, type SQL } from "drizzle-orm";
 import { db } from "../index";
 import {
-  accounts,
   boards,
   columns,
   commitTags,
@@ -725,16 +724,6 @@ export async function getObjectives(workspaceIds: string[]) {
 
 export async function getNotifications(userId: string, limit = 10) {
   return db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt)).limit(limit);
-}
-
-/** Whether the account signs in with a password (deletion asks for it). */
-export async function hasPassword(userId: string): Promise<boolean> {
-  const [row] = await db
-    .select({ id: accounts.id })
-    .from(accounts)
-    .where(and(eq(accounts.userId, userId), eq(accounts.providerId, "credential"), isNotNull(accounts.password)))
-    .limit(1);
-  return Boolean(row);
 }
 
 export async function getAccount(userId: string) {

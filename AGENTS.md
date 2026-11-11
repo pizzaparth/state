@@ -61,15 +61,21 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 
 ## Data & Architecture
 
+### Accounts (personal hobby project)
+- MUST: Exactly one permanent account, the owner, signed in with `OWNER_CODE` (env only, never committed). Owner sessions end when the browser closes.
+- MUST: Everyone else uses a throwaway demo (`lib/demo/session.ts`): seeded on start, deleted on sign-out, tab close (`DemoGuard`) or after `DEMO_TTL_MS`.
+- NEVER: Add sign-up, payments, pricing, organisations, invitations, contact details or email flows.
+- MUST: Credit the project as "A personal hobby project by Parth Pancholi" (`BYLINE` in `lib/site.ts`) on marketing, auth and product surfaces.
+
 ### Full-Stack Monolith Standards
 - MUST: Maintain Next.js App Router as the single deployable application layer for MVP.
 - MUST: Store all timestamps in UTC (`withTimezone: true`); convert to user timezone exclusively for display.
 - MUST: Use Drizzle ORM with Neon PostgreSQL for all relational queries and metric aggregations.
 - MUST: Validate all inputs (Server Actions, Route Handlers, Forms) using deterministic Zod schemas.
 - MUST: Use optimistic local updates for Kanban board card drag-and-drop; rollback only if persistence fails.
-- MUST: Route every product write through a Server Action in `app/(app)/actions.ts` (session, paid access, write budget, strict Zod schema) into `lib/mutations.ts`, which re-checks every referenced id with `assertWritable` (`lib/authz.ts`). Identity, workspace, author, timestamps and execution value come from the server, never the request.
+- MUST: Route every product write through a Server Action in `app/(app)/actions.ts` (session, write budget, strict Zod schema) into `lib/mutations.ts`, which re-checks every referenced id with `assertWritable` (`lib/authz.ts`). Identity, workspace, author, timestamps and execution value come from the server, never the request.
 - MUST: Scope every read query by the viewer's workspace ids; ids outside them behave like missing ids (404, never 403).
-- MUST: Add a case to `scripts/authz-check.ts` for every new endpoint or object type (User A vs User B, outsider, viewer role).
+- MUST: Add a case to `scripts/authz-check.ts` for every new endpoint or object type (tenant A vs tenant B, outsider).
 - MUST: Index every foreign key column and bound every list query (`limit`).
 - NEVER: Introduce distributed microservices, external queue brokers, or separate databases before usage demands it.
 

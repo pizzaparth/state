@@ -32,6 +32,7 @@ export default async function AppLayout({
         projects: projects.map((p) => ({ id: p.id, name: p.name, href: `/platform/projects/${p.slug}` })),
         dateLabel: formatDate(new Date(), viewer.tz, { weekday: "short", day: "numeric", month: "short" }),
         ticker,
+        demoUserId: viewer.isDemo ? viewer.id : null,
       }}
     >
       {children}

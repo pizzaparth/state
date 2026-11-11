@@ -15,7 +15,7 @@ const BASE = (process.env.BASE_URL || "http://localhost:3123").replace(/\/$/, ""
 const TOTAL = Number(process.argv[2] || 400);
 const CONCURRENCY = Number(process.argv[3] || 20);
 
-const ROUTES = ["/", "/pricing", "/login", "/register", "/legal/privacy", "/api/health"];
+const ROUTES = ["/", "/principles", "/compare", "/login", "/demo", "/api/health"];
 
 const pct = (sorted, p) => sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))];
 
@@ -62,15 +62,11 @@ const rows = [];
 for (const route of ROUTES) rows.push(await bench(route));
 
 let writes = null;
-if (process.env.BENCH_EMAIL && process.env.BENCH_PASSWORD) {
-  const res = await fetch(`${BASE}/api/auth/sign-in/email`, {
-    method: "POST",
-    headers: { "content-type": "application/json", origin: BASE },
-    body: JSON.stringify({ email: process.env.BENCH_EMAIL, password: process.env.BENCH_PASSWORD }),
-  });
-  cookie = (res.headers.getSetCookie?.() ?? []).map((c) => c.split(";")[0]).filter((c) => c.includes("session_token")).join("; ");
-  if (!cookie) throw new Error(`Sign-in failed: ${res.status}`);
-  for (const route of ["/platform/today", "/platform/personal", "/platform/org/ksan-relay", "/platform/metrics", "/platform/activity", "/platform/inbox"]) rows.push(await bench(route));
+// Signed-in routes: start a demo in a browser, then pass its session cookie
+// (BENCH_COOKIE="better-auth.session_token=…")
+if (process.env.BENCH_COOKIE) {
+  cookie = process.env.BENCH_COOKIE;
+  for (const route of ["/platform/today", "/platform/personal", "/platform/metrics", "/platform/activity", "/platform/inbox"]) rows.push(await bench(route));
 
   // Write latency: sequential captures through the real Server Action (stays under the
   // 60-per-minute write budget)

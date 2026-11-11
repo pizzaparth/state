@@ -18,11 +18,13 @@ import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getObjectives, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
 import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
-import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, deleteAccountSchema, importSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, importSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
 import { buildExport } from "../lib/data/export";
 import { parseImport } from "../lib/data/import";
 import { parseCsv, toCsv } from "../lib/data/csv";
 import { deleteAccount } from "../lib/accounts/delete";
+import { DEMO_TTL_MS, endDemo, pruneDemos } from "../lib/demo/session";
+import { isOwnerCode } from "../lib/auth/owner";
 import { nextDueDay } from "../lib/recurrence";
 import { provisionAccount } from "../lib/accounts/provision";
 import { seedDemoData } from "../lib/demo/seed";
@@ -614,12 +616,39 @@ async function main() {
   const back = parseCsv(csv)?.[0];
   record("D8", "CSV neutralises formulas and round-trips quotes and newlines", csv.includes(`"'=HYPERLINK(""x"")"`) && back?.a === '=HYPERLINK("x")' && back?.b === 'line\nbreak, "quoted"', JSON.stringify(back));
 
-  record("D9", "Unknown fields rejected on account deletion", !deleteAccountSchema.safeParse({ confirm: "x", userId: aaravId }).success);
 
   await deleteAccount(outsiderId);
   const gone = await rowCount(outWs.id);
   const userGone = !(await one(db.select({ id: s.users.id }).from(s.users).where(eq(s.users.id, outsiderId))));
   record("D11", "Account deletion removes the user, workspace, tasks and commits", userGone && gone.tasks === 0 && gone.commits === 0, JSON.stringify(gone));
+
+  // ------------------------------------------------------------ owner code and demo lifetime
+  const savedCode = process.env.OWNER_CODE;
+  delete process.env.OWNER_CODE;
+  const unset = isOwnerCode("anything");
+  process.env.OWNER_CODE = "correct horse";
+  const codes = [isOwnerCode("correct horse"), isOwnerCode("correct hors"), isOwnerCode("Correct horse"), isOwnerCode("")];
+  if (savedCode === undefined) delete process.env.OWNER_CODE;
+  else process.env.OWNER_CODE = savedCode;
+  record("SE1", "Owner code: refused when OWNER_CODE is unset; only the exact code matches", !unset && JSON.stringify(codes) === JSON.stringify([true, false, false, false]), JSON.stringify(codes));
+
+  await endDemo(parthId);
+  record("SE2", "Ending a demo never deletes a non-demo account", Boolean(await one(db.select({ id: s.users.id }).from(s.users).where(eq(s.users.id, parthId)))));
+
+  const [oldDemo, freshDemo] = [`demo-old-${stamp}`, `demo-fresh-${stamp}`];
+  await db.insert(s.users).values([
+    { id: oldDemo, name: "Demo visitor", email: `${oldDemo}@example.test`, isDemo: true, createdAt: new Date(Date.now() - DEMO_TTL_MS - 60_000) },
+    { id: freshDemo, name: "Demo visitor", email: `${freshDemo}@example.test`, isDemo: true },
+  ]);
+  await provisionAccount(oldDemo);
+  await db.update(s.users).set({ createdAt: new Date(Date.now() - DEMO_TTL_MS - 60_000) }).where(eq(s.users.id, aaravId)); // old, but not a demo
+  await pruneDemos();
+  const left = (await db.select({ id: s.users.id }).from(s.users).where(inArray(s.users.id, [oldDemo, freshDemo, aaravId]))).map((u) => u.id).sort();
+  const oldWorkspaces = await db.select({ id: s.workspaces.id }).from(s.workspaces).where(eq(s.workspaces.ownerId, oldDemo));
+  record("SE3", "Expired demos are deleted with their workspace; fresh demos and the owner stay", JSON.stringify(left) === JSON.stringify([aaravId, freshDemo].sort()) && oldWorkspaces.length === 0, JSON.stringify(left));
+  await endDemo(freshDemo);
+  record("SE4", "Ending a demo deletes it", !(await one(db.select({ id: s.users.id }).from(s.users).where(eq(s.users.id, freshDemo)))));
+  await db.delete(s.users).where(inArray(s.users.id, [parthId, aaravId]));
 
   const failed = results.filter((r) => !r.pass);
   for (const r of results) console.log(`${r.pass ? "PASS" : "FAIL"}  ${r.id.padEnd(4)} ${r.name}${r.detail ? `  (${r.detail})` : ""}`);
