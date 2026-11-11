@@ -33,11 +33,11 @@ export function TaskRow({
           className={cn("size-3 shrink-0 rounded-full", done ? "bg-accent" : "app-field border border-white/10")}
         />
         <span className="min-w-0 flex-1 basis-[calc(100%-2rem)] sm:basis-auto">
-          <span className={cn("block truncate text-base font-medium", done ? "text-[#9A9A96]" : "text-[#F2F2EF]")}>
+          <span className={cn("block truncate text-base font-medium", done ? "text-[#B4BEDB]" : "text-[#FFFFFF]")}>
             {task.title}
             {done && <span className="sr-only"> (done)</span>}
           </span>
-          {task.projectName && <span className="block truncate text-sm text-[#85857F]">{task.projectName}</span>}
+          {task.projectName && <span className="block truncate text-sm text-[#8E9AC0]">{task.projectName}</span>}
         </span>
         <span className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 pl-6 sm:pl-0">
           {task.dueAt && !done && <DueLabel due={dueState(task.dueAt, now, tz)} />}

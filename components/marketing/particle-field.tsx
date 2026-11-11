@@ -72,7 +72,7 @@ export function ParticleField() {
       ctx.clearRect(0, 0, width, height);
       for (const p of particles) {
         const a = p.alpha + (0.85 - p.alpha) * p.order;
-        ctx.fillStyle = p.accent ? `rgba(242, 5, 207, ${Math.min(1, a + 0.15)})` : `rgba(244, 244, 242, ${a})`;
+        ctx.fillStyle = p.accent ? `rgba(255, 61, 139, ${Math.min(1, a + 0.15)})` : `rgba(255, 255, 255, ${a})`;
         if (p.order > 0.5) {
           // Aligned: render as a small square cell, like the execution graph
           const s = p.size + 2.2 * p.order;

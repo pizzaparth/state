@@ -11,7 +11,7 @@ import { useNotice } from "./notice";
 import { TICK } from "./primitives";
 
 const selectClass =
-  "app-field h-11 w-full min-w-0 rounded-[14px] bg-[#000000] px-3 text-base text-[#F2F2EF] focus:border-white/45 focus:outline-none";
+  "app-field h-11 w-full min-w-0 rounded-[14px] bg-[#0F1B3D] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
 
 /**
  * Writes available from the task panel: Inbox triage onto a board, and delete with an
@@ -85,7 +85,7 @@ export function TaskActions({
 
   return (
     <section aria-labelledby="task-actions-heading" className="mt-8 border-t border-white/[0.08] pt-6">
-      <h3 id="task-actions-heading" className={cn(TICK, "text-[#9A9A96]")}>
+      <h3 id="task-actions-heading" className={cn(TICK, "text-[#B4BEDB]")}>
         Actions
       </h3>
 
@@ -98,7 +98,7 @@ export function TaskActions({
             saveDue(dueRef.current?.value ?? "");
           }}
         >
-          <label htmlFor="task-due" className={cn(TICK, "text-[11px] text-[#85857F]")}>
+          <label htmlFor="task-due" className={cn(TICK, "text-[11px] text-[#8E9AC0]")}>
             Due
           </label>
           <div className="flex gap-2">
@@ -125,7 +125,7 @@ export function TaskActions({
                 type="button"
                 onClick={() => saveDue(null)}
                 disabled={pending !== null}
-                className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-[14px] px-3 text-base text-[#9A9A96] hover:text-[#F2F2EF] disabled:opacity-50"
+                className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-[14px] px-3 text-base text-[#B4BEDB] hover:text-[#FFFFFF] disabled:opacity-50"
               >
                 {pending === "clear" && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
                 Clear
@@ -152,7 +152,7 @@ export function TaskActions({
             });
           }}
         >
-          <label htmlFor="task-move-column" className={cn(TICK, "text-[11px] text-[#85857F]")}>
+          <label htmlFor="task-move-column" className={cn(TICK, "text-[11px] text-[#8E9AC0]")}>
             Move to board
           </label>
           <div className="flex gap-2">
@@ -180,7 +180,7 @@ export function TaskActions({
       )}
 
       {task.completed ? (
-        <p className="mt-3 font-mono text-[12px] text-[#85857F]">done = history · move out of Done to delete</p>
+        <p className="mt-3 font-mono text-[12px] text-[#8E9AC0]">done = history · move out of Done to delete</p>
       ) : (
         <button
           type="button"

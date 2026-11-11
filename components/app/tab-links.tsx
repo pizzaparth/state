@@ -35,7 +35,7 @@ export function TabLinks({
             className={cn(
               "relative shrink-0 font-medium transition-colors duration-150",
               size === "md" ? "rounded-[10px] px-4 py-2 text-base" : "rounded-[9px] px-3 py-1.5 text-sm",
-              item.active ? "font-semibold text-accent-ink" : "text-[#9A9A96] hover:text-[#F2F2EF]"
+              item.active ? "font-semibold text-accent-ink" : "text-[#B4BEDB] hover:text-[#FFFFFF]"
             )}
           >
             {item.active && (

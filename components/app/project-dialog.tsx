@@ -16,7 +16,7 @@ type Values = { name: string; slug: string; description: string; status: Status 
 const STATUS_LABEL: Record<Status, string> = { planned: "Planned", active: "Active", paused: "Paused", completed: "Completed" };
 
 const selectClass =
-  "app-field h-11 w-full rounded-[14px] bg-[#000000] px-3 text-base text-[#F2F2EF] focus:border-white/45 focus:outline-none";
+  "app-field h-11 w-full rounded-[14px] bg-[#0F1B3D] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
 
 /**
  * Project form in a dialog, shared by create and edit. Validates with the server's Zod
@@ -98,16 +98,16 @@ function ProjectDialog({
     >
       <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#0F1B3D]/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content
           onOpenAutoFocus={(e) => {
             // Desktop: focus the name field; leave mobile keyboards closed
             if (!window.matchMedia("(pointer: fine)").matches) e.preventDefault();
           }}
-          className="fixed left-1/2 top-[10vh] z-50 max-h-[85vh] w-[min(30rem,calc(100vw-2rem))] origin-top -translate-x-1/2 overflow-y-auto overscroll-contain rounded-[28px] border border-white/10 bg-[#0A0A0A] p-6 outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in"
+          className="fixed left-1/2 top-[10vh] z-50 max-h-[85vh] w-[min(30rem,calc(100vw-2rem))] origin-top -translate-x-1/2 overflow-y-auto overscroll-contain rounded-[28px] border border-white/10 bg-[#0F1B3D] p-6 outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in"
         >
           <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">{title}</Dialog.Title>
-          <Dialog.Description className="mt-1 text-base text-[#9A9A96]">{description}</Dialog.Description>
+          <Dialog.Description className="mt-1 text-base text-[#B4BEDB]">{description}</Dialog.Description>
 
           <form
             ref={formRef}
@@ -143,7 +143,7 @@ function ProjectDialog({
             }}
           >
             <div className="space-y-1.5">
-              <label htmlFor="project-name" className="text-sm font-medium text-[#9A9A96]">
+              <label htmlFor="project-name" className="text-sm font-medium text-[#B4BEDB]">
                 Name
               </label>
               <input
@@ -162,11 +162,11 @@ function ProjectDialog({
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="project-slug" className="text-sm font-medium text-[#9A9A96]">
+              <label htmlFor="project-slug" className="text-sm font-medium text-[#B4BEDB]">
                 Slug
               </label>
               <div className="app-input flex h-11 items-center rounded-[14px] pl-3 focus-within:border-white/45">
-                <span aria-hidden="true" className="font-mono text-base text-[#85857F]">
+                <span aria-hidden="true" className="font-mono text-base text-[#8E9AC0]">
                   #
                 </span>
                 <input
@@ -182,13 +182,13 @@ function ProjectDialog({
                   }}
                   placeholder="relay-db…"
                   translate="no"
-                  className="h-full min-w-0 flex-1 bg-transparent pr-3 font-mono text-base text-[#F2F2EF] placeholder:text-[#85857F] focus:outline-none"
+                  className="h-full min-w-0 flex-1 bg-transparent pr-3 font-mono text-base text-[#FFFFFF] placeholder:text-[#8E9AC0] focus:outline-none"
                 />
               </div>
               {errors.slug ? (
                 fieldError("slug")
               ) : (
-                <p className="text-sm text-[#85857F]">
+                <p className="text-sm text-[#8E9AC0]">
                   {showStatus && values.slug.trim().toLowerCase() !== initial.slug
                     ? `Captures will use #${values.slug.trim().toLowerCase() || "…"} and the project's link changes.`
                     : "Lowercase letters, numbers and hyphens."}
@@ -198,7 +198,7 @@ function ProjectDialog({
 
             {showStatus && (
               <div className="space-y-1.5">
-                <label htmlFor="project-status" className="text-sm font-medium text-[#9A9A96]">
+                <label htmlFor="project-status" className="text-sm font-medium text-[#B4BEDB]">
                   Status
                 </label>
                 <select {...fieldProps("status")} value={values.status} onChange={(e) => set("status", e.target.value)} className={selectClass}>
@@ -213,8 +213,8 @@ function ProjectDialog({
             )}
 
             <div className="space-y-1.5">
-              <label htmlFor="project-description" className="text-sm font-medium text-[#9A9A96]">
-                Description <span className="text-[#85857F]">(optional)</span>
+              <label htmlFor="project-description" className="text-sm font-medium text-[#B4BEDB]">
+                Description <span className="text-[#8E9AC0]">(optional)</span>
               </label>
               <textarea
                 {...fieldProps("description")}
@@ -230,7 +230,7 @@ function ProjectDialog({
               />
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">{fieldError("description")}</div>
-                <p id="project-description-count" className="shrink-0 text-sm tabular-nums text-[#85857F]">
+                <p id="project-description-count" className="shrink-0 text-sm tabular-nums text-[#8E9AC0]">
                   <span className="sr-only">Characters used: </span>
                   {values.description.length}/{PROJECT_DESCRIPTION_MAX}
                 </p>
@@ -242,7 +242,7 @@ function ProjectDialog({
             </p>
 
             <div className="flex justify-end gap-2">
-              <Dialog.Close className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#9A9A96] hover:text-[#F2F2EF]">Cancel</Dialog.Close>
+              <Dialog.Close className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#B4BEDB] hover:text-[#FFFFFF]">Cancel</Dialog.Close>
               <button type="submit" disabled={pending} className="app-btn inline-flex h-11 items-center gap-1.5 rounded-[14px] px-5 text-base font-semibold disabled:opacity-60">
                 {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
                 {submitLabel}
@@ -269,7 +269,7 @@ export function NewProject() {
   return (
     <ProjectDialog
       trigger={
-        <button type="button" className="app-btn inline-flex h-9 items-center gap-1.5 rounded-[12px] px-3 text-sm font-medium text-[#F2F2EF]">
+        <button type="button" className="app-btn inline-flex h-9 items-center gap-1.5 rounded-[12px] px-3 text-sm font-medium text-[#FFFFFF]">
           <Plus className="size-4" aria-hidden="true" />
           New project…
         </button>

@@ -67,7 +67,7 @@ function InlineSelect<T extends string | number>({
               notify(savedMessage(next));
             });
           }}
-          className="app-field h-9 min-w-0 rounded-[12px] bg-[#000000] px-2.5 text-base text-[#F2F2EF] focus:border-white/45 focus:outline-none disabled:opacity-60"
+          className="app-field h-9 min-w-0 rounded-[12px] bg-[#0F1B3D] px-2.5 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none disabled:opacity-60"
         >
           {options.map((o) => (
             <option key={o.value} value={String(o.value)}>
@@ -75,10 +75,10 @@ function InlineSelect<T extends string | number>({
             </option>
           ))}
         </select>
-        {pending && <Loader2 className="size-4 animate-spin text-[#9A9A96]" aria-label="Saving…" />}
+        {pending && <Loader2 className="size-4 animate-spin text-[#B4BEDB]" aria-label="Saving…" />}
       </div>
       {describe && (
-        <p id={hintId} className="mt-1.5 text-sm leading-relaxed text-[#9A9A96]">
+        <p id={hintId} className="mt-1.5 text-sm leading-relaxed text-[#B4BEDB]">
           {describe(value)}
         </p>
       )}

@@ -11,7 +11,7 @@ type Measure = (typeof OBJECTIVE_MEASURES)[number];
 type FieldName = "name" | "measure" | "unit" | "targetValue" | "deadline" | "projectId";
 
 const inputClass = "app-input h-11 w-full rounded-[14px] px-3 text-base";
-const selectClass = "app-field h-11 w-full rounded-[14px] bg-[#000000] px-3 text-base text-[#F2F2EF] focus:border-white/45 focus:outline-none";
+const selectClass = "app-field h-11 w-full rounded-[14px] bg-[#0F1B3D] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
 
 const empty = { name: "", measure: "manual" as Measure, unit: "", targetValue: "", deadline: "", projectId: "" };
 
@@ -49,8 +49,8 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
       </p>
     );
   const label = (field: FieldName, text: string, optional = false) => (
-    <label htmlFor={`objective-${field}`} className="text-sm font-medium text-[#9A9A96]">
-      {text} {optional && <span className="text-[#85857F]">(optional)</span>}
+    <label htmlFor={`objective-${field}`} className="text-sm font-medium text-[#B4BEDB]">
+      {text} {optional && <span className="text-[#8E9AC0]">(optional)</span>}
     </label>
   );
 
@@ -64,21 +64,21 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
       }}
     >
       <Dialog.Trigger asChild>
-        <button type="button" className="app-btn inline-flex h-9 items-center gap-1.5 rounded-[12px] px-3 text-sm font-medium text-[#F2F2EF]">
+        <button type="button" className="app-btn inline-flex h-9 items-center gap-1.5 rounded-[12px] px-3 text-sm font-medium text-[#FFFFFF]">
           <Plus className="size-4" aria-hidden="true" />
           New objective…
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#0F1B3D]/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content
           onOpenAutoFocus={(e) => {
             if (!window.matchMedia("(pointer: fine)").matches) e.preventDefault();
           }}
-          className="fixed left-1/2 top-[8vh] z-50 max-h-[88vh] w-[min(30rem,calc(100vw-2rem))] origin-top -translate-x-1/2 overflow-y-auto overscroll-contain rounded-[28px] border border-white/10 bg-[#0A0A0A] p-6 outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in"
+          className="fixed left-1/2 top-[8vh] z-50 max-h-[88vh] w-[min(30rem,calc(100vw-2rem))] origin-top -translate-x-1/2 overflow-y-auto overscroll-contain rounded-[28px] border border-white/10 bg-[#0F1B3D] p-6 outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in"
         >
           <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">New objective</Dialog.Title>
-          <Dialog.Description className="mt-1 font-mono text-sm text-[#85857F]">status = velocity vs required velocity</Dialog.Description>
+          <Dialog.Description className="mt-1 font-mono text-sm text-[#8E9AC0]">status = velocity vs required velocity</Dialog.Description>
 
           <form
             ref={formRef}
@@ -119,7 +119,7 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
             </div>
 
             <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium text-[#9A9A96]">Measure</legend>
+              <legend className="text-sm font-medium text-[#B4BEDB]">Measure</legend>
               <div className="app-field grid grid-cols-2 gap-1 rounded-[14px] p-1">
                 {(
                   [
@@ -129,14 +129,14 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
                 ).map(([value, text]) => (
                   <label
                     key={value}
-                    className={`flex h-9 cursor-pointer items-center justify-center rounded-[10px] text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-accent ${values.measure === value ? "bg-accent text-accent-ink" : "text-[#9A9A96] hover:text-[#F2F2EF]"}`}
+                    className={`flex h-9 cursor-pointer items-center justify-center rounded-[10px] text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-accent ${values.measure === value ? "bg-accent text-accent-ink" : "text-[#B4BEDB] hover:text-[#FFFFFF]"}`}
                   >
                     <input type="radio" name="measure" value={value} checked={values.measure === value} onChange={() => set("measure", value)} className="sr-only" />
                     {text}
                   </label>
                 ))}
               </div>
-              <p className="font-mono text-sm text-[#85857F]">{values.measure === "execution" ? "current = Σ commit execution since today" : "current = the count you enter"}</p>
+              <p className="font-mono text-sm text-[#8E9AC0]">{values.measure === "execution" ? "current = Σ commit execution since today" : "current = the count you enter"}</p>
             </fieldset>
 
             <div className="grid grid-cols-2 gap-3">
@@ -179,7 +179,7 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
               {errors.form}
             </p>
             <div className="flex justify-end gap-2">
-              <Dialog.Close className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#9A9A96] hover:text-[#F2F2EF]">Cancel</Dialog.Close>
+              <Dialog.Close className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#B4BEDB] hover:text-[#FFFFFF]">Cancel</Dialog.Close>
               <button type="submit" disabled={pending} className="app-btn inline-flex h-11 items-center gap-1.5 rounded-[14px] px-5 text-base font-semibold disabled:opacity-60">
                 {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
                 Create objective

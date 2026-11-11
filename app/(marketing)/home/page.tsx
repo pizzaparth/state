@@ -19,14 +19,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-const silver = "bg-gradient-to-b from-white via-[#D9D9D5] to-[#6F6F6B] bg-clip-text text-transparent";
+const silver = "bg-gradient-to-b from-white via-[#DCE2F2] to-[#8E9AC0] bg-clip-text text-transparent";
 const displayHeading =
   "font-display font-extrabold uppercase leading-[0.92] tracking-[-0.03em] [font-stretch:125%] text-balance";
 const sectionPad = "mx-auto w-full max-w-[1320px] px-5 sm:px-8 lg:px-12";
 const kicker = "mb-6 font-mono text-sm uppercase tracking-[0.18em] text-accent";
-// Three layers: page (#050505), panel and card; the accent marks what matters
-const layer1 = "rounded-[28px] border border-white/[0.1] bg-[#0E0E0E]";
-const layer2 = "rounded-[20px] border border-white/[0.16] bg-[#181818]";
+// Three layers: page (#0F1B3D), panel and card; the accent marks what matters
+const layer1 = "rounded-[28px] border border-white/[0.1] bg-[#16244D]";
+const layer2 = "rounded-[20px] border border-white/[0.16] bg-[#1E2E5C]";
 
 // Board cards finished in the last two days stay in Done
 const DONE_WINDOW_DAYS = 2;
@@ -108,19 +108,19 @@ export default function LandingPage() {
             <span className="block animate-line-rise">Execution,</span>
           </span>
           <span className="block overflow-hidden pb-[0.06em]">
-            <span className="block animate-line-rise text-accent [animation-delay:120ms] [-webkit-text-fill-color:#F205CF]">measured.</span>
+            <span className="block animate-line-rise text-accent [animation-delay:120ms] [-webkit-text-fill-color:#FF3D8B]">measured.</span>
           </span>
         </h1>
 
         <div className="mt-10 animate-fade-in [animation-delay:500ms]">
           <div>
-            <p className="max-w-[44ch] text-xl leading-snug text-[#F4F4F2] text-pretty sm:text-2xl">
+            <p className="max-w-[44ch] text-xl leading-snug text-[#FFFFFF] text-pretty sm:text-2xl">
               Applying quantitative methods to human execution.
             </p>
-            <p className="mt-3 max-w-[44ch] text-lg leading-relaxed text-[#A9A9A6] text-pretty sm:text-xl">
+            <p className="mt-3 max-w-[44ch] text-lg leading-relaxed text-[#B4BEDB] text-pretty sm:text-xl">
               Tasks = the plan. Commits = what you did. State does the math.
             </p>
-            <p className="mt-4 font-mono text-sm uppercase tracking-[0.18em] text-[#85857F]">
+            <p className="mt-4 font-mono text-sm uppercase tracking-[0.18em] text-[#8E9AC0]">
               Study · Build · Write · Train · Design · Ship
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -147,7 +147,7 @@ export default function LandingPage() {
           <h2 id="history-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
             Your work has a history.
           </h2>
-          <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">Every finished task lands on the graph.</p>
+          <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#B4BEDB]">Every finished task lands on the graph.</p>
         </div>
         <ProductFrame path="/platform/history" caption="Execution graph and commit ledger in the State app, with demo data" className="mt-16">
           <Panel title="Execution · 1y" aside={`${formatNumber(yearCommits)} commits · +${formatNumber(yearExecution)}`}>
@@ -165,7 +165,7 @@ export default function LandingPage() {
         <h2 id="metrics-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           Measure throughput, not busyness.
         </h2>
-        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">Every number shows its formula. No vibes, just math.</p>
+        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#B4BEDB]">Every number shows its formula. No vibes, just math.</p>
 
         <ProductFrame path="/platform/metrics?period=30d" caption="Metrics page in the State app, last 30 days of demo data" className="mt-16">
           <MetricsReport metrics={demoMetrics(personal, 30)} series={demoSeries(personal, 30)} objectives={[]} tz={DEMO_TZ} period="30d" basePath={null} overview />
@@ -178,7 +178,7 @@ export default function LandingPage() {
         <h2 id="scope-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           One board. One person.
         </h2>
-        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">Queued, Active, Done. Same math every day.</p>
+        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#B4BEDB]">Queued, Active, Done. Same math every day.</p>
         <div className="mt-12">
           <WorkspaceScope board={board} doneWindowDays={DONE_WINDOW_DAYS} />
         </div>
@@ -190,18 +190,18 @@ export default function LandingPage() {
         <h2 id="refusals-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           No ads. No AI noise.
         </h2>
-        <p className="mt-6 text-lg text-[#A9A9A6]">Never shipping:</p>
+        <p className="mt-6 text-lg text-[#B4BEDB]">Never shipping:</p>
         <ul className="mt-10 space-y-1">
           {REFUSALS.map((item) => (
             <li
               key={item}
-              className="font-display text-[clamp(1.5rem,4.2vw,3.5rem)] font-bold uppercase leading-[1.1] tracking-[-0.02em] [font-stretch:112%] text-[#4A4A47] line-through decoration-accent decoration-[3px]"
+              className="font-display text-[clamp(1.5rem,4.2vw,3.5rem)] font-bold uppercase leading-[1.1] tracking-[-0.02em] [font-stretch:112%] text-[#4A5C8C] line-through decoration-accent decoration-[3px]"
             >
               {item}
             </li>
           ))}
         </ul>
-        <p className="mt-14 max-w-[40ch] text-xl leading-relaxed text-[#F4F4F2] text-pretty sm:text-2xl">Plan. Execute. Measure. That’s it.</p>
+        <p className="mt-14 max-w-[40ch] text-xl leading-relaxed text-[#FFFFFF] text-pretty sm:text-2xl">Plan. Execute. Measure. That’s it.</p>
       </section>
 
       {/* Switching from: internal links to the comparison pages */}
@@ -216,7 +216,7 @@ export default function LandingPage() {
             <li key={c.slug} className="last:col-span-2">
               <Link
                 href={`/compare/${c.slug}`}
-                className={`flex h-full min-h-24 flex-col justify-between gap-3 p-5 transition-colors hover:border-accent-line hover:bg-[#202020] ${layer2}`}
+                className={`flex h-full min-h-24 flex-col justify-between gap-3 p-5 transition-colors hover:border-accent-line hover:bg-[#26386B] ${layer2}`}
               >
                 <span className="min-w-0 break-words font-display text-lg font-bold uppercase tracking-[-0.01em] [font-stretch:112%] sm:text-xl" translate="no">
                   {c.name}
@@ -237,8 +237,8 @@ export default function LandingPage() {
         <dl className={`mt-12 space-y-2 p-2 ${layer1}`}>
           {FAQ.map((item) => (
             <div key={item.q} className={`grid gap-3 p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:gap-12 ${layer2}`}>
-              <dt className="text-xl font-semibold text-[#F4F4F2] text-balance">{item.q}</dt>
-              <dd className="max-w-[60ch] text-lg leading-relaxed text-[#A9A9A6] text-pretty">{item.a}</dd>
+              <dt className="text-xl font-semibold text-[#FFFFFF] text-balance">{item.q}</dt>
+              <dd className="max-w-[60ch] text-lg leading-relaxed text-[#B4BEDB] text-pretty">{item.a}</dd>
             </div>
           ))}
         </dl>
@@ -256,7 +256,7 @@ export default function LandingPage() {
               </Link>
             </Button>
           </Magnetic>
-          <p className="text-base text-[#85857F]">No sign-up. Nothing kept.</p>
+          <p className="text-base text-[#8E9AC0]">No sign-up. Nothing kept.</p>
         </div>
       </section>
     </>

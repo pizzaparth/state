@@ -4,46 +4,48 @@
      Reference: docs/style.md & docs/techstack.md
      ========================================================================== */
 
-  /* Accent: #F205CF. About a quarter of every screen; everything else is black and white.
-     Black text on the accent passes WCAG AA (5.7:1); white text on it does not. Accent
-     text on black passes too (5.7:1). */
-  --accent: #F205CF;
-  --accent-hover: #FF3DE0;
-  --accent-ink: #0A0A0A;
-  --accent-ink-muted: #33002C;
-  --accent-soft: rgba(242, 5, 207, 0.12);
-  --accent-line: rgba(242, 5, 207, 0.5);
+  /* Palette: navy #0F1B3D, white #FFFFFF, accent #FF3D8B. About a quarter of every screen
+     is accent; the rest is navy and white. Navy text on the accent passes WCAG AA (5.0:1);
+     white text on it does not (3.3:1). Accent as small text uses --accent-text, which passes
+     on every layer. */
+  --accent: #FF3D8B;
+  --accent-text: #FF6FA8;
+  --accent-hover: #FF6FA8;
+  --accent-ink: #0F1B3D;
+  --accent-ink-muted: #3B0A28;
+  --accent-soft: rgba(255, 61, 139, 0.12);
+  --accent-line: rgba(255, 61, 139, 0.5);
 
   /* Three layers on every screen: 0 page, 1 panel, 2 card/control. Tonal steps and
      hairlines only; the accent sits on top as the focal layer. */
 
-  /* Marketing & External Brand Theme (Dark Monochrome) */
-  --bg-0: #050505;
-  --bg-1: #080808;
-  --bg-2: #0D0D0D;
+  /* Marketing surfaces (navy) */
+  --bg-0: #0F1B3D;
+  --bg-1: #0F1B3D;
+  --bg-2: #16244D;
 
-  --surface-1: #0E0E0E;
-  --surface-2: #181818;
-  --surface-3: #202020;
+  --surface-1: #16244D;
+  --surface-2: #1E2E5C;
+  --surface-3: #26386B;
 
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-default: rgba(255, 255, 255, 0.12);
   --border-strong: rgba(255, 255, 255, 0.20);
 
-  --text-primary: #F4F4F2;
-  --text-secondary: #A9A9A6;
-  --text-tertiary: #6F6F6B;
-  --text-inverse: #0A0A0A;
+  --text-primary: #FFFFFF;
+  --text-secondary: #B4BEDB;
+  --text-tertiary: #8E9AC0;
+  --text-inverse: #0F1B3D;
 
   --action-primary: var(--accent);
   --action-primary-text: var(--accent-ink);
 
-  /* Product Theme (AMOLED black, flat: depth from hairline borders and tonal steps, never shadows) */
-  --app-bg: #000000;
-  --app-panel: #0E0E0E;
-  --app-raised: #181818;
-  --app-raised-hover: #202020;
-  --app-field: #000000;
+  /* Product theme (navy, flat: depth from hairline borders and tonal steps, never shadows) */
+  --app-bg: #0F1B3D;
+  --app-panel: #16244D;
+  --app-raised: #1E2E5C;
+  --app-raised-hover: #26386B;
+  --app-field: #0F1B3D;
   --app-line: rgba(255, 255, 255, 0.1);
   --app-line-strong: rgba(255, 255, 255, 0.16);
   --app-line-focus: var(--accent);
@@ -52,9 +54,9 @@
   --app-inverse: var(--accent);
   --app-inverse-text: var(--accent-ink);
 
-  --app-text-primary: #F2F2EF;
-  --app-text-secondary: #9A9A96;
-  --app-text-tertiary: #85857F;
+  --app-text-primary: #FFFFFF;
+  --app-text-secondary: #B4BEDB;
+  --app-text-tertiary: #8E9AC0;
   --app-danger: #F0A39B;
 
   /* Corner Radii (Geometric Superellipses) */

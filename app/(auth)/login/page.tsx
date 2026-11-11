@@ -13,13 +13,13 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className={`${DISPLAY} text-[2rem] leading-[0.95] text-[#F4F4F2] text-balance`}>Owner sign in</h1>
-        <p className="font-mono text-sm text-[#9A9A96]">One account. Ends when the browser closes.</p>
+        <h1 className={`${DISPLAY} text-[2rem] leading-[0.95] text-[#FFFFFF] text-balance`}>Owner sign in</h1>
+        <p className="font-mono text-sm text-[#B4BEDB]">One account. Ends when the browser closes.</p>
       </div>
 
       <OwnerCodeForm redirectTo={redirectTo} />
 
-      <p className="pt-2 text-center text-sm text-[#A9A9A6]">
+      <p className="pt-2 text-center text-sm text-[#B4BEDB]">
         Just looking?{" "}
         <Link href="/demo" prefetch={false} className="font-medium text-accent hover:underline">
           Take a demo

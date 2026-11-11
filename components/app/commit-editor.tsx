@@ -8,7 +8,7 @@ import { useNotice } from "./notice";
 
 type FieldName = "message" | "projectId" | "tags";
 
-const selectClass = "app-field h-11 w-full rounded-[14px] bg-[#000000] px-3 text-base text-[#F2F2EF] focus:border-white/45 focus:outline-none";
+const selectClass = "app-field h-11 w-full rounded-[14px] bg-[#0F1B3D] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
 
 const splitTags = (text: string) =>
   text
@@ -112,7 +112,7 @@ export function CommitEditor({
       }}
     >
       <div className="space-y-1.5">
-        <label htmlFor="commit-message" className="text-sm font-medium text-[#9A9A96]">
+        <label htmlFor="commit-message" className="text-sm font-medium text-[#B4BEDB]">
           Message
         </label>
         <textarea
@@ -133,7 +133,7 @@ export function CommitEditor({
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="commit-project" className="text-sm font-medium text-[#9A9A96]">
+        <label htmlFor="commit-project" className="text-sm font-medium text-[#B4BEDB]">
           Project
         </label>
         <select
@@ -156,8 +156,8 @@ export function CommitEditor({
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="commit-tags" className="text-sm font-medium text-[#9A9A96]">
-          Tags <span className="text-[#85857F]">(optional)</span>
+        <label htmlFor="commit-tags" className="text-sm font-medium text-[#B4BEDB]">
+          Tags <span className="text-[#8E9AC0]">(optional)</span>
         </label>
         <input
           id="commit-tags"
@@ -173,7 +173,7 @@ export function CommitEditor({
           className="app-input h-11 w-full rounded-[14px] px-3 text-base"
         />
         {errors.tags ? fieldError("tags") : (
-          <p id="commit-tags-hint" className="font-mono text-sm text-[#85857F]">
+          <p id="commit-tags-hint" className="font-mono text-sm text-[#8E9AC0]">
             comma-separated · up to 10
           </p>
         )}
@@ -184,7 +184,7 @@ export function CommitEditor({
       </p>
 
       <div className="flex justify-end gap-2">
-        <button type="button" onClick={stop} className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#9A9A96] hover:text-[#F2F2EF]">
+        <button type="button" onClick={stop} className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#B4BEDB] hover:text-[#FFFFFF]">
           Cancel
         </button>
         <button type="submit" disabled={pending} className="app-btn inline-flex h-11 items-center gap-1.5 rounded-[14px] px-5 text-base font-semibold disabled:opacity-60">

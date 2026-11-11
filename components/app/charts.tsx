@@ -22,11 +22,11 @@ export function CycleHistogram({ durationsMs }: { durationsMs: number[] }) {
     <ul className="space-y-2" aria-label="Cycle time distribution">
       {BUCKETS.map((b, i) => (
         <li key={b.label} className="grid grid-cols-[3.5rem_minmax(0,1fr)_2rem] items-center gap-3 text-sm">
-          <span className="tabular-nums text-[#9A9A96]">{b.label}</span>
+          <span className="tabular-nums text-[#B4BEDB]">{b.label}</span>
           <span className="app-field h-2.5 overflow-hidden rounded-full">
             <span className="block h-full origin-left animate-grow-x rounded-full bg-accent" style={{ transform: `scaleX(${counts[i] / max})` }} />
           </span>
-          <span className="text-right font-mono tabular-nums text-[#F2F2EF]">{counts[i]}</span>
+          <span className="text-right font-mono tabular-nums text-[#FFFFFF]">{counts[i]}</span>
         </li>
       ))}
     </ul>
@@ -43,7 +43,7 @@ export function Sparkline({ values, inverse }: { values: number[]; inverse?: boo
   const max = Math.max(...values);
   const span = max - min || 1;
   const points = values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - 2 - ((v - min) / span) * (h - 4)).toFixed(1)}`);
-  const color = inverse ? "#0A0A0A" : "#F205CF";
+  const color = inverse ? "#0F1B3D" : "#FF3D8B";
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="h-7 w-24 shrink-0" preserveAspectRatio="none" aria-hidden="true">
       {/* The line draws in left to right; the end dot lands after it */}
@@ -60,12 +60,12 @@ export function Sparkline({ values, inverse }: { values: number[]; inverse?: boo
   );
 }
 
-const MIX_FILL = ["#F205CF", "#F2F2EF", "#8C8C88", "#3A3A38"];
+const MIX_FILL = ["#FF3D8B", "#FFFFFF", "#8E9AC0", "#3D5185"];
 
 /** 100% stacked bar with a labelled row per part, so share never relies on fill alone. */
 export function MixBar({ label, parts }: { label: string; parts: { name: string; value: number; detail?: string }[] }) {
   const total = parts.reduce((s, p) => s + p.value, 0);
-  if (total === 0) return <p className="font-mono text-sm text-[#85857F]">No data</p>;
+  if (total === 0) return <p className="font-mono text-sm text-[#8E9AC0]">No data</p>;
   return (
     <div>
       <div className="flex h-3 gap-[2px] overflow-hidden rounded-full" role="img" aria-label={`${label}: ${parts.map((p) => `${p.name} ${formatNumber((p.value / total) * 100)}%`).join(", ")}`}>
@@ -79,9 +79,9 @@ export function MixBar({ label, parts }: { label: string; parts: { name: string;
         {parts.map((p, i) => (
           <li key={p.name} className="grid grid-cols-[0.75rem_minmax(0,1fr)_auto_3.5rem] items-center gap-2.5 text-sm">
             <span className="size-2.5 rounded-[2px] border border-white/15" style={{ backgroundColor: MIX_FILL[i % MIX_FILL.length] }} aria-hidden="true" />
-            <span className="truncate text-[#F2F2EF]">{p.name}</span>
-            <span className="font-mono text-[12px] tabular-nums text-[#85857F]">{p.detail}</span>
-            <span className="text-right font-mono tabular-nums text-[#F2F2EF]">{formatNumber((p.value / total) * 100)}%</span>
+            <span className="truncate text-[#FFFFFF]">{p.name}</span>
+            <span className="font-mono text-[12px] tabular-nums text-[#8E9AC0]">{p.detail}</span>
+            <span className="text-right font-mono tabular-nums text-[#FFFFFF]">{formatNumber((p.value / total) * 100)}%</span>
           </li>
         ))}
       </ul>
@@ -94,10 +94,10 @@ export function StatGrid({ stats }: { stats: { label: string; value: string; for
   return (
     <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-white/[0.08] bg-white/[0.08] sm:grid-cols-3 xl:grid-cols-4">
       {stats.map((s) => (
-        <div key={s.label} className="min-w-0 bg-[#0A0A0A] px-4 py-3.5">
-          <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-[#9A9A96]">{s.label}</dt>
-          <dd className="mt-1.5 font-display text-xl font-extrabold tabular-nums tracking-[-0.02em] text-[#F2F2EF] [font-stretch:125%]">{s.value}</dd>
-          <dd className="mt-1 truncate font-mono text-[11px] text-[#85857F]" title={s.formula}>
+        <div key={s.label} className="min-w-0 bg-[#0F1B3D] px-4 py-3.5">
+          <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-[#B4BEDB]">{s.label}</dt>
+          <dd className="mt-1.5 font-display text-xl font-extrabold tabular-nums tracking-[-0.02em] text-[#FFFFFF] [font-stretch:125%]">{s.value}</dd>
+          <dd className="mt-1 truncate font-mono text-[11px] text-[#8E9AC0]" title={s.formula}>
             {s.formula}
           </dd>
         </div>

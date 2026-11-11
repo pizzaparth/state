@@ -109,17 +109,17 @@ export function ImportForm() {
             }}
             className="absolute inset-0 cursor-pointer opacity-0"
           />
-          <span className={cn("truncate", file ? "text-[#F2F2EF]" : "text-[#85857F]")}>{file ? file.name : "Choose file…"}</span>
+          <span className={cn("truncate", file ? "text-[#FFFFFF]" : "text-[#8E9AC0]")}>{file ? file.name : "Choose file…"}</span>
         </label>
         <button type="submit" disabled={pending} className={button}>
           {pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Upload className="size-4" aria-hidden="true" />}
           Import
         </button>
       </div>
-      <p id="import-hint" className={cn(TICK, "text-[#85857F]")}>
+      <p id="import-hint" className={cn(TICK, "text-[#8E9AC0]")}>
         JSON export · CSV of tasks, commits or projects · 4&nbsp;MB
       </p>
-      <p id="import-status" aria-live="polite" className={cn("text-sm", status?.kind === "error" ? "text-[#F0A39B]" : "font-mono tabular-nums text-[#F2F2EF]")}>
+      <p id="import-status" aria-live="polite" className={cn("text-sm", status?.kind === "error" ? "text-[#F0A39B]" : "font-mono tabular-nums text-[#FFFFFF]")}>
         {status?.text}
       </p>
     </form>

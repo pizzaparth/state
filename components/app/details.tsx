@@ -15,8 +15,8 @@ type Commit = NonNullable<Awaited<ReturnType<typeof getCommitDetail>>>;
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[7rem_minmax(0,1fr)] items-baseline gap-3 border-t border-white/[0.08] py-2.5 text-base">
-      <dt className={cn(TICK, "text-[11px] text-[#85857F]")}>{label}</dt>
-      <dd className="min-w-0 break-words font-medium text-[#F2F2EF]">{children}</dd>
+      <dt className={cn(TICK, "text-[11px] text-[#8E9AC0]")}>{label}</dt>
+      <dd className="min-w-0 break-words font-medium text-[#FFFFFF]">{children}</dd>
     </div>
   );
 }
@@ -30,7 +30,7 @@ export function TaskDetail({ task, tz, now, editable = false }: { task: Task; tz
       <div className="mt-4 flex flex-wrap items-end justify-between gap-3 border-y border-white/[0.08] py-4">
         <p className="flex items-baseline gap-2">
           <span className={cn(DISPLAY, "text-5xl leading-none tabular-nums")}>+{task.weight}</span>
-          <span className={cn(TICK, "text-[11px] text-[#85857F]")}>{task.completedAt ? "earned" : "on done"}</span>
+          <span className={cn(TICK, "text-[11px] text-[#8E9AC0]")}>{task.completedAt ? "earned" : "on done"}</span>
         </p>
         <p className="flex flex-wrap items-center justify-end gap-2">
           <Chip>{state}</Chip>
@@ -39,7 +39,7 @@ export function TaskDetail({ task, tz, now, editable = false }: { task: Task; tz
           ))}
         </p>
       </div>
-      {task.description && <p className="app-field mt-5 rounded-[16px] p-4 text-base leading-relaxed text-[#D4D4D0]">{task.description}</p>}
+      {task.description && <p className="app-field mt-5 rounded-[16px] p-4 text-base leading-relaxed text-[#DCE2F2]">{task.description}</p>}
 
       <dl className="mt-6">
         <Field label="Project">{task.projectName ?? "—"}</Field>
@@ -60,7 +60,7 @@ export function TaskDetail({ task, tz, now, editable = false }: { task: Task; tz
             <TaskWeight taskId={task.id} weight={task.weight} />
           ) : (
             <>
-              {weightLabel(task.weight)} <span className="tabular-nums text-[#9A9A96]">({task.weight} execution)</span>
+              {weightLabel(task.weight)} <span className="tabular-nums text-[#B4BEDB]">({task.weight} execution)</span>
             </>
           )}
         </Field>
@@ -85,7 +85,7 @@ export function TaskDetail({ task, tz, now, editable = false }: { task: Task; tz
       </dl>
 
       <div className="mt-6">
-        <p className={cn(TICK, "text-[#9A9A96]")}>Commit</p>
+        <p className={cn(TICK, "text-[#B4BEDB]")}>Commit</p>
         {task.commit ? (
           <p className="mt-3 flex items-center gap-3 text-base">
             <span aria-hidden="true" className="size-2 rounded-full bg-accent" />
@@ -93,7 +93,7 @@ export function TaskDetail({ task, tz, now, editable = false }: { task: Task; tz
             <span className="font-mono text-sm tabular-nums">+{task.commit.executionValue}</span>
           </p>
         ) : (
-          <p className="mt-2 font-mono text-sm text-[#85857F]">auto-logged on Done</p>
+          <p className="mt-2 font-mono text-sm text-[#8E9AC0]">auto-logged on Done</p>
         )}
       </div>
     </div>
@@ -113,9 +113,9 @@ export function CommitDetail({ commit, tz, projects }: { commit: Commit; tz: str
     <div>
       <p className="flex items-center gap-3">
         <span aria-hidden="true" className="size-2.5 rounded-full bg-accent" />
-        <span className="font-mono text-sm tabular-nums text-[#9A9A96]">{formatDateTime(commit.createdAt, tz)}</span>
+        <span className="font-mono text-sm tabular-nums text-[#B4BEDB]">{formatDateTime(commit.createdAt, tz)}</span>
       </p>
-      <h2 className="mt-3 break-words font-display text-2xl font-bold leading-tight tracking-[-0.02em] [font-stretch:110%] text-[#F2F2EF]">{commit.message}</h2>
+      <h2 className="mt-3 break-words font-display text-2xl font-bold leading-tight tracking-[-0.02em] [font-stretch:110%] text-[#FFFFFF]">{commit.message}</h2>
       <div className="app-inverse mt-5 flex items-baseline justify-between rounded-[20px] px-5 py-4">
         <span className={cn(TICK, "text-accent-muted")}>Execution</span>
         <span className={cn(DISPLAY, "text-5xl leading-none tabular-nums")}>+{commit.executionValue}</span>
@@ -140,7 +140,7 @@ export function CommitDetail({ commit, tz, projects }: { commit: Commit; tz: str
           </Field>
         )}
       </dl>
-      <p className="mt-6 font-mono text-[12px] text-[#85857F]">time + value locked · message, project, tags fixable</p>
+      <p className="mt-6 font-mono text-[12px] text-[#8E9AC0]">time + value locked · message, project, tags fixable</p>
       {projects && <CommitEditor commit={commit} projects={projects} />}
     </div>
   );

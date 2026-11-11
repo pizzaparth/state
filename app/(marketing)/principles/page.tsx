@@ -46,21 +46,21 @@ export default function PrinciplesPage() {
         <span className="text-sm font-mono uppercase tracking-widest text-accent">
           Manifesto
         </span>
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[#F4F4F2] uppercase">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[#FFFFFF] uppercase">
           Product Principles
         </h1>
-        <p className="text-[#A9A9A6] text-base md:text-base leading-relaxed">
+        <p className="text-[#B4BEDB] text-base md:text-base leading-relaxed">
           State is a personal hobby project by Parth Pancholi for measuring execution. These principles guide its architecture and design.
         </p>
       </div>
 
-      <div className="space-y-2 rounded-[28px] border border-white/[0.1] bg-[#0E0E0E] p-2">
+      <div className="space-y-2 rounded-[28px] border border-white/[0.1] bg-[#16244D] p-2">
         {principles.map((p) => (
-          <div key={p.number} className="grid grid-cols-1 items-start gap-4 rounded-[20px] border border-white/[0.16] bg-[#181818] p-6 md:grid-cols-4">
+          <div key={p.number} className="grid grid-cols-1 items-start gap-4 rounded-[20px] border border-white/[0.16] bg-[#1E2E5C] p-6 md:grid-cols-4">
             <span className="font-mono text-base font-semibold text-accent">{p.number}</span>
             <div className="md:col-span-3 space-y-2">
-              <h2 className="text-lg font-semibold text-[#F4F4F2]">{p.title}</h2>
-              <p className="text-base text-[#A9A9A6] leading-relaxed">{p.desc}</p>
+              <h2 className="text-lg font-semibold text-[#FFFFFF]">{p.title}</h2>
+              <p className="text-base text-[#B4BEDB] leading-relaxed">{p.desc}</p>
             </div>
           </div>
         ))}

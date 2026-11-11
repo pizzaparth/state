@@ -33,8 +33,8 @@ export default async function PreferencesSettingsPage() {
               <ul className="space-y-2">
                 {WEIGHT_LEVELS.map((w) => (
                   <li key={w.value}>
-                    {w.label} <span className="font-mono font-semibold tabular-nums text-[#F2F2EF]">+{w.value}</span>
-                    <span className="block text-sm font-normal leading-relaxed text-[#9A9A96]">{w.hint}</span>
+                    {w.label} <span className="font-mono font-semibold tabular-nums text-[#FFFFFF]">+{w.value}</span>
+                    <span className="block text-sm font-normal leading-relaxed text-[#B4BEDB]">{w.hint}</span>
                   </li>
                 ))}
               </ul>
@@ -48,7 +48,7 @@ export default async function PreferencesSettingsPage() {
                 <dt>
                   <kbd className="app-btn inline-block rounded-[8px] px-2 py-0.5 font-mono text-sm">{keys.replace(" ", " ")}</kbd>
                 </dt>
-                <dd className="font-medium text-[#D4D4D0]">{action}</dd>
+                <dd className="font-medium text-[#DCE2F2]">{action}</dd>
               </React.Fragment>
             ))}
           </dl>

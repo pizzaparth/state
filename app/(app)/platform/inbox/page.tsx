@@ -26,8 +26,8 @@ export default async function InboxPage({ searchParams }: { searchParams: PageSe
 
       <Panel title="Capture">
         <QuickCapture projects={projects} tz={viewer.tz} autoFocus showRecent={false} />
-        <p className="mt-2 px-2 font-mono text-sm text-[#85857F]">
-          <span className="text-[#F2F2EF]">#project</span> to file · <span className="text-[#F2F2EF]">!high</span> to rank · <span className="text-[#F2F2EF]">fri</span> to date · <span className="text-[#F2F2EF]">@name</span> to assign
+        <p className="mt-2 px-2 font-mono text-sm text-[#8E9AC0]">
+          <span className="text-[#FFFFFF]">#project</span> to file · <span className="text-[#FFFFFF]">!high</span> to rank · <span className="text-[#FFFFFF]">fri</span> to date · <span className="text-[#FFFFFF]">@name</span> to assign
         </p>
       </Panel>
 

@@ -24,7 +24,7 @@ export function WorkspaceScope({ board, doneWindowDays }: { board: Board; doneWi
 
   return (
     <div className="space-y-14">
-      <ul className="grid gap-x-10 gap-y-3 text-base text-[#A9A9A6] sm:grid-cols-2">
+      <ul className="grid gap-x-10 gap-y-3 text-base text-[#B4BEDB] sm:grid-cols-2">
         {FACTS.map((fact) => (
           <li key={fact} className="flex gap-3">
             <svg viewBox="0 0 12 12" aria-hidden="true" className="mt-[0.4em] size-3 shrink-0 text-accent">
@@ -37,10 +37,10 @@ export function WorkspaceScope({ board, doneWindowDays }: { board: Board; doneWi
 
       <div className="min-w-0">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
-          <p className="text-base text-[#F4F4F2]">
-            Try it: <span className="text-[#A9A9A6]">drag a card to Done, or use its ⋯ menu.</span>
+          <p className="text-base text-[#FFFFFF]">
+            Try it: <span className="text-[#B4BEDB]">drag a card to Done, or use its ⋯ menu.</span>
           </p>
-          <button type="button" onClick={() => setRound((r) => r + 1)} className="text-sm text-[#A9A9A6] underline underline-offset-4 hover:text-white">
+          <button type="button" onClick={() => setRound((r) => r + 1)} className="text-sm text-[#B4BEDB] underline underline-offset-4 hover:text-white">
             Reset board
           </button>
         </div>

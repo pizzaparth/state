@@ -11,8 +11,8 @@ import { cn } from "@/lib/utils";
  * arrow keys, to read one index; a screen-reader table carries the same numbers.
  */
 
-// Lightness steps on #0A0A0A panels: primary ink, secondary ink, recessive fill
-const TONE = { hi: "#F205CF", mid: "#F2F2EF", lo: "#5C5C59" } as const;
+// Lightness steps on #0F1B3D panels: primary ink, secondary ink, recessive fill
+const TONE = { hi: "#FF3D8B", mid: "#FFFFFF", lo: "#5A6B99" } as const;
 export type Tone = keyof typeof TONE;
 
 export interface Series {
@@ -131,7 +131,7 @@ export function SeriesChart({
   return (
     <figure className="min-w-0">
       {series.length > 1 && (
-        <figcaption className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[12px] text-[#9A9A96]" aria-hidden="true">
+        <figcaption className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[12px] text-[#B4BEDB]" aria-hidden="true">
           {series.map((s) => (
             <span key={s.label} className="inline-flex items-center gap-1.5">
               <Swatch s={s} />
@@ -148,7 +148,7 @@ export function SeriesChart({
         onKeyDown={move}
         onFocus={() => setActive((i) => i ?? n - 1)}
         onBlur={() => setActive(null)}
-        className="relative rounded-[10px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F2F2EF]/70"
+        className="relative rounded-[10px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FFFFFF]/70"
         style={{ height }}
       >
         {width > 0 && n > 0 && (
@@ -162,14 +162,14 @@ export function SeriesChart({
             {ticksY.map((t) => (
               <g key={t}>
                 <line x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} stroke={t === 0 ? "rgba(255,255,255,.22)" : "rgba(255,255,255,.07)"} />
-                <text x={PAD.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="fill-[#85857F] font-mono text-[11px] tabular-nums">
+                <text x={PAD.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="fill-[#8E9AC0] font-mono text-[11px] tabular-nums">
                   {formatNumber(t, Number.isInteger(t) ? 0 : 1)}
                 </text>
               </g>
             ))}
             {ticks.map((t, i) =>
               t ? (
-                <text key={i} x={x(i)} y={height - 6} textAnchor="middle" className="fill-[#85857F] font-mono text-[11px]">
+                <text key={i} x={x(i)} y={height - 6} textAnchor="middle" className="fill-[#8E9AC0] font-mono text-[11px]">
                   {t}
                 </text>
               ) : null
@@ -209,8 +209,8 @@ export function SeriesChart({
 
             {refs.map((r) => (
               <g key={r.label}>
-                <line x1={PAD.left} x2={width - PAD.right} y1={y(r.value)} y2={y(r.value)} stroke="#9A9A96" strokeDasharray="2 3" />
-                <text x={width - PAD.right} y={y(r.value) - 5} textAnchor="end" className="fill-[#D4D4D0] font-mono text-[11px] tabular-nums">
+                <line x1={PAD.left} x2={width - PAD.right} y1={y(r.value)} y2={y(r.value)} stroke="#B4BEDB" strokeDasharray="2 3" />
+                <text x={width - PAD.right} y={y(r.value) - 5} textAnchor="end" className="fill-[#DCE2F2] font-mono text-[11px] tabular-nums">
                   {r.label}
                 </text>
               </g>
@@ -218,13 +218,13 @@ export function SeriesChart({
 
             {active !== null && (
               <g>
-                <line x1={x(active)} x2={x(active)} y1={PAD.top} y2={PAD.top + innerH} stroke="rgba(242,242,239,.5)" />
+                <line x1={x(active)} x2={x(active)} y1={PAD.top} y2={PAD.top + innerH} stroke="rgba(255,255,255,.5)" />
                 {series
                   .filter((s) => s.kind !== "bar")
                   .map((s) => {
                     const v = s.values[active];
                     return v === null || !Number.isFinite(v) ? null : (
-                      <circle key={s.label} cx={x(active)} cy={y(v)} r={4} fill={TONE[s.tone ?? "hi"]} stroke="#0A0A0A" strokeWidth={2} />
+                      <circle key={s.label} cx={x(active)} cy={y(v)} r={4} fill={TONE[s.tone ?? "hi"]} stroke="#0F1B3D" strokeWidth={2} />
                     );
                   })}
               </g>
@@ -243,7 +243,7 @@ export function SeriesChart({
               {series.map((s) => (
                 <li key={s.label} className="flex justify-between gap-4">
                   <span>{s.label}</span>
-                  <span className="font-semibold text-[#0A0A0A]">{fmt(s.values[active])}</span>
+                  <span className="font-semibold text-[#0F1B3D]">{fmt(s.values[active])}</span>
                 </li>
               ))}
             </ul>
@@ -281,7 +281,7 @@ export function SeriesChart({
 }
 
 // Lightness-only ramp shared with the execution graph
-const RAMP = ["#181818", "#4A0640", "#850770", "#BE06A2", "#F205CF"] as const;
+const RAMP = ["#1E2E5C", "#55306E", "#8C347C", "#C53985", "#FF3D8B"] as const;
 const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 /** Weekday × hour grid of commits in the period (local time). */
@@ -308,7 +308,7 @@ export function Punchcard({ cells }: { cells: { dow: number; hour: number; commi
       <div className="overflow-x-auto overscroll-x-contain pb-1">
         <div className="min-w-[30rem]">
           <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-2">
-            <div aria-hidden="true" className="grid gap-[3px] py-[3px] font-mono text-[11px] text-[#85857F]" style={{ gridTemplateRows: "repeat(7, minmax(0, 1fr))" }}>
+            <div aria-hidden="true" className="grid gap-[3px] py-[3px] font-mono text-[11px] text-[#8E9AC0]" style={{ gridTemplateRows: "repeat(7, minmax(0, 1fr))" }}>
               {DOW.map((d) => (
                 <span key={d} className="flex items-center">
                   {d}
@@ -323,7 +323,7 @@ export function Punchcard({ cells }: { cells: { dow: number; hour: number; commi
               onFocus={() => setActive((a) => a ?? [0, 9])}
               onBlur={() => setActive(null)}
               onPointerLeave={() => setActive(null)}
-              className="grid gap-[3px] rounded-[8px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2F2EF]/70"
+              className="grid gap-[3px] rounded-[8px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFFFFF]/70"
               style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}
             >
               {grid.map((row, r) =>
@@ -333,7 +333,7 @@ export function Punchcard({ cells }: { cells: { dow: number; hour: number; commi
                     onPointerEnter={() => setActive([r, c])}
                     className={cn(
                       "relative aspect-square animate-cell-in rounded-[3px]",
-                      active?.[0] === r && active?.[1] === c && "z-[1] outline outline-2 outline-offset-1 outline-[#F2F2EF]"
+                      active?.[0] === r && active?.[1] === c && "z-[1] outline outline-2 outline-offset-1 outline-[#FFFFFF]"
                     )}
                     style={{
                       backgroundColor: RAMP[cell.commits === 0 ? 0 : Math.min(4, 1 + Math.floor((cell.commits / max) * 3.999))],
@@ -344,7 +344,7 @@ export function Punchcard({ cells }: { cells: { dow: number; hour: number; commi
               )}
             </div>
           </div>
-          <div aria-hidden="true" className="ml-[3rem] mt-1.5 grid font-mono text-[11px] text-[#85857F]" style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}>
+          <div aria-hidden="true" className="ml-[3rem] mt-1.5 grid font-mono text-[11px] text-[#8E9AC0]" style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}>
             {Array.from({ length: 24 }, (_, h) => (
               <span key={h}>{h % 6 === 0 ? String(h).padStart(2, "0") : ""}</span>
             ))}
@@ -352,10 +352,10 @@ export function Punchcard({ cells }: { cells: { dow: number; hour: number; commi
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm">
-        <p aria-live="polite" className="tabular-nums text-[#9A9A96]">
+        <p aria-live="polite" className="tabular-nums text-[#B4BEDB]">
           {active && shown ? (
             <>
-              <span className="font-semibold text-[#F2F2EF]">
+              <span className="font-semibold text-[#FFFFFF]">
                 {DOW[active[0]]} {hourText(active[1])}
               </span>
               {`: ${shown.commits} ${shown.commits === 1 ? "commit" : "commits"}, +${shown.execution}`}
@@ -364,7 +364,7 @@ export function Punchcard({ cells }: { cells: { dow: number; hour: number; commi
             "Hover a cell · or arrow keys"
           )}
         </p>
-        <span className="flex items-center gap-1.5 text-[#9A9A96]" aria-hidden="true">
+        <span className="flex items-center gap-1.5 text-[#B4BEDB]" aria-hidden="true">
           0
           {RAMP.map((f) => (
             <span key={f} className="size-2.5 rounded-[2px]" style={{ backgroundColor: f }} />

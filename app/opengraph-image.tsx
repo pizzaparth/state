@@ -16,16 +16,16 @@ export default function OpengraphImage() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: 72,
-          background: "#050505",
-          color: "#F4F4F2",
+          background: "#0F1B3D",
+          color: "#FFFFFF",
         }}
       >
-        <div style={{ display: "flex", fontSize: 28, letterSpacing: 6, color: "#85857F" }}>STATE · BY PARTH PANCHOLI</div>
+        <div style={{ display: "flex", fontSize: 28, letterSpacing: 6, color: "#8E9AC0" }}>STATE · BY PARTH PANCHOLI</div>
         <div style={{ display: "flex", flexDirection: "column", fontSize: 128, fontWeight: 800, lineHeight: 0.9, letterSpacing: -4 }}>
           <span>EXECUTION,</span>
           <span>MEASURED.</span>
         </div>
-        <div style={{ display: "flex", fontSize: 34, color: "#A9A9A6" }}>A personal hobby project · Take a demo</div>
+        <div style={{ display: "flex", fontSize: 34, color: "#B4BEDB" }}>A personal hobby project · Take a demo</div>
       </div>
     ),
     size

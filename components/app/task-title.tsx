@@ -6,7 +6,7 @@ import { renameTaskAction } from "@/app/(app)/actions";
 import { useNotice } from "./notice";
 
 // Display face without caps: task titles are user text and can run long
-const headingClass = "font-display text-2xl font-bold leading-tight tracking-[-0.02em] [font-stretch:110%] text-[#F2F2EF]";
+const headingClass = "font-display text-2xl font-bold leading-tight tracking-[-0.02em] [font-stretch:110%] text-[#FFFFFF]";
 
 /**
  * Task panel heading with an inline Rename… form. Enter saves, Escape cancels without
@@ -130,7 +130,7 @@ export function TaskTitle({ taskId, title, editable }: { taskId: string; title: 
           {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
           Save
         </button>
-        <button type="button" onClick={stop} disabled={pending} className="inline-flex h-10 items-center rounded-[12px] px-4 text-base text-[#9A9A96] hover:text-[#F2F2EF] disabled:opacity-50">
+        <button type="button" onClick={stop} disabled={pending} className="inline-flex h-10 items-center rounded-[12px] px-4 text-base text-[#B4BEDB] hover:text-[#FFFFFF] disabled:opacity-50">
           Cancel
         </button>
       </div>

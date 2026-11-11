@@ -41,7 +41,7 @@ export function CommitLedger({
         return (
           <section key={group.key} aria-label={grouped ? dayLabel(group.key, today) : undefined}>
             {grouped && (
-              <h3 className="mb-1 flex items-baseline justify-between px-3 text-[13px] font-semibold uppercase tracking-[0.12em] text-[#9A9A96]">
+              <h3 className="mb-1 flex items-baseline justify-between px-3 text-[13px] font-semibold uppercase tracking-[0.12em] text-[#B4BEDB]">
                 <span>{dayLabel(group.key, today)}</span>
                 <span className="font-mono tabular-nums normal-case tracking-normal">
                   {group.rows.length} {group.rows.length === 1 ? "commit" : "commits"}, +{total}
@@ -54,16 +54,16 @@ export function CommitLedger({
               {group.rows.map((c) => (
                 <li key={c.id}>
                   <Row href={hrefFor?.(c.id)}>
-                    <time dateTime={c.createdAt.toISOString()} className="font-mono text-sm tabular-nums text-[#9A9A96]">
+                    <time dateTime={c.createdAt.toISOString()} className="font-mono text-sm tabular-nums text-[#B4BEDB]">
                       {formatTime(c.createdAt, tz)}
                     </time>
                     <span
                       aria-hidden="true"
-                      className={cn("relative z-[1] mx-auto size-2 rounded-full", c.source === "manual" ? "border border-accent bg-[#0A0A0A]" : "bg-accent")}
+                      className={cn("relative z-[1] mx-auto size-2 rounded-full", c.source === "manual" ? "border border-accent bg-[#0F1B3D]" : "bg-accent")}
                     />
                     <span className="min-w-0">
-                      <span className="block truncate text-base font-medium text-[#F2F2EF]">{c.message}</span>
-                      <span className="block truncate text-sm text-[#85857F]">
+                      <span className="block truncate text-base font-medium text-[#FFFFFF]">{c.message}</span>
+                      <span className="block truncate text-sm text-[#8E9AC0]">
                         {[c.projectName, showAuthor ? c.authorName : null, c.source === "manual" ? "manual" : null].filter(Boolean).join(", ")}
                       </span>
                     </span>

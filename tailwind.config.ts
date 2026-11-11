@@ -13,24 +13,24 @@ const config: Config = {
       colors: {
         // The one colour: about a quarter of every screen (styles/tokens.css)
         accent: {
-          DEFAULT: "#F205CF",
-          hover: "#FF3DE0",
-          ink: "#0A0A0A",
-          muted: "#33002C",
-          soft: "rgba(242, 5, 207, 0.12)",
-          line: "rgba(242, 5, 207, 0.5)",
+          DEFAULT: "#FF3D8B",
+          hover: "#FF6FA8",
+          ink: "#0F1B3D",
+          muted: "#3B0A28",
+          soft: "rgba(255, 61, 139, 0.12)",
+          line: "rgba(255, 61, 139, 0.5)",
         },
         // Marketing / Brand Dark Theme
         dark: {
           bg: {
-            0: "#050505",
-            1: "#080808",
-            2: "#0D0D0D",
+            0: "#0F1B3D",
+            1: "#0F1B3D",
+            2: "#16244D",
           },
           surface: {
-            1: "#111111",
-            2: "#161616",
-            3: "#1C1C1C",
+            1: "#16244D",
+            2: "#1E2E5C",
+            3: "#1E2E5C",
           },
           border: {
             subtle: "rgba(255, 255, 255, 0.08)",
@@ -38,26 +38,36 @@ const config: Config = {
             strong: "rgba(255, 255, 255, 0.20)",
           },
           text: {
-            primary: "#F4F4F2",
-            secondary: "#A9A9A6",
-            tertiary: "#6F6F6B",
-            inverse: "#0A0A0A",
+            primary: "#FFFFFF",
+            secondary: "#B4BEDB",
+            tertiary: "#8E9AC0",
+            inverse: "#0F1B3D",
           },
           action: {
-            primary: "#F205CF",
-            "primary-text": "#0A0A0A",
+            primary: "#FF3D8B",
+            "primary-text": "#0F1B3D",
           },
         },
         // Logged-in product: AMOLED black, flat
         app: {
-          bg: "#000000",
-          panel: "#0E0E0E",
-          raised: "#181818",
+          bg: "#0F1B3D",
+          panel: "#16244D",
+          raised: "#1E2E5C",
           text: {
-            primary: "#F2F2EF",
-            secondary: "#9A9A96",
-            tertiary: "#85857F",
+            primary: "#FFFFFF",
+            secondary: "#B4BEDB",
+            tertiary: "#8E9AC0",
           },
+        },
+      },
+      // Accent as text: a lighter tint so small pink text passes AA on every layer
+      // (#FF3D8B on the card layer is 3.9:1; #FF6FA8 is 5.1:1). Fills keep #FF3D8B.
+      textColor: {
+        accent: {
+          DEFAULT: "#FF6FA8",
+          hover: "#FF8FBB",
+          ink: "#0F1B3D",
+          muted: "#3B0A28",
         },
       },
       boxShadow: {
