@@ -41,7 +41,20 @@ function useParallax(scroller: Scroller, root: React.RefObject<HTMLElement | nul
         const anchor = el.parentElement?.getBoundingClientRect();
         return { el, depth: Number(el.dataset.depth) || 0, offset: anchor ? anchor.top + anchor.height / 2 - mid : 0 };
       });
+      // [data-tilt]: 0 while the frame's top is at the bottom of the view, 1 once it has
+      // risen three quarters of the way up
+      const tilts = Array.from(scope.querySelectorAll<HTMLElement>("[data-tilt]")).map((el) => {
+        const anchor = el.parentElement?.getBoundingClientRect();
+        const h = mid * 2;
+        const p = anchor ? Math.min(1, Math.max(0, (h - anchor.top) / (h * 0.75))) : 1;
+        return { el, p };
+      });
       // Writes
+      for (const { el, p } of tilts) {
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.style.transform = `perspective(1600px) rotateX(${((1 - eased) * 22).toFixed(2)}deg) scale(${(0.9 + 0.1 * eased).toFixed(3)})`;
+        el.style.opacity = (0.35 + 0.65 * eased).toFixed(3);
+      }
       for (const layer of layers) {
         const depth = Number(layer.dataset.layer) || 0;
         const tile = Number(layer.dataset.tile) || 600;

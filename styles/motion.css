@@ -221,3 +221,55 @@ textarea {
 [role="menuitem"][data-highlighted] {
   transform: translateX(3px);
 }
+
+/* "+4" rising off a finished card */
+@keyframes mi-float {
+  0% {
+    transform: translateY(6px) scale(0.8);
+    opacity: 0;
+  }
+  25% {
+    transform: translateY(0) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-26px) scale(1);
+    opacity: 0;
+  }
+}
+.mi-float {
+  animation: mi-float 1.6s var(--ease-restrained) both;
+}
+
+/* Product screens on the landing page tilt up out of perspective as they scroll in
+   (data-tilt, driven by components/motion/parallax.tsx) */
+[data-tilt] {
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+
+/* Refusals get struck through one by one */
+@keyframes mi-strike {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.mi-strike {
+  position: relative;
+}
+.mi-strike::after {
+  content: "";
+  position: absolute;
+  left: -0.1em;
+  right: -0.1em;
+  top: 52%;
+  height: 0.09em;
+  min-height: 3px;
+  background-color: var(--accent);
+  transform-origin: left;
+  animation: mi-strike 700ms var(--ease-restrained) both;
+  animation-delay: inherit;
+}

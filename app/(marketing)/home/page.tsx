@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Magnetic, MagneticLabel } from "@/components/marketing/magnetic";
 import { WorkspaceScope } from "@/components/marketing/workspace-scope";
 import { ProductFrame } from "@/components/marketing/product-frame";
+import { LiveDemo } from "@/components/marketing/live-demo";
+import { PlayOnView } from "@/components/motion/play-on-view";
 import { ExecutionGraph } from "@/components/app/execution-graph";
 import { CommitLedger } from "@/components/app/commit-ledger";
 import { MetricsReport } from "@/components/app/metrics-view";
@@ -142,6 +144,18 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Live walkthrough: the whole loop, played like a screen recording */}
+      <section aria-labelledby="loop-title" className={`${sectionPad} py-[12vh]`}>
+        <p className={kicker}>Capture. Move. Commit. Measure.</p>
+        <h2 id="loop-title" data-depth="0.03" suppressHydrationWarning className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
+          Watch one task become data.
+        </h2>
+        <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#B4BEDB]">Type it. Drag it to Done. The commit, the day’s total and the graph update at once.</p>
+        <ProductFrame path="/platform/today" caption="Animated walkthrough of capturing a task and finishing it in the State app" className="mt-16">
+          <LiveDemo />
+        </ProductFrame>
+      </section>
+
       {/* History */}
       <section id="history" aria-labelledby="history-title" className={`${sectionPad} scroll-mt-16 py-[16vh]`}>
         <div className="max-w-3xl">
@@ -152,12 +166,16 @@ export default function LandingPage() {
           <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#B4BEDB]">Every finished task lands on the graph.</p>
         </div>
         <ProductFrame path="/platform/history" caption="Execution graph and commit ledger in the State app, with demo data" className="mt-16">
-          <Panel title="Execution · 1y" aside={`${formatNumber(yearCommits)} commits · +${formatNumber(yearExecution)}`}>
-            <ExecutionGraph days={year} />
-          </Panel>
-          <Panel title="Commits">
-            <CommitLedger commits={demoCommits(personal, 8)} tz={DEMO_TZ} now={personal.now} />
-          </Panel>
+          <PlayOnView className="space-y-5">
+            <Panel title="Execution · 1y" aside={`${formatNumber(yearCommits)} commits · +${formatNumber(yearExecution)}`}>
+              <ExecutionGraph days={year} />
+            </Panel>
+            <Panel title="Commits">
+              <div className="app-stagger">
+                <CommitLedger commits={demoCommits(personal, 8)} tz={DEMO_TZ} now={personal.now} />
+              </div>
+            </Panel>
+          </PlayOnView>
         </ProductFrame>
       </section>
 
@@ -170,7 +188,9 @@ export default function LandingPage() {
         <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#B4BEDB]">Every number shows its formula. No vibes, just math.</p>
 
         <ProductFrame path="/platform/metrics?period=30d" caption="Metrics page in the State app, last 30 days of demo data" className="mt-16">
-          <MetricsReport metrics={demoMetrics(personal, 30)} series={demoSeries(personal, 30)} objectives={[]} tz={DEMO_TZ} period="30d" basePath={null} overview />
+          <PlayOnView>
+            <MetricsReport metrics={demoMetrics(personal, 30)} series={demoSeries(personal, 30)} objectives={[]} tz={DEMO_TZ} period="30d" basePath={null} overview />
+          </PlayOnView>
         </ProductFrame>
       </section>
 
@@ -193,16 +213,19 @@ export default function LandingPage() {
           No ads. No AI noise.
         </h2>
         <p className="mt-6 text-lg text-[#B4BEDB]">Never shipping:</p>
-        <ul className="mt-10 space-y-1">
-          {REFUSALS.map((item) => (
-            <li
-              key={item}
-              className="font-display text-[clamp(1.5rem,4.2vw,3.5rem)] font-bold uppercase leading-[1.1] tracking-[-0.02em] [font-stretch:112%] text-[#4A5C8C] line-through decoration-accent decoration-[3px]"
-            >
-              {item}
-            </li>
-          ))}
-        </ul>
+        <PlayOnView>
+          <ul className="mt-10 space-y-1">
+            {REFUSALS.map((item, i) => (
+              <li
+                key={item}
+                style={{ animationDelay: `${300 + i * 140}ms` }}
+                className="mi-strike w-fit font-display text-[clamp(1.5rem,4.2vw,3.5rem)] font-bold uppercase leading-[1.1] tracking-[-0.02em] [font-stretch:112%] text-[#4A5C8C]"
+              >
+                {item}
+              </li>
+            ))}
+          </ul>
+        </PlayOnView>
         <p className="mt-14 max-w-[40ch] text-xl leading-relaxed text-[#FFFFFF] text-pretty sm:text-2xl">Plan. Execute. Measure. That’s it.</p>
       </section>
 
