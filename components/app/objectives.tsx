@@ -16,7 +16,7 @@ const selectClass = "app-field h-11 w-full rounded-[14px] bg-[#000000] px-3 text
 const empty = { name: "", measure: "manual" as Measure, unit: "", targetValue: "", deadline: "", projectId: "" };
 
 /** "New objective…": a measurable target, counted by hand or summed from commit execution. */
-export function NewObjective({ organisationId, projects }: { organisationId: string | null; projects: { id: string; name: string }[] }) {
+export function NewObjective({ projects }: { projects: { id: string; name: string }[] }) {
   const notify = useNotice();
   const [open, setOpen] = React.useState(false);
   const [values, setValues] = React.useState(empty);
@@ -88,7 +88,6 @@ export function NewObjective({ organisationId, projects }: { organisationId: str
               e.preventDefault();
               if (pending) return;
               const input = {
-                organisationId,
                 name: values.name,
                 measure: values.measure,
                 unit: values.measure === "execution" ? "" : values.unit,

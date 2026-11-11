@@ -24,19 +24,12 @@ export default async function AppLayout({
     getProjects(viewer.workspaceIds),
     getTicker({ workspaceIds: viewer.workspaceIds, userId: viewer.id }, viewer.tz),
   ]);
-  const orgByWorkspace = new Map(viewer.orgs.map((o) => [o.workspaceId, o]));
 
   return (
     <AppShell
       data={{
         inboxCount,
-        orgs: viewer.orgs.map((o) => ({ name: o.name, slug: o.slug })),
-        projects: projects.map((p) => {
-          const org = orgByWorkspace.get(p.workspaceId);
-          return org
-            ? { id: p.id, name: `${p.name} (${org.name})`, href: `/platform/org/${org.slug}/projects/${p.slug}` }
-            : { id: p.id, name: p.name, href: `/platform/projects/${p.slug}` };
-        }),
+        projects: projects.map((p) => ({ id: p.id, name: p.name, href: `/platform/projects/${p.slug}` })),
         dateLabel: formatDate(new Date(), viewer.tz, { weekday: "short", day: "numeric", month: "short" }),
         ticker,
       }}

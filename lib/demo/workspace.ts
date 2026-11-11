@@ -1,6 +1,5 @@
 import type { CommitRow, DailyExecution, MetricSeries, MetricsData } from "@/db/queries";
 import type { BoardCard, BoardColumn } from "@/components/app/kanban";
-import { initials } from "@/lib/format";
 
 /**
  * Demo workspace for the public landing page. The product screens there are the real
@@ -52,8 +51,6 @@ interface DemoTask {
   createdAt: number;
   startedAt: number | null;
   completedAt: number | null;
-  /** Organisation boards have a Review step before Done. */
-  inReview: boolean;
 }
 
 interface DemoCommit {
@@ -126,7 +123,6 @@ function generate(seed: number, people: string[], today: number): DemoWorkspace 
           createdAt: startedAt - Math.floor(rand() * 3 * DAY),
           startedAt,
           completedAt: at,
-          inReview: false,
         };
         tasks.push(task);
         commits.push({ id: id("c"), message: title, project, executionValue: weight, source: "task_completion", taskId: task.id, author, createdAt: at });
@@ -152,7 +148,6 @@ function generate(seed: number, people: string[], today: number): DemoWorkspace 
         createdAt,
         startedAt: started ? createdAt + Math.floor(rand() * 12 * HOUR) : null,
         completedAt: null,
-        inReview: started && rand() < 0.55,
       });
     }
   }
@@ -310,12 +305,11 @@ export function demoCommits(w: DemoWorkspace, limit: number): CommitRow[] {
  * getBoard, trimmed to a screen's worth: the newest open cards per column and the work
  * finished in the last `doneWindowDays` days.
  */
-export function demoBoard(w: DemoWorkspace, kind: "personal" | "organisation", doneWindowDays: number, perColumn = 4): { columns: BoardColumn[]; cards: BoardCard[] } {
-  const states = kind === "personal" ? (["backlog", "active", "done"] as const) : (["backlog", "active", "review", "done"] as const);
-  const names = { backlog: "Queued", active: "Active", review: "Review", done: "Done" } as const;
-  const columns = states.map((state) => ({ id: `${kind}-${state}`, name: names[state], stateType: state, total: 0 }));
-  const stateOf = (t: DemoTask) =>
-    t.completedAt !== null ? "done" : t.startedAt === null ? "backlog" : t.inReview && kind === "organisation" ? "review" : "active";
+export function demoBoard(w: DemoWorkspace, kind: "personal", doneWindowDays: number, perColumn = 4): { columns: BoardColumn[]; cards: BoardCard[] } {
+  const states = ["backlog", "active", "done"] as const;
+  const names = { backlog: "Queued", active: "Active", done: "Done" } as const;
+  const columns = states.map((state) => ({ id: `${kind}-${state}`, name: names[state], stateType: state as string, total: 0 }));
+  const stateOf = (t: DemoTask) => (t.completedAt !== null ? "done" : t.startedAt === null ? "backlog" : "active");
   const doneFrom = w.now.getTime() - doneWindowDays * DAY;
   const newest = [...w.tasks].sort((a, b) => (b.completedAt ?? b.createdAt) - (a.completedAt ?? a.createdAt));
 
@@ -323,7 +317,7 @@ export function demoBoard(w: DemoWorkspace, kind: "personal" | "organisation", d
   // Titles repeat across a year of work; a screen shows each one once. Columns with the
   // fewest cards choose first so none is emptied by the rule.
   const shown = new Set<string>();
-  const byScarcity = [...columns].sort((a, b) => ["review", "done", "active", "backlog"].indexOf(a.stateType) - ["review", "done", "active", "backlog"].indexOf(b.stateType));
+  const byScarcity = [...columns].sort((a, b) => ["done", "active", "backlog"].indexOf(a.stateType) - ["done", "active", "backlog"].indexOf(b.stateType));
   for (const column of byScarcity) {
     const inColumn = newest.filter((t) => stateOf(t) === column.stateType && (column.stateType !== "done" || t.completedAt! >= doneFrom));
     column.total = inColumn.length;
@@ -343,8 +337,8 @@ export function demoBoard(w: DemoWorkspace, kind: "personal" | "organisation", d
         priority: t.priority,
         weight: t.weight,
         due: null,
-        assigneeName: kind === "organisation" ? t.assignee : null,
-        assigneeInitials: kind === "organisation" ? initials(t.assignee) : null,
+        assigneeName: null,
+        assigneeInitials: null,
         tags: [],
       });
     }
@@ -353,13 +347,11 @@ export function demoBoard(w: DemoWorkspace, kind: "personal" | "organisation", d
   return { columns, cards: cards.sort((a, b) => order.get(a.columnId)! - order.get(b.columnId)!) };
 }
 
-let cache: { day: number; personal: DemoWorkspace; organisation: DemoWorkspace } | null = null;
+let cache: { day: number; personal: DemoWorkspace } | null = null;
 
-/** The personal and organisation demo workspaces as of `now` (records built once per day). */
-export function demoWorkspaces(now = Date.now()): { personal: DemoWorkspace; organisation: DemoWorkspace } {
+/** The landing page's demo workspace as of `now` (records built once per day). */
+export function demoWorkspaces(now = Date.now()): { personal: DemoWorkspace } {
   const today = Math.floor(now / DAY) * DAY;
-  if (cache?.day !== today) {
-    cache = { day: today, personal: generate(0x57a7e, ["You"], today), organisation: generate(0x0c0de, ["Aarav Kapoor", "Ishita Sen", "Meera Rao"], today) };
-  }
-  return { personal: asOf(cache.personal, now), organisation: asOf(cache.organisation, now) };
+  if (cache?.day !== today) cache = { day: today, personal: generate(0x57a7e, ["You"], today) };
+  return { personal: asOf(cache.personal, now) };
 }

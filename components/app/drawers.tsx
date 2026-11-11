@@ -1,6 +1,5 @@
 import * as React from "react";
 import { getBoardTargets, getCommitDetail, getProjectOptions, getTaskDetail } from "@/db/queries";
-import { WRITE_ROLES } from "@/lib/authz";
 import { dayKey } from "@/lib/format";
 import type { Viewer } from "@/lib/viewer";
 import { DetailDrawer } from "./detail-drawer";
@@ -10,14 +9,10 @@ import { TaskActions } from "./task-actions";
 export type PageSearchParams = Promise<Record<string, string | undefined>>;
 
 // Mirrors loadActor: the server re-checks on every write, this only hides controls
-const canWrite = (viewer: Viewer, workspaceId: string) =>
-  workspaceId === viewer.personalWorkspaceId ||
-  viewer.orgs.some((o) => o.workspaceId === workspaceId && (WRITE_ROLES as readonly string[]).includes(o.role));
+const canWrite = (viewer: Viewer, workspaceId: string) => workspaceId === viewer.personalWorkspaceId;
 
-// Mirrors editCommit: the author, or an owner or admin of the commit's organisation
-const canEditCommit = (viewer: Viewer, commit: { workspaceId: string; userId: string }) =>
-  canWrite(viewer, commit.workspaceId) &&
-  (commit.userId === viewer.id || viewer.orgs.some((o) => o.workspaceId === commit.workspaceId && (o.role === "owner" || o.role === "admin")));
+// Mirrors editCommit: only the author
+const canEditCommit = (viewer: Viewer, commit: { workspaceId: string; userId: string }) => canWrite(viewer, commit.workspaceId) && commit.userId === viewer.id;
 
 // Repeated (?task=a&task=b) or malformed ids never reach a query
 const objectIdParam = (value: unknown) => (typeof value === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(value) ? value : null);

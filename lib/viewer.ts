@@ -1,19 +1,9 @@
 import { cache } from "react";
-import { redirect, notFound } from "next/navigation";
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { redirect } from "next/navigation";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { boards, organisationMembers, organisations, projects, users, workspaces } from "@/db/schema";
-import { WRITE_ROLES } from "@/lib/authz";
+import { boards, projects, users, workspaces } from "@/db/schema";
 import { getSession } from "@/lib/auth/session";
-
-export interface ViewerOrg {
-  id: string;
-  name: string;
-  slug: string;
-  workspaceId: string;
-  role: string;
-  timezone: string;
-}
 
 export interface Viewer {
   id: string;
@@ -24,7 +14,6 @@ export interface Viewer {
   onboardedAt: Date | null;
   personalWorkspaceId: string | null;
   personalBoardId: string | null;
-  orgs: ViewerOrg[];
   /** Every workspace this user may read. All product queries are scoped to these. */
   workspaceIds: string[];
 }
@@ -37,26 +26,11 @@ export const getViewer = cache(async (): Promise<Viewer> => {
   const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
   if (!user) redirect("/login");
 
-  const [[personal], orgs] = await Promise.all([
-    db
-      .select({ id: workspaces.id })
-      .from(workspaces)
-      .where(and(eq(workspaces.ownerId, user.id), eq(workspaces.type, "personal")))
-      .limit(1),
-    db
-      .select({
-        id: organisations.id,
-        name: organisations.name,
-        slug: organisations.slug,
-        workspaceId: organisations.workspaceId,
-        timezone: organisations.timezone,
-        role: organisationMembers.role,
-      })
-      .from(organisationMembers)
-      .innerJoin(organisations, eq(organisations.id, organisationMembers.organisationId))
-      .where(eq(organisationMembers.userId, user.id))
-      .orderBy(asc(organisations.name)),
-  ]);
+  const [personal] = await db
+    .select({ id: workspaces.id })
+    .from(workspaces)
+    .where(and(eq(workspaces.ownerId, user.id), eq(workspaces.type, "personal")))
+    .limit(1);
 
   const [personalBoard] = personal
     ? await db
@@ -74,35 +48,17 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     onboardedAt: user.onboardedAt,
     personalWorkspaceId: personal?.id ?? null,
     personalBoardId: personalBoard?.id ?? null,
-    orgs,
-    workspaceIds: [...(personal ? [personal.id] : []), ...orgs.map((o) => o.workspaceId)],
+    workspaceIds: personal ? [personal.id] : [],
   };
 });
 
-/** Resolves an organisation the viewer belongs to, or 404s (never reveals others). */
-export async function getViewerOrg(slug: string): Promise<{ viewer: Viewer; org: ViewerOrg }> {
-  const viewer = await getViewer();
-  const org = viewer.orgs.find((o) => o.slug === slug);
-  if (!org) notFound();
-  return { viewer, org };
-}
-
-/**
- * Live projects the viewer can capture to (#slug): personal first, then each organisation
- * they can write to, matching how the server picks between equal slugs.
- */
-export async function getCaptureProjects(viewer: Viewer): Promise<{ slug: string; name: string; organisation: string | null }[]> {
-  const writable = viewer.orgs.filter((o) => (WRITE_ROLES as readonly string[]).includes(o.role));
-  const ids = [...(viewer.personalWorkspaceId ? [viewer.personalWorkspaceId] : []), ...writable.map((o) => o.workspaceId)];
-  if (ids.length === 0) return [];
-  const rows = await db
-    .select({ slug: projects.slug, name: projects.name, workspaceId: projects.workspaceId })
+/** Live projects the viewer can capture to (#slug). */
+export async function getCaptureProjects(viewer: Viewer): Promise<{ slug: string; name: string }[]> {
+  if (!viewer.personalWorkspaceId) return [];
+  return db
+    .select({ slug: projects.slug, name: projects.name })
     .from(projects)
-    .where(and(inArray(projects.workspaceId, ids), isNull(projects.archivedAt)))
+    .where(and(eq(projects.workspaceId, viewer.personalWorkspaceId), isNull(projects.archivedAt)))
     .orderBy(asc(projects.name))
     .limit(500);
-  const orgName = new Map(writable.map((o) => [o.workspaceId, o.name]));
-  return rows
-    .map((p) => ({ slug: p.slug, name: p.name, organisation: orgName.get(p.workspaceId) ?? null }))
-    .sort((a, b) => Number(a.organisation !== null) - Number(b.organisation !== null) || (a.organisation ?? "").localeCompare(b.organisation ?? ""));
 }

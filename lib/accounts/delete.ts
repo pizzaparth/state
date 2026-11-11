@@ -1,6 +1,6 @@
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { accounts, auditEvents, organisationMembers, organisations, users, workspaces } from "@/db/schema";
+import { accounts, auditEvents, users } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { MutationError } from "@/lib/authz";
 
@@ -35,36 +35,11 @@ export async function verifyIdentity(userId: string, sessionCreatedAt: Date, pas
 }
 
 /**
- * Permanent account deletion. Callers must have re-verified the person (password or a
- * fresh sign-in) and their typed confirmation.
- *
- * Deleting the user row cascades through every table that references it: the personal
- * workspace with its projects, boards, tasks, commits, tags and objectives; sessions and
- * linked sign-ins; organisation memberships; and the
- * person's own commits and created tasks in shared organisations.
- *
- * Refused while the person owns an organisation that other members still use, because
- * the cascade would delete that organisation for all of them.
+ * Permanent account deletion. Deleting the user row cascades through every table that
+ * references it: the personal workspace with its projects, boards, tasks, commits, tags
+ * and objectives, plus sessions and sign-ins.
  */
 export async function deleteAccount(userId: string): Promise<void> {
-  const shared = await db
-    .select({ name: organisations.name })
-    .from(organisations)
-    .innerJoin(workspaces, eq(workspaces.id, organisations.workspaceId))
-    .where(
-      and(
-        eq(workspaces.ownerId, userId),
-        sql`exists (select 1 from ${organisationMembers} where ${organisationMembers.organisationId} = ${organisations.id} and ${ne(organisationMembers.userId, userId)})`
-      )
-    )
-    .limit(5);
-  if (shared.length > 0) {
-    throw new MutationError(
-      "conflict",
-      `You own ${shared.map((o) => o.name).join(", ")}, which other members use. Transfer ownership or remove them first.`
-    );
-  }
-
   await db.transaction(async (tx) => {
     // Operational record only: no name, email or content survives the deletion
     await tx.insert(auditEvents).values({ action: "account.deleted", targetType: "user", targetId: userId });

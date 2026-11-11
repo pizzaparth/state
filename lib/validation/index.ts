@@ -163,7 +163,6 @@ const objectiveAmount = z.number({ error: "Enter a whole number." }).int("Enter 
 
 export const createObjectiveSchema = z
   .strictObject({
-    organisationId: objectId.nullable(),
     name: z.string().trim().min(1, "Name the objective.").max(100, "Keep the name under 100 characters."),
     measure: z.enum(OBJECTIVE_MEASURES),
     unit: z.string().trim().max(24, "Keep the unit under 24 characters."),
@@ -184,8 +183,7 @@ export const setObjectiveArchivedSchema = z.strictObject({
 });
 
 /**
- * Project creation. The workspace is derived on the server: null organisationId means
- * the actor's personal workspace. The slug is what `#slug` matches in quick capture.
+ * Project creation, always in the actor's personal workspace. The slug is what `#slug` matches in quick capture.
  */
 export const PROJECT_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -204,10 +202,7 @@ const projectFields = {
   description: z.string().trim().max(PROJECT_DESCRIPTION_MAX, `Keep the description to ${PROJECT_DESCRIPTION_MAX} characters.`).nullable(),
 };
 
-export const createProjectSchema = z.strictObject({
-  organisationId: objectId.nullable(),
-  ...projectFields,
-});
+export const createProjectSchema = z.strictObject(projectFields);
 
 /** Statuses set by hand. Archiving is separate (archivedAt) and has its own action. */
 export const PROJECT_STATUSES = ["planned", "active", "paused", "completed"] as const;
@@ -221,54 +216,6 @@ export const updateProjectSchema = z.strictObject({
 export const setProjectArchivedSchema = z.strictObject({
   projectId: objectId,
   archived: z.boolean(),
-});
-
-/**
- * New organisation. Its slug is its address (/platform/org/<slug>) and is unique across
- * State; the workspace, board and owner are created on the server.
- */
-export const createOrganisationSchema = z.strictObject({
-  name: z.string().trim().min(1, "Give the organisation a name.").max(80, "Keep the name under 80 characters."),
-  slug: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(2, "Use at least 2 characters.")
-    .max(48, "Keep the address under 48 characters.")
-    .regex(PROJECT_SLUG, "Use lowercase letters, numbers and single hyphens, like ksan-relay."),
-});
-
-/** Roles that can be given to someone. Ownership is never handed out through these. */
-export const ASSIGNABLE_ROLES = ["admin", "member", "viewer"] as const;
-
-export const inviteMemberSchema = z.strictObject({
-  organisationId: objectId,
-  email: z.string().trim().toLowerCase().max(254, "Use a shorter email address.").pipe(z.email("Enter an email address, like ana@example.com.")),
-  role: z.enum(ASSIGNABLE_ROLES),
-});
-
-export const invitationRefSchema = z.strictObject({
-  invitationId: objectId,
-});
-
-/** Invitation links carry 32 random bytes as base64url. */
-export const acceptInvitationSchema = z.strictObject({
-  token: z.string().regex(/^[A-Za-z0-9_-]{43}$/, "This invitation link is not valid."),
-});
-
-export const setMemberRoleSchema = z.strictObject({
-  organisationId: objectId,
-  userId: objectId,
-  role: z.enum(ASSIGNABLE_ROLES),
-});
-
-export const memberRefSchema = z.strictObject({
-  organisationId: objectId,
-  userId: objectId,
-});
-
-export const organisationRefSchema = z.strictObject({
-  organisationId: objectId,
 });
 
 /** Slug suggested from a project name: "Relay DB v2" becomes "relay-db-v2". */
@@ -311,7 +258,7 @@ const isRealDay = (day: string) =>
  *
  *   #project      project by slug
  *   !priority     critical, high, medium or low
- *   @person       owner of an organisation task (first name or email name)
+ *   @me           assign to yourself (the only person in a workspace)
  *   due day       today, tomorrow, a weekday (the next one after today) or YYYY-MM-DD
  *
  * Each token is read once (the first match) and removed from the title. Dates resolve
@@ -382,28 +329,6 @@ export function parseQuickCapture(input: string, today: string = new Date().toIS
     assignee,
   };
 }
-
-/**
- * Checkout request (paid-only access; no trial)
- */
-export const checkoutSchema = z
-  .object({
-    plan: z.enum(["individual", "organisation"]),
-    interval: z.enum(["monthly", "yearly"]).default("monthly"),
-    seats: z.coerce.number().int().min(1).max(500).default(1),
-  })
-  .transform((input) => ({ ...input, seats: input.plan === "individual" ? 1 : input.seats }));
-
-export type CheckoutInput = z.infer<typeof checkoutSchema>;
-
-/**
- * Razorpay Checkout handler payload, verified server-side before granting access
- */
-export const razorpayVerifySchema = z.object({
-  razorpay_payment_id: z.string().min(1),
-  razorpay_subscription_id: z.string().min(1),
-  razorpay_signature: z.string().min(1),
-});
 
 /**
  * Data import (State JSON export, or a tasks / commits / projects CSV). Rows go into the

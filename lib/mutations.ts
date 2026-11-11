@@ -1,14 +1,12 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { createHash, randomBytes } from "node:crypto";
-import { auditEvents, objectiveProjects, objectives, boards, columns, commitTags, commits, organisationInvitations, organisationMembers, organisations, projects, tags, taskTags, tasks, users, workspaces } from "@/db/schema";
-import { actionEmail, sendEmail } from "@/lib/email";
+import { auditEvents, objectiveProjects, objectives, boards, columns, commitTags, commits, projects, tags, taskTags, tasks, users } from "@/db/schema";
 import { assertWritable, MutationError, type Actor } from "@/lib/authz";
 import { keyBetween } from "@/lib/position";
 import { dayIn, nextDueDay } from "@/lib/recurrence";
 import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
 import type { z } from "zod";
-import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, acceptInvitationSchema, setTaskRecurrenceSchema, captureTaskSchema, createOrganisationSchema, createProjectSchema, invitationRefSchema, inviteMemberSchema, memberRefSchema, organisationRefSchema, setMemberRoleSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -192,79 +190,30 @@ export interface CaptureResult {
   id: string;
   title: string;
   projectName: string | null;
-  /** Organisation the task went to (straight onto its board), or null for the personal Inbox. */
-  organisationName: string | null;
   dueAt: Date | null;
-  assigneeName: string | null;
 }
 
 /**
- * Quick capture (parseQuickCapture). Without a project, or with one of the actor's
- * personal projects, the task lands in the personal Inbox. A `#project` from an
- * organisation the actor can write to puts it at the top of that organisation's board
- * (organisations have no Inbox), where `@person` can name its owner among the members.
- * Personal projects win when a slug exists in both. Due days are read in the actor's
- * timezone and stored as the end of that day.
+ * Quick capture (parseQuickCapture) into the personal Inbox, optionally tagged with one
+ * of the actor's live projects. Due days are read in the actor's timezone and stored as
+ * the end of that day. `@me` is accepted; there is no one else to assign to.
  */
 export async function captureTask(actor: Actor, input: z.infer<typeof captureTaskSchema>): Promise<CaptureResult> {
   assertWritable(actor, actor.personalWorkspaceId);
-  const personalWorkspaceId = actor.personalWorkspaceId;
+  const workspaceId = actor.personalWorkspaceId;
   const [{ tz }] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
   const parsed = parseQuickCapture(input.text, dayIn(new Date(), tz));
   const title = parsed.title.trim();
-  if (!title) throw new MutationError("invalid", "Add a title as well as the #project, !priority, @person or date.");
+  if (!title) throw new MutationError("invalid", "Add a title as well as the #project, !priority or date.");
+  if (parsed.assignee && parsed.assignee !== "me") throw new MutationError("invalid", `@${parsed.assignee}: tasks here can only be yours. Use @me or leave it out.`);
 
-  let project: { id: string; name: string; workspaceId: string; organisationId: string | null; organisationName: string | null } | undefined;
+  let project: { id: string; name: string } | undefined;
   if (parsed.projectSlug) {
     [project] = await db
-      .select({ id: projects.id, name: projects.name, workspaceId: projects.workspaceId, organisationId: organisations.id, organisationName: organisations.name })
+      .select({ id: projects.id, name: projects.name })
       .from(projects)
-      .leftJoin(organisations, eq(organisations.workspaceId, projects.workspaceId))
-      .where(and(inArray(projects.workspaceId, [...actor.writable]), eq(projects.slug, parsed.projectSlug.toLowerCase()), isNull(projects.archivedAt)))
-      .orderBy(sql`${projects.workspaceId} = ${personalWorkspaceId} desc`, asc(organisations.name))
+      .where(and(eq(projects.workspaceId, workspaceId), eq(projects.slug, parsed.projectSlug.toLowerCase()), isNull(projects.archivedAt)))
       .limit(1);
-  }
-  const organisationId = project?.organisationId ?? null;
-  const workspaceId = project?.workspaceId ?? personalWorkspaceId;
-  assertWritable(actor, workspaceId);
-
-  // @person: yourself anywhere; other people only on organisation tasks, among its members
-  let assignee = { id: actor.id, name: null as string | null };
-  if (parsed.assignee && parsed.assignee !== "me") {
-    if (!organisationId) throw new MutationError("invalid", `@${parsed.assignee} needs an organisation #project, so the task has someone to go to.`);
-    const people = await db
-      .select({ id: users.id, name: users.name, email: users.email })
-      .from(organisationMembers)
-      .innerJoin(users, eq(users.id, organisationMembers.userId))
-      .where(eq(organisationMembers.organisationId, organisationId))
-      .limit(500);
-    const handle = parsed.assignee;
-    const matches = people.filter(
-      (u) => u.email.toLowerCase().split("@")[0] === handle || u.name.toLowerCase().split(/\s+/)[0] === handle || u.name.toLowerCase().replace(/\s+/g, "") === handle
-    );
-    if (matches.length === 0) throw new MutationError("invalid", `No one called @${handle} in ${project!.organisationName}.`);
-    if (matches.length > 1) throw new MutationError("invalid", `@${handle} matches ${matches.length} people. Use their email name instead.`);
-    assignee = matches[0];
-  }
-
-  // Organisation tasks go straight to the top of the board's first queued column
-  let place: { boardId: string; columnId: string; position: string } | null = null;
-  if (organisationId) {
-    const [column] = await db
-      .select({ id: columns.id, boardId: boards.id })
-      .from(columns)
-      .innerJoin(boards, eq(boards.id, columns.boardId))
-      .where(and(eq(boards.workspaceId, workspaceId), eq(columns.stateType, "backlog")))
-      .orderBy(asc(boards.createdAt), asc(columns.position))
-      .limit(1);
-    if (!column) throw new MutationError("invalid", `${project!.organisationName} has no board to capture to.`);
-    const [first] = await db
-      .select({ position: tasks.position })
-      .from(tasks)
-      .where(and(eq(tasks.boardId, column.boardId), eq(tasks.columnId, column.id), isNull(tasks.deletedAt)))
-      .orderBy(asc(byPosition))
-      .limit(1);
-    place = { boardId: column.boardId, columnId: column.id, position: keyBetween(null, first?.position ?? null) };
   }
 
   const [row] = await db
@@ -272,15 +221,14 @@ export async function captureTask(actor: Actor, input: z.infer<typeof captureTas
     .values({
       workspaceId,
       creatorId: actor.id,
-      assigneeId: assignee.id,
+      assigneeId: actor.id,
       projectId: project?.id ?? null,
       title,
       priority: parsed.priority ?? "none",
       dueAt: parsed.dueDate ? sql<Date>`((${parsed.dueDate})::date + time '23:59') at time zone ${tz}` : null,
-      ...(place ?? {}),
     })
     .returning({ id: tasks.id, dueAt: tasks.dueAt });
-  return { id: row.id, title, projectName: project?.name ?? null, organisationName: project?.organisationName ?? null, dueAt: row.dueAt, assigneeName: assignee.name };
+  return { id: row.id, title, projectName: project?.name ?? null, dueAt: row.dueAt };
 }
 
 /** New task at the top of the actor's personal board's Queued column. */
@@ -501,22 +449,11 @@ export async function restoreTask(actor: Actor, input: z.infer<typeof taskRefSch
 }
 
 /**
- * New project in the actor's personal workspace, or in an organisation they can write to.
+ * New project in the actor's personal workspace.
  * Slugs are unique per workspace (archived projects included), enforced by an index.
  */
 export async function createProject(actor: Actor, input: z.infer<typeof createProjectSchema>): Promise<{ id: string; slug: string; href: string }> {
-  let workspaceId = actor.personalWorkspaceId;
-  let orgSlug: string | null = null;
-  if (input.organisationId) {
-    const [org] = await db
-      .select({ workspaceId: organisations.workspaceId, slug: organisations.slug })
-      .from(organisations)
-      .where(eq(organisations.id, input.organisationId))
-      .limit(1);
-    // A missing organisation and a foreign one fail identically in assertWritable
-    workspaceId = org?.workspaceId ?? null;
-    orgSlug = org?.slug ?? null;
-  }
+  const workspaceId = actor.personalWorkspaceId;
   assertWritable(actor, workspaceId);
 
   const [row] = await db
@@ -525,14 +462,11 @@ export async function createProject(actor: Actor, input: z.infer<typeof createPr
     .onConflictDoNothing({ target: [projects.workspaceId, projects.slug] })
     .returning({ id: projects.id, slug: projects.slug });
   if (!row) throw new MutationError("conflict", `#${input.slug} is already used here. Choose another slug.`);
-  return { ...row, href: orgSlug ? `/platform/org/${orgSlug}/projects/${row.slug}` : `/platform/projects/${row.slug}` };
+  return { ...row, href: `/platform/projects/${row.slug}` };
 }
 
-/** Where a project lives in the app: /platform/projects/<slug> or /platform/org/<org>/projects/<slug>. */
-async function projectHref(workspaceId: string, slug: string): Promise<string> {
-  const [org] = await db.select({ slug: organisations.slug }).from(organisations).where(eq(organisations.workspaceId, workspaceId)).limit(1);
-  return org ? `/platform/org/${org.slug}/projects/${slug}` : `/platform/projects/${slug}`;
-}
+/** Where a project lives in the app. */
+const projectHref = (slug: string) => `/platform/projects/${slug}`;
 
 const isUniqueViolation = (error: unknown): boolean =>
   typeof error === "object" && error !== null && ((error as { code?: string }).code === "23505" || isUniqueViolation((error as { cause?: unknown }).cause));
@@ -563,7 +497,7 @@ export async function updateProject(actor: Actor, input: z.infer<typeof updatePr
     if (isUniqueViolation(error)) throw taken;
     throw error;
   }
-  return { slug: input.slug, href: await projectHref(project.workspaceId, input.slug) };
+  return { slug: input.slug, href: projectHref(input.slug) };
 }
 
 /**
@@ -593,315 +527,6 @@ export async function setProjectArchived(actor: Actor, input: z.infer<typeof set
     });
   });
   return { name: project.name, archived: input.archived };
-}
-
-// An organisation board's columns; "Queued" keeps the backlog state type
-const ORGANISATION_COLUMNS = [
-  { name: "Queued", stateType: "backlog" },
-  { name: "Active", stateType: "active" },
-  { name: "Review", stateType: "review" },
-  { name: "Done", stateType: "done" },
-] as const;
-
-/** Bounds how many organisations one person can own, so a script cannot mint them without limit. */
-const OWNED_ORGANISATIONS_MAX = 20;
-
-/**
- * New organisation owned by the actor: its workspace, board with default columns, and the
- * actor as owner, in one transaction. Needs the Organisation plan. Slugs are unique
- * across State; a taken slug is reported on the slug field.
- */
-export async function createOrganisation(actor: Actor, input: z.infer<typeof createOrganisationSchema>): Promise<{ slug: string; href: string }> {
-  assertWritable(actor, actor.personalWorkspaceId);
-  throw new MutationError("forbidden", "Organisations are not available.");
-
-  const [{ owned }] = await db
-    .select({ owned: sql<number>`count(*)::int` })
-    .from(workspaces)
-    .where(and(eq(workspaces.ownerId, actor.id), eq(workspaces.type, "organisation")));
-  if (owned >= OWNED_ORGANISATIONS_MAX) throw new MutationError("invalid", `You can own up to ${OWNED_ORGANISATIONS_MAX} organisations.`);
-
-  const taken = new MutationError("conflict", `${input.slug} is taken. Choose another address.`);
-  const [{ tz }] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
-  try {
-    await db.transaction(async (tx) => {
-      const [workspace] = await tx
-        .insert(workspaces)
-        .values({ name: input.name, slug: `org-${crypto.randomUUID()}`, type: "organisation", ownerId: actor.id })
-        .returning({ id: workspaces.id });
-      const [org] = await tx
-        .insert(organisations)
-        .values({ workspaceId: workspace.id, name: input.name, slug: input.slug, timezone: tz })
-        .onConflictDoNothing({ target: organisations.slug })
-        .returning({ id: organisations.id });
-      // Rolls back the workspace too
-      if (!org) throw taken;
-      const [board] = await tx.insert(boards).values({ workspaceId: workspace.id, name: input.name, type: "organisation" }).returning({ id: boards.id });
-      await tx.insert(columns).values(ORGANISATION_COLUMNS.map((column, position) => ({ boardId: board.id, position, ...column })));
-      await tx.insert(organisationMembers).values({ organisationId: org.id, userId: actor.id, role: "owner" });
-      await tx.insert(auditEvents).values({
-        workspaceId: workspace.id,
-        organisationId: org.id,
-        actorId: actor.id,
-        action: "organisation.created",
-        targetType: "organisation",
-        targetId: org.id,
-      });
-    });
-  } catch (error) {
-    if (isUniqueViolation(error)) throw taken;
-    throw error;
-  }
-  return { slug: input.slug, href: `/platform/org/${input.slug}` };
-}
-
-const MANAGER_ROLES = ["owner", "admin"];
-const INVITATION_DAYS = 7;
-const PENDING_INVITATIONS_MAX = 100;
-
-export const hashInvitationToken = (token: string) => createHash("sha256").update(token).digest("hex");
-
-/**
- * The actor's membership of an organisation, re-read on every call. Organisations they do
- * not belong to are reported as missing. `manage` requires owner or admin.
- */
-async function membershipOf(actor: Actor, organisationId: string, manage: boolean) {
-  const [row] = await db
-    .select({ id: organisations.id, name: organisations.name, slug: organisations.slug, workspaceId: organisations.workspaceId, role: organisationMembers.role })
-    .from(organisationMembers)
-    .innerJoin(organisations, eq(organisations.id, organisationMembers.organisationId))
-    .where(and(eq(organisationMembers.organisationId, organisationId), eq(organisationMembers.userId, actor.id)))
-    .limit(1);
-  if (!row) throw new MutationError("not_found", "That organisation no longer exists.");
-  if (manage && !MANAGER_ROLES.includes(row.role)) throw new MutationError("forbidden", "Only owners and admins manage members.");
-  return row;
-}
-
-/**
- * Invites an email address to an organisation and emails a single-use link. Owners invite
- * any role; admins invite members and viewers. Inviting the same address again replaces
- * the earlier link. The row and the email go together: if sending fails, nothing is saved.
- */
-export async function inviteMember(actor: Actor, invite: z.infer<typeof inviteMemberSchema>): Promise<{ email: string }> {
-  // The schema lowercases too; addresses are compared and stored in one case
-  const input = { ...invite, email: invite.email.trim().toLowerCase() };
-  const org = await membershipOf(actor, input.organisationId, true);
-  if (input.role === "admin" && org.role !== "owner") throw new MutationError("forbidden", "Only the owner can invite admins.");
-
-  const [member] = await db
-    .select({ id: users.id })
-    .from(organisationMembers)
-    .innerJoin(users, eq(users.id, organisationMembers.userId))
-    .where(and(eq(organisationMembers.organisationId, org.id), sql`lower(${users.email}) = ${input.email}`))
-    .limit(1);
-  if (member) throw new MutationError("conflict", "That person is already a member.");
-
-  const token = randomBytes(32).toString("base64url");
-  const expiresAt = new Date(Date.now() + INVITATION_DAYS * 86_400_000);
-  const [inviter] = await db.select({ name: users.name }).from(users).where(eq(users.id, actor.id)).limit(1);
-
-  await db.transaction(async (tx) => {
-    // Serialise invitations per organisation so the pending cap holds under concurrency
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`invite:${org.id}`}))`);
-    const pending = and(eq(organisationInvitations.organisationId, org.id), eq(organisationInvitations.status, "pending"));
-    const [existing] = await tx
-      .select({ id: organisationInvitations.id })
-      .from(organisationInvitations)
-      .where(and(pending, eq(organisationInvitations.email, input.email)))
-      .limit(1);
-    let invitationId = existing?.id;
-    if (existing) {
-      await tx
-        .update(organisationInvitations)
-        .set({ role: input.role, token: hashInvitationToken(token), invitedById: actor.id, expiresAt })
-        .where(eq(organisationInvitations.id, existing.id));
-    } else {
-      const [{ n }] = await tx.select({ n: sql<number>`count(*)::int` }).from(organisationInvitations).where(pending);
-      if (n >= PENDING_INVITATIONS_MAX) throw new MutationError("invalid", `Up to ${PENDING_INVITATIONS_MAX} pending invitations. Revoke some first.`);
-      [{ id: invitationId }] = await tx
-        .insert(organisationInvitations)
-        .values({ organisationId: org.id, email: input.email, role: input.role, invitedById: actor.id, token: hashInvitationToken(token), expiresAt })
-        .returning({ id: organisationInvitations.id });
-    }
-    await tx.insert(auditEvents).values({
-      workspaceId: org.workspaceId,
-      organisationId: org.id,
-      actorId: actor.id,
-      action: "organisation.member_invited",
-      targetType: "invitation",
-      targetId: invitationId,
-      metadata: { role: input.role },
-    });
-    await sendEmail(
-      actionEmail({
-        to: input.email,
-        name: "",
-        subject: `Join ${org.name} on State`,
-        intro: `${inviter?.name || "Someone"} invited you to ${org.name} as ${input.role === "admin" ? "an admin" : `a ${input.role}`}.`,
-        action: "Accept invitation",
-        url: `${process.env.BETTER_AUTH_URL}/invite/${token}`,
-        note: `The link works once and expires in ${INVITATION_DAYS} days. Sign in with this email address to accept.`,
-      })
-    );
-  });
-  return { email: input.email };
-}
-
-/** Withdraws a pending invitation; its link stops working at once. */
-export async function revokeInvitation(actor: Actor, input: z.infer<typeof invitationRefSchema>): Promise<{ email: string }> {
-  const [invitation] = await db
-    .select({ id: organisationInvitations.id, organisationId: organisationInvitations.organisationId, email: organisationInvitations.email })
-    .from(organisationInvitations)
-    .where(and(eq(organisationInvitations.id, input.invitationId), eq(organisationInvitations.status, "pending")))
-    .limit(1);
-  if (!invitation) throw new MutationError("not_found", "That invitation no longer exists.");
-  const org = await membershipOf(actor, invitation.organisationId, true);
-
-  await db.transaction(async (tx) => {
-    await tx.update(organisationInvitations).set({ status: "revoked" }).where(and(eq(organisationInvitations.id, invitation.id), eq(organisationInvitations.status, "pending")));
-    await tx.insert(auditEvents).values({ workspaceId: org.workspaceId, organisationId: org.id, actorId: actor.id, action: "organisation.invitation_revoked", targetType: "invitation", targetId: invitation.id });
-  });
-  return { email: invitation.email };
-}
-
-/**
- * Pending, unexpired invitation for a link token, with what the invite page shows.
- * Unknown, used, revoked and expired tokens all return null.
- */
-export async function findInvitation(token: string) {
-  const [row] = await db
-    .select({
-      id: organisationInvitations.id,
-      email: organisationInvitations.email,
-      role: organisationInvitations.role,
-      organisationName: organisations.name,
-      inviterName: users.name,
-    })
-    .from(organisationInvitations)
-    .innerJoin(organisations, eq(organisations.id, organisationInvitations.organisationId))
-    .innerJoin(users, eq(users.id, organisationInvitations.invitedById))
-    .where(
-      and(
-        eq(organisationInvitations.token, hashInvitationToken(token)),
-        eq(organisationInvitations.status, "pending"),
-        gte(organisationInvitations.expiresAt, sql`now()`)
-      )
-    )
-    .limit(1);
-  return row ?? null;
-}
-
-/**
- * Accepts an invitation for the signed-in person. The account's verified email must be
- * the invited address. The link works once: the row is locked and marked accepted in the
- * same transaction as the membership is added.
- */
-export async function acceptInvitation(
-  user: { id: string; email: string; emailVerified: boolean },
-  input: z.infer<typeof acceptInvitationSchema>
-): Promise<{ slug: string }> {
-  return db.transaction(async (tx) => {
-    const [invitation] = await tx
-      .select()
-      .from(organisationInvitations)
-      .where(eq(organisationInvitations.token, hashInvitationToken(input.token)))
-      .limit(1)
-      .for("update");
-    if (!invitation || invitation.status !== "pending" || invitation.expiresAt.getTime() < Date.now()) {
-      throw new MutationError("not_found", "This invitation is no longer valid. Ask for a new one.");
-    }
-    if (!user.emailVerified || user.email.toLowerCase() !== invitation.email.toLowerCase()) {
-      throw new MutationError("forbidden", "This invitation is for a different email address.");
-    }
-    const [org] = await tx.select({ slug: organisations.slug, workspaceId: organisations.workspaceId }).from(organisations).where(eq(organisations.id, invitation.organisationId)).limit(1);
-    if (!org) throw new MutationError("not_found", "This invitation is no longer valid. Ask for a new one.");
-
-    // Someone already in the organisation keeps their current role
-    await tx.insert(organisationMembers).values({ organisationId: invitation.organisationId, userId: user.id, role: invitation.role }).onConflictDoNothing();
-    await tx.update(organisationInvitations).set({ status: "accepted" }).where(eq(organisationInvitations.id, invitation.id));
-    await tx.insert(auditEvents).values({
-      workspaceId: org.workspaceId,
-      organisationId: invitation.organisationId,
-      actorId: user.id,
-      action: "organisation.member_joined",
-      targetType: "invitation",
-      targetId: invitation.id,
-      metadata: { role: invitation.role },
-    });
-    return { slug: org.slug };
-  });
-}
-
-/**
- * Loads the actor's and the target's memberships with the target row locked, and applies
- * the rules shared by role changes and removal: the owner is never changed or removed,
- * nobody changes themselves here, and only the owner touches admins.
- */
-async function lockTarget(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], actor: Actor, organisationId: string, userId: string, nextRole?: string) {
-  const org = await membershipOf(actor, organisationId, true);
-  const [target] = await tx
-    .select({ role: organisationMembers.role })
-    .from(organisationMembers)
-    .where(and(eq(organisationMembers.organisationId, org.id), eq(organisationMembers.userId, userId)))
-    .limit(1)
-    .for("update");
-  if (!target) throw new MutationError("not_found", "That person is not a member.");
-  if (userId === actor.id) throw new MutationError("invalid", "You can't change your own membership here.");
-  if (target.role === "owner") throw new MutationError("forbidden", "The owner can't be changed or removed.");
-  if ((target.role === "admin" || nextRole === "admin") && org.role !== "owner") throw new MutationError("forbidden", "Only the owner can change admins.");
-  return { org, target };
-}
-
-/** Changes a member's role (admin, member, viewer). Takes effect on their next request. */
-export async function setMemberRole(actor: Actor, input: z.infer<typeof setMemberRoleSchema>): Promise<{ role: string }> {
-  return db.transaction(async (tx) => {
-    const { org, target } = await lockTarget(tx, actor, input.organisationId, input.userId, input.role);
-    if (target.role === input.role) return { role: input.role };
-    await tx.update(organisationMembers).set({ role: input.role }).where(and(eq(organisationMembers.organisationId, org.id), eq(organisationMembers.userId, input.userId)));
-    await tx.insert(auditEvents).values({
-      workspaceId: org.workspaceId,
-      organisationId: org.id,
-      actorId: actor.id,
-      action: "organisation.member_role_changed",
-      targetType: "user",
-      targetId: input.userId,
-      metadata: { from: target.role, to: input.role },
-    });
-    return { role: input.role };
-  });
-}
-
-/**
- * Takes a person out of an organisation: their membership goes, and the organisation's
- * open tasks assigned to them become unassigned. Their commits stay in its history.
- */
-async function leave(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], org: { id: string; workspaceId: string }, userId: string) {
-  await tx.delete(organisationMembers).where(and(eq(organisationMembers.organisationId, org.id), eq(organisationMembers.userId, userId)));
-  await tx
-    .update(tasks)
-    .set({ assigneeId: null })
-    .where(and(eq(tasks.workspaceId, org.workspaceId), eq(tasks.assigneeId, userId), isNull(tasks.completedAt)));
-}
-
-/** Removes another member. Owners remove anyone but themselves; admins remove members and viewers. */
-export async function removeMember(actor: Actor, input: z.infer<typeof memberRefSchema>): Promise<{ removed: true }> {
-  return db.transaction(async (tx) => {
-    const { org } = await lockTarget(tx, actor, input.organisationId, input.userId);
-    await leave(tx, org, input.userId);
-    await tx.insert(auditEvents).values({ workspaceId: org.workspaceId, organisationId: org.id, actorId: actor.id, action: "organisation.member_removed", targetType: "user", targetId: input.userId });
-    return { removed: true };
-  });
-}
-
-/** Leaves an organisation. The owner cannot leave the organisation they own. */
-export async function leaveOrganisation(actor: Actor, input: z.infer<typeof organisationRefSchema>): Promise<{ name: string }> {
-  const org = await membershipOf(actor, input.organisationId, false);
-  if (org.role === "owner") throw new MutationError("invalid", "Owners can't leave their own organisation.");
-  await db.transaction(async (tx) => {
-    await leave(tx, org, actor.id);
-    await tx.insert(auditEvents).values({ workspaceId: org.workspaceId, organisationId: org.id, actorId: actor.id, action: "organisation.member_left", targetType: "user", targetId: actor.id });
-  });
-  return { name: org.name };
 }
 
 /** Manual commit: work that never started as a task. Goes to the project's workspace. */
@@ -934,8 +559,7 @@ export async function createManualCommit(actor: Actor, input: z.infer<typeof man
 
 /**
  * Corrects a commit's message, project and tags. Its time, execution value, author,
- * source and task stay as recorded. The author can edit their own commits; in an
- * organisation, owners and admins can edit anyone's. The project must be a live project
+ * source and task stay as recorded. Only the author can edit a commit. The project must be a live project
  * in the commit's own workspace (or none); tags are created in that workspace by name.
  */
 export async function editCommit(actor: Actor, input: z.infer<typeof editCommitSchema>): Promise<{ message: string }> {
@@ -948,15 +572,7 @@ export async function editCommit(actor: Actor, input: z.infer<typeof editCommitS
       .for("update");
     if (!commit) throw new MutationError("not_found", "That commit no longer exists.");
     assertWritable(actor, commit.workspaceId);
-    if (commit.userId !== actor.id) {
-      const [membership] = await tx
-        .select({ role: organisationMembers.role })
-        .from(organisationMembers)
-        .innerJoin(organisations, eq(organisations.id, organisationMembers.organisationId))
-        .where(and(eq(organisations.workspaceId, commit.workspaceId), eq(organisationMembers.userId, actor.id)))
-        .limit(1);
-      if (!membership || !MANAGER_ROLES.includes(membership.role)) throw new MutationError("forbidden", "Only its author, an owner or an admin can edit this commit.");
-    }
+    if (commit.userId !== actor.id) throw new MutationError("forbidden", "Only its author can edit this commit.");
 
     if (input.projectId && input.projectId !== commit.projectId) {
       const [project] = await tx
@@ -1005,16 +621,12 @@ export async function editCommit(actor: Actor, input: z.infer<typeof editCommitS
 const LIVE_OBJECTIVES_MAX = 50;
 
 /**
- * New objective in the actor's personal workspace or an organisation they can write to.
+ * New objective in the actor's personal workspace.
  * It starts now; the deadline is the end of that day in the actor's timezone and must not
  * be in the past. An optional project (live, same workspace) narrows what it measures.
  */
 export async function createObjective(actor: Actor, input: z.infer<typeof createObjectiveSchema>): Promise<{ id: string }> {
-  let workspaceId = actor.personalWorkspaceId;
-  if (input.organisationId) {
-    const [org] = await db.select({ workspaceId: organisations.workspaceId }).from(organisations).where(eq(organisations.id, input.organisationId)).limit(1);
-    workspaceId = org?.workspaceId ?? null;
-  }
+  const workspaceId = actor.personalWorkspaceId;
   assertWritable(actor, workspaceId);
 
   if (input.projectId) {

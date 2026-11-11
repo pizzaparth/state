@@ -29,7 +29,7 @@ export default async function AccountSettingsPage() {
       </Panel>
       <Panel title="Your data">
         <dl>
-          <Row label="Export" hint="personal workspace · org memberships">
+          <Row label="Export" hint="personal workspace">
             <ExportLinks />
           </Row>
           <Row label="Import" hint="into your personal workspace">

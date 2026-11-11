@@ -1,11 +1,10 @@
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { columns, commits, objectives, organisationMembers, organisations, projects, tags, tasks, users, workspaces } from "@/db/schema";
+import { columns, commits, objectives, projects, tags, tasks, users, workspaces } from "@/db/schema";
 
 /**
  * Data export (docs/state_desc.md §41). Covers the person's personal workspace in full
- * (projects, tags, tasks, commits, objectives, metrics) plus which organisations they
- * belong to. Organisation content belongs to the organisation and is not included.
+ * (projects, tags, tasks, commits, objectives, metrics).
  * Deleted tasks and retired commits are left out. Every list is bounded.
  *
  * The JSON file is what /api/import reads back (lib/data/import.ts).
@@ -14,7 +13,7 @@ import { columns, commits, objectives, organisationMembers, organisations, proje
 export const EXPORT_FORMAT = "state-export";
 export const EXPORT_VERSION = 1;
 
-const MAX_ROWS = { projects: 5_000, tasks: 50_000, commits: 100_000, objectives: 1_000, organisations: 200 };
+const MAX_ROWS = { projects: 5_000, tasks: 50_000, commits: 100_000, objectives: 1_000 };
 
 // Inbox captures have no column; review columns keep their own name
 const TASK_STATUS = sql<string>`case when ${tasks.boardId} is null then 'inbox' when ${columns.stateType} = 'backlog' then 'queued' else coalesce(${columns.stateType}, 'queued') end`;
@@ -130,15 +129,7 @@ export async function buildExport(userId: string) {
   const workspaceId = await personalWorkspaceId(userId);
   const tz = account?.timezone ?? "UTC";
 
-  const memberships = db
-    .select({ name: organisations.name, slug: organisations.slug, role: organisationMembers.role, joinedAt: organisationMembers.joinedAt })
-    .from(organisationMembers)
-    .innerJoin(organisations, eq(organisations.id, organisationMembers.organisationId))
-    .where(eq(organisationMembers.userId, userId))
-    .orderBy(asc(organisations.name))
-    .limit(MAX_ROWS.organisations);
-
-  const [projectRows, tagRows, taskRows, commitRows, objectiveRows, metrics, organisationRows] = await Promise.all([
+  const [projectRows, tagRows, taskRows, commitRows, objectiveRows, metrics] = await Promise.all([
     workspaceId ? exportProjects(workspaceId) : [],
     workspaceId
       ? db.select({ name: tags.name }).from(tags).where(eq(tags.workspaceId, workspaceId)).orderBy(asc(tags.name)).limit(MAX_ROWS.projects)
@@ -163,7 +154,6 @@ export async function buildExport(userId: string) {
           .limit(MAX_ROWS.objectives)
       : [],
     workspaceId ? exportMetrics(workspaceId, tz) : null,
-    memberships,
   ]);
 
   return {
@@ -177,7 +167,6 @@ export async function buildExport(userId: string) {
     tasks: taskRows,
     commits: commitRows,
     objectives: objectiveRows,
-    organisations: organisationRows,
   };
 }
 

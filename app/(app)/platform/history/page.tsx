@@ -15,22 +15,14 @@ export default async function HistoryPage({ searchParams }: { searchParams: Page
   const params = await searchParams;
   const viewer = await getViewer();
 
-  // Scope: all of your commits, or one organisation (whole team) via ?scope=<org slug>
-  const org = viewer.orgs.find((o) => o.slug === params.scope);
-  const workspaceIds = org ? [org.workspaceId] : viewer.workspaceIds;
-  const userId = org ? undefined : viewer.id;
-
-  const orgNames = new Map(viewer.orgs.map((o) => [o.workspaceId, o.name]));
-  const projects = (await getProjects(workspaceIds)).map((p) => ({
-    ...p,
-    label: orgNames.has(p.workspaceId) && !org ? `${p.name} (${orgNames.get(p.workspaceId)})` : p.name,
-  }));
+  const workspaceIds = viewer.workspaceIds;
+  const userId = viewer.id;
+  const projects = (await getProjects(workspaceIds)).map((p) => ({ ...p, label: p.name }));
   const project = projects.find((p) => p.id === params.project);
   const commits = await getCommits({ workspaceIds, userId, projectId: project?.id }, { limit: 250 });
 
   const projectHref = (id?: string) => {
     const q = new URLSearchParams();
-    if (org) q.set("scope", org.slug);
     if (id) q.set("project", id);
     return `/platform/history${q.size ? `?${q}` : ""}`;
   };
@@ -61,12 +53,12 @@ export default async function HistoryPage({ searchParams }: { searchParams: Page
         </nav>
       )}
 
-      <Panel title={org ? `${org.name} commits` : "Your commits"} aside={`${commits.length}${commits.length === 250 ? "+" : ""} shown`}>
+      <Panel title="Your commits" aside={`${commits.length}${commits.length === 250 ? "+" : ""} shown`}>
         {commits.length === 0 ? (
           <EmptyState title="No commits yet" />
         ) : (
           <div className="-mx-3">
-            <CommitLedger commits={commits} tz={viewer.tz} now={new Date()} hrefFor={(id) => withParam("/platform/history", params, "commit", id)} showAuthor={Boolean(org)} />
+            <CommitLedger commits={commits} tz={viewer.tz} now={new Date()} hrefFor={(id) => withParam("/platform/history", params, "commit", id)} />
           </div>
         )}
       </Panel>

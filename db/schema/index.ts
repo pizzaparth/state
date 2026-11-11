@@ -1,6 +1,5 @@
 export * from "./users";
 export * from "./workspaces";
-export * from "./organisations";
 export * from "./projects";
 export * from "./boards";
 export * from "./columns";

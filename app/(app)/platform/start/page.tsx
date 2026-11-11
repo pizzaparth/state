@@ -10,13 +10,12 @@ export const metadata = { title: "Set up" };
 export default async function StartPage() {
   const viewer = await getViewer();
   const state = await getOnboardingState(viewer.id, viewer.personalWorkspaceId, viewer.personalBoardId);
-  const canCreateOrganisation = false;
 
   return (
     <>
       <PageHeader label="Start" title="Set up" actions={<SkipSetup />} />
       <Panel>
-        <Onboarding canCreateOrganisation={canCreateOrganisation} organisations={viewer.orgs.map((o) => o.name)} {...state} />
+        <Onboarding {...state} />
       </Panel>
     </>
   );

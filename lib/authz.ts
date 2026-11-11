@@ -1,17 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { organisationMembers, organisations, workspaces } from "@/db/schema";
+import { workspaces } from "@/db/schema";
 
 /**
  * Write authorization. Identity always comes from the server session (never from the
- * request); workspace access is re-read from the database on every mutation so a removed
- * member or downgraded role takes effect immediately.
- *
- *   personal workspace   owner only
- *   organisation         owner, admin, member write; viewer reads only
+ * request). Every account (the owner, and each demo visitor) has exactly one personal
+ * workspace and can read and write only that workspace.
  */
-export const WRITE_ROLES = ["owner", "admin", "member"] as const;
-
 export interface Actor {
   id: string;
   personalWorkspaceId: string | null;
@@ -30,28 +25,16 @@ export class MutationError extends Error {
   }
 }
 
-/** Loads the workspaces a user may write to. Callers must have verified the session. */
+/** Loads the workspace a user may write to. Callers must have verified the session. */
 export async function loadActor(userId: string): Promise<Actor> {
-  const [personal, orgs] = await Promise.all([
-    db
-      .select({ id: workspaces.id })
-      .from(workspaces)
-      .where(and(eq(workspaces.ownerId, userId), eq(workspaces.type, "personal")))
-      .limit(1),
-    db
-      .select({ workspaceId: organisations.workspaceId, role: organisationMembers.role })
-      .from(organisationMembers)
-      .innerJoin(organisations, eq(organisations.id, organisationMembers.organisationId))
-      .where(eq(organisationMembers.userId, userId)),
-  ]);
-  const personalWorkspaceId = personal[0]?.id ?? null;
-  const readable = new Set<string>(personalWorkspaceId ? [personalWorkspaceId] : []);
-  const writable = new Set<string>(readable);
-  for (const o of orgs) {
-    readable.add(o.workspaceId);
-    if ((WRITE_ROLES as readonly string[]).includes(o.role)) writable.add(o.workspaceId);
-  }
-  return { id: userId, personalWorkspaceId, readable, writable };
+  const [personal] = await db
+    .select({ id: workspaces.id })
+    .from(workspaces)
+    .where(and(eq(workspaces.ownerId, userId), eq(workspaces.type, "personal")))
+    .limit(1);
+  const personalWorkspaceId = personal?.id ?? null;
+  const own = new Set<string>(personalWorkspaceId ? [personalWorkspaceId] : []);
+  return { id: userId, personalWorkspaceId, readable: own, writable: own };
 }
 
 /**

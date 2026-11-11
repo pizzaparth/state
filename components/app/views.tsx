@@ -8,7 +8,7 @@ import { ExecutionGraph } from "./execution-graph";
 import { Chip, EmptyState, Measure, Panel } from "./primitives";
 import { TaskRow } from "./task-row";
 
-/** Project page shared by personal and organisation projects. */
+/** Project page. */
 export async function ProjectView({
   project,
   scope,

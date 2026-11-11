@@ -9,7 +9,6 @@ import { addBoardTaskSchema } from "@/lib/validation";
 import { WEIGHT_LEVELS, type Weight } from "@/lib/weights";
 import { cn } from "@/lib/utils";
 import { DISPLAY, TICK } from "./primitives";
-import { NewOrganisation } from "./organisation-dialog";
 import { useNotice } from "./notice";
 
 function Step({ n, title, state, children }: { n: number; title: string; state: "done" | "current" | "next"; children?: React.ReactNode }) {
@@ -60,18 +59,14 @@ export function SkipSetup() {
 }
 
 /**
- * First-run setup (docs/state_desc.md §38): optional organisation, one task, then Done,
+ * First-run setup (docs/state_desc.md §38): one task, then Done,
  * which records the first commit. Each step's state comes from the server's data.
  */
 export function Onboarding({
-  canCreateOrganisation,
-  organisations,
   task,
   doneColumnId,
   commit,
 }: {
-  canCreateOrganisation: boolean;
-  organisations: string[];
   task: { id: string; title: string; weight: number } | null;
   doneColumnId: string | null;
   commit: { message: string; executionValue: number } | null;
@@ -95,15 +90,7 @@ export function Onboarding({
   return (
     <ol>
       <Step n={1} title="Workspace" state="done">
-        <p className="text-base text-[#9A9A96]">
-          Personal{organisations.length > 0 && ` + ${organisations.join(", ")}`}
-        </p>
-        {canCreateOrganisation && organisations.length === 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <NewOrganisation openAfter={false} />
-            <span className="font-mono text-sm text-[#85857F]">optional · shared board + metrics</span>
-          </div>
-        )}
+        <p className="text-base text-[#9A9A96]">Personal</p>
       </Step>
 
       <Step n={2} title="Plan one task" state={taskState}>

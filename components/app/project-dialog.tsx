@@ -260,11 +260,11 @@ const issuesOf = (result: { success: boolean; error?: { issues: { path: Property
 
 const errorOf = (result: ActionResult<unknown>) => (result.ok ? null : result.error);
 
-/** "New project…" for one workspace (personal when organisationId is null). Opens the project once created. */
-export function NewProject({ organisationId, workspaceName }: { organisationId: string | null; workspaceName: string }) {
+/** "New project…" in the personal workspace. Opens the project once created. */
+export function NewProject() {
   const router = useRouter();
   const notify = useNotice();
-  const toInput = (v: Values) => ({ organisationId, name: v.name, slug: v.slug, description: v.description.trim() || null });
+  const toInput = (v: Values) => ({ name: v.name, slug: v.slug, description: v.description.trim() || null });
 
   return (
     <ProjectDialog
@@ -277,7 +277,7 @@ export function NewProject({ organisationId, workspaceName }: { organisationId: 
       title="New project"
       description={
         <>
-          In <span className="text-[#F2F2EF]">{workspaceName}</span>. Tasks join it with <span className="font-mono">#slug</span> when you capture them.
+          Tasks join it with <span className="font-mono">#slug</span> when you capture them.
         </>
       }
       initial={{ name: "", slug: "", description: "", status: "active" }}

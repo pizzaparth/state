@@ -23,7 +23,7 @@ export default async function MetricsPage({ searchParams }: { searchParams: Page
         period={toPeriod(params.period)}
         basePath="/platform/metrics"
         objectiveWorkspaceIds={viewer.personalWorkspaceId ? [viewer.personalWorkspaceId] : []}
-        objectiveControls={viewer.personalWorkspaceId ? { organisationId: null, projects } : null}
+        objectiveControls={viewer.personalWorkspaceId ? { projects } : null}
       />
     </>
   );

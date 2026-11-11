@@ -17,7 +17,6 @@ const SHORTCUTS = [
   ["G H", "History"],
   ["G M", "Metrics"],
   ["G P", "Board"],
-  ["G O", "Organisation"],
 ] as const;
 
 export default async function PreferencesSettingsPage() {

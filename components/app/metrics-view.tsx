@@ -50,7 +50,7 @@ const HISTOGRAM = [
 ];
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-/** Metrics surface shared by personal and organisation metrics. Every value shows its formula. */
+/** Metrics surface. Every value shows its formula. */
 export async function MetricsView({
   scope,
   tz,
@@ -75,7 +75,6 @@ export async function MetricsView({
 type Objective = Awaited<ReturnType<typeof getObjectives>>[number];
 
 export interface ObjectiveControls {
-  organisationId: string | null;
   projects: { id: string; name: string }[];
 }
 
@@ -545,7 +544,7 @@ export function MetricsReport({
           {(objectives.length > 0 || objectiveControls) && (
             <Panel
               title="Objectives"
-              aside={objectiveControls && <NewObjective organisationId={objectiveControls.organisationId} projects={objectiveControls.projects} />}
+              aside={objectiveControls && <NewObjective projects={objectiveControls.projects} />}
             >
               {objectives.length === 0 ? (
                 <EmptyState title="No objectives" />

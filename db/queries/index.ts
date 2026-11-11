@@ -9,9 +9,6 @@ import {
   notifications,
   objectiveProjects,
   objectives,
-  organisationInvitations,
-  organisationMembers,
-  organisations,
   projects,
   tags,
   taskTags,
@@ -685,64 +682,6 @@ export async function getOpenTasks(scope: Scope): Promise<(TaskCard & { columnNa
   return withTags(rows);
 }
 
-// ------------------------------------------------------------------ organisations
-export async function getOrgBoardId(workspaceId: string): Promise<string | null> {
-  const [board] = await db
-    .select({ id: boards.id })
-    .from(boards)
-    .where(and(eq(boards.workspaceId, workspaceId), eq(boards.type, "organisation")))
-    .limit(1);
-  return board?.id ?? null;
-}
-
-export async function getOrgMembers(organisationId: string, workspaceId: string) {
-  const stats = db
-    .select({
-      userId: commits.userId,
-      commits30: sql<number>`count(*)::int`.as("commits30"),
-      execution30: sql<number>`coalesce(sum(${commits.executionValue}), 0)::int`.as("execution30"),
-    })
-    .from(commits)
-    .where(and(eq(commits.workspaceId, workspaceId), isNull(commits.deletedAt), gte(commits.createdAt, sql`now() - interval '30 days'`)))
-    .groupBy(commits.userId)
-    .as("ms");
-  const open = db
-    .select({ userId: tasks.assigneeId, open: sql<number>`count(*)::int`.as("open") })
-    .from(tasks)
-    .where(and(eq(tasks.workspaceId, workspaceId), isNull(tasks.completedAt), isNull(tasks.deletedAt), isNotNull(tasks.boardId)))
-    .groupBy(tasks.assigneeId)
-    .as("mo");
-
-  // Alphabetical on purpose: contribution is shown in context, never ranked
-  return db
-    .select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      role: organisationMembers.role,
-      joinedAt: organisationMembers.joinedAt,
-      commits30: sql<number>`coalesce(${stats.commits30}, 0)`,
-      execution30: sql<number>`coalesce(${stats.execution30}, 0)`,
-      openTasks: sql<number>`coalesce(${open.open}, 0)`,
-    })
-    .from(organisationMembers)
-    .innerJoin(users, eq(users.id, organisationMembers.userId))
-    .leftJoin(stats, eq(stats.userId, users.id))
-    .leftJoin(open, eq(open.userId, users.id))
-    .where(eq(organisationMembers.organisationId, organisationId))
-    .orderBy(asc(users.name))
-    .limit(500);
-}
-
-export async function getPendingInvitations(organisationId: string) {
-  return db
-    .select({ id: organisationInvitations.id, email: organisationInvitations.email, role: organisationInvitations.role, expiresAt: organisationInvitations.expiresAt })
-    .from(organisationInvitations)
-    .where(and(eq(organisationInvitations.organisationId, organisationId), eq(organisationInvitations.status, "pending"), gte(organisationInvitations.expiresAt, sql`now()`)))
-    .orderBy(asc(organisationInvitations.email))
-    .limit(100);
-}
-
 // ------------------------------------------------------------------ objectives, account
 /**
  * Live objectives with their linked project. An "execution" objective's current value is
@@ -819,7 +758,7 @@ export interface SearchHit {
   id: string;
   kind: "task" | "commit";
   title: string;
-  /** Project and place, e.g. "RelayDB · Ksan Relay". */
+  /** Project name, or "Personal". */
   context: string;
   href: string;
   at: Date;
@@ -845,12 +784,9 @@ export async function searchWork(q: string, workspaceIds: string[]): Promise<Sea
         completedAt: tasks.completedAt,
         createdAt: tasks.createdAt,
         projectName: projects.name,
-        orgName: organisations.name,
-        orgSlug: organisations.slug,
       })
       .from(tasks)
       .leftJoin(projects, eq(projects.id, tasks.projectId))
-      .leftJoin(organisations, eq(organisations.workspaceId, tasks.workspaceId))
       .where(and(inArray(tasks.workspaceId, workspaceIds), isNull(tasks.deletedAt), sql`${tasks.title} ilike ${pattern}`))
       .orderBy(desc(tasks.createdAt))
       .limit(SEARCH_LIMIT),
@@ -860,23 +796,21 @@ export async function searchWork(q: string, workspaceIds: string[]): Promise<Sea
         message: commits.message,
         createdAt: commits.createdAt,
         projectName: projects.name,
-        orgName: organisations.name,
       })
       .from(commits)
       .leftJoin(projects, eq(projects.id, commits.projectId))
-      .leftJoin(organisations, eq(organisations.workspaceId, commits.workspaceId))
       .where(and(inArray(commits.workspaceId, workspaceIds), isNull(commits.deletedAt), sql`${commits.message} ilike ${pattern}`))
       .orderBy(desc(commits.createdAt))
       .limit(SEARCH_LIMIT),
   ]);
-  const place = (project: string | null, org: string | null) => [project, org ?? "Personal"].filter(Boolean).join(" · ");
+  const place = (project: string | null) => project ?? "Personal";
   return [
     ...taskRows.map((t) => ({
       id: t.id,
       kind: "task" as const,
       title: t.title,
-      context: place(t.projectName, t.orgName),
-      href: t.orgSlug ? `/platform/org/${t.orgSlug}/board?task=${t.id}` : t.boardId ? `/platform/personal?task=${t.id}` : `/platform/inbox?task=${t.id}`,
+      context: place(t.projectName),
+      href: t.boardId ? `/platform/personal?task=${t.id}` : `/platform/inbox?task=${t.id}`,
       at: t.createdAt,
       done: t.completedAt !== null,
     })),
@@ -884,7 +818,7 @@ export async function searchWork(q: string, workspaceIds: string[]): Promise<Sea
       id: c.id,
       kind: "commit" as const,
       title: c.message,
-      context: place(c.projectName, c.orgName),
+      context: place(c.projectName),
       href: `/platform/history?commit=${c.id}`,
       at: c.createdAt,
       done: true,

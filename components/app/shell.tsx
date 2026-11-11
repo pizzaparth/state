@@ -19,7 +19,6 @@ import {
   Search,
   Settings,
   User,
-  Users,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,11 +29,9 @@ import { NoticeProvider, useNotice } from "./notice";
 
 export interface ShellData {
   inboxCount: number;
-  orgs: { name: string; slug: string }[];
   projects: { id: string; name: string; href: string }[];
   dateLabel: string;
   ticker: { today: number; last7: number; prev7: number; activeDays7: number };
-  /** Set when the plan is overdue past its grace period or has ended: reads only. */
 }
 
 type NavItem = { name: string; href: string; icon: React.ComponentType<{ className?: string }>; badge?: number; shortcut?: string };
@@ -59,7 +56,6 @@ function navSections(data: ShellData): { title?: string; items: NavItem[] }[] {
       title: "Work",
       items: [
         { name: "Personal", href: "/platform/personal", icon: User, shortcut: "G P" },
-        ...data.orgs.map((o) => ({ name: o.name, href: `/platform/org/${o.slug}`, icon: Users, shortcut: "G O" })),
         { name: "Projects", href: "/platform/projects", icon: FolderKanban },
       ],
     },
@@ -94,7 +90,6 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
       h: "/platform/history",
       m: "/platform/metrics",
       p: "/platform/personal",
-      o: data.orgs[0] ? `/platform/org/${data.orgs[0].slug}` : "/platform/org",
     };
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -125,7 +120,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [router, data.orgs]);
+  }, [router]);
 
   return (
     <MotionConfig reducedMotion="user">
