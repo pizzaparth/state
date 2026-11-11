@@ -4,17 +4,16 @@
      Reference: docs/style.md & docs/techstack.md
      ========================================================================== */
 
-  /* Palette: navy #001A33, white #FFFFFF, accent #E8357F. About a quarter of every screen
-     is accent; the rest is navy and white. Deep navy #000E1C on the accent passes WCAG AA (4.9:1);
-     white text on it does not (4.0:1). Accent as small text uses --accent-text, which passes
+  /* Palette: navy #001A33, white #FFFFFF, accent #D92B74. About a quarter of every screen
+     is accent; the rest is navy and white. Text on the accent is white (4.6:1, WCAG AA). Accent as small text uses --accent-text, which passes
      on every layer. */
-  --accent: #E8357F;
+  --accent: #D92B74;
   --accent-text: #FF5C99;
-  --accent-hover: #FF5C99;
-  --accent-ink: #000E1C;
-  --accent-ink-muted: #2A0019;
-  --accent-soft: rgba(232, 53, 127, 0.12);
-  --accent-line: rgba(232, 53, 127, 0.5);
+  --accent-hover: #C4226A;
+  --accent-ink: #FFFFFF;
+  --accent-ink-muted: #FFFFFF;
+  --accent-soft: rgba(217, 43, 116, 0.12);
+  --accent-line: rgba(217, 43, 116, 0.5);
 
   /* Surfaces: page, panel, card/control. Depth comes from the parallax layers behind
      the content (components/motion/parallax.tsx), not from nesting. */

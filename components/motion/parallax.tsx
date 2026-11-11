@@ -98,16 +98,16 @@ const svg = (body: string, size: number) =>
 // Far: a quiet dot grid. Mid: large accent outlines. Near: small crosses and accent squares.
 const FAR = svg(`<circle cx='2' cy='2' r='1' fill='rgba(255,255,255,0.09)'/>`, 28);
 const MID = svg(
-  `<circle cx='140' cy='160' r='90' fill='none' stroke='rgba(232,53,127,0.16)' stroke-width='1.5'/>` +
+  `<circle cx='140' cy='160' r='90' fill='none' stroke='rgba(217, 43, 116,0.16)' stroke-width='1.5'/>` +
     `<rect x='430' y='380' width='120' height='120' rx='14' fill='none' stroke='rgba(255,255,255,0.08)' stroke-width='1.5' transform='rotate(12 490 440)'/>` +
     `<circle cx='520' cy='120' r='36' fill='none' stroke='rgba(255,255,255,0.07)' stroke-width='1.5'/>` +
-    `<rect x='90' y='470' width='60' height='60' rx='8' fill='rgba(232,53,127,0.06)'/>`,
+    `<rect x='90' y='470' width='60' height='60' rx='8' fill='rgba(217, 43, 116,0.06)'/>`,
   640
 );
 const NEAR = svg(
   `<path d='M60 52v16M52 60h16' stroke='rgba(255,255,255,0.22)' stroke-width='1.5'/>` +
-    `<rect x='300' y='210' width='7' height='7' fill='rgba(232,53,127,0.55)'/>` +
-    `<path d='M380 360v12M374 366h12' stroke='rgba(232,53,127,0.45)' stroke-width='1.5'/>` +
+    `<rect x='300' y='210' width='7' height='7' fill='rgba(217, 43, 116,0.55)'/>` +
+    `<path d='M380 360v12M374 366h12' stroke='rgba(217, 43, 116,0.45)' stroke-width='1.5'/>` +
     `<circle cx='150' cy='330' r='2.5' fill='rgba(255,255,255,0.25)'/>`,
   440
 );

@@ -2,12 +2,11 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { Magnetic, MagneticLabel } from "@/components/marketing/magnetic";
-import { ProductFrame } from "@/components/marketing/product-frame";
-import { LiveDemo } from "@/components/marketing/live-demo";
+import { ProductShot } from "@/components/marketing/product-shot";
+import { Bento } from "@/components/marketing/bento";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { PlayOnView } from "@/components/motion/play-on-view";
-import { CountUp } from "@/components/app/count-up";
-import { demoMetrics, demoWorkspaces } from "@/lib/demo/workspace";
+import { demoDaily, demoMetrics, demoWorkspaces } from "@/lib/demo/workspace";
 import { calculateCompletionRate, calculateConsistency, calculateMedianCycleTimeHours, calculateThroughput, calculateVelocity } from "@/lib/metrics";
 import { formatNumber } from "@/lib/format";
 import { AUTHOR, BYLINE, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/site";
@@ -51,7 +50,10 @@ function structuredData() {
 
 export default function LandingPage() {
   // Real numbers from the generated demo workspace (lib/demo/workspace.ts), last 30 days
-  const m = demoMetrics(demoWorkspaces().personal, 30);
+  const { personal } = demoWorkspaces();
+  const m = demoMetrics(personal, 30);
+  const shotDays = demoDaily(personal, 40 * 7);
+  const yearDays = demoDaily(personal, 52 * 7);
   const formulas = [
     { name: "Execution", value: `+${formatNumber(m.execution)}`, formula: "Σ task weights + Σ manual weights" },
     { name: "Velocity", value: formatNumber(calculateVelocity(m.execution, m.days), 1), unit: "/day", formula: "Execution ÷ days" },
@@ -65,8 +67,8 @@ export default function LandingPage() {
     <>
       <JsonLd data={structuredData()} />
 
-      {/* 1. Hero */}
-      <section className={`${sectionPad} flex min-h-[88svh] flex-col justify-end pb-[8vh] pt-32`}>
+      {/* Hero */}
+      <section className={`${sectionPad} pb-[6vh] pt-36 sm:pt-44`}>
         <p data-depth="-0.08" suppressHydrationWarning className={`${kicker} mb-6 animate-fade-in`}>
           {BYLINE}
         </p>
@@ -76,11 +78,11 @@ export default function LandingPage() {
             <span className={`block animate-line-rise ${silver}`}>Execution,</span>
           </span>
           <span data-depth="0.06" suppressHydrationWarning className="block overflow-hidden pb-[0.06em]">
-            <span className="block animate-line-rise text-[#E8357F] [animation-delay:120ms]">measured.</span>
+            <span className="block animate-line-rise text-[#D92B74] [animation-delay:120ms]">measured.</span>
           </span>
         </h1>
 
-        <div data-depth="0.1" suppressHydrationWarning className="mt-8 animate-fade-in [animation-delay:500ms]">
+        <div className="mt-8 animate-fade-in [animation-delay:500ms]">
           <p className="max-w-[44ch] text-xl leading-snug text-white text-pretty sm:text-2xl">Tasks are the plan. Commits are the work. State does the math.</p>
           <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 font-mono text-sm uppercase tracking-[0.16em] text-[#8E9AC0]" aria-label="What State leaves out">
             {REFUSALS.map((r) => (
@@ -98,56 +100,46 @@ export default function LandingPage() {
               </Button>
             </Magnetic>
             <Button asChild variant="dark-secondary" size="lg" className="group rounded-full px-7">
-              <Link href="#loop">
-                Watch it work <span aria-hidden="true" className="mi-arrow ml-1 inline-block">↓</span>
+              <Link href="#how">
+                How it works <span aria-hidden="true" className="mi-arrow ml-1 inline-block">↓</span>
               </Link>
             </Button>
           </div>
         </div>
       </section>
 
-      {/* 2. Walkthrough: the whole loop, played like a screen recording */}
-      <section id="loop" aria-labelledby="loop-title" className={`${sectionPad} scroll-mt-20 py-[8vh]`}>
-        <p className={kicker}>Capture · Move · Commit · Measure</p>
-        <h2 id="loop-title" data-depth="0.03" suppressHydrationWarning className={h2}>
-          One task becomes data.
-        </h2>
-        <ProductFrame path="/platform/today" caption="Animated walkthrough of capturing a task and finishing it in the State app" className="mt-10">
-          <LiveDemo />
-        </ProductFrame>
+      {/* Product shot: the real Today screen, still and crisp */}
+      <section aria-label="State's Today screen" className={`${sectionPad} pb-[10vh]`}>
+        <div className="min-w-0">
+          <div data-tilt suppressHydrationWarning>
+            <ProductShot
+              heat={shotDays.map((d) => d.execution)}
+              commits={formatNumber(shotDays.reduce((n, d) => n + d.commits, 0))}
+              execution={formatNumber(shotDays.reduce((n, d) => n + d.execution, 0))}
+              caption="The Today screen: the day's execution, quick capture, 40 weeks of history, active tasks and today's commits, with demo data"
+            />
+          </div>
+        </div>
       </section>
 
-      {/* 3. Formulas: every metric with the math behind it */}
-      <section aria-labelledby="math-title" className={`${sectionPad} py-[8vh]`}>
-        <p className={kicker}>Last 30 days of demo data</p>
-        <h2 id="math-title" data-depth="0.03" suppressHydrationWarning className={h2}>
-          Every number shows its formula.
+      {/* How it works: one idea per tile */}
+      <section id="how" aria-labelledby="how-title" className={`${sectionPad} scroll-mt-20 py-[8vh]`}>
+        <p className={kicker}>How it works</p>
+        <h2 id="how-title" data-depth="0.03" suppressHydrationWarning className={h2}>
+          Plan. Execute. Measure.
         </h2>
-        <PlayOnView>
-          <ul className="app-stagger mt-10 grid grid-cols-2 gap-3 lg:grid-cols-3">
-            {formulas.map((f) => (
-              <li key={f.name} className="app-card mi-lift rounded-[20px] p-5">
-                <p className="font-mono text-[12px] uppercase tracking-[0.16em] text-[#B4BEDB]">{f.name}</p>
-                <p className="mt-3 flex items-baseline gap-1.5">
-                  <span className="font-display text-[clamp(1.75rem,4vw,2.75rem)] font-extrabold leading-none tabular-nums [font-stretch:125%]">
-                    <CountUp value={f.value} duration={900} />
-                  </span>
-                  {f.unit && <span className="font-mono text-sm text-[#8E9AC0]">{f.unit}</span>}
-                </p>
-                <p className="mt-3 font-mono text-[12px] text-accent">{f.formula}</p>
-              </li>
-            ))}
-          </ul>
+        <PlayOnView className="mt-10">
+          <Bento heat={yearDays.map((d) => d.execution)} formulas={formulas} />
         </PlayOnView>
       </section>
 
-      {/* 4. About */}
+      {/* About */}
       <section aria-labelledby="about-title" className={`${sectionPad} pb-[10vh] pt-[8vh]`}>
         <div className="grid gap-10 border-t border-white/[0.1] pt-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-16">
           <div>
             <p className={kicker}>About</p>
             <h2 id="about-title" className={h2}>
-              Built by <span className="text-[#E8357F]">{AUTHOR}</span>.
+              Built by <span className="text-[#D92B74]">{AUTHOR}</span>.
             </h2>
             <p className="mt-5 max-w-[52ch] text-lg leading-relaxed text-[#B4BEDB] text-pretty">
               A personal hobby project: a to-do list and kanban board that measures finished work. One owner account, and a demo anyone can open.

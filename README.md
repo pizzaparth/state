@@ -30,7 +30,7 @@ How the demo is cleaned up (`lib/demo/session.ts`, `lib/demo/tab.ts`):
 
 ## 2. Visual system
 
-- **Palette:** 75% navy `#001A33` and white `#FFFFFF`, 25% accent `#E8357F`. Text on the accent is navy (WCAG AA); white text on the accent is never used. Small accent text uses the lighter `#FF5C99` so it passes AA on every layer.
+- **Palette:** 75% navy `#001A33` and white `#FFFFFF`, 25% accent `#D92B74`. Text on the accent is navy (WCAG AA); white text on the accent is never used. Small accent text uses the lighter `#FF5C99` so it passes AA on every layer.
 - **Layered parallax:** three tiled layers (far dots, mid outlines, near marks) sit behind every page and move at different speeds with scroll and pointer; hero type and headings drift on their own depth (`components/motion/parallax.tsx`). Panels are translucent so the layers read through. Off under reduced motion.
 - **Micro-interactions:** press, lift, nudge, spin, underline, row and pop effects from `styles/motion.css`, transform/opacity only.
 - Tokens live in `styles/tokens.css`; surface classes in `styles/product.css`; Tailwind exposes `accent`.

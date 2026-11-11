@@ -13,12 +13,12 @@ const config: Config = {
       colors: {
         // The one colour: about a quarter of every screen (styles/tokens.css)
         accent: {
-          DEFAULT: "#E8357F",
-          hover: "#FF5C99",
-          ink: "#000E1C",
-          muted: "#2A0019",
-          soft: "rgba(232, 53, 127, 0.12)",
-          line: "rgba(232, 53, 127, 0.5)",
+          DEFAULT: "#D92B74",
+          hover: "#C4226A",
+          ink: "#FFFFFF",
+          muted: "#FFFFFF",
+          soft: "rgba(217, 43, 116, 0.12)",
+          line: "rgba(217, 43, 116, 0.5)",
         },
         // Marketing / Brand Dark Theme
         dark: {
@@ -44,7 +44,7 @@ const config: Config = {
             inverse: "#001A33",
           },
           action: {
-            primary: "#E8357F",
+            primary: "#D92B74",
             "primary-text": "#001A33",
           },
         },
@@ -61,13 +61,14 @@ const config: Config = {
         },
       },
       // Accent as text: a lighter tint so small pink text passes AA on every layer
-      // (#E8357F on the card layer is 3.9:1; #FF5C99 is 5.1:1). Fills keep #E8357F.
+      // (#D92B74 on the card layer is 3.2:1; #FF5C99 is 5.1:1). Fills keep #D92B74, and
+      // text on a pink fill is white (4.6:1).
       textColor: {
         accent: {
           DEFAULT: "#FF5C99",
           hover: "#FF7AAD",
-          ink: "#000E1C",
-          muted: "#2A0019",
+          ink: "#FFFFFF",
+          muted: "#FFFFFF",
         },
       },
       boxShadow: {

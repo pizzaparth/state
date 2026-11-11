@@ -12,7 +12,7 @@ import { TabLinks } from "./tab-links";
 
 /**
  * Product-surface primitives on three flat layers (styles/product.css), with the accent
- * (#E8357F) as the focal layer on top:
+ * (#D92B74) as the focal layer on top:
  *   Layer 0 page    #001A33: rows, labels, ledgers sit directly on it
  *   Layer 1 Panel   #05223F + hairline (columns, metric panels, toolbars)
  *   Layer 2 card    #0B2A48 + stronger hairline (task cards, buttons, menus)

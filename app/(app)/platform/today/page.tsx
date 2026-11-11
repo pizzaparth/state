@@ -43,7 +43,7 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
           <p className={cn(DISPLAY, "mt-5 text-[clamp(4rem,9vw,6.5rem)] leading-[0.85] tabular-nums")}>
             <CountUp value={`+${done}`} />
           </p>
-          <dl className="mt-6 grid grid-cols-3 gap-3 border-t border-black/10 pt-4 font-mono text-sm tabular-nums">
+          <dl className="mt-6 grid grid-cols-3 gap-3 border-t border-white/25 pt-4 font-mono text-sm tabular-nums">
             <div>
               <dt className="text-[11px] uppercase tracking-[0.16em] text-accent-muted">Commits</dt>
               <dd className="mt-1 text-lg font-semibold">

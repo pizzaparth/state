@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
  */
 
 // Lightness steps on #001A33 panels: primary ink, secondary ink, recessive fill
-const TONE = { hi: "#E8357F", mid: "#FFFFFF", lo: "#5A6B99" } as const;
+const TONE = { hi: "#D92B74", mid: "#FFFFFF", lo: "#5A6B99" } as const;
 export type Tone = keyof typeof TONE;
 
 export interface Series {
@@ -281,7 +281,7 @@ export function SeriesChart({
 }
 
 // Lightness-only ramp shared with the execution graph
-const RAMP = ["#0B2A48", "#55306E", "#8C347C", "#C53985", "#E8357F"] as const;
+const RAMP = ["#0B2A48", "#55306E", "#8C347C", "#C53985", "#D92B74"] as const;
 const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 /** Weekday × hour grid of commits in the period (local time). */

@@ -43,7 +43,7 @@ export function Sparkline({ values, inverse }: { values: number[]; inverse?: boo
   const max = Math.max(...values);
   const span = max - min || 1;
   const points = values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - 2 - ((v - min) / span) * (h - 4)).toFixed(1)}`);
-  const color = inverse ? "#001A33" : "#E8357F";
+  const color = inverse ? "#FFFFFF" : "#D92B74";
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="h-7 w-24 shrink-0" preserveAspectRatio="none" aria-hidden="true">
       {/* The line draws in left to right; the end dot lands after it */}
@@ -60,7 +60,7 @@ export function Sparkline({ values, inverse }: { values: number[]; inverse?: boo
   );
 }
 
-const MIX_FILL = ["#E8357F", "#FFFFFF", "#8E9AC0", "#3D5185"];
+const MIX_FILL = ["#D92B74", "#FFFFFF", "#8E9AC0", "#3D5185"];
 
 /** 100% stacked bar with a labelled row per part, so share never relies on fill alone. */
 export function MixBar({ label, parts }: { label: string; parts: { name: string; value: number; detail?: string }[] }) {

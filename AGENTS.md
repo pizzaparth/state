@@ -36,9 +36,9 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
   - **Public Marketing Surfaces:** Navy (`#001A33` to `#123352`) with white and the accent, editorial, technical, high-contrast.
   - **Logged-in Product Application:** Navy (`#001A33`), flat, dense, numbers-first. Depth comes from 1px hairlines and small tonal steps only.
 - NEVER: Use neumorphism (soft extruded or inset shadows) anywhere in the product.
-- MUST: Palette is 75% navy `#001A33` and white `#FFFFFF`, 25% accent `#E8357F` (tokens in `styles/tokens.css`, Tailwind `accent`). The accent fills focal surfaces (`.app-inverse`: `+ COMMIT`, the Today execution instrument, the headline metric, the active nav item, tooltips, toasts), primary CTAs, page labels, data marks and focus rings.
-- MUST: Text on the accent is `#001A33` / `#2A0019` (AA). NEVER: White text on the accent (3.3:1 fails).
-- MUST: Accent as small text uses Tailwind `text-accent` (`#FF5C99`, AA on every layer); `#E8357F` is for fills, marks and large type.
+- MUST: Palette is 75% navy `#001A33` and white `#FFFFFF`, 25% accent `#D92B74` (tokens in `styles/tokens.css`, Tailwind `accent`). The accent fills focal surfaces (`.app-inverse`: `+ COMMIT`, the Today execution instrument, the headline metric, the active nav item, tooltips, toasts), primary CTAs, page labels, data marks and focus rings.
+- MUST: Text on the accent is white `#FFFFFF` (4.6:1 on `#D92B74`). NEVER: Dark text on the accent.
+- MUST: Accent as small text uses Tailwind `text-accent` (`#FF5C99`, AA on every layer); `#D92B74` is for fills, marks and large type.
 - NEVER: Tint the product page grey or turn large regions white.
 
 ### Type & Copy (quant, short attention span)
@@ -58,9 +58,9 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
   - **Field (`.app-field`, `.app-input`):** Inputs, selects, progress rails, segmented troughs (`#001A33`, 1px `rgba(255,255,255,.16)` border; focus border accent).
   - **Overlay (`.app-overlay`):** Dialogs, drawers, command palette, menus (`#05223F` with a hairline).
 - MUST: Micro-interactions on every interactive element via `styles/motion.css` (`mi-press`, `mi-lift`, `mi-nudge`, `mi-spin`, `mi-arrow`, `mi-underline`, `mi-row`, `mi-pop`, `mi-live`): transform/opacity only, ≤ 260ms, no shadows, no endless loops.
-- MUST: Product text uses `#FFFFFF` / `#B4BEDB` / `#8E9AC0` (all pass WCAG AA on every surface); on inverse surfaces use `#001A33` / `#2A0019`.
+- MUST: Product text uses `#FFFFFF` / `#B4BEDB` / `#8E9AC0` (all pass WCAG AA on every surface); on inverse (accent) surfaces use `#FFFFFF`.
 - NEVER: Add box-shadows, glows or inset shadows to separate surfaces; use a hairline.
-- NEVER: Use gradients or any colour other than the accent `#E8357F`.
+- NEVER: Use gradients or any colour other than the accent `#D92B74`.
 
 ---
 
