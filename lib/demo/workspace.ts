@@ -1,9 +1,7 @@
-import type { CommitRow, DailyExecution, MetricSeries, MetricsData } from "@/db/queries";
-import type { BoardCard, BoardColumn } from "@/components/app/kanban";
+import type { DailyExecution, MetricsData } from "@/db/queries";
 
 /**
- * Demo workspace for the public landing page. The product screens there are the real
- * components (ExecutionGraph, CommitLedger, Kanban, MetricsReport); this module stands in
+ * Demo workspace for the public landing page's metric figures; this module stands in
  * for the database. It generates a year of tasks and commits from a fixed seed, then
  * aggregates them exactly as db/queries does, so every number on the page follows from
  * the records it shows and the formulas the product uses.
@@ -11,8 +9,6 @@ import type { BoardCard, BoardColumn } from "@/components/app/kanban";
  * Days are UTC days ending today, so the demo never looks stale. Same seed and same day
  * give the same workspace, which keeps server and client markup identical.
  */
-
-export const DEMO_TZ = "UTC";
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -221,130 +217,6 @@ export function demoMetrics(w: DemoWorkspace, days: number): MetricsData {
     daily,
     byProject: [...byProject].map(([name, execution]) => ({ name, execution })).sort((a, b) => b.execution - a.execution),
   };
-}
-
-/** getMetricSeries for a period of `days`. */
-export function demoSeries(w: DemoWorkspace, days: number): MetricSeries {
-  const history = demoDaily(w, Math.max(2 * days, days + 27));
-  const start = dayStart(w, days - 1);
-  const previousStart = dayStart(w, 2 * days - 1);
-  const current = w.commits.filter((c) => c.createdAt >= start);
-
-  const punch = new Map<string, { dow: number; hour: number; commits: number; execution: number }>();
-  const weights = new Map<number, { weight: number; commits: number; execution: number }>();
-  for (const c of current) {
-    const d = new Date(c.createdAt);
-    const dow = ((d.getUTCDay() + 6) % 7) + 1;
-    const key = `${dow}:${d.getUTCHours()}`;
-    const p = punch.get(key) ?? { dow, hour: d.getUTCHours(), commits: 0, execution: 0 };
-    p.commits++;
-    p.execution += c.executionValue;
-    punch.set(key, p);
-    const wgt = weights.get(c.executionValue) ?? { weight: c.executionValue, commits: 0, execution: 0 };
-    wgt.commits++;
-    wgt.execution += c.executionValue;
-    weights.set(c.executionValue, wgt);
-  }
-
-  const count = (values: (number | null)[]) => {
-    const m = new Map<string, number>();
-    for (const v of values) if (v !== null && v >= start) m.set(dayKey(v), (m.get(dayKey(v)) ?? 0) + 1);
-    return m;
-  };
-  const created = count(w.tasks.map((t) => t.createdAt));
-  const completed = count(w.tasks.map((t) => t.completedAt));
-
-  const projects = new Map<string, { name: string; execution: number; previous: number; commits: number; days: Set<string> }>();
-  for (const c of w.commits) {
-    if (c.createdAt < previousStart) continue;
-    const p = projects.get(c.project) ?? { name: c.project, execution: 0, previous: 0, commits: 0, days: new Set<string>() };
-    if (c.createdAt >= start) {
-      p.execution += c.executionValue;
-      p.commits++;
-      p.days.add(dayKey(c.createdAt));
-    } else p.previous += c.executionValue;
-    projects.set(c.project, p);
-  }
-
-  return {
-    history,
-    punchcard: [...punch.values()],
-    weights: [...weights.values()].sort((a, b) => a.weight - b.weight),
-    flow: history.slice(-days).map((d) => ({ day: d.day, created: created.get(d.day) ?? 0, completed: completed.get(d.day) ?? 0 })),
-    cycles: w.tasks
-      .filter((t) => t.completedAt !== null && t.completedAt >= previousStart && t.startedAt !== null)
-      .sort((a, b) => a.completedAt! - b.completedAt!)
-      .map((t) => ({ day: dayKey(t.completedAt!), ms: t.completedAt! - t.startedAt! })),
-    projects: [...projects.values()]
-      .map(({ days: active, ...p }) => ({ ...p, activeDays: active.size }))
-      .sort((a, b) => b.execution - a.execution || b.commits - a.commits),
-  };
-}
-
-/** getCommits: newest first. */
-export function demoCommits(w: DemoWorkspace, limit: number): CommitRow[] {
-  return [...w.commits]
-    .sort((a, b) => b.createdAt - a.createdAt)
-    .slice(0, limit)
-    .map((c) => ({
-      id: c.id,
-      message: c.message,
-      executionValue: c.executionValue,
-      source: c.source,
-      createdAt: new Date(c.createdAt),
-      workspaceId: "demo",
-      taskId: c.taskId,
-      projectName: c.project,
-      projectSlug: c.project.toLowerCase(),
-      authorId: c.author,
-      authorName: c.author,
-    }));
-}
-
-/**
- * getBoard, trimmed to a screen's worth: the newest open cards per column and the work
- * finished in the last `doneWindowDays` days.
- */
-export function demoBoard(w: DemoWorkspace, kind: "personal", doneWindowDays: number, perColumn = 4): { columns: BoardColumn[]; cards: BoardCard[] } {
-  const states = ["backlog", "active", "done"] as const;
-  const names = { backlog: "Queued", active: "Active", done: "Done" } as const;
-  const columns = states.map((state) => ({ id: `${kind}-${state}`, name: names[state], stateType: state as string, total: 0 }));
-  const stateOf = (t: DemoTask) => (t.completedAt !== null ? "done" : t.startedAt === null ? "backlog" : "active");
-  const doneFrom = w.now.getTime() - doneWindowDays * DAY;
-  const newest = [...w.tasks].sort((a, b) => (b.completedAt ?? b.createdAt) - (a.completedAt ?? a.createdAt));
-
-  const cards: BoardCard[] = [];
-  // Titles repeat across a year of work; a screen shows each one once. Columns with the
-  // fewest cards choose first so none is emptied by the rule.
-  const shown = new Set<string>();
-  const byScarcity = [...columns].sort((a, b) => ["done", "active", "backlog"].indexOf(a.stateType) - ["done", "active", "backlog"].indexOf(b.stateType));
-  for (const column of byScarcity) {
-    const inColumn = newest.filter((t) => stateOf(t) === column.stateType && (column.stateType !== "done" || t.completedAt! >= doneFrom));
-    column.total = inColumn.length;
-    const fresh: DemoTask[] = [];
-    for (const t of inColumn) {
-      if (fresh.length === perColumn) break;
-      if (shown.has(t.title)) continue;
-      shown.add(t.title);
-      fresh.push(t);
-    }
-    for (const t of fresh) {
-      cards.push({
-        id: t.id,
-        title: t.title,
-        columnId: column.id,
-        projectName: t.project,
-        priority: t.priority,
-        weight: t.weight,
-        due: null,
-        assigneeName: null,
-        assigneeInitials: null,
-        tags: [],
-      });
-    }
-  }
-  const order = new Map(columns.map((c, i) => [c.id, i]));
-  return { columns, cards: cards.sort((a, b) => order.get(a.columnId)! - order.get(b.columnId)!) };
 }
 
 let cache: { day: number; personal: DemoWorkspace } | null = null;

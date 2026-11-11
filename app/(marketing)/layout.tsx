@@ -34,7 +34,7 @@ export default function MarketingLayout({
             State
           </Link>
           <div className="hidden items-center gap-6 text-base text-[#B4BEDB] sm:flex">
-            <Link href="/#history" className="mi-underline transition-colors hover:text-white">
+            <Link href="/#loop" className="mi-underline transition-colors hover:text-white">
               Product
             </Link>
             <Link href="/principles" className="mi-underline transition-colors hover:text-white">
@@ -63,23 +63,12 @@ export default function MarketingLayout({
         {children}
       </main>
 
-      <footer className="relative z-10 border-t border-white/[0.1] bg-[#05223F]/85 backdrop-blur-md px-5 py-12 text-base text-[#8E9AC0] sm:px-8 lg:px-12">
+      <footer className="relative z-10 border-t border-white/[0.1] bg-[#05223F]/85 backdrop-blur-md px-5 py-8 text-base text-[#8E9AC0] sm:px-8 lg:px-12">
         <div className="mx-auto grid max-w-[1320px] gap-10 md:grid-cols-[minmax(0,1fr)_auto] md:gap-16">
-          <div className="space-y-3">
+          <div className="space-y-2">
             <p className="font-mono text-sm uppercase tracking-[0.18em] text-accent">{BYLINE}</p>
-            <p>
-              <span className="font-semibold text-[#FFFFFF]" translate="no">State</span> is built and used by{" "}
-              <span className="text-[#FFFFFF]" translate="no">
-                {AUTHOR}
-              </span>
-              . No ads, no AI, no payments.
-            </p>
-            <p className="max-w-[56ch] text-sm leading-relaxed">
-              Graphs, histories and figures on this site are sample data. The demo keeps nothing: its workspace is deleted when you sign out or
-              close the tab.
-            </p>
             <p className="text-sm">
-              © {new Date().getFullYear()} <span translate="no">{AUTHOR}</span>
+              Figures on this site are sample data. © {new Date().getFullYear()} <span translate="no">{AUTHOR}</span>
             </p>
           </div>
           <nav aria-label="Site" className="flex flex-col gap-2">
