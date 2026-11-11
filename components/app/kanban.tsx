@@ -342,7 +342,7 @@ function CardFace({
         lifted ? "app-card scale-[1.02] cursor-grabbing border-white/40 bg-[#1A1A1A]" : "app-card"
       )}
     >
-      {flash && <span aria-hidden="true" className="pointer-events-none absolute inset-0 animate-flash rounded-[16px] bg-white/[0.14]" />}
+      {flash && <span aria-hidden="true" className="pointer-events-none absolute inset-0 animate-flash rounded-[16px] bg-accent/25" />}
       {href ? (
         <Link href={href as Route} scroll={false} className="rounded-[6px] focus-visible:outline-2">
           {title}

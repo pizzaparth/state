@@ -4,14 +4,27 @@
      Reference: docs/style.md & docs/techstack.md
      ========================================================================== */
 
+  /* Accent: #F205CF. About a quarter of every screen; everything else is black and white.
+     Black text on the accent passes WCAG AA (5.7:1); white text on it does not. Accent
+     text on black passes too (5.7:1). */
+  --accent: #F205CF;
+  --accent-hover: #FF3DE0;
+  --accent-ink: #0A0A0A;
+  --accent-ink-muted: #33002C;
+  --accent-soft: rgba(242, 5, 207, 0.12);
+  --accent-line: rgba(242, 5, 207, 0.5);
+
+  /* Three layers on every screen: 0 page, 1 panel, 2 card/control. Tonal steps and
+     hairlines only; the accent sits on top as the focal layer. */
+
   /* Marketing & External Brand Theme (Dark Monochrome) */
   --bg-0: #050505;
   --bg-1: #080808;
   --bg-2: #0D0D0D;
 
-  --surface-1: #111111;
-  --surface-2: #161616;
-  --surface-3: #1C1C1C;
+  --surface-1: #0E0E0E;
+  --surface-2: #181818;
+  --surface-3: #202020;
 
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-default: rgba(255, 255, 255, 0.12);
@@ -22,21 +35,22 @@
   --text-tertiary: #6F6F6B;
   --text-inverse: #0A0A0A;
 
-  --action-primary: #F2F2EF;
-  --action-primary-text: #0A0A0A;
+  --action-primary: var(--accent);
+  --action-primary-text: var(--accent-ink);
 
   /* Product Theme (AMOLED black, flat: depth from hairline borders and tonal steps, never shadows) */
   --app-bg: #000000;
-  --app-panel: #0A0A0A;
-  --app-raised: #121212;
-  --app-raised-hover: #1A1A1A;
+  --app-panel: #0E0E0E;
+  --app-raised: #181818;
+  --app-raised-hover: #202020;
   --app-field: #000000;
-  --app-line: rgba(255, 255, 255, 0.08);
-  --app-line-strong: rgba(255, 255, 255, 0.14);
-  --app-line-focus: rgba(255, 255, 255, 0.45);
+  --app-line: rgba(255, 255, 255, 0.1);
+  --app-line-strong: rgba(255, 255, 255, 0.16);
+  --app-line-focus: var(--accent);
 
-  --app-inverse: #F2F2EF;
-  --app-inverse-text: #0A0A0A;
+  /* Focal surfaces (+ COMMIT, Today instrument, headline metric, active nav, toasts) */
+  --app-inverse: var(--accent);
+  --app-inverse-text: var(--accent-ink);
 
   --app-text-primary: #F2F2EF;
   --app-text-secondary: #9A9A96;

@@ -30,7 +30,7 @@ export function TaskRow({
       >
         <span
           aria-hidden="true"
-          className={cn("size-3 shrink-0 rounded-full", done ? "bg-[#F2F2EF]" : "app-field border border-white/10")}
+          className={cn("size-3 shrink-0 rounded-full", done ? "bg-accent" : "app-field border border-white/10")}
         />
         <span className="min-w-0 flex-1 basis-[calc(100%-2rem)] sm:basis-auto">
           <span className={cn("block truncate text-base font-medium", done ? "text-[#9A9A96]" : "text-[#F2F2EF]")}>

@@ -20,8 +20,13 @@
 
   /* Accessible focus indicators per AGENTS.md */
   :focus-visible {
-    outline: 2px solid rgba(244, 244, 242, 0.85);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-ink);
   }
 
   /* Dark marketing/auth surfaces: native controls & scrollbars render dark */
@@ -31,7 +36,7 @@
 
   /* Dark mode focus visible override */
   .dark :focus-visible {
-    outline: 2px solid rgba(244, 244, 242, 0.85);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 

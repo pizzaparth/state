@@ -129,7 +129,7 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
                 ).map(([value, text]) => (
                   <label
                     key={value}
-                    className={`flex h-9 cursor-pointer items-center justify-center rounded-[10px] text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-white ${values.measure === value ? "bg-[#F2F2EF] text-[#0A0A0A]" : "text-[#9A9A96] hover:text-[#F2F2EF]"}`}
+                    className={`flex h-9 cursor-pointer items-center justify-center rounded-[10px] text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-accent ${values.measure === value ? "bg-accent text-accent-ink" : "text-[#9A9A96] hover:text-[#F2F2EF]"}`}
                   >
                     <input type="radio" name="measure" value={value} checked={values.measure === value} onChange={() => set("measure", value)} className="sr-only" />
                     {text}

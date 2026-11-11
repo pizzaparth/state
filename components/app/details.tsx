@@ -88,7 +88,7 @@ export function TaskDetail({ task, tz, now, editable = false }: { task: Task; tz
         <p className={cn(TICK, "text-[#9A9A96]")}>Commit</p>
         {task.commit ? (
           <p className="mt-3 flex items-center gap-3 text-base">
-            <span aria-hidden="true" className="size-2 rounded-full bg-[#F2F2EF]" />
+            <span aria-hidden="true" className="size-2 rounded-full bg-accent" />
             <span className="min-w-0 flex-1 truncate">{task.commit.message}</span>
             <span className="font-mono text-sm tabular-nums">+{task.commit.executionValue}</span>
           </p>
@@ -112,12 +112,12 @@ export function CommitDetail({ commit, tz, projects }: { commit: Commit; tz: str
   return (
     <div>
       <p className="flex items-center gap-3">
-        <span aria-hidden="true" className="size-2.5 rounded-full bg-[#F2F2EF]" />
+        <span aria-hidden="true" className="size-2.5 rounded-full bg-accent" />
         <span className="font-mono text-sm tabular-nums text-[#9A9A96]">{formatDateTime(commit.createdAt, tz)}</span>
       </p>
       <h2 className="mt-3 break-words font-display text-2xl font-bold leading-tight tracking-[-0.02em] [font-stretch:110%] text-[#F2F2EF]">{commit.message}</h2>
       <div className="app-inverse mt-5 flex items-baseline justify-between rounded-[20px] px-5 py-4">
-        <span className={cn(TICK, "text-[#55554F]")}>Execution</span>
+        <span className={cn(TICK, "text-accent-muted")}>Execution</span>
         <span className={cn(DISPLAY, "text-5xl leading-none tabular-nums")}>+{commit.executionValue}</span>
       </div>
       {commit.tags.length > 0 && (

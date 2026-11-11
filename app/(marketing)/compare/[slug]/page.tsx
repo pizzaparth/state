@@ -41,7 +41,7 @@ export default async function ComparisonPage({ params }: { params: Promise<{ slu
     <article className="mx-auto w-full max-w-[1320px] px-5 pb-[16vh] pt-40 sm:px-8 lg:px-12">
       <JsonLd data={breadcrumbs} />
       <nav aria-label="Breadcrumb" className="font-mono text-sm uppercase tracking-[0.16em] text-[#85857F]">
-        <Link href="/compare" className="transition-colors hover:text-white">
+        <Link href="/compare" className="text-accent transition-colors hover:text-white">
           Compare
         </Link>
         <span aria-hidden="true"> / </span>
@@ -49,19 +49,19 @@ export default async function ComparisonPage({ params }: { params: Promise<{ slu
       </nav>
 
       <h1 className="mt-6 font-display text-[clamp(2.25rem,8vw,7rem)] font-extrabold uppercase leading-[0.9] tracking-[-0.03em] [font-stretch:125%] text-balance">
-        State vs <span translate="no">{c.name}</span>
+        <span className="text-accent">State vs</span> <span translate="no">{c.name}</span>
       </h1>
       <p className="mt-6 max-w-[60ch] text-lg leading-relaxed text-[#A9A9A6] text-pretty">{c.is}</p>
 
-      <div className="mt-14 grid gap-px overflow-hidden rounded-[28px] border border-white/[0.08] bg-white/[0.08] md:grid-cols-2">
-        <section aria-labelledby="pick-them" className="bg-[#050505] p-6 sm:p-8">
+      <div className="mt-14 grid gap-2 rounded-[28px] border border-white/[0.1] bg-[#0E0E0E] p-2 md:grid-cols-2">
+        <section aria-labelledby="pick-them" className="rounded-[20px] border border-white/[0.16] bg-[#181818] p-6 sm:p-8">
           <h2 id="pick-them" className="font-mono text-sm uppercase tracking-[0.16em] text-[#85857F]">
             Pick <span translate="no">{c.name}</span> if
           </h2>
           <p className="mt-4 text-xl leading-relaxed text-[#F4F4F2] text-pretty">{c.pickThem}</p>
         </section>
-        <section aria-labelledby="pick-state" className="bg-[#050505] p-6 sm:p-8">
-          <h2 id="pick-state" className="font-mono text-sm uppercase tracking-[0.16em] text-[#85857F]">
+        <section aria-labelledby="pick-state" className="rounded-[20px] border border-accent-line bg-[#181818] p-6 sm:p-8">
+          <h2 id="pick-state" className="font-mono text-sm uppercase tracking-[0.16em] text-accent">
             Pick State if
           </h2>
           <p className="mt-4 text-xl leading-relaxed text-[#F4F4F2] text-pretty">{c.pickState}</p>
@@ -72,7 +72,7 @@ export default async function ComparisonPage({ params }: { params: Promise<{ slu
         <h2 id="side-by-side" className="font-display text-[clamp(1.5rem,4vw,3rem)] font-bold uppercase tracking-[-0.02em] [font-stretch:112%]">
           Side by side
         </h2>
-        <div className="mt-8 overflow-x-auto">
+        <div className="mt-8 overflow-x-auto rounded-[28px] border border-white/[0.1] bg-[#0E0E0E] px-6 py-2">
           <table className="w-full min-w-[36rem] border-collapse text-left text-base">
             <thead>
               <tr className="border-b border-white/[0.14] font-mono text-sm uppercase tracking-[0.16em] text-[#85857F]">
@@ -82,7 +82,7 @@ export default async function ComparisonPage({ params }: { params: Promise<{ slu
                 <th scope="col" className="py-3 pr-6 font-medium" translate="no">
                   {c.name}
                 </th>
-                <th scope="col" className="py-3 font-medium">
+                <th scope="col" className="py-3 font-medium text-accent">
                   State
                 </th>
               </tr>

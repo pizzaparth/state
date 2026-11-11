@@ -20,6 +20,7 @@ interface Particle {
   driftY: number;
   size: number;
   alpha: number;
+  accent: boolean;
   order: number; // 0 = loose dot, 1 = aligned cell
 }
 
@@ -60,6 +61,8 @@ export function ParticleField() {
           driftY: Math.sin(angle) * speed,
           size: 0.6 + Math.random() * 0.9,
           alpha: 0.12 + Math.random() * 0.3,
+          // One in four particles carries the accent
+          accent: Math.random() < 0.25,
           order: 0,
         };
       });
@@ -69,7 +72,7 @@ export function ParticleField() {
       ctx.clearRect(0, 0, width, height);
       for (const p of particles) {
         const a = p.alpha + (0.85 - p.alpha) * p.order;
-        ctx.fillStyle = `rgba(244, 244, 242, ${a})`;
+        ctx.fillStyle = p.accent ? `rgba(242, 5, 207, ${Math.min(1, a + 0.15)})` : `rgba(244, 244, 242, ${a})`;
         if (p.order > 0.5) {
           // Aligned: render as a small square cell, like the execution graph
           const s = p.size + 2.2 * p.order;

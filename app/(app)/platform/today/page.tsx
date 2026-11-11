@@ -37,7 +37,7 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
       <div className="grid gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         {/* Focal instrument: the one inverse (near-white) surface on this page */}
         <section aria-labelledby="execution-today" className="app-inverse rounded-[28px] p-6">
-          <h2 id="execution-today" className={cn(TICK, "text-[#55554F]")}>
+          <h2 id="execution-today" className={cn(TICK, "text-accent-muted")}>
             Execution today
           </h2>
           <p className={cn(DISPLAY, "mt-5 text-[clamp(4rem,9vw,6.5rem)] leading-[0.85] tabular-nums")}>
@@ -45,19 +45,19 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
           </p>
           <dl className="mt-6 grid grid-cols-3 gap-3 border-t border-black/10 pt-4 font-mono text-sm tabular-nums">
             <div>
-              <dt className="text-[11px] uppercase tracking-[0.16em] text-[#55554F]">Commits</dt>
+              <dt className="text-[11px] uppercase tracking-[0.16em] text-accent-muted">Commits</dt>
               <dd className="mt-1 text-lg font-semibold">
                 <CountUp value={String(today.commits.length)} />
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] uppercase tracking-[0.16em] text-[#55554F]">Done</dt>
+              <dt className="text-[11px] uppercase tracking-[0.16em] text-accent-muted">Done</dt>
               <dd className="mt-1 text-lg font-semibold">
                 <CountUp value={String(today.completed.length)} />
               </dd>
             </div>
             <div title="Average daily execution over the last 7 days">
-              <dt className="text-[11px] uppercase tracking-[0.16em] text-[#55554F]">7D avg</dt>
+              <dt className="text-[11px] uppercase tracking-[0.16em] text-accent-muted">7D avg</dt>
               <dd className="mt-1 text-lg font-semibold">
                 <CountUp value={avg.toFixed(1)} />
               </dd>

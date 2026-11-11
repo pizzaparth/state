@@ -173,7 +173,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
                 <button
                   type="button"
                   onClick={() => setCommitOpen(true)}
-                  className="app-inverse inline-flex h-10 items-center gap-1.5 rounded-[12px] px-4 text-sm font-semibold tracking-[0.06em] hover:bg-white"
+                  className="app-inverse inline-flex h-10 items-center gap-1.5 rounded-[12px] px-4 text-sm font-semibold tracking-[0.06em]"
                 >
                   <Plus className="size-3.5" aria-hidden="true" />
                   COMMIT
@@ -297,7 +297,7 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
                       <Icon className="size-4 shrink-0" aria-hidden="true" />
                       <span className="min-w-0 flex-1 truncate">{item.name}</span>
                       {item.badge ? (
-                        <span className={cn("font-mono text-[13px] tabular-nums", active ? "text-[#55554F]" : "text-[#9A9A96]")}>{item.badge}</span>
+                        <span className={cn("font-mono text-[13px] tabular-nums", active ? "text-accent-muted" : "text-[#9A9A96]")}>{item.badge}</span>
                       ) : null}
                     </NavLink>
                   </li>
@@ -341,7 +341,7 @@ function NavLink({ href, active, children }: { href: string; active: boolean; ch
         <motion.span
           layoutId="nav-active"
           aria-hidden="true"
-          className="absolute inset-0 rounded-[12px] bg-[#F2F2EF]"
+          className="absolute inset-0 rounded-[12px] bg-accent"
           transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.8 }}
         />
       )}

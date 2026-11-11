@@ -18,15 +18,15 @@ export default function ComparePage() {
       <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-[#A9A9A6]">
         Other tools organise tasks. State also measures them. Here is where each one fits.
       </p>
-      <ul className="mt-16 divide-y divide-white/[0.08] border-y border-white/[0.08]">
+      <ul className="mt-16 space-y-2 rounded-[28px] border border-white/[0.1] bg-[#0E0E0E] p-2">
         {COMPARISONS.map((c) => (
           <li key={c.slug}>
             <Link
               href={`/compare/${c.slug}`}
-              className="grid gap-2 py-8 transition-colors hover:bg-white/[0.02] focus-visible:outline focus-visible:outline-1 focus-visible:outline-white md:grid-cols-[16rem_minmax(0,1fr)] md:gap-12"
+              className="grid gap-2 rounded-[20px] border border-white/[0.16] bg-[#181818] p-6 transition-colors hover:border-accent-line hover:bg-[#202020] md:grid-cols-[16rem_minmax(0,1fr)] md:gap-12"
             >
               <span className="font-display text-2xl font-bold uppercase tracking-[-0.01em] [font-stretch:112%]">
-                State vs <span translate="no">{c.name}</span>
+                <span className="text-accent">State vs</span> <span translate="no">{c.name}</span>
               </span>
               <span className="max-w-[64ch] text-lg leading-relaxed text-[#A9A9A6]">{c.is}</span>
             </Link>

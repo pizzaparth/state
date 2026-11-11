@@ -59,7 +59,7 @@ export function CommitLedger({
                     </time>
                     <span
                       aria-hidden="true"
-                      className={cn("relative z-[1] mx-auto size-2 rounded-full", c.source === "manual" ? "border border-[#F2F2EF] bg-[#0A0A0A]" : "bg-[#F2F2EF]")}
+                      className={cn("relative z-[1] mx-auto size-2 rounded-full", c.source === "manual" ? "border border-accent bg-[#0A0A0A]" : "bg-accent")}
                     />
                     <span className="min-w-0">
                       <span className="block truncate text-base font-medium text-[#F2F2EF]">{c.message}</span>
@@ -67,7 +67,7 @@ export function CommitLedger({
                         {[c.projectName, showAuthor ? c.authorName : null, c.source === "manual" ? "manual" : null].filter(Boolean).join(", ")}
                       </span>
                     </span>
-                    <span className="font-mono text-sm font-semibold tabular-nums text-[#F2F2EF]">+{c.executionValue}</span>
+                    <span className="font-mono text-sm font-semibold tabular-nums text-accent">+{c.executionValue}</span>
                   </Row>
                 </li>
               ))}

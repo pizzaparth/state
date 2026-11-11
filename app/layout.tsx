@@ -38,7 +38,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${archivo.variable}`}>
-      <body className="min-h-screen font-sans bg-black text-[#F2F2EF] antialiased selection:bg-white selection:text-black">
+      <body className="min-h-screen font-sans bg-black text-[#F2F2EF] antialiased selection:bg-accent selection:text-accent-ink">
         {children}
       </body>
     </html>

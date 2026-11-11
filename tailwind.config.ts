@@ -11,6 +11,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // The one colour: about a quarter of every screen (styles/tokens.css)
+        accent: {
+          DEFAULT: "#F205CF",
+          hover: "#FF3DE0",
+          ink: "#0A0A0A",
+          muted: "#33002C",
+          soft: "rgba(242, 5, 207, 0.12)",
+          line: "rgba(242, 5, 207, 0.5)",
+        },
         // Marketing / Brand Dark Theme
         dark: {
           bg: {
@@ -35,15 +44,15 @@ const config: Config = {
             inverse: "#0A0A0A",
           },
           action: {
-            primary: "#F2F2EF",
+            primary: "#F205CF",
             "primary-text": "#0A0A0A",
           },
         },
         // Logged-in product: AMOLED black, flat
         app: {
           bg: "#000000",
-          panel: "#0A0A0A",
-          raised: "#121212",
+          panel: "#0E0E0E",
+          raised: "#181818",
           text: {
             primary: "#F2F2EF",
             secondary: "#9A9A96",
@@ -54,7 +63,6 @@ const config: Config = {
       boxShadow: {
         // Dark Theme Cards
         "dark-card": "0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 24px -4px rgba(0, 0, 0, 0.6)",
-        "dark-glow": "0 0 20px rgba(255, 255, 255, 0.05)",
       },
       borderRadius: {
         control: "12px",

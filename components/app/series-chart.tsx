@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
  */
 
 // Lightness steps on #0A0A0A panels: primary ink, secondary ink, recessive fill
-const TONE = { hi: "#F2F2EF", mid: "#9A9A96", lo: "#4A4A47" } as const;
+const TONE = { hi: "#F205CF", mid: "#F2F2EF", lo: "#5C5C59" } as const;
 export type Tone = keyof typeof TONE;
 
 export interface Series {
@@ -239,7 +239,7 @@ export function SeriesChart({
             style={{ left: tipLeft }}
           >
             <p className="font-semibold">{labels[active]}</p>
-            <ul className="mt-1 space-y-0.5 font-mono text-[12px] tabular-nums text-[#55554F]">
+            <ul className="mt-1 space-y-0.5 font-mono text-[12px] tabular-nums text-accent-muted">
               {series.map((s) => (
                 <li key={s.label} className="flex justify-between gap-4">
                   <span>{s.label}</span>
@@ -281,7 +281,7 @@ export function SeriesChart({
 }
 
 // Lightness-only ramp shared with the execution graph
-const RAMP = ["#161616", "#2E2E2C", "#5C5C59", "#A3A39F", "#F2F2EF"] as const;
+const RAMP = ["#181818", "#4A0640", "#850770", "#BE06A2", "#F205CF"] as const;
 const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 /** Weekday × hour grid of commits in the period (local time). */

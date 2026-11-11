@@ -23,7 +23,10 @@ const silver = "bg-gradient-to-b from-white via-[#D9D9D5] to-[#6F6F6B] bg-clip-t
 const displayHeading =
   "font-display font-extrabold uppercase leading-[0.92] tracking-[-0.03em] [font-stretch:125%] text-balance";
 const sectionPad = "mx-auto w-full max-w-[1320px] px-5 sm:px-8 lg:px-12";
-const kicker = "mb-6 font-mono text-sm uppercase tracking-[0.18em] text-[#85857F]";
+const kicker = "mb-6 font-mono text-sm uppercase tracking-[0.18em] text-accent";
+// Three layers: page (#050505), panel and card; the accent marks what matters
+const layer1 = "rounded-[28px] border border-white/[0.1] bg-[#0E0E0E]";
+const layer2 = "rounded-[20px] border border-white/[0.16] bg-[#181818]";
 
 // Board cards finished in the last two days stay in Done
 const DONE_WINDOW_DAYS = 2;
@@ -105,7 +108,7 @@ export default function LandingPage() {
             <span className="block animate-line-rise">Execution,</span>
           </span>
           <span className="block overflow-hidden pb-[0.06em]">
-            <span className="block animate-line-rise [animation-delay:120ms]">measured.</span>
+            <span className="block animate-line-rise text-accent [animation-delay:120ms] [-webkit-text-fill-color:#F205CF]">measured.</span>
           </span>
         </h1>
 
@@ -117,7 +120,7 @@ export default function LandingPage() {
             <p className="mt-3 max-w-[44ch] text-lg leading-relaxed text-[#A9A9A6] text-pretty sm:text-xl">
               Tasks = the plan. Commits = what you did. State does the math.
             </p>
-            <p className="mt-4 font-mono text-sm uppercase tracking-[0.18em] text-[#6F6F6B]">
+            <p className="mt-4 font-mono text-sm uppercase tracking-[0.18em] text-[#85857F]">
               Study · Build · Write · Train · Design · Ship
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -192,7 +195,7 @@ export default function LandingPage() {
           {REFUSALS.map((item) => (
             <li
               key={item}
-              className="font-display text-[clamp(1.5rem,4.2vw,3.5rem)] font-bold uppercase leading-[1.1] tracking-[-0.02em] [font-stretch:112%] text-[#4A4A47] line-through decoration-[#8B8B86] decoration-2"
+              className="font-display text-[clamp(1.5rem,4.2vw,3.5rem)] font-bold uppercase leading-[1.1] tracking-[-0.02em] [font-stretch:112%] text-[#4A4A47] line-through decoration-accent decoration-[3px]"
             >
               {item}
             </li>
@@ -208,17 +211,17 @@ export default function LandingPage() {
           Switching from…
         </h2>
         {/* Seven tools: the last cell spans two so neither the 2- nor 4-column grid leaves a gap */}
-        <ul className="mt-12 grid grid-cols-2 gap-px overflow-hidden rounded-[28px] border border-white/[0.08] bg-white/[0.08] sm:grid-cols-4">
+        <ul className={`mt-12 grid grid-cols-2 gap-2 p-2 sm:grid-cols-4 ${layer1}`}>
           {COMPARISONS.map((c) => (
-            <li key={c.slug} className="bg-[#050505] last:col-span-2">
+            <li key={c.slug} className="last:col-span-2">
               <Link
                 href={`/compare/${c.slug}`}
-                className="flex min-h-24 flex-col justify-between gap-3 p-5 transition-colors hover:bg-[#0E0E0E] focus-visible:outline focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-white"
+                className={`flex h-full min-h-24 flex-col justify-between gap-3 p-5 transition-colors hover:border-accent-line hover:bg-[#202020] ${layer2}`}
               >
                 <span className="min-w-0 break-words font-display text-lg font-bold uppercase tracking-[-0.01em] [font-stretch:112%] sm:text-xl" translate="no">
                   {c.name}
                 </span>
-                <span className="font-mono text-xs uppercase tracking-[0.16em] text-[#85857F]">State vs {c.name} →</span>
+                <span className="font-mono text-xs uppercase tracking-[0.16em] text-accent">State vs {c.name} →</span>
               </Link>
             </li>
           ))}
@@ -231,9 +234,9 @@ export default function LandingPage() {
         <h2 id="faq-title" className={`${displayHeading} text-[clamp(1.75rem,7.5vw,6rem)]`}>
           Questions.
         </h2>
-        <dl className="mt-12 divide-y divide-white/[0.08] border-y border-white/[0.08]">
+        <dl className={`mt-12 space-y-2 p-2 ${layer1}`}>
           {FAQ.map((item) => (
-            <div key={item.q} className="grid gap-3 py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:gap-12">
+            <div key={item.q} className={`grid gap-3 p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:gap-12 ${layer2}`}>
               <dt className="text-xl font-semibold text-[#F4F4F2] text-balance">{item.q}</dt>
               <dd className="max-w-[60ch] text-lg leading-relaxed text-[#A9A9A6] text-pretty">{item.a}</dd>
             </div>
@@ -244,7 +247,7 @@ export default function LandingPage() {
       {/* Closing */}
       <section className={`${sectionPad} flex min-h-[80svh] flex-col justify-center py-[12vh]`}>
         <p className={kicker}>Where execution becomes data.</p>
-        <h2 className={`${displayHeading} ${silver} text-[clamp(2.25rem,10vw,9.5rem)] leading-[0.88]`}>Take a look.</h2>
+        <h2 className={`${displayHeading} text-accent text-[clamp(2.25rem,10vw,9.5rem)] leading-[0.88]`}>Take a look.</h2>
         <div className="mt-10 flex flex-wrap items-center gap-6">
           <Magnetic strength={0.45} radius={160}>
             <Button asChild variant="dark-cta" size="lg" className="rounded-full px-8">

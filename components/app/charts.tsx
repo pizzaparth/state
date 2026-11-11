@@ -24,7 +24,7 @@ export function CycleHistogram({ durationsMs }: { durationsMs: number[] }) {
         <li key={b.label} className="grid grid-cols-[3.5rem_minmax(0,1fr)_2rem] items-center gap-3 text-sm">
           <span className="tabular-nums text-[#9A9A96]">{b.label}</span>
           <span className="app-field h-2.5 overflow-hidden rounded-full">
-            <span className="block h-full origin-left animate-grow-x rounded-full bg-[#F2F2EF]" style={{ transform: `scaleX(${counts[i] / max})` }} />
+            <span className="block h-full origin-left animate-grow-x rounded-full bg-accent" style={{ transform: `scaleX(${counts[i] / max})` }} />
           </span>
           <span className="text-right font-mono tabular-nums text-[#F2F2EF]">{counts[i]}</span>
         </li>
@@ -43,7 +43,7 @@ export function Sparkline({ values, inverse }: { values: number[]; inverse?: boo
   const max = Math.max(...values);
   const span = max - min || 1;
   const points = values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - 2 - ((v - min) / span) * (h - 4)).toFixed(1)}`);
-  const color = inverse ? "#0A0A0A" : "#F2F2EF";
+  const color = inverse ? "#0A0A0A" : "#F205CF";
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="h-7 w-24 shrink-0" preserveAspectRatio="none" aria-hidden="true">
       {/* The line draws in left to right; the end dot lands after it */}
@@ -60,7 +60,7 @@ export function Sparkline({ values, inverse }: { values: number[]; inverse?: boo
   );
 }
 
-const MIX_FILL = ["#F2F2EF", "#A3A39F", "#5C5C59", "#2E2E2C"];
+const MIX_FILL = ["#F205CF", "#F2F2EF", "#8C8C88", "#3A3A38"];
 
 /** 100% stacked bar with a labelled row per part, so share never relies on fill alone. */
 export function MixBar({ label, parts }: { label: string; parts: { name: string; value: number; detail?: string }[] }) {

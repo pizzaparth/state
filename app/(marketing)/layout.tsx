@@ -12,11 +12,11 @@ export default function MarketingLayout({
 }) {
   return (
     <div
-      className={`dark relative min-h-screen bg-[#050505] text-[#F4F4F2] selection:bg-white selection:text-black`}
+      className={`dark relative min-h-screen bg-[#050505] text-[#F4F4F2] selection:bg-accent selection:text-accent-ink`}
     >
       <a
         href="#content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-[#F1F1EE] focus:px-4 focus:py-2 focus:text-base focus:text-[#090909]"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-accent focus:px-4 focus:py-2 focus:text-base focus:text-accent-ink"
       >
         Skip to content
       </a>
@@ -26,7 +26,7 @@ export default function MarketingLayout({
       <header className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <nav
           aria-label="Main"
-          className="flex h-12 w-full max-w-[44rem] items-center justify-between gap-2 rounded-full border border-white/[0.1] bg-[#050505]/70 pl-5 pr-1.5 backdrop-blur-md"
+          className="flex h-12 w-full max-w-[44rem] items-center justify-between gap-2 rounded-full border border-white/[0.12] bg-[#0E0E0E]/85 pl-5 pr-1.5 backdrop-blur-md"
         >
           <Link href="/" className="font-display text-base font-extrabold uppercase tracking-[-0.01em] [font-stretch:125%]" translate="no">
             State
@@ -58,12 +58,16 @@ export default function MarketingLayout({
         {children}
       </main>
 
-      <footer className="relative z-10 border-t border-white/[0.08] px-5 py-12 text-base text-[#6F6F6B] sm:px-8 lg:px-12">
+      <footer className="relative z-10 border-t border-white/[0.1] bg-[#0E0E0E] px-5 py-12 text-base text-[#85857F] sm:px-8 lg:px-12">
         <div className="mx-auto grid max-w-[1320px] gap-10 md:grid-cols-[minmax(0,1fr)_auto] md:gap-16">
-          <div className="space-y-3">
+          <div className="space-y-3 rounded-[20px] border border-white/[0.16] bg-[#181818] p-6">
+            <p className="font-mono text-sm uppercase tracking-[0.18em] text-accent">{BYLINE}</p>
             <p>
-              <span className="font-semibold text-[#A9A9A6]" translate="no">State</span> is {BYLINE.charAt(0).toLowerCase() + BYLINE.slice(1)}. No ads, no AI, no
-              payments.
+              <span className="font-semibold text-[#F4F4F2]" translate="no">State</span> is built and used by{" "}
+              <span className="text-[#F4F4F2]" translate="no">
+                {AUTHOR}
+              </span>
+              . No ads, no AI, no payments.
             </p>
             <p className="max-w-[56ch] text-sm leading-relaxed">
               Graphs, histories and figures on this site are sample data. The demo keeps nothing: its workspace is deleted when you sign out or

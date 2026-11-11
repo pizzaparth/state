@@ -142,8 +142,8 @@ export function Onboarding({
                   <label
                     key={w.value}
                     className={cn(
-                      "flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-white",
-                      weight === w.value ? "bg-[#F2F2EF] text-[#0A0A0A]" : "text-[#9A9A96] hover:text-[#F2F2EF]"
+                      "flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-accent",
+                      weight === w.value ? "bg-accent text-accent-ink" : "text-[#9A9A96] hover:text-[#F2F2EF]"
                     )}
                   >
                     <input type="radio" name="weight" value={w.value} checked={weight === w.value} onChange={() => setWeight(w.value as Weight)} className="sr-only" />
@@ -175,7 +175,7 @@ export function Onboarding({
           <div aria-live="polite">
             <p className="text-base text-[#F2F2EF]">Your first commit has been recorded.</p>
             <div className="app-inverse mt-4 flex items-baseline justify-between rounded-[20px] px-5 py-4">
-              <span className={cn(TICK, "text-[#55554F]")}>Execution</span>
+              <span className={cn(TICK, "text-accent-muted")}>Execution</span>
               <span className={cn(DISPLAY, "text-5xl leading-none tabular-nums")}>+{commit.executionValue}</span>
             </div>
             <p className="mt-2 font-mono text-sm text-[#85857F]">execution = Σ weights of done tasks</p>

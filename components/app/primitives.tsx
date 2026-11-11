@@ -11,10 +11,12 @@ import { CountUp } from "./count-up";
 import { TabLinks } from "./tab-links";
 
 /**
- * Product-surface primitives on the flat AMOLED surface scale (styles/product.css):
- *   Panel           #0A0A0A + hairline (columns, metric panels, toolbars)
- *   Field / Rail    #000 + stronger hairline (inputs, progress rails, segmented controls)
- *   Rows, labels    directly on the page, no surface
+ * Product-surface primitives on three flat layers (styles/product.css), with the accent
+ * (#F205CF) as the focal layer on top:
+ *   Layer 0 page    #000: rows, labels, ledgers sit directly on it
+ *   Layer 1 Panel   #0E0E0E + hairline (columns, metric panels, toolbars)
+ *   Layer 2 card    #181818 + stronger hairline (task cards, buttons, menus)
+ *   Field / Rail    #000 inset + stronger hairline (inputs, progress rails, segmented controls)
  *
  * Type: titles and big numbers use DISPLAY, labels TICK (lib/type.ts). Copy stays to a
  * few words.
@@ -35,7 +37,7 @@ export function PageHeader({
   return (
     <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div className="min-w-0">
-        {label && <p className={cn(TICK, "text-[#9A9A96]")}>{label}</p>}
+        {label && <p className={cn(TICK, "text-accent")}>{label}</p>}
         <h1 className={cn(DISPLAY, "mt-2 scroll-mt-24 break-words text-[clamp(2.25rem,6vw,4.25rem)] leading-[0.9] text-[#F2F2EF] text-balance")}>
           {title}
         </h1>
@@ -77,7 +79,12 @@ export function Panel({
     <Tag className={cn("app-panel min-w-0 p-5", className)}>
       {(title || aside) && (
         <div className="mb-4 flex items-baseline justify-between gap-4">
-          {title && <h2 className={cn(TICK, "text-[#9A9A96]")}>{title}</h2>}
+          {title && (
+            <h2 className={cn(TICK, "flex items-center gap-2 text-[#B8B8B4]")}>
+              <span aria-hidden="true" className="size-1.5 shrink-0 rounded-[2px] bg-accent" />
+              {title}
+            </h2>
+          )}
           {aside && <div className="font-mono text-sm tabular-nums text-[#85857F]">{aside}</div>}
         </div>
       )}
@@ -86,7 +93,7 @@ export function Panel({
   );
 }
 
-/** Level -1 progress rail with a graphite fill. */
+/** Inset progress rail with an accent fill. */
 export function ProgressRail({ value, max, label }: { value: number; max: number; label: string }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
   return (
@@ -98,7 +105,7 @@ export function ProgressRail({ value, max, label }: { value: number; max: number
       aria-valuenow={value}
       className="app-field h-2.5 w-full overflow-hidden rounded-full"
     >
-      <div className="h-full origin-left animate-grow-x rounded-full bg-[#F2F2EF] transition-transform duration-300" style={{ transform: `scaleX(${pct / 100})` }} />
+      <div className="h-full origin-left animate-grow-x rounded-full bg-accent transition-transform duration-300" style={{ transform: `scaleX(${pct / 100})` }} />
     </div>
   );
 }
@@ -147,7 +154,7 @@ export function PriorityMark({ priority }: { priority: string }) {
 /** Task weight as the execution it adds when done: "+4". */
 export function WeightMark({ weight }: { weight: number }) {
   return (
-    <span title={`${weightLabel(weight)}: adds ${weight} execution when done`} className="font-mono text-[13px] font-semibold tabular-nums text-[#F2F2EF]">
+    <span title={`${weightLabel(weight)}: adds ${weight} execution when done`} className="font-mono text-[13px] font-semibold tabular-nums text-accent">
       <span className="sr-only">Weight </span>+{weight}
     </span>
   );
@@ -219,18 +226,18 @@ export function Measure({
   return (
     <div className={cn("min-w-0 p-5", inverse ? "app-inverse rounded-[24px]" : "app-panel")}>
       <div className="flex items-start justify-between gap-3">
-        <p className={cn(TICK, inverse ? "text-[#55554F]" : "text-[#9A9A96]")}>{label}</p>
+        <p className={cn(TICK, inverse ? "text-accent-muted" : "text-[#9A9A96]")}>{label}</p>
         {spark && <Sparkline values={spark} inverse={inverse} />}
       </div>
       <p className="mt-4 flex items-baseline gap-1.5">
         <span className={cn(DISPLAY, "text-[2.5rem] leading-none tabular-nums", inverse ? "text-[#0A0A0A]" : "text-[#F2F2EF]")}>
           <CountUp value={value} />
         </span>
-        {unit && <span className={cn("font-mono text-sm", inverse ? "text-[#55554F]" : "text-[#9A9A96]")}>{unit}</span>}
+        {unit && <span className={cn("font-mono text-sm", inverse ? "text-accent-muted" : "text-[#9A9A96]")}>{unit}</span>}
       </p>
       {delta && <p className="mt-2 font-mono text-sm tabular-nums">{delta}</p>}
       {formula && (
-        <p className={cn("mt-3 font-mono text-[12px] leading-relaxed", inverse ? "text-[#55554F]" : "text-[#85857F]")}>{formula}</p>
+        <p className={cn("mt-3 font-mono text-[12px] leading-relaxed", inverse ? "text-accent-muted" : "text-[#85857F]")}>{formula}</p>
       )}
     </div>
   );

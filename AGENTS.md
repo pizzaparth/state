@@ -33,10 +33,12 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 
 ### Dual Environment Split
 - MUST: Separate marketing and product surfaces into two distinct visual environments:
-  - **Public Marketing Surfaces:** Dark monochrome (`#050505` to `#1C1C1C`), editorial, technical, high-contrast, graphite materials.
+  - **Public Marketing Surfaces:** Dark monochrome (`#050505` to `#202020`) with the accent, editorial, technical, high-contrast.
   - **Logged-in Product Application:** AMOLED black (`#000000`), flat, dense, numbers-first. Depth comes from 1px hairlines and small tonal steps only.
 - NEVER: Use neumorphism (soft extruded or inset shadows) anywhere in the product.
-- NEVER: Tint the product page grey or turn large regions white. Near-white inverse surfaces (`#F2F2EF`, black text) are reserved for focal elements: `+ COMMIT`, the Today execution instrument, the headline metric, the active nav item, tooltips and toasts.
+- MUST: Palette is 75% black and white, 25% accent `#F205CF` (tokens in `styles/tokens.css`, Tailwind `accent`). The accent fills focal surfaces (`.app-inverse`: `+ COMMIT`, the Today execution instrument, the headline metric, the active nav item, tooltips, toasts), primary CTAs, page labels, data marks and focus rings.
+- MUST: Text on the accent is `#0A0A0A` / `#33002C` (AA). NEVER: White text on the accent (3.7:1 fails).
+- NEVER: Tint the product page grey or turn large regions white.
 
 ### Type & Copy (quant, short attention span)
 - MUST: Page titles, column names and headline numbers use the landing page's extended display face (`DISPLAY` in `components/app/primitives.tsx`); labels read like a ticker in mono caps (`TICK`).
@@ -46,16 +48,16 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 - NEVER: Motivational slogans in the product; punchy is fine, cheerleading is not.
 
 ### Flat Surface Hierarchy
-- MUST: Use the classes in `styles/product.css`; never hand-roll surface styles:
-  - **Page:** `#000000` body, tables, text rows, ledger rows, graph labels, separators. No surface.
-  - **Panel (`.app-panel`):** Board columns, toolbars, metric panels (`#0A0A0A`, 1px `rgba(255,255,255,.08)` border).
-  - **Card / Control (`.app-card`, `.app-btn`):** Task cards, buttons, toggles, menus (`#121212`, 1px `rgba(255,255,255,.14)` border; hover `#1A1A1A`).
-  - **Field (`.app-field`, `.app-input`):** Inputs, selects, progress rails, segmented troughs (`#000000`, 1px `rgba(255,255,255,.14)` border; focus border `rgba(255,255,255,.45)`).
-  - **Overlay (`.app-overlay`):** Dialogs, drawers, command palette, menus (`#0A0A0A` with a hairline).
+- MUST: Three layers on every page (product, marketing and auth), plus the accent as the focal layer on top. Use the classes in `styles/product.css`; never hand-roll surface styles:
+  - **Layer 0 Page:** `#000000` body (marketing `#050505`), tables, text rows, ledger rows, graph labels, separators. No surface.
+  - **Layer 1 Panel (`.app-panel`):** Board columns, toolbars, metric panels (`#0E0E0E`, 1px `rgba(255,255,255,.10)` border).
+  - **Layer 2 Card / Control (`.app-card`, `.app-btn`):** Task cards, buttons, toggles, menus (`#181818`, 1px `rgba(255,255,255,.16)` border; hover `#202020`, accent edge).
+  - **Field (`.app-field`, `.app-input`):** Inputs, selects, progress rails, segmented troughs (`#000000`, 1px `rgba(255,255,255,.16)` border; focus border accent).
+  - **Overlay (`.app-overlay`):** Dialogs, drawers, command palette, menus (`#0E0E0E` with a hairline).
 - MUST: Pressed controls drop to the page colour (`#000`); no shadows, no lift.
 - MUST: Product text uses `#F2F2EF` / `#9A9A96` / `#85857F` (all pass WCAG AA on every surface); on inverse surfaces use `#0A0A0A` / `#55554F`.
 - NEVER: Add box-shadows, glows or inset shadows to separate surfaces; use a hairline.
-- NEVER: Use bright colorful brand gradients.
+- NEVER: Use gradients or any colour other than the accent `#F205CF`.
 
 ---
 

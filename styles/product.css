@@ -5,7 +5,8 @@
      .app-card     Level 2: cards and draggable tasks
      .app-btn      Level 2: secondary controls; pressed sinks to the page
      .app-field    Inputs, rails, segmented troughs
-     .app-inverse  Rare near-white focal surface (+ COMMIT, Today instrument)
+     .app-inverse  Accent focal surface (+ COMMIT, Today instrument, headline metric)
+     .app-accent-panel  Accent-tinted panel (demo banner, callouts)
      .app-overlay  Dialogs, palette, drawers, menus
    ========================================================================== */
 
@@ -79,6 +80,23 @@ button.app-inverse:active {
 .app-inverse {
   background-color: var(--app-inverse);
   color: var(--app-inverse-text);
+}
+
+button.app-inverse:hover,
+a.app-inverse:hover {
+  background-color: var(--accent-hover);
+}
+
+.app-accent-panel {
+  background-color: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--app-text-primary);
+}
+
+/* Layer 2 cards and controls pick up the accent edge on hover and keyboard focus */
+.app-card:hover,
+.app-card:focus-within {
+  border-color: var(--accent-line);
 }
 
 .app-overlay {

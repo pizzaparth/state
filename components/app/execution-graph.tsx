@@ -5,7 +5,7 @@ import type { DailyExecution } from "@/db/queries";
 import { cn } from "@/lib/utils";
 
 // Lightness-only ramp from near-black to near-white: readable without colour vision
-const FILL = ["#161616", "#2E2E2C", "#5C5C59", "#A3A39F", "#F2F2EF"] as const;
+const FILL = ["#181818", "#4A0640", "#850770", "#BE06A2", "#F205CF"] as const;
 
 function level(execution: number): 0 | 1 | 2 | 3 | 4 {
   if (execution === 0) return 0;
@@ -126,7 +126,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
                   }}
                 >
                   <p className="font-semibold">{label(shown.day, { weekday: "short", day: "numeric", month: "short" })}</p>
-                  <p className="mt-1 tabular-nums text-[#55554F]">
+                  <p className="mt-1 tabular-nums text-accent-muted">
                     {shown.execution} execution, {shown.commits} {shown.commits === 1 ? "commit" : "commits"}
                   </p>
                 </div>

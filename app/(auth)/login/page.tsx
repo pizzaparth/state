@@ -21,7 +21,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
       <p className="pt-2 text-center text-sm text-[#A9A9A6]">
         Just looking?{" "}
-        <Link href="/demo" prefetch={false} className="font-medium text-white hover:underline">
+        <Link href="/demo" prefetch={false} className="font-medium text-accent hover:underline">
           Take a demo
         </Link>
       </p>

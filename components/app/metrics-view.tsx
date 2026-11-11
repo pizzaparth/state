@@ -31,11 +31,11 @@ const signed = (v: number, digits = 1) => `${v >= 0 ? "+" : "−"}${formatNumber
 
 /** ▲/▼ with percent: arrow and sign carry direction, never colour alone. */
 function Delta({ pct, days, inverse }: { pct: number | null; days: number; inverse?: boolean }) {
-  if (pct === null) return <span className={inverse ? "text-[#55554F]" : "text-[#85857F]"}>no prior {days}d</span>;
+  if (pct === null) return <span className={inverse ? "text-accent-muted" : "text-[#85857F]"}>no prior {days}d</span>;
   return (
     <span className={inverse ? "text-[#2A2A27]" : "text-[#9A9A96]"}>
       {pct >= 0 ? "▲" : "▼"}
-      {formatNumber(Math.abs(pct), 1)}% <span className={inverse ? "text-[#55554F]" : "text-[#85857F]"}>vs prior {days}d</span>
+      {formatNumber(Math.abs(pct), 1)}% <span className={inverse ? "text-accent-muted" : "text-[#85857F]"}>vs prior {days}d</span>
     </span>
   );
 }
@@ -477,7 +477,7 @@ export function MetricsReport({
                         <td className="px-2 py-2.5 text-right">{formatNumber(w.velocity, 2)}</td>
                         <td className="px-2 py-2.5">
                           <span className="app-field block h-2 overflow-hidden rounded-full" aria-hidden="true">
-                            <span className="block h-full origin-left rounded-full bg-[#F2F2EF]" style={{ transform: `scaleX(${w.execution / maxWeek})` }} />
+                            <span className="block h-full origin-left rounded-full bg-accent" style={{ transform: `scaleX(${w.execution / maxWeek})` }} />
                           </span>
                         </td>
                       </tr>
@@ -519,7 +519,7 @@ export function MetricsReport({
                           <td className="px-2 py-2.5">
                             <span className="flex items-center gap-2">
                               <span className="app-field block h-2 flex-1 overflow-hidden rounded-full" aria-hidden="true">
-                                <span className="block h-full origin-left rounded-full bg-[#F2F2EF]" style={{ transform: `scaleX(${share})` }} />
+                                <span className="block h-full origin-left rounded-full bg-accent" style={{ transform: `scaleX(${share})` }} />
                               </span>
                               <span className="w-10 text-right font-mono text-sm text-[#9A9A96]">{formatNumber(share * 100)}%</span>
                             </span>
