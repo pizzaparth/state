@@ -58,3 +58,9 @@ jobs:
           npx next start -p 3123 &
           for i in $(seq 1 30); do curl -sf localhost:3123/api/health && break; sleep 1; done
           BASE_URL=http://localhost:3123 npm run security:check
+      - name: End-to-end path (desktop and phone)
+        run: |
+          npx playwright install --with-deps chromium
+          npx next start -p 3123 &
+          for i in $(seq 1 30); do curl -sf localhost:3123/api/health && break; sleep 1; done
+          E2E_BASE_URL=http://localhost:3123 E2E_CHANNEL=bundled npm run e2e
