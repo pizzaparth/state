@@ -196,7 +196,7 @@ export interface CaptureResult {
 /**
  * Quick capture (parseQuickCapture) into the personal Inbox, optionally tagged with one
  * of the actor's live projects. Due days are read in the actor's timezone and stored as
- * the end of that day. `@me` is accepted; there is no one else to assign to.
+ * the end of that day. The task is always the actor's own.
  */
 export async function captureTask(actor: Actor, input: z.infer<typeof captureTaskSchema>): Promise<CaptureResult> {
   assertWritable(actor, actor.personalWorkspaceId);
@@ -205,7 +205,6 @@ export async function captureTask(actor: Actor, input: z.infer<typeof captureTas
   const parsed = parseQuickCapture(input.text, dayIn(new Date(), tz));
   const title = parsed.title.trim();
   if (!title) throw new MutationError("invalid", "Add a title as well as the #project, !priority or date.");
-  if (parsed.assignee && parsed.assignee !== "me") throw new MutationError("invalid", `@${parsed.assignee}: tasks here can only be yours. Use @me or leave it out.`);
 
   let project: { id: string; name: string } | undefined;
   if (parsed.projectSlug) {

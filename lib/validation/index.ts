@@ -266,11 +266,11 @@ const isRealDay = (day: string) =>
 
 /**
  * Quick Inbox capture parser (deterministic syntax, no language model), e.g.
- * "implement caching tomorrow #relaydb !high @ana".
+ * "implement caching tomorrow #relaydb !high". There is one person per workspace, so
+ * `@` is not a token and stays in the title.
  *
  *   #project      project by slug
  *   !priority     critical, high, medium or low
- *   @me           assign to yourself (the only person in a workspace)
  *   due day       today, tomorrow, a weekday (the next one after today) or YYYY-MM-DD
  *   \token        kept in the title as typed, without the backslash ("bug \#12 \!high")
  *
@@ -283,7 +283,6 @@ export function parseQuickCapture(input: string, today: string = new Date().toIS
   projectSlug?: string;
   priority?: Exclude<Priority, "none">;
   dueDate?: string;
-  assignee?: string;
 } {
   // Backslash-escaped words are set aside before parsing and put back without the
   // backslash, so no rule below can read them (placeholders hold no #, ! or @)
@@ -295,7 +294,6 @@ export function parseQuickCapture(input: string, today: string = new Date().toIS
   let projectSlug: string | undefined;
   let priority: Exclude<Priority, "none"> | undefined;
   let dueDate: string | undefined;
-  let assignee: string | undefined;
   const take = (match: RegExpMatchArray) => {
     text = (text.slice(0, match.index) + " " + text.slice(match.index! + match[0].length)).replace(/\s+/g, " ").trim();
   };
@@ -312,13 +310,6 @@ export function parseQuickCapture(input: string, today: string = new Date().toIS
   if (priorityMatch) {
     priority = priorityMatch[1].toLowerCase() as Exclude<Priority, "none">;
     take(priorityMatch);
-  }
-
-  // Extract @person (not the @ inside an email address)
-  const personMatch = text.match(/(?:^|\s)@([a-z0-9][a-z0-9._-]{0,63})(?=\s|$)/i);
-  if (personMatch) {
-    assignee = personMatch[1].toLowerCase();
-    take(personMatch);
   }
 
   // Extract a due day
@@ -345,7 +336,6 @@ export function parseQuickCapture(input: string, today: string = new Date().toIS
     projectSlug,
     priority,
     dueDate,
-    assignee,
   };
 }
 

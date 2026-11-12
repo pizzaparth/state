@@ -476,18 +476,17 @@ async function main() {
   const datedRow = await taskRow(dated.id);
   record("CP1", "Personal capture reads a due day in the person's timezone and keeps it in the Inbox", datedRow.title === "Draft outline" && localDay(datedRow.dueAt) === tomorrowLocal && datedRow.workspaceId === parth.ws.id && datedRow.boardId === null && datedRow.priority === "low", `${localDay(datedRow.dueAt)} vs ${tomorrowLocal}`);
 
-  [ok, detail] = await expectError(() => captureTask(A, { text: "Personal chore @aarav" }), "invalid");
-  record("CP4", "@person other than @me is refused (no one else can own a task)", ok, detail);
-  const meTask = await captureTask(A, { text: "Plan week @me" });
-  record("CP5", "@me assigns the task to its author", (await taskRow(meTask.id)).assigneeId === parthId);
+  const atTask = await captureTask(A, { text: "Personal chore @aarav" });
+  record("CP4", "@ is not a token: it stays in the title", (await taskRow(atTask.id)).title === "Personal chore @aarav");
+  record("CP5", "Captured tasks belong to their author", (await taskRow(atTask.id)).assigneeId === parthId);
 
   const t = "2026-10-29"; // a Thursday
   const parses = [
     parseQuickCapture("call thu", t).dueDate === "2026-11-05",
     parseQuickCapture("ship 2026-02-30", t).dueDate === undefined && parseQuickCapture("ship 2026-02-30", t).title === "ship 2026-02-30",
-    parseQuickCapture("email bob@x.com today", t).assignee === undefined && parseQuickCapture("email bob@x.com today", t).title === "email bob@x.com",
+    parseQuickCapture("email bob@x.com today", t).title === "email bob@x.com",
     parseQuickCapture("Sundays matter", t).dueDate === undefined,
-    parseQuickCapture("plan monday @Ana.K #relay !HIGH", t).assignee === "ana.k" && parseQuickCapture("plan monday @Ana.K #relay !HIGH", t).dueDate === "2026-11-02",
+    parseQuickCapture("plan monday @Ana.K #relay !HIGH", t).title === "plan @Ana.K" && parseQuickCapture("plan monday @Ana.K #relay !HIGH", t).dueDate === "2026-11-02",
     parseQuickCapture("x 1999-12-31", t).dueDate === undefined,
   ];
   const escaped = parseQuickCapture("Fix \\#12 \\!high on \\fri #relay !low", t);
@@ -499,7 +498,7 @@ async function main() {
     JSON.stringify({ escaped, plainHash })
   );
   record("CP6", "Parser: weekdays are the next one, impossible or out-of-range dates stay in the title, emails are not @people", parses.every(Boolean), JSON.stringify(parses));
-  await db.delete(s.tasks).where(inArray(s.tasks.id, [dated.id, meTask.id]));
+  await db.delete(s.tasks).where(inArray(s.tasks.id, [dated.id, atTask.id]));
 
   // ------------------------------------------------------------ objectives
   const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);

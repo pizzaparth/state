@@ -8,7 +8,8 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCorners,
   useDroppable,
   useSensor,
@@ -130,7 +131,10 @@ export function Kanban({
 
   const dndId = React.useId();
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    // Mouse drags after 6 px. Touch drags after a 180 ms press, so a quick swipe still
+    // scrolls the page or the column strip
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -338,7 +342,7 @@ function SortableCard({
       inert={isDragging || undefined}
       className={cn("relative", isDragging && "opacity-40")}
     >
-      <div {...attributes} {...listeners} aria-roledescription="draggable task" className="animate-row-in cursor-grab rounded-[16px] active:cursor-grabbing">
+      <div {...attributes} {...listeners} aria-roledescription="draggable task" className="animate-row-in cursor-grab touch-manipulation rounded-[16px] active:cursor-grabbing">
         <CardFace card={card} done={done} showAssignee={showAssignee} href={href} flash={flash} />
       </div>
       <Menu.Root>
