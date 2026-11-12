@@ -321,6 +321,7 @@ export async function getTaskDetail(taskId: string, workspaceIds: string[]) {
       ...taskCardFields,
       workspaceId: tasks.workspaceId,
       boardId: tasks.boardId,
+      projectId: tasks.projectId,
       description: tasks.description,
       recurrenceRule: tasks.recurrenceRule,
       boardName: boards.name,

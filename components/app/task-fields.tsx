@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Loader2 } from "lucide-react";
-import { setTaskPriorityAction, setTaskRecurrenceAction, setTaskWeightAction, type ActionResult } from "@/app/(app)/actions";
+import { ChevronDown, Loader2 } from "lucide-react";
+import { setTaskPriorityAction, setTaskProjectAction, setTaskRecurrenceAction, setTaskWeightAction, type ActionResult } from "@/app/(app)/actions";
 import { RECURRENCE_OPTIONS, recurrenceLabel } from "@/lib/recurrence";
 import { PRIORITIES, type Priority } from "@/lib/validation";
 import { WEIGHT_LEVELS, weightHint, weightLabel, type Weight } from "@/lib/weights";
@@ -44,38 +44,42 @@ function InlineSelect<T extends string | number>({
   return (
     <div>
       <div className="flex items-center gap-2">
-        <select
-          name={name}
-          aria-label={label}
-          aria-invalid={Boolean(error)}
-          aria-describedby={describedBy}
-          value={String(value)}
-          disabled={pending}
-          onChange={(e) => {
-            const previous = value;
-            const next = options.find((o) => String(o.value) === e.target.value)?.value;
-            if (next === undefined) return;
-            setValue(next);
-            setError(null);
-            startTransition(async () => {
-              const result = await save(next);
-              if (!result.ok) {
-                setValue(previous);
-                setError(result.error);
-                return;
-              }
-              notify(savedMessage(next));
-            });
-          }}
-          className="-ml-2 h-9 min-w-0 cursor-pointer rounded-[10px] border border-transparent bg-white px-2 text-base font-medium text-[#0A0A0A] transition-colors duration-150 hover:border-black/[0.10] focus:border-accent focus:outline-none disabled:opacity-60"
-        >
-          {options.map((o) => (
-            <option key={o.value} value={String(o.value)}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        {pending && <Loader2 className="size-4 animate-spin text-[#52525B]" aria-label="Saving…" />}
+        <div className="relative -ml-2 inline-flex min-w-0 max-w-[16rem] flex-1">
+          <select
+            name={name}
+            aria-label={label}
+            aria-invalid={Boolean(error)}
+            aria-describedby={describedBy}
+            value={String(value)}
+            disabled={pending}
+            onChange={(e) => {
+              const previous = value;
+              const next = options.find((o) => String(o.value) === e.target.value)?.value;
+              if (next === undefined) return;
+              setValue(next);
+              setError(null);
+              startTransition(async () => {
+                const result = await save(next);
+                if (!result.ok) {
+                  setValue(previous);
+                  setError(result.error);
+                  return;
+                }
+                notify(savedMessage(next));
+              });
+            }}
+            // appearance-none drops the native inset, so the text lines up with read-only values
+            className="peer h-9 w-full min-w-0 cursor-pointer appearance-none truncate rounded-[10px] border border-transparent bg-white py-0 pl-[7px] pr-8 text-base font-medium text-[#0A0A0A] transition-colors duration-150 hover:border-black/[0.10] focus:border-accent focus:outline-none disabled:cursor-default disabled:opacity-60"
+          >
+            {options.map((o) => (
+              <option key={o.value} value={String(o.value)}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-[#71717A] transition-colors duration-150 peer-hover:text-[#0A0A0A]" />
+        </div>
+        {pending && <Loader2 className="size-4 shrink-0 animate-spin text-[#52525B]" aria-label="Saving…" />}
       </div>
       {describe && (
         <p id={hintId} className="mt-1.5 text-sm leading-relaxed text-[#52525B]">
@@ -141,6 +145,40 @@ export function TaskRecurrence({ taskId, rule }: { taskId: string; rule: string 
       options={options}
       save={(next) => setTaskRecurrenceAction({ taskId, rule: next === "none" ? null : next })}
       savedMessage={(next) => (next === "none" ? "Stops repeating." : `Repeats ${recurrenceLabel(next).toLowerCase()}. Done queues the next.`)}
+    />
+  );
+}
+
+/**
+ * Project a task is filed under. Lists the live projects in the task's workspace; an
+ * archived current project stays selectable so the select never shows the wrong one.
+ */
+export function TaskProject({
+  taskId,
+  projectId,
+  projectName,
+  projects,
+}: {
+  taskId: string;
+  projectId: string | null;
+  projectName: string | null;
+  projects: { id: string; name: string }[];
+}) {
+  const current = projectId ?? "";
+  const options = [
+    { value: "", label: "No project" },
+    ...projects.map((p) => ({ value: p.id, label: p.name })),
+    ...(projectId && !projects.some((p) => p.id === projectId) ? [{ value: projectId, label: projectName ?? "Archived project" }] : []),
+  ];
+  const nameOf = (id: string) => options.find((o) => o.value === id)?.label ?? "project";
+  return (
+    <InlineSelect
+      name="project"
+      label="Project"
+      value={current}
+      options={options}
+      save={(next) => setTaskProjectAction({ taskId, projectId: next || null })}
+      savedMessage={(next) => (next ? `Filed under ${nameOf(next)}.` : "Removed from its project.")}
     />
   );
 }

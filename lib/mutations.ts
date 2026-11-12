@@ -6,7 +6,7 @@ import { keyBetween } from "@/lib/position";
 import { dayIn, nextDueDay } from "@/lib/recurrence";
 import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
 import type { z } from "zod";
-import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -339,6 +339,56 @@ export async function setTaskPriority(actor: Actor, input: z.infer<typeof setTas
 
   await db.update(tasks).set({ priority: input.priority }).where(and(eq(tasks.id, task.id), isNull(tasks.deletedAt)));
   return { priority: input.priority };
+}
+
+/**
+ * Files a task under one of the live projects in its own workspace, or unfiles it. A done
+ * task's commit follows, so project execution stays with the task (commit project tags are
+ * correctable; time and value are not touched).
+ */
+export async function setTaskProject(actor: Actor, input: z.infer<typeof setTaskProjectSchema>): Promise<{ projectName: string | null }> {
+  return db.transaction(async (tx) => {
+    const [task] = await tx
+      .select({ id: tasks.id, workspaceId: tasks.workspaceId, projectId: tasks.projectId })
+      .from(tasks)
+      .where(and(eq(tasks.id, input.taskId), isNull(tasks.deletedAt)))
+      .limit(1)
+      .for("update");
+    if (!task) throw new MutationError("not_found", "That task no longer exists.");
+    assertWritable(actor, task.workspaceId);
+
+    let projectName: string | null = null;
+    if (input.projectId) {
+      const [project] = await tx
+        .select({ id: projects.id, name: projects.name })
+        .from(projects)
+        .where(and(eq(projects.id, input.projectId), eq(projects.workspaceId, task.workspaceId), isNull(projects.archivedAt)))
+        .limit(1);
+      if (!project) throw new MutationError("not_found", "That project no longer exists.");
+      projectName = project.name;
+    }
+    if (input.projectId === task.projectId) return { projectName };
+
+    await tx.update(tasks).set({ projectId: input.projectId }).where(eq(tasks.id, task.id));
+    const moved = await tx
+      .update(commits)
+      .set({ projectId: input.projectId })
+      .where(and(eq(commits.taskId, task.id), eq(commits.workspaceId, task.workspaceId), eq(commits.userId, actor.id), isNull(commits.deletedAt)))
+      .returning({ id: commits.id });
+    if (moved.length > 0) {
+      await tx.insert(auditEvents).values(
+        moved.map((c) => ({
+          workspaceId: task.workspaceId,
+          actorId: actor.id,
+          action: "commit.edited",
+          targetType: "commit",
+          targetId: c.id,
+          metadata: { changed: ["project"], fromProjectId: task.projectId, toProjectId: input.projectId },
+        }))
+      );
+    }
+    return { projectName };
+  });
 }
 
 /**

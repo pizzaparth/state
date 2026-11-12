@@ -6,7 +6,7 @@ import { dueState, formatDateTime, formatDuration } from "@/lib/format";
 import { weightLabel } from "@/lib/weights";
 import { cn } from "@/lib/utils";
 import { Chip, DISPLAY, DueLabel, PriorityMark, TICK } from "./primitives";
-import { TaskPriority, TaskRecurrence, TaskWeight } from "./task-fields";
+import { TaskPriority, TaskProject, TaskRecurrence, TaskWeight } from "./task-fields";
 import { recurrenceLabel } from "@/lib/recurrence";
 import { TaskTitle } from "./task-title";
 import { CommitEditor } from "./commit-editor";
@@ -113,7 +113,20 @@ const linkCard =
 
 // ------------------------------------------------------------------ task
 
-export function TaskDetail({ task, tz, now, editable = false }: { task: Task; tz: string; now: Date; editable?: boolean }) {
+/** `projects` (the task's workspace) is passed only when the viewer may edit this task. */
+export function TaskDetail({
+  task,
+  tz,
+  now,
+  editable = false,
+  projects,
+}: {
+  task: Task;
+  tz: string;
+  now: Date;
+  editable?: boolean;
+  projects?: { id: string; name: string }[];
+}) {
   const done = Boolean(task.completedAt);
   const state = done ? "Done" : (task.columnName ?? "Inbox");
   const cycle = task.startedAt && task.completedAt ? formatDuration(task.completedAt.getTime() - task.startedAt.getTime()) : null;
@@ -143,7 +156,11 @@ export function TaskDetail({ task, tz, now, editable = false }: { task: Task; tz
       <PanelSection title="Properties">
         <dl>
           <Prop icon={Folder} label="Project">
-            {task.projectName ?? <None />}
+            {editable && projects ? (
+              <TaskProject taskId={task.id} projectId={task.projectId} projectName={task.projectName} projects={projects} />
+            ) : (
+              (task.projectName ?? <None />)
+            )}
           </Prop>
           <Prop icon={SignalHigh} label="Priority">
             {editable ? <TaskPriority taskId={task.id} priority={task.priority} /> : task.priority === "none" ? <None /> : <PriorityMark priority={task.priority} />}

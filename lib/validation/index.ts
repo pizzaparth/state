@@ -81,6 +81,12 @@ export const setTaskPrioritySchema = z.strictObject({
   priority: z.enum(PRIORITIES),
 });
 
+/** Project of a task, or null to unfile it. Must be a live project in the task's workspace. */
+export const setTaskProjectSchema = z.strictObject({
+  taskId: objectId,
+  projectId: objectId.nullable(),
+});
+
 /** Weight of an open task; a completed task's weight is fixed by its commit. */
 export const setTaskWeightSchema = z.strictObject({
   taskId: objectId,
@@ -260,6 +266,7 @@ const isRealDay = (day: string) =>
  *   !priority     critical, high, medium or low
  *   @me           assign to yourself (the only person in a workspace)
  *   due day       today, tomorrow, a weekday (the next one after today) or YYYY-MM-DD
+ *   \token        kept in the title as typed, without the backslash ("bug \#12 \!high")
  *
  * Each token is read once (the first match) and removed from the title. Dates resolve
  * against `today` (YYYY-MM-DD in the person's timezone); an impossible date stays in the
@@ -272,7 +279,13 @@ export function parseQuickCapture(input: string, today: string = new Date().toIS
   dueDate?: string;
   assignee?: string;
 } {
-  let text = input.trim();
+  // Backslash-escaped words are set aside before parsing and put back without the
+  // backslash, so no rule below can read them (placeholders hold no #, ! or @)
+  const literals: string[] = [];
+  let text = input
+    .replace(/[\uE000\uE001]/g, "")
+    .trim()
+    .replace(/\\(\S+)/g, (_, word: string) => `\uE000${literals.push(word) - 1}\uE001`);
   let projectSlug: string | undefined;
   let priority: Exclude<Priority, "none"> | undefined;
   let dueDate: string | undefined;
@@ -322,7 +335,7 @@ export function parseQuickCapture(input: string, today: string = new Date().toIS
   }
 
   return {
-    title: text,
+    title: text.replace(/\uE000(\d+)\uE001/g, (_, i: string) => literals[Number(i)]),
     projectSlug,
     priority,
     dueDate,

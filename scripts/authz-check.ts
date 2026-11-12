@@ -17,8 +17,8 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getObjectives, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskWeight } from "../lib/mutations";
-import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, importSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight } from "../lib/mutations";
+import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, importSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
 import { buildExport } from "../lib/data/export";
 import { parseImport } from "../lib/data/import";
 import { parseCsv, toCsv } from "../lib/data/csv";
@@ -194,6 +194,18 @@ async function main() {
   record("W27", "Change another user's task priority", ok && (await priorityOf(parth.task.id)) === parth.task.priority, detail);
   await setTaskPriority(A, { taskId: inboxTask.id, priority: "high" });
   record("W29", "Owner changes own task priority", (await priorityOf(inboxTask.id)) === "high");
+  const projectOf = async (id: string) => (await one(db.select({ p: s.tasks.projectId }).from(s.tasks).where(eq(s.tasks.id, id)))).p;
+  const parthTaskProject = await projectOf(parth.task.id);
+  [ok, detail] = await expectError(() => setTaskProject(B, { taskId: parth.task.id, projectId: aarav.project.id }), "not_found");
+  record("W55", "File another user's task under own project", ok && (await projectOf(parth.task.id)) === parthTaskProject, detail);
+  [ok, detail] = await expectError(() => setTaskProject(A, { taskId: inboxTask.id, projectId: aarav.project.id }), "not_found");
+  record("W56", "File own task under another user's project", ok && (await projectOf(inboxTask.id)) === null, detail);
+  [ok, detail] = await expectError(() => setTaskProject(X, { taskId: parth.task.id, projectId: null }), "not_found");
+  record("W57", "Outsider unfiles a task", ok && (await projectOf(parth.task.id)) === parthTaskProject, detail);
+  await setTaskProject(A, { taskId: inboxTask.id, projectId: parth.project.id });
+  const filed = await projectOf(inboxTask.id);
+  await setTaskProject(A, { taskId: inboxTask.id, projectId: null });
+  record("W58", "Owner files own task under own project and unfiles it", filed === parth.project.id && (await projectOf(inboxTask.id)) === null);
   [ok, detail] = await expectError(() => setTaskWeight(B, { taskId: parth.task.id, weight: 8 }), "not_found");
   record("W31", "Change another user's task weight", ok && (await weightOf(parth.task.id)) === parth.task.weight, detail);
   await setTaskWeight(A, { taskId: inboxTask.id, weight: 4 });
@@ -256,6 +268,7 @@ async function main() {
   record("M10", "Blank or oversized title rejected on rename", titles.every((t) => !t), JSON.stringify(titles));
   const priorities = ["urgent", "", "HIGH", 1].map((priority) => setTaskPrioritySchema.safeParse({ taskId: "a", priority }).success);
   record("M11", "Priority outside none/low/medium/high/critical rejected", priorities.every((p) => !p), JSON.stringify(priorities));
+  record("M22", "Unknown fields (workspaceId) rejected on task project", !setTaskProjectSchema.safeParse({ taskId: "a", projectId: null, workspaceId: parth.ws.id }).success);
   record("M12", "Unknown fields (weight, workspaceId) rejected on priority", !setTaskPrioritySchema.safeParse({ taskId: "a", priority: "low", weight: 8, workspaceId: parth.ws.id }).success);
   const taskWeights = [0, 3, 16, "4", 2.5].map((weight) => setTaskWeightSchema.safeParse({ taskId: "a", weight }).success);
   record("M13", "Task weight outside 1/2/4/8 rejected", taskWeights.every((w) => !w), JSON.stringify(taskWeights));
@@ -475,6 +488,14 @@ async function main() {
     parseQuickCapture("plan monday @Ana.K #relay !HIGH", t).assignee === "ana.k" && parseQuickCapture("plan monday @Ana.K #relay !HIGH", t).dueDate === "2026-11-02",
     parseQuickCapture("x 1999-12-31", t).dueDate === undefined,
   ];
+  const escaped = parseQuickCapture("Fix \\#12 \\!high on \\fri #relay !low", t);
+  const plainHash = parseQuickCapture("Learn C# basics", t);
+  record(
+    "CP7",
+    "Parser: backslash keeps #, ! and date words in the title; unescaped tokens still parse",
+    escaped.title === "Fix #12 !high on fri" && escaped.projectSlug === "relay" && escaped.priority === "low" && escaped.dueDate === undefined && plainHash.title === "Learn C# basics",
+    JSON.stringify({ escaped, plainHash })
+  );
   record("CP6", "Parser: weekdays are the next one, impossible or out-of-range dates stay in the title, emails are not @people", parses.every(Boolean), JSON.stringify(parses));
   await db.delete(s.tasks).where(inArray(s.tasks.id, [dated.id, meTask.id]));
 

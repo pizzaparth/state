@@ -26,14 +26,17 @@ export async function Drawers({ params, viewer }: { params: Record<string, strin
     if (task) {
       const writable = canWrite(viewer, task.workspaceId);
       const inInbox = task.boardId === null;
-      const targets = writable && inInbox && !task.completedAt ? await getBoardTargets(task.workspaceId, viewer.workspaceIds) : [];
+      const [targets, projects] = await Promise.all([
+        writable && inInbox && !task.completedAt ? getBoardTargets(task.workspaceId, viewer.workspaceIds) : [],
+        writable ? getProjectOptions(task.workspaceId, viewer.workspaceIds) : undefined,
+      ]);
       return (
         <DetailDrawer
           param="task"
           title="Task"
           crumbs={[task.projectName, task.boardName ?? "Inbox", task.completedAt ? "Done" : task.columnName].filter((c): c is string => Boolean(c))}
         >
-          <TaskDetail task={task} tz={viewer.tz} now={new Date()} editable={writable} />
+          <TaskDetail task={task} tz={viewer.tz} now={new Date()} editable={writable} projects={projects} />
           {writable && (
             <TaskActions
               task={{ id: task.id, title: task.title, completed: Boolean(task.completedAt), inInbox, due: task.dueAt ? dayKey(task.dueAt, viewer.tz) : null }}
