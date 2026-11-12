@@ -25,6 +25,8 @@ export interface MoveResult {
   reopened: boolean;
   /** A recurring task's next occurrence was created by this move. */
   recurred: boolean;
+  /** Reopening removed the untouched next occurrence it had queued. */
+  removedNext?: boolean;
 }
 
 /**
@@ -179,7 +181,20 @@ async function moveInTx(tx: Tx, actor: Actor, input: z.infer<typeof moveTaskSche
     }
 
     let reopened = false;
+    let removedNext = false;
     if (!toDone && wasDone) {
+      // The next occurrence it queued goes too, if nobody touched it yet
+      const [child] = await tx
+        .select({ id: tasks.id, title: tasks.title, startedAt: tasks.startedAt, completedAt: tasks.completedAt, stateType: columns.stateType })
+        .from(tasks)
+        .leftJoin(columns, eq(columns.id, tasks.columnId))
+        .where(and(eq(tasks.recurrenceParentId, task.id), isNull(tasks.deletedAt)))
+        .limit(1);
+      if (child && child.stateType === "backlog" && !child.startedAt && !child.completedAt && child.title === task.title) {
+        await tx.update(tasks).set({ deletedAt: now }).where(eq(tasks.id, child.id));
+        await auditTask(tx, actor, task.workspaceId, child.id, "task.deleted", { reason: "parent reopened" });
+        removedNext = true;
+      }
       const retired = await tx
         .update(commits)
         .set({ deletedAt: now })
@@ -197,7 +212,7 @@ async function moveInTx(tx: Tx, actor: Actor, input: z.infer<typeof moveTaskSche
         });
       }
     }
-    return { committed, reopened, recurred };
+    return { committed, reopened, recurred, removedNext };
   }
 }
 

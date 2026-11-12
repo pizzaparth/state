@@ -225,7 +225,7 @@ export function TaskStatus({ taskId, columnId, columns }: { taskId: string; colu
                   result.data.committed > 0
                     ? `Done. +${result.data.committed}.${result.data.recurred ? " Next one queued." : ""}`
                     : result.data.reopened
-                      ? "Reopened. Its commit was withdrawn."
+                      ? `Reopened. Its commit was withdrawn.${result.data.removedNext ? " Next occurrence removed." : ""}`
                       : `Moved to ${c.name}.`
                 );
               });

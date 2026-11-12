@@ -371,9 +371,13 @@ async function main() {
   [ok, detail] = await expectError(() => setTaskRecurrence(A, { taskId: repeat.id, rule: "daily" }), "invalid");
   record("RC5", "A completed task's repeat cannot be changed", ok && (await ruleOf(repeat.id)) === "weekly", detail);
 
-  await moveTask(A, { taskId: repeat.id, columnId: parth.col("active").id, afterTaskId: null });
+  const reopenedRepeat = await moveTask(A, { taskId: repeat.id, columnId: parth.col("active").id, afterTaskId: null });
   const done2 = await moveTask(A, { taskId: repeat.id, columnId: parth.col("done").id, afterTaskId: null });
-  record("RC6", "Reopening and completing again adds no second occurrence", done2.committed === 4 && !done2.recurred && (await occurrences(repeat.id)).length === 1 && (await liveFor(repeat.id)) === 1);
+  // Reopening removed the untouched occurrence (A20); completing again queues exactly one
+  record("RC6", "Reopen removes the untouched next occurrence; completing again leaves exactly one", reopenedRepeat.removedNext === true && done2.committed === 4 && done2.recurred && (await occurrences(repeat.id)).length === 1 && (await liveFor(repeat.id)) === 1);
+  const [next1b] = await occurrences(repeat.id);
+  await db.delete(s.tasks).where(eq(s.tasks.id, next1.id));
+  next1.id = next1b.id;
 
   await setTaskRecurrence(A, { taskId: next1.id, rule: "daily" });
   await moveTask(A, { taskId: next1.id, columnId: parth.col("active").id, afterTaskId: null });
@@ -729,6 +733,15 @@ async function main() {
   const copy = await duplicateTask(A, { taskId: deep.id });
   await db.delete(s.tasks).where(inArray(s.tasks.id, [deep.id, copy.id]));
   await db.delete(s.tags).where(inArray(s.tags.id, [tagRow.id, tagRow2.id, bTag.id]));
+
+  // ------------------------------------------------------------ recurring reopen
+  const rec = await addBoardTask(A, { title: `repeat probe ${stamp} ~daily`, columnId: parth.col("active").id });
+  await moveTask(A, { taskId: rec.id, columnId: parth.col("done").id, afterTaskId: null });
+  const child = await one(db.select({ id: s.tasks.id }).from(s.tasks).where(and(eq(s.tasks.recurrenceParentId, rec.id), isNull(s.tasks.deletedAt))));
+  const reopenedRec = await moveTask(A, { taskId: rec.id, columnId: parth.col("active").id, afterTaskId: null });
+  record("RC1", "Reopening a recurring task removes its untouched next occurrence", Boolean(child) && reopenedRec.removedNext === true && (await snapshot(child.id)).x !== null, JSON.stringify(reopenedRec));
+  await db.delete(s.commits).where(eq(s.commits.taskId, rec.id));
+  await db.delete(s.tasks).where(inArray(s.tasks.id, [rec.id, child.id]));
 
   // ------------------------------------------------------------ preferences
   const prefParse = [

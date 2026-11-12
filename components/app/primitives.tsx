@@ -144,10 +144,12 @@ export function PriorityMark({ priority }: { priority: string }) {
       title={`${p.label} priority`}
       className={cn("inline-flex items-center gap-1 text-[13px]", critical ? "font-semibold text-danger" : "text-[#52525B]")}
     >
-      <svg viewBox="0 0 12 12" aria-hidden="true" className="size-3">
+      <svg viewBox="0 0 12 14" aria-hidden="true" className="h-3.5 w-3">
         {[0, 1, 2].map((i) => (
-          <rect key={i} x={1 + i * 4} y={8 - i * 3} width="2.5" height={3 + i * 3} rx="0.6" fill="currentColor" opacity={i < p.bars ? 1 : 0.25} />
+          <rect key={i} x={1 + i * 4} y={10 - i * 3} width="2.5" height={3 + i * 3} rx="0.6" fill="currentColor" opacity={i < p.bars ? 1 : 0.25} />
         ))}
+        {/* Critical: an exclamation mark above the bars, so it never rests on colour */}
+        {critical && <path d="M10.25 0.6v2.2M10.25 4.1v.05" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />}
       </svg>
       {p.label}
       <span className="sr-only"> priority</span>

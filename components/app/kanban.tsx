@@ -249,7 +249,7 @@ export function Kanban({
       notify(`Done. +${result.data.committed}.${result.data.recurred ? " Next one queued." : ""}`, back
         ? { label: "Undo", run: () => moveTo(card.id, back) }
         : undefined);
-    } else if (result.data.reopened) notify(`“${card.title}” reopened. Its commit was withdrawn.`);
+    } else if (result.data.reopened) notify(`Reopened “${card.title}”. Its commit was withdrawn.${result.data.removedNext ? " Next occurrence removed." : ""}`);
     else if (toColumn !== fromColumn) notify(`“${card.title}” moved to ${columnName(toColumn)}.`);
   };
 
