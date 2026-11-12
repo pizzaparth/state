@@ -106,6 +106,10 @@ Never commit the real `OWNER_CODE`; `.env` is git-ignored.
 
 ```bash
 npm run typecheck && npm run lint
+npm test                      # unit tests (vitest), pure modules
+
+# End-to-end path at desktop and phone widths, against a running app
+E2E_BASE_URL=http://localhost:3000 npm run e2e
 
 # Tenant isolation (owner and demos are separate tenants), on a *_test database
 DATABASE_URL=postgresql://$USER@localhost:5432/state_security_test npm run db:migrate
