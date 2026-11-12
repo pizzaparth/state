@@ -1015,6 +1015,15 @@ export interface ImportResult {
   commits: number;
   /** Rows already present (same title or message at the same time) and left alone. */
   skipped: number;
+  /** Done tasks with no commit in the file: they count for throughput, not execution. */
+  doneWithoutCommit: number;
+}
+
+/** Thrown to roll back a dry run once its counts are known. */
+class DryRun extends Error {
+  constructor(readonly result: ImportResult) {
+    super("dry run");
+  }
 }
 
 // Fixed-width suffix digits without "0": lib/position.ts treats trailing zeros as
@@ -1040,7 +1049,18 @@ const msKey = (date: Date, text: string) => `${date.getTime()}|${text}`;
  * title and creation time, or a commit with the same message and time, is skipped.
  * Completed tasks do not create commits here; the commits in the file carry the execution.
  */
-export async function importData(actor: Actor, input: ImportData): Promise<ImportResult> {
+export async function importData(actor: Actor, input: ImportData, opts: { dryRun?: boolean } = {}): Promise<ImportResult> {
+  if (!opts.dryRun) return importRows(actor, input, false);
+  // A dry run does all the work inside the transaction, then rolls it back
+  try {
+    return await importRows(actor, input, true);
+  } catch (error) {
+    if (error instanceof DryRun) return error.result;
+    throw error;
+  }
+}
+
+async function importRows(actor: Actor, input: ImportData, rollback: boolean): Promise<ImportResult> {
   const workspaceId = actor.personalWorkspaceId;
   assertWritable(actor, workspaceId);
   const now = new Date();
@@ -1217,7 +1237,10 @@ export async function importData(actor: Actor, input: ImportData): Promise<Impor
     }
     for (const rows of chunk(commitTagRows)) await tx.insert(commitTags).values(rows).onConflictDoNothing();
 
-    const result = { projects: projectsCreated, tasks: taskRows.length, commits: commitsCreated, skipped };
+    const committedTasks = new Set(commitRows.map((c) => c.taskId).filter(Boolean));
+    const doneWithoutCommit = taskRows.filter((t) => t.completedAt && !committedTasks.has(t.id as string)).length;
+    const result = { projects: projectsCreated, tasks: taskRows.length, commits: commitsCreated, skipped, doneWithoutCommit };
+    if (rollback) throw new DryRun(result);
     await tx.insert(auditEvents).values({ workspaceId, actorId: actor.id, action: "data.imported", targetType: "workspace", targetId: workspaceId, metadata: result });
     return result;
   });

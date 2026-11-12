@@ -796,6 +796,11 @@ async function main() {
   const parthExport = await buildExport(parthId);
   const parsedExport = parseImport(JSON.stringify(parthExport));
   if (!parsedExport.ok) throw new Error(`export did not parse: ${parsedExport.error}`);
+  const outBefore = await rowCount(outWs.id);
+  const dryRun = await importData(X, parsedExport.data, { dryRun: true });
+  record("D9", "Import dry run counts rows and writes nothing", dryRun.tasks > 0 && JSON.stringify(await rowCount(outWs.id)) === JSON.stringify(outBefore), JSON.stringify(dryRun));
+  const txt = parseImport("- Read paper #thesis !high +4\n\n2. Call bank tomorrow\n[x] buy milk", { format: "txt", tz: "Asia/Kolkata" });
+  record("D10", "A .txt list becomes Inbox tasks read with the capture rules", txt.ok && txt.data.tasks.length === 3 && txt.data.tasks[0].title === "Read paper" && txt.data.tasks[0].weight === 4 && txt.data.tasks[0].project === "thesis" && txt.data.tasks[1].dueAt instanceof Date && txt.data.tasks[2].title === "buy milk", JSON.stringify(txt.ok ? txt.data.tasks.map((t) => [t.title, t.project, t.weight, t.status]) : txt));
   const first = await importData(X, parsedExport.data);
   record("D4", "Import writes only into the importer's personal workspace", JSON.stringify(await rowCount(parth.ws.id)) === JSON.stringify(parthBefore) && first.tasks > 0, JSON.stringify(first));
   record("D5", "JSON export round-trips: imported execution equals the source", (await execution(outWs.id)) === (await execution(parth.ws.id)), `${await execution(outWs.id)} vs ${await execution(parth.ws.id)}`);
