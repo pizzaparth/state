@@ -15,7 +15,6 @@ export function CommitLedger({
   tz,
   now,
   hrefFor,
-  showAuthor = false,
   grouped = true,
 }: {
   commits: CommitRow[];
@@ -23,7 +22,6 @@ export function CommitLedger({
   now: Date;
   /** Opens a commit's detail; without it rows are plain (landing page demo). */
   hrefFor?: (commitId: string) => string;
-  showAuthor?: boolean;
   grouped?: boolean;
 }) {
   const today = dayKey(now, tz);
@@ -70,7 +68,7 @@ export function CommitLedger({
                     <span className="min-w-0">
                       <span className="block truncate text-base font-medium text-[#0A0A0A]">{c.message}</span>
                       <span className="block truncate text-sm text-[#71717A]">
-                        {[c.projectName, showAuthor ? c.authorName : null, c.source === "manual" ? "manual" : null].filter(Boolean).join(", ")}
+                        {[c.projectName, c.source === "manual" ? "manual" : null].filter(Boolean).join(", ")}
                       </span>
                     </span>
                     <span className="font-mono text-sm font-semibold tabular-nums text-accent">+{c.executionValue}</span>

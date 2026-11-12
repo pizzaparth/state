@@ -6,7 +6,7 @@ import { keyBetween } from "@/lib/position";
 import { dayIn, nextDueDay } from "@/lib/recurrence";
 import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
 import type { z } from "zod";
-import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema } from "@/lib/validation";
+import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -32,7 +32,13 @@ export interface MoveResult {
  * its next occurrence, once: reopening and completing again does not add another.
  */
 export async function moveTask(actor: Actor, input: z.infer<typeof moveTaskSchema>): Promise<MoveResult> {
-  return db.transaction(async (tx) => {
+  return db.transaction((tx) => moveInTx(tx, actor, input));
+}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function moveInTx(tx: Tx, actor: Actor, input: z.infer<typeof moveTaskSchema>): Promise<MoveResult> {
+  {
     // Row lock: concurrent moves of the same card apply one after the other
     const [task] = await tx
       .select({
@@ -95,6 +101,7 @@ export async function moveTask(actor: Actor, input: z.infer<typeof moveTaskSchem
     const toDone = column.stateType === "done";
     const wasDone = task.completedAt !== null;
     const update: Partial<typeof tasks.$inferInsert> = { columnId: column.id, position };
+    if (task.columnId !== column.id) update.columnEnteredAt = now;
     if (!toDone && column.stateType !== "backlog" && !task.startedAt) update.startedAt = now;
     if (toDone && !wasDone) update.completedAt = now;
     if (!toDone && wasDone) update.completedAt = null;
@@ -183,6 +190,60 @@ export async function moveTask(actor: Actor, input: z.infer<typeof moveTaskSchem
       }
     }
     return { committed, reopened, recurred };
+  }
+}
+
+export interface CompleteResult extends MoveResult {
+  title: string;
+  /** Column the task was in before, for Undo; null when it came from the Inbox. */
+  previousColumnId: string | null;
+  /** The board's first queued column (Undo target for an Inbox task). */
+  queuedColumnId: string | null;
+}
+
+/**
+ * Finishes a task in one action. A board task moves to the top of its board's Done
+ * column (recording its commit, as a drag would); an Inbox task is placed on the personal
+ * board and completed in the same transaction.
+ */
+export async function completeTask(actor: Actor, input: z.infer<typeof taskRefSchema>): Promise<CompleteResult> {
+  return db.transaction(async (tx) => {
+    const [task] = await tx
+      .select({ id: tasks.id, workspaceId: tasks.workspaceId, boardId: tasks.boardId, columnId: tasks.columnId, title: tasks.title, completedAt: tasks.completedAt })
+      .from(tasks)
+      .where(and(eq(tasks.id, input.taskId), isNull(tasks.deletedAt)))
+      .limit(1)
+      .for("update");
+    if (!task) throw new MutationError("not_found", "That task no longer exists.");
+    assertWritable(actor, task.workspaceId);
+    if (task.completedAt) throw new MutationError("conflict", "This task is already done.");
+
+    let boardId = task.boardId;
+    if (!boardId) {
+      const [board] = await tx
+        .select({ id: boards.id })
+        .from(boards)
+        .where(and(eq(boards.workspaceId, task.workspaceId), eq(boards.type, "personal")))
+        .limit(1);
+      if (!board) throw new MutationError("not_found", "Your board is still being set up. Try again in a moment.");
+      boardId = board.id;
+      await tx.update(tasks).set({ boardId }).where(eq(tasks.id, task.id));
+    }
+    const boardColumns = await tx
+      .select({ id: columns.id, stateType: columns.stateType })
+      .from(columns)
+      .where(eq(columns.boardId, boardId))
+      .orderBy(asc(columns.position))
+      .limit(50);
+    const done = boardColumns.find((c) => c.stateType === "done");
+    if (!done) throw new MutationError("not_found", "This board has no Done column.");
+    const result = await moveInTx(tx, actor, { taskId: task.id, columnId: done.id, afterTaskId: null });
+    return {
+      ...result,
+      title: task.title,
+      previousColumnId: task.columnId,
+      queuedColumnId: boardColumns.find((c) => c.stateType === "backlog")?.id ?? null,
+    };
   });
 }
 
@@ -224,43 +285,87 @@ export async function captureTask(actor: Actor, input: z.infer<typeof captureTas
       projectId: project?.id ?? null,
       title,
       priority: parsed.priority ?? "none",
+      weight: parsed.weight ?? 2,
+      recurrenceRule: parsed.repeat ?? null,
       dueAt: parsed.dueDate ? sql<Date>`((${parsed.dueDate})::date + time '23:59') at time zone ${tz}` : null,
     })
     .returning({ id: tasks.id, dueAt: tasks.dueAt });
   return { id: row.id, title, projectName: project?.name ?? null, dueAt: row.dueAt };
 }
 
-/** New task at the top of the actor's personal board's Queued column. */
-export async function addBoardTask(actor: Actor, input: z.infer<typeof addBoardTaskSchema>): Promise<{ id: string; columnId: string }> {
+export interface AddedCard {
+  id: string;
+  columnId: string;
+  title: string;
+  projectName: string | null;
+  priority: string;
+  weight: number;
+  dueAt: Date | null;
+}
+
+/**
+ * New task at the top of a column of the actor's personal board (default: the first
+ * queued column). Done columns are refused: finishing records a commit, so it happens by
+ * moving an existing task. Capture tokens in the title are read in the actor's time zone.
+ */
+export async function addBoardTask(actor: Actor, input: z.infer<typeof addBoardTaskSchema>): Promise<AddedCard> {
   assertWritable(actor, actor.personalWorkspaceId);
+  const workspaceId = actor.personalWorkspaceId;
   const [column] = await db
-    .select({ id: columns.id, boardId: boards.id })
+    .select({ id: columns.id, boardId: boards.id, stateType: columns.stateType })
     .from(columns)
     .innerJoin(boards, eq(boards.id, columns.boardId))
-    .where(and(eq(boards.workspaceId, actor.personalWorkspaceId), eq(boards.type, "personal"), eq(columns.stateType, "backlog")))
+    .where(
+      and(
+        eq(boards.workspaceId, workspaceId),
+        eq(boards.type, "personal"),
+        input.columnId ? eq(columns.id, input.columnId) : eq(columns.stateType, "backlog")
+      )
+    )
     .orderBy(asc(columns.position))
     .limit(1);
-  if (!column) throw new MutationError("not_found", "Your board is still being set up. Try again in a moment.");
+  if (!column) throw new MutationError("not_found", input.columnId ? "That column no longer exists." : "Your board is still being set up. Try again in a moment.");
+  if (column.stateType === "done") throw new MutationError("invalid", "Add it to another column, then move it to Done so its commit is recorded.");
+
+  const [{ tz }] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
+  const parsed = parseQuickCapture(input.title, dayIn(new Date(), tz));
+  const title = parsed.title.trim();
+  if (!title) throw new MutationError("invalid", "Add a title as well as the #project, !priority or date.");
+  let project: { id: string; name: string } | undefined;
+  if (parsed.projectSlug) {
+    [project] = await db
+      .select({ id: projects.id, name: projects.name })
+      .from(projects)
+      .where(and(eq(projects.workspaceId, workspaceId), eq(projects.slug, parsed.projectSlug.toLowerCase()), isNull(projects.archivedAt)))
+      .limit(1);
+  }
+
   const [first] = await db
     .select({ position: tasks.position })
     .from(tasks)
     .where(and(eq(tasks.boardId, column.boardId), eq(tasks.columnId, column.id), isNull(tasks.deletedAt)))
     .orderBy(asc(byPosition))
     .limit(1);
+  const weight = parsed.weight ?? input.weight ?? 2;
   const [row] = await db
     .insert(tasks)
     .values({
-      workspaceId: actor.personalWorkspaceId,
+      workspaceId,
       boardId: column.boardId,
       columnId: column.id,
       position: keyBetween(null, first?.position ?? null),
       creatorId: actor.id,
       assigneeId: actor.id,
-      title: input.title,
-      weight: input.weight,
+      projectId: project?.id ?? null,
+      title,
+      priority: parsed.priority ?? "none",
+      weight,
+      recurrenceRule: parsed.repeat ?? null,
+      dueAt: parsed.dueDate ? sql<Date>`((${parsed.dueDate})::date + time '23:59') at time zone ${tz}` : null,
+      startedAt: column.stateType === "backlog" ? null : new Date(),
     })
-    .returning({ id: tasks.id });
-  return { id: row.id, columnId: column.id };
+    .returning({ id: tasks.id, dueAt: tasks.dueAt });
+  return { id: row.id, columnId: column.id, title, projectName: project?.name ?? null, priority: parsed.priority ?? "none", weight, dueAt: row.dueAt };
 }
 
 /**
@@ -331,7 +436,7 @@ export async function placeTask(actor: Actor, input: z.infer<typeof placeTaskSch
       .where(and(eq(tasks.boardId, column.boardId), eq(tasks.columnId, column.id), isNull(tasks.deletedAt)))
       .orderBy(asc(byPosition))
       .limit(1);
-    const update: Partial<typeof tasks.$inferInsert> = { boardId: column.boardId, columnId: column.id, position: keyBetween(null, first?.position ?? null) };
+    const update: Partial<typeof tasks.$inferInsert> = { boardId: column.boardId, columnId: column.id, position: keyBetween(null, first?.position ?? null), columnEnteredAt: new Date() };
     if (column.stateType !== "backlog" && !task.startedAt) update.startedAt = new Date();
     await tx.update(tasks).set(update).where(eq(tasks.id, task.id));
     return { boardName: column.boardName, columnName: column.name };
@@ -1008,4 +1113,186 @@ async function existingKeys(
   const rows = await load(new Date(min - 1), new Date(max + 1));
   for (const r of rows) keys.set(msKey(r.at, r.text), r.id);
   return keys;
+}
+
+// ------------------------------------------------------------------ board columns
+
+async function writableColumn(tx: Tx, actor: Actor, columnId: string) {
+  const [column] = await tx
+    .select({ id: columns.id, boardId: columns.boardId, name: columns.name, position: columns.position, stateType: columns.stateType, workspaceId: boards.workspaceId })
+    .from(columns)
+    .innerJoin(boards, eq(boards.id, columns.boardId))
+    .where(eq(columns.id, columnId))
+    .limit(1);
+  if (!column) throw new MutationError("not_found", "That column no longer exists.");
+  assertWritable(actor, column.workspaceId);
+  // Serialise column edits per board so positions stay distinct
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`columns:${column.boardId}`}))`);
+  return column;
+}
+
+const boardColumnsOf = (tx: Tx, boardId: string) =>
+  tx
+    .select({ id: columns.id, position: columns.position, stateType: columns.stateType })
+    .from(columns)
+    .where(eq(columns.boardId, boardId))
+    .orderBy(asc(columns.position), asc(columns.id))
+    .limit(50);
+
+export async function renameColumn(actor: Actor, input: z.infer<typeof renameColumnSchema>): Promise<{ name: string }> {
+  return db.transaction(async (tx) => {
+    const column = await writableColumn(tx, actor, input.columnId);
+    await tx.update(columns).set({ name: input.name }).where(eq(columns.id, column.id));
+    return { name: input.name };
+  });
+}
+
+export async function setColumnLimit(actor: Actor, input: z.infer<typeof setColumnLimitSchema>): Promise<{ limit: number | null }> {
+  return db.transaction(async (tx) => {
+    const column = await writableColumn(tx, actor, input.columnId);
+    if (column.stateType === "done" && input.limit !== null) throw new MutationError("invalid", "Done has no limit: finished work is never too much.");
+    await tx.update(columns).set({ wipLimit: input.limit }).where(eq(columns.id, column.id));
+    return { limit: input.limit };
+  });
+}
+
+const COLUMNS_MAX = 12;
+
+/** Adds a column to the right of another. Never after Done, which stays last. */
+export async function addColumn(actor: Actor, input: z.infer<typeof addColumnSchema>): Promise<{ id: string }> {
+  return db.transaction(async (tx) => {
+    const after = await writableColumn(tx, actor, input.afterColumnId);
+    if (after.stateType === "done") throw new MutationError("invalid", "Done stays the last column. Add the new one to the left of it.");
+    const list = await boardColumnsOf(tx, after.boardId);
+    if (list.length >= COLUMNS_MAX) throw new MutationError("invalid", `Up to ${COLUMNS_MAX} columns per board.`);
+    // Renumber 0..n with a gap after the anchor
+    const order = list.map((c) => c.id);
+    const at = order.indexOf(after.id) + 1;
+    const id = crypto.randomUUID();
+    order.splice(at, 0, id);
+    await tx.insert(columns).values({ id, boardId: after.boardId, name: input.name, stateType: input.stateType, position: at });
+    for (const [i, cid] of order.entries()) await tx.update(columns).set({ position: i }).where(eq(columns.id, cid));
+    return { id };
+  });
+}
+
+/** Swaps a column with its neighbour. Done does not move, and nothing moves past it. */
+export async function moveColumn(actor: Actor, input: z.infer<typeof moveColumnSchema>): Promise<{ moved: boolean }> {
+  return db.transaction(async (tx) => {
+    const column = await writableColumn(tx, actor, input.columnId);
+    if (column.stateType === "done") throw new MutationError("invalid", "Done stays the last column.");
+    const list = await boardColumnsOf(tx, column.boardId);
+    const i = list.findIndex((c) => c.id === column.id);
+    const j = input.direction === "left" ? i - 1 : i + 1;
+    const other = list[j];
+    if (!other || other.stateType === "done") return { moved: false };
+    [list[i], list[j]] = [list[j], list[i]];
+    for (const [k, c] of list.entries()) await tx.update(columns).set({ position: k }).where(eq(columns.id, c.id));
+    return { moved: true };
+  });
+}
+
+/** Deletes an empty column. Done, and the board's last queued column, are kept. */
+export async function deleteColumn(actor: Actor, input: z.infer<typeof columnRefSchema>): Promise<{ name: string }> {
+  return db.transaction(async (tx) => {
+    const column = await writableColumn(tx, actor, input.columnId);
+    if (column.stateType === "done") throw new MutationError("invalid", "A board always has one Done column.");
+    const list = await boardColumnsOf(tx, column.boardId);
+    if (column.stateType === "backlog" && list.filter((c) => c.stateType === "backlog").length <= 1) {
+      throw new MutationError("invalid", "Keep one queued column: new tasks and reopened ones land there.");
+    }
+    const [card] = await tx.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.columnId, column.id), isNull(tasks.deletedAt))).limit(1);
+    if (card) throw new MutationError("conflict", "Move its tasks out first. Only empty columns can be deleted.");
+    await tx.delete(columns).where(eq(columns.id, column.id));
+    return { name: column.name };
+  });
+}
+
+// ------------------------------------------------------------------ bulk
+
+export interface BulkResult {
+  changed: number;
+  /** Execution recorded by tasks reaching Done. */
+  committed: number;
+  /** Tasks left alone (done tasks cannot be deleted; missing ids). */
+  skipped: number;
+}
+
+/**
+ * Applies one change to up to 100 tasks in one transaction. Every id is checked against
+ * the actor's workspace; foreign or missing ids are skipped, never changed. Moving to
+ * Done records each task's commit, as single moves do.
+ */
+export async function bulkUpdateTasks(actor: Actor, input: z.infer<typeof bulkUpdateSchema>): Promise<BulkResult> {
+  assertWritable(actor, actor.personalWorkspaceId);
+  const workspaceId = actor.personalWorkspaceId;
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .select({ id: tasks.id, boardId: tasks.boardId, completedAt: tasks.completedAt })
+      .from(tasks)
+      .where(and(inArray(tasks.id, input.taskIds), eq(tasks.workspaceId, workspaceId), isNull(tasks.deletedAt)))
+      .orderBy(byPosition)
+      .limit(input.taskIds.length)
+      .for("update");
+    const change = input.change;
+    let changed = 0;
+    let committed = 0;
+    if (change.type === "move") {
+      const [column] = await tx
+        .select({ id: columns.id, boardId: boards.id })
+        .from(columns)
+        .innerJoin(boards, eq(boards.id, columns.boardId))
+        .where(and(eq(columns.id, change.columnId), eq(boards.workspaceId, workspaceId)))
+        .limit(1);
+      if (!column) throw new MutationError("not_found", "That column no longer exists.");
+      let after: string | null = null;
+      for (const row of rows) {
+        if (row.boardId !== column.boardId) await tx.update(tasks).set({ boardId: column.boardId, columnId: null }).where(eq(tasks.id, row.id));
+        const result = await moveInTx(tx, actor, { taskId: row.id, columnId: column.id, afterTaskId: after });
+        committed += result.committed;
+        after = row.id;
+        changed++;
+      }
+    } else if (change.type === "priority") {
+      const ids = rows.map((r) => r.id);
+      if (ids.length) changed = (await tx.update(tasks).set({ priority: change.priority }).where(inArray(tasks.id, ids)).returning({ id: tasks.id })).length;
+    } else if (change.type === "project") {
+      if (change.projectId) {
+        const [project] = await tx
+          .select({ id: projects.id })
+          .from(projects)
+          .where(and(eq(projects.id, change.projectId), eq(projects.workspaceId, workspaceId), isNull(projects.archivedAt)))
+          .limit(1);
+        if (!project) throw new MutationError("not_found", "That project no longer exists.");
+      }
+      const ids = rows.map((r) => r.id);
+      if (ids.length) {
+        changed = (await tx.update(tasks).set({ projectId: change.projectId }).where(inArray(tasks.id, ids)).returning({ id: tasks.id })).length;
+        // Done tasks' commits follow their task, as setTaskProject does
+        await tx
+          .update(commits)
+          .set({ projectId: change.projectId })
+          .where(and(inArray(commits.taskId, ids), eq(commits.workspaceId, workspaceId), eq(commits.userId, actor.id), isNull(commits.deletedAt)));
+      }
+    } else {
+      const open = rows.filter((r) => !r.completedAt).map((r) => r.id);
+      if (open.length) {
+        const now = new Date();
+        changed = (await tx.update(tasks).set({ deletedAt: now }).where(inArray(tasks.id, open)).returning({ id: tasks.id })).length;
+        await tx.insert(auditEvents).values(open.map((id) => ({ workspaceId, actorId: actor.id, action: "task.deleted", targetType: "task", targetId: id })));
+      }
+    }
+    return { changed, committed, skipped: input.taskIds.length - changed };
+  });
+}
+
+/** Undo for a bulk delete: restores the given tasks deleted in the last minute. */
+export async function bulkRestoreTasks(actor: Actor, input: { taskIds: string[] }): Promise<{ restored: number }> {
+  assertWritable(actor, actor.personalWorkspaceId);
+  const rows = await db
+    .update(tasks)
+    .set({ deletedAt: null })
+    .where(and(inArray(tasks.id, input.taskIds), eq(tasks.workspaceId, actor.personalWorkspaceId), isNotNull(tasks.deletedAt), gte(tasks.deletedAt, sql`now() - interval '10 minutes'`)))
+    .returning({ id: tasks.id });
+  return { restored: rows.length };
 }

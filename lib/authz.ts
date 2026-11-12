@@ -38,11 +38,10 @@ export async function loadActor(userId: string): Promise<Actor> {
 }
 
 /**
- * Objects outside the actor's workspaces are reported as missing, not forbidden, so
+ * Objects outside the actor's own workspace are reported as missing, not forbidden, so
  * probing ids reveals nothing about other tenants.
  */
 export function assertWritable(actor: Actor, workspaceId: string | null | undefined): asserts workspaceId is string {
   if (workspaceId && actor.writable.has(workspaceId)) return;
-  if (workspaceId && actor.readable.has(workspaceId)) throw new MutationError("forbidden", "You have view-only access here.");
   throw new MutationError("not_found", "That item no longer exists.");
 }

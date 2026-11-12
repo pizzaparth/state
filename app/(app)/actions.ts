@@ -4,13 +4,13 @@ import { revalidatePath } from "next/cache";
 import type { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { loadActor, MutationError, type Actor } from "@/lib/authz";
-import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone } from "@/lib/mutations";
+import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone, completeTask, addColumn, bulkRestoreTasks, bulkUpdateTasks, deleteColumn, moveColumn, renameColumn, setColumnLimit } from "@/lib/mutations";
 import { consumeThrottle } from "@/lib/security/throttle";
-import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema } from "@/lib/validation";
+import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkRestoreSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema } from "@/lib/validation";
 
 /**
  * Server Actions for the product. Each one re-verifies everything itself: Server Actions
- * are public POST endpoints, and the (app) layout's session and paywall checks do not
+ * are public POST endpoints, and the (app) layout's session check does not
  * run for them. Next.js rejects cross-site calls by comparing Origin with Host.
  */
 
@@ -125,4 +125,36 @@ export async function createCommitAction(input: unknown) {
 
 export async function setTimezoneAction(input: unknown) {
   return run(setTimezoneSchema, input, setTimezone);
+}
+
+export async function completeTaskAction(input: unknown) {
+  return run(taskRefSchema, input, completeTask);
+}
+
+export async function renameColumnAction(input: unknown) {
+  return run(renameColumnSchema, input, renameColumn);
+}
+
+export async function setColumnLimitAction(input: unknown) {
+  return run(setColumnLimitSchema, input, setColumnLimit);
+}
+
+export async function addColumnAction(input: unknown) {
+  return run(addColumnSchema, input, addColumn);
+}
+
+export async function moveColumnAction(input: unknown) {
+  return run(moveColumnSchema, input, moveColumn);
+}
+
+export async function deleteColumnAction(input: unknown) {
+  return run(columnRefSchema, input, deleteColumn);
+}
+
+export async function bulkUpdateTasksAction(input: unknown) {
+  return run(bulkUpdateSchema, input, bulkUpdateTasks);
+}
+
+export async function bulkRestoreTasksAction(input: unknown) {
+  return run(bulkRestoreSchema, input, bulkRestoreTasks);
 }

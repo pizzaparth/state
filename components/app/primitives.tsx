@@ -183,21 +183,6 @@ export function DueLabel({ due }: { due: DueState }) {
   );
 }
 
-export function Avatar({ name, initials, className }: { name: string; initials: string; className?: string }) {
-  return (
-    <span
-      title={name}
-      className={cn(
-        "grid size-6 shrink-0 place-items-center rounded-full bg-white text-[12px] font-semibold text-[#27272A] border border-black/10",
-        className
-      )}
-    >
-      <span aria-hidden="true">{initials}</span>
-      <span className="sr-only">{name}</span>
-    </span>
-  );
-}
-
 export function EmptyState({ title, children, action }: { title: string; children?: React.ReactNode; action?: React.ReactNode }) {
   return (
     <div className="px-4 py-10 text-center">

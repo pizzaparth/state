@@ -1,12 +1,12 @@
 import * as React from "react";
-import { ArrowUpRight, Folder, Lock, PenLine, Repeat, SignalHigh, UserRound, Weight } from "lucide-react";
+import { ArrowUpRight, CalendarDays, Folder, Lock, Repeat, SignalHigh, Weight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { getCommitDetail, getTaskDetail } from "@/db/queries";
-import { dueState, formatDateTime, formatDuration } from "@/lib/format";
+import { dayKey, dueState, formatDateTime, formatDuration } from "@/lib/format";
 import { weightLabel } from "@/lib/weights";
 import { cn } from "@/lib/utils";
 import { Chip, DISPLAY, DueLabel, PriorityMark, TICK } from "./primitives";
-import { TaskPriority, TaskProject, TaskRecurrence, TaskWeight } from "./task-fields";
+import { TaskDue, TaskPriority, TaskProject, TaskRecurrence, TaskStatus, TaskWeight } from "./task-fields";
 import { recurrenceLabel } from "@/lib/recurrence";
 import { TaskTitle } from "./task-title";
 import { CommitEditor } from "./commit-editor";
@@ -120,12 +120,15 @@ export function TaskDetail({
   now,
   editable = false,
   projects,
+  statusColumns,
 }: {
   task: Task;
   tz: string;
   now: Date;
   editable?: boolean;
   projects?: { id: string; name: string }[];
+  /** The board's columns, for a board task the viewer may move. */
+  statusColumns?: { id: string; name: string; stateType: string }[];
 }) {
   const done = Boolean(task.completedAt);
   const state = done ? "Done" : (task.columnName ?? "Inbox");
@@ -136,7 +139,11 @@ export function TaskDetail({
     <div className="app-stagger space-y-8">
       <div>
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <StatusPill state={state} done={done} started={Boolean(task.startedAt)} />
+          {editable && statusColumns && statusColumns.length > 0 ? (
+            <TaskStatus taskId={task.id} columnId={task.columnId} columns={statusColumns} />
+          ) : (
+            <StatusPill state={state} done={done} started={Boolean(task.startedAt)} />
+          )}
           {task.tags.map((t) => (
             <Chip key={t}>{t}</Chip>
           ))}
@@ -174,14 +181,11 @@ export function TaskDetail({
               </span>
             )}
           </Prop>
+          <Prop icon={CalendarDays} label="Due">
+            {open ? <TaskDue taskId={task.id} due={task.dueAt ? dayKey(task.dueAt, tz) : null} /> : task.dueAt ? <DueLabel due={dueState(task.dueAt, now, tz)} /> : <None />}
+          </Prop>
           <Prop icon={Repeat} label="Repeats">
             {open ? <TaskRecurrence taskId={task.id} rule={task.recurrenceRule} /> : task.recurrenceRule ? recurrenceLabel(task.recurrenceRule) : <None />}
-          </Prop>
-          <Prop icon={UserRound} label="Owner">
-            {task.assigneeName ?? <None />}
-          </Prop>
-          <Prop icon={PenLine} label="Created by">
-            {task.creatorName}
           </Prop>
         </dl>
       </PanelSection>
@@ -256,9 +260,6 @@ export function CommitDetail({ commit, tz, projects }: { commit: Commit; tz: str
 
       <PanelSection title="Properties">
         <dl>
-          <Prop icon={UserRound} label="Author">
-            {commit.authorName}
-          </Prop>
           <Prop icon={Folder} label="Project">
             {commit.projectName ?? <None />}
           </Prop>

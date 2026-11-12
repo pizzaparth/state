@@ -231,7 +231,10 @@ export interface TaskCard {
   position: string;
   projectName: string | null;
   projectSlug: string | null;
-  assigneeName: string | null;
+  recurrenceRule: string | null;
+  columnEnteredAt: Date;
+  deferUntil: Date | null;
+  plannedFor: string | null;
   tags: string[];
 }
 
@@ -248,7 +251,10 @@ const taskCardFields = {
   position: tasks.position,
   projectName: projects.name,
   projectSlug: projects.slug,
-  assigneeName: users.name,
+  recurrenceRule: tasks.recurrenceRule,
+  columnEnteredAt: tasks.columnEnteredAt,
+  deferUntil: tasks.deferUntil,
+  plannedFor: tasks.plannedFor,
 };
 
 async function withTags<T extends { id: string }>(rows: T[]): Promise<(T & { tags: string[] })[]> {
@@ -267,15 +273,14 @@ function selectTaskCards() {
   return db
     .select(taskCardFields)
     .from(tasks)
-    .leftJoin(projects, eq(projects.id, tasks.projectId))
-    .leftJoin(users, eq(users.id, tasks.assigneeId));
+    .leftJoin(projects, eq(projects.id, tasks.projectId));
 }
 
 export interface BoardData {
   id: string;
   name: string;
-  columns: { id: string; name: string; stateType: string; total: number }[];
-  tasks: TaskCard[];
+  columns: { id: string; name: string; stateType: string; wipLimit: number | null }[];
+  tasks: (TaskCard & { description: string | null })[];
   doneWindowDays: number;
 }
 
@@ -292,22 +297,17 @@ export async function getBoard(boardId: string, workspaceIds: string[], doneWind
     .limit(1);
   if (!board) return null;
 
-  const [colRows, totals] = await Promise.all([
-    db
-      .select({ id: columns.id, name: columns.name, stateType: columns.stateType })
-      .from(columns)
-      .where(eq(columns.boardId, boardId))
-      .orderBy(asc(columns.position)),
-    db
-      .select({ columnId: tasks.columnId, total: sql<number>`count(*)::int` })
-      .from(tasks)
-      .where(and(eq(tasks.boardId, boardId), isNull(tasks.deletedAt), isNull(tasks.archivedAt)))
-      .groupBy(tasks.columnId),
-  ]);
-  const totalBy = new Map(totals.map((t) => [t.columnId, t.total]));
-  const cols = colRows.map((c) => ({ ...c, total: totalBy.get(c.id) ?? 0 }));
+  const cols = await db
+    .select({ id: columns.id, name: columns.name, stateType: columns.stateType, wipLimit: columns.wipLimit })
+    .from(columns)
+    .where(eq(columns.boardId, boardId))
+    .orderBy(asc(columns.position), asc(columns.id))
+    .limit(50);
 
-  const rows = await selectTaskCards()
+  const rows = await db
+    .select({ ...taskCardFields, description: tasks.description })
+    .from(tasks)
+    .leftJoin(projects, eq(projects.id, tasks.projectId))
     .where(
       and(
         eq(tasks.boardId, boardId),
@@ -340,7 +340,6 @@ export async function getInboxCount(personalWorkspaceId: string | null): Promise
 
 export async function getTaskDetail(taskId: string, workspaceIds: string[]) {
   if (workspaceIds.length === 0) return null;
-  const creator = sql<string>`(select ${users.name} from ${users} where ${users.id} = ${tasks.creatorId})`;
   const [row] = await db
     .select({
       ...taskCardFields,
@@ -351,11 +350,9 @@ export async function getTaskDetail(taskId: string, workspaceIds: string[]) {
       recurrenceRule: tasks.recurrenceRule,
       boardName: boards.name,
       columnName: columns.name,
-      creatorName: creator,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
-    .leftJoin(users, eq(users.id, tasks.assigneeId))
     .leftJoin(boards, eq(boards.id, tasks.boardId))
     .leftJoin(columns, eq(columns.id, tasks.columnId))
     .where(and(eq(tasks.id, taskId), inArray(tasks.workspaceId, workspaceIds), isNull(tasks.deletedAt)))
@@ -368,6 +365,18 @@ export async function getTaskDetail(taskId: string, workspaceIds: string[]) {
     .where(and(eq(commits.taskId, taskId), isNull(commits.deletedAt)))
     .limit(1);
   return { ...withTag, commit: commit ?? null };
+}
+
+/** All columns of a board, in order, if the viewer can read it (the task panel's status control). */
+export async function getBoardColumns(boardId: string, workspaceIds: string[]): Promise<{ id: string; name: string; stateType: string }[]> {
+  if (workspaceIds.length === 0) return [];
+  return db
+    .select({ id: columns.id, name: columns.name, stateType: columns.stateType })
+    .from(columns)
+    .innerJoin(boards, eq(boards.id, columns.boardId))
+    .where(and(eq(columns.boardId, boardId), inArray(boards.workspaceId, workspaceIds)))
+    .orderBy(asc(columns.position), asc(columns.id))
+    .limit(50);
 }
 
 export interface BoardTarget {
@@ -622,10 +631,10 @@ export interface ProjectSummary {
 }
 
 /** Live projects of one workspace for a picker, if the viewer can read it. */
-export async function getProjectOptions(workspaceId: string, workspaceIds: string[]) {
+export async function getProjectOptions(workspaceId: string, workspaceIds: string[]): Promise<{ id: string; name: string; slug: string }[]> {
   if (!workspaceIds.includes(workspaceId)) return [];
   return db
-    .select({ id: projects.id, name: projects.name })
+    .select({ id: projects.id, name: projects.name, slug: projects.slug })
     .from(projects)
     .where(and(eq(projects.workspaceId, workspaceId), isNull(projects.archivedAt)))
     .orderBy(asc(projects.name))
@@ -704,7 +713,6 @@ export async function getOpenTasks(scope: Scope): Promise<(TaskCard & { columnNa
     .select({ ...taskCardFields, columnName: columns.name })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
-    .leftJoin(users, eq(users.id, tasks.assigneeId))
     .leftJoin(columns, eq(columns.id, tasks.columnId))
     .where(and(...taskWhere(scope), isNull(tasks.completedAt), isNull(tasks.archivedAt)))
     .orderBy(asc(columns.position), asc(PRIORITY_RANK))
@@ -751,6 +759,13 @@ export async function getObjectives(workspaceIds: string[]) {
       return { ...o, currentValue: total, completedAt: total >= o.targetValue ? (o.completedAt ?? new Date()) : null, projectName: linked[0]?.name ?? null };
     })
   );
+}
+
+/** Tag names in the viewer's workspaces (filters and suggestions), A–Z. */
+export async function getTagNames(workspaceIds: string[], limit = 200): Promise<string[]> {
+  if (workspaceIds.length === 0) return [];
+  const rows = await db.select({ name: tags.name }).from(tags).where(inArray(tags.workspaceId, workspaceIds)).orderBy(asc(tags.name)).limit(limit);
+  return rows.map((r) => r.name);
 }
 
 export async function getNotifications(userId: string, limit = 10) {

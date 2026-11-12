@@ -6,7 +6,7 @@ import { buildExport, exportCommits, exportProjects, exportTasks, personalWorksp
 import { consumeThrottle } from "@/lib/security/throttle";
 
 /**
- * Downloads the signed-in person's data. Needs a session but not an active plan: data
+ * Downloads the signed-in person's data. Needs a session: data
  * stays exportable after a subscription ends (docs/state_desc.md §40).
  *
  *   ?format=json                          everything (lib/data/export.ts)

@@ -15,14 +15,12 @@ export async function ProjectView({
   tz,
   taskHref,
   commitHref,
-  showPeople,
 }: {
   project: { id: string; name: string; status: string; description: string | null };
   scope: Scope;
   tz: string;
   taskHref: (id: string) => string;
   commitHref: (id: string) => string;
-  showPeople: boolean;
 }) {
   const projectScope = { ...scope, projectId: project.id };
   const [daily, recent, open] = await Promise.all([
@@ -56,7 +54,7 @@ export async function ProjectView({
           ) : (
             <ul className="app-stagger -mx-3">
               {open.map((t) => (
-                <TaskRow key={t.id} task={t} tz={tz} now={now} href={taskHref(t.id)} showAssignee={showPeople} />
+                <TaskRow key={t.id} task={t} tz={tz} now={now} href={taskHref(t.id)} />
               ))}
             </ul>
           )}
@@ -66,7 +64,7 @@ export async function ProjectView({
             <EmptyState title="No commits yet" />
           ) : (
             <div className="-mx-3">
-              <CommitLedger commits={recent} tz={tz} now={now} hrefFor={commitHref} showAuthor={showPeople} />
+              <CommitLedger commits={recent} tz={tz} now={now} hrefFor={commitHref} />
             </div>
           )}
         </Panel>

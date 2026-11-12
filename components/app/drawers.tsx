@@ -1,6 +1,5 @@
 import * as React from "react";
-import { getBoardTargets, getCommitDetail, getProjectOptions, getTaskDetail } from "@/db/queries";
-import { dayKey } from "@/lib/format";
+import { getBoardColumns, getBoardTargets, getCommitDetail, getProjectOptions, getTaskDetail } from "@/db/queries";
 import type { Viewer } from "@/lib/viewer";
 import { DetailDrawer, DrawerClose } from "./detail-drawer";
 import { EmptyState } from "./primitives";
@@ -27,9 +26,10 @@ export async function Drawers({ params, viewer }: { params: Record<string, strin
     if (task) {
       const writable = canWrite(viewer, task.workspaceId);
       const inInbox = task.boardId === null;
-      const [targets, projects] = await Promise.all([
+      const [targets, projects, statusColumns] = await Promise.all([
         writable && inInbox && !task.completedAt ? getBoardTargets(task.workspaceId, viewer.workspaceIds) : [],
         writable ? getProjectOptions(task.workspaceId, viewer.workspaceIds) : undefined,
+        writable && task.boardId ? getBoardColumns(task.boardId, viewer.workspaceIds) : undefined,
       ]);
       return (
         <DetailDrawer
@@ -37,10 +37,10 @@ export async function Drawers({ params, viewer }: { params: Record<string, strin
           title="Task"
           crumbs={[task.projectName, task.boardName ?? "Inbox", task.completedAt ? "Done" : task.columnName].filter((c): c is string => Boolean(c))}
         >
-          <TaskDetail task={task} tz={viewer.tz} now={new Date()} editable={writable} projects={projects} />
+          <TaskDetail task={task} tz={viewer.tz} now={new Date()} editable={writable} projects={projects} statusColumns={statusColumns} />
           {writable && (
             <TaskActions
-              task={{ id: task.id, title: task.title, completed: Boolean(task.completedAt), inInbox, due: task.dueAt ? dayKey(task.dueAt, viewer.tz) : null }}
+              task={{ id: task.id, title: task.title, completed: Boolean(task.completedAt), inInbox }}
               targets={targets}
             />
           )}

@@ -54,9 +54,9 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 - MUST: Use the classes in `styles/product.css`; never hand-roll surface styles:
   - **Page:** `#FFFFFF` body, tables, text rows, ledger rows, graph labels, separators. No surface.
   - **Panel (`.app-panel`):** Board columns, toolbars, metric panels (`#F5F5F5`, 1px `rgba(0,0,0,.06)` border).
-  - **Card / Control (`.app-card`, `.app-btn`):** Task cards, buttons, toggles, menus (`#FFFFFF`, 1px `rgba(0,0,0,.10)` border; hover `#FAFAFA`, accent edge).
+  - **Card / Control (`.app-card`, `.app-btn`):** Task cards, buttons, toggles (`#FFFFFF`, 1px `rgba(0,0,0,.10)` border; hover `#FAFAFA`, accent edge).
   - **Field (`.app-field`, `.app-input`):** Inputs, selects, progress rails, segmented troughs (`#FFFFFF`, 1px `rgba(0,0,0,.10)` border; focus border accent).
-  - **Overlay (`.app-overlay`):** Dialogs, drawers, command palette, menus (`#FFFFFF` with a hairline over a `bg-black/30` scrim).
+  - **Overlay (`.app-overlay`):** Dialogs, drawers, command palette and every menu (`#FFFFFF` with a hairline over the `.app-scrim` layer, `rgba(0,0,0,.3)`, no blur).
 - MUST: Micro-interactions on every interactive element via `styles/motion.css` (`mi-press`, `mi-lift`, `mi-nudge`, `mi-spin`, `mi-arrow`, `mi-underline`, `mi-row`, `mi-pop`, `mi-live`): transform/opacity only, ≤ 260ms, no shadows, no endless loops in the product.
 - MUST: Product text uses `#0A0A0A` / `#52525B` / `#71717A` (all pass WCAG AA on white and `#F5F5F5`); on inverse (accent) surfaces use `#FFFFFF`.
 - NEVER: Add box-shadows, glows or inset shadows to separate surfaces; use a hairline.

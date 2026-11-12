@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, primaryKey, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { workspaces } from "./workspaces";
 import { tasks } from "./tasks";
 import { commits } from "./commits";
@@ -13,6 +14,7 @@ export const tags = pgTable(
   },
   (table) => [
     uniqueIndex("tags_workspace_name_uidx").on(table.workspaceId, table.name),
+    index("tags_name_trgm_idx").using("gin", sql`${table.name} gin_trgm_ops`),
   ]
 );
 

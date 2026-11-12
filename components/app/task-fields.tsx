@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
-import { setTaskPriorityAction, setTaskProjectAction, setTaskRecurrenceAction, setTaskWeightAction, type ActionResult } from "@/app/(app)/actions";
+import { moveTaskAction, setTaskDueAction, setTaskPriorityAction, setTaskProjectAction, setTaskRecurrenceAction, setTaskWeightAction, type ActionResult } from "@/app/(app)/actions";
+import { cn } from "@/lib/utils";
 import { RECURRENCE_OPTIONS, recurrenceLabel } from "@/lib/recurrence";
 import { PRIORITIES, type Priority } from "@/lib/validation";
 import { WEIGHT_LEVELS, weightHint, weightLabel, type Weight } from "@/lib/weights";
@@ -180,5 +181,126 @@ export function TaskProject({
       save={(next) => setTaskProjectAction({ taskId, projectId: next || null })}
       savedMessage={(next) => (next ? `Filed under ${nameOf(next)}.` : "Removed from its project.")}
     />
+  );
+}
+
+/**
+ * Where a board task stands, as a segmented control of its board's columns. Picking a
+ * column moves the task to the top of it (Done records the commit; leaving Done reopens).
+ */
+export function TaskStatus({ taskId, columnId, columns }: { taskId: string; columnId: string | null; columns: { id: string; name: string; stateType: string }[] }) {
+  const notify = useNotice();
+  const [value, setValue] = React.useState(columnId);
+  const [pending, startTransition] = React.useTransition();
+  const [serverValue, setServerValue] = React.useState(columnId);
+  if (columnId !== serverValue) {
+    setServerValue(columnId);
+    if (!pending) setValue(columnId);
+  }
+  return (
+    <div role="radiogroup" aria-label="Status" className="app-field inline-flex max-w-full flex-wrap gap-1 rounded-full p-1">
+      {columns.map((c) => {
+        const active = value === c.id;
+        return (
+          <button
+            key={c.id}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            disabled={pending}
+            onClick={() => {
+              if (active) return;
+              const previous = value;
+              setValue(c.id);
+              startTransition(async () => {
+                const result = await moveTaskAction({ taskId, columnId: c.id, afterTaskId: null });
+                if (!result.ok) {
+                  setValue(previous);
+                  notify(result.error);
+                  return;
+                }
+                notify(
+                  result.data.committed > 0
+                    ? `Done. +${result.data.committed}.${result.data.recurred ? " Next one queued." : ""}`
+                    : result.data.reopened
+                      ? "Reopened. Its commit was withdrawn."
+                      : `Moved to ${c.name}.`
+                );
+              });
+            }}
+            className={cn(
+              "mi-press inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-semibold transition-colors duration-150 disabled:cursor-default [@media(pointer:coarse)]:h-11",
+              active ? (c.stateType === "done" ? "bg-accent text-white" : "bg-[#0A0A0A] text-white") : "text-[#52525B] hover:bg-black/[0.05] hover:text-[#0A0A0A]"
+            )}
+          >
+            {active && pending && <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />}
+            {c.name}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Due date that saves on change, with Clear. The day is the viewer's own; the server
+ * stores 23:59 of it in their time zone.
+ */
+export function TaskDue({ taskId, due }: { taskId: string; due: string | null }) {
+  const notify = useNotice();
+  const [value, setValue] = React.useState(due ?? "");
+  const [error, setError] = React.useState<string | null>(null);
+  const [pending, startTransition] = React.useTransition();
+  const [serverValue, setServerValue] = React.useState(due);
+  if (due !== serverValue) {
+    setServerValue(due);
+    if (!pending) setValue(due ?? "");
+  }
+  const save = (next: string | null) => {
+    const previous = value;
+    setValue(next ?? "");
+    setError(null);
+    startTransition(async () => {
+      const result = await setTaskDueAction({ taskId, dueDate: next });
+      if (!result.ok) {
+        setValue(previous);
+        setError(result.error);
+        return;
+      }
+      notify(next === null ? "Due date cleared." : `Due ${new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${next}T00:00:00Z`))}.`);
+    });
+  };
+  return (
+    <div>
+      <div className="flex items-center gap-1">
+        <input
+          type="date"
+          name="due"
+          aria-label="Due date"
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? "task-due-error" : undefined}
+          value={value}
+          disabled={pending}
+          onChange={(e) => {
+            const next = e.target.value;
+            // Partial dates while typing are left alone until they are complete
+            if (/^\d{4}-\d{2}-\d{2}$/.test(next)) save(next);
+            else setValue(next);
+          }}
+          className="app-focus -ml-2 h-9 min-w-0 rounded-[10px] border border-transparent bg-white px-[7px] text-base font-medium text-[#0A0A0A] hover:border-black/[0.10]"
+        />
+        {value && (
+          <button type="button" onClick={() => save(null)} disabled={pending} className="h-9 rounded-[10px] px-2 text-sm text-[#52525B] hover:bg-black/[0.04] hover:text-[#0A0A0A] disabled:opacity-50">
+            Clear
+          </button>
+        )}
+        {pending && <Loader2 className="size-4 shrink-0 animate-spin text-[#52525B]" aria-label="Saving…" />}
+      </div>
+      {error && (
+        <p id="task-due-error" aria-live="polite" className="mt-1.5 text-sm text-danger">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }

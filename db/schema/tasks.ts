@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, index, check } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, date, index, check } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { workspaces } from "./workspaces";
 import { projects } from "./projects";
@@ -28,6 +28,12 @@ export const tasks = pgTable(
     // The occurrence this one was created from when it was completed
     recurrenceParentId: text("recurrence_parent_id"),
     dueAt: timestamp("due_at", { withTimezone: true }),
+    // Hidden from Today and greyed on the board until this instant (start of a local day)
+    deferUntil: timestamp("defer_until", { withTimezone: true }),
+    // Local calendar day the person planned to do it ("Plan" on Today); a plain list, no target
+    plannedFor: date("planned_for", { mode: "string" }),
+    // When the task last entered its current column (days-in-column on cards)
+    columnEnteredAt: timestamp("column_entered_at", { withTimezone: true }).defaultNow().notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -52,7 +58,10 @@ export const tasks = pgTable(
     index("tasks_completed_at_idx").on(table.workspaceId, table.completedAt),
     // Completing a recurring task checks whether its next occurrence already exists
     index("tasks_recurrence_parent_idx").on(table.recurrenceParentId),
-    // Search: substring match on titles (pg_trgm)
+    // Search: substring match on titles and descriptions (pg_trgm)
     index("tasks_title_trgm_idx").using("gin", sql`${table.title} gin_trgm_ops`),
+    index("tasks_description_trgm_idx").using("gin", sql`${table.description} gin_trgm_ops`),
+    // Today's Planned list
+    index("tasks_planned_idx").on(table.workspaceId, table.plannedFor).where(sql`${table.plannedFor} is not null`),
   ]
 );

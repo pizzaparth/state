@@ -9,8 +9,8 @@ const PERSONAL_COLUMNS = [
 ] as const;
 
 /**
- * Creates the personal workspace, personal board and default columns once payment
- * succeeds (payment is required before workspace creation). Idempotent: safe to call
+ * Creates the personal workspace, personal board and default columns when an account
+ * (the owner, or a demo visitor) is first set up. Idempotent: safe to call
  * from every webhook delivery.
  */
 export async function provisionAccount(userId: string): Promise<string> {

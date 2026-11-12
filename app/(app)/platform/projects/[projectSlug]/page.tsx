@@ -46,7 +46,6 @@ export default async function ProjectPage({
         tz={viewer.tz}
         taskHref={(id) => withParam(base, query, "task", id)}
         commitHref={(id) => withParam(base, query, "commit", id)}
-        showPeople={false}
       />
       <Drawers params={query} viewer={viewer} />
     </>

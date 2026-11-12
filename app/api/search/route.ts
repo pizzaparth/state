@@ -8,7 +8,7 @@ import { consumeThrottle } from "@/lib/security/throttle";
 /**
  * Search for the command palette: tasks by title and commits by message in every
  * workspace the signed-in person can read. Same gates as product pages (session, and a
- * plan that is current or read-only); results never leave those workspaces.
+ * own personal workspace); results never leave it.
  *
  *   GET /api/search?q=parser
  */

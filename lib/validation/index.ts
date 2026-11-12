@@ -114,15 +114,59 @@ export const setTaskRecurrenceSchema = z.strictObject({
   rule: z.string().regex(RECURRENCE_RULES, "Pick how often it repeats.").nullable(),
 });
 
-/** A task straight onto the personal board's Queued column (first-run setup). */
+/**
+ * A task straight onto the personal board: the top of `columnId` (any non-Done column of
+ * that board), or the first queued column when omitted. The title may carry capture
+ * tokens (#project, !priority, a due day), read as in quick capture.
+ */
 export const addBoardTaskSchema = z.strictObject({
   title: z.string().trim().min(1, "Give the task a title.").max(500, "Keep the title under 500 characters."),
-  weight: z.union([z.literal(1), z.literal(2), z.literal(4), z.literal(8)]),
+  weight: z.union([z.literal(1), z.literal(2), z.literal(4), z.literal(8)]).optional(),
+  columnId: objectId.optional(),
 });
 
 /** The person's time zone (IANA name). Due days and deadlines keep their calendar day. */
 export const setTimezoneSchema = z.strictObject({
   timezone: z.string().trim().min(1, "Pick a time zone.").max(64).refine(isTimeZone, "Pick a time zone from the list."),
+});
+
+/** Board columns (C8). Exactly one Done column always exists; it cannot be added or removed. */
+const columnName = z.string().trim().min(1, "Name the column.").max(40, "Keep the name under 40 characters.");
+
+export const columnRefSchema = z.strictObject({ columnId: objectId });
+
+export const renameColumnSchema = z.strictObject({ columnId: objectId, name: columnName });
+
+export const addColumnSchema = z.strictObject({
+  afterColumnId: objectId,
+  name: columnName,
+  stateType: z.enum(["backlog", "active", "review"]),
+});
+
+export const moveColumnSchema = z.strictObject({ columnId: objectId, direction: z.enum(["left", "right"]) });
+
+/** Work-in-progress limit; null removes it. The board warns past it and never blocks. */
+export const setColumnLimitSchema = z.strictObject({
+  columnId: objectId,
+  limit: z.number({ error: "Enter a whole number." }).int("Enter a whole number.").min(1, "Use 1 or more.").max(99, "Keep it under 100.").nullable(),
+});
+
+export const bulkRestoreSchema = z.strictObject({ taskIds: z.array(objectId).min(1).max(100) });
+
+/** One change applied to up to 100 tasks in one transaction (board and Inbox selection). */
+export const BULK_MAX = 100;
+export const bulkUpdateSchema = z.strictObject({
+  taskIds: z
+    .array(objectId)
+    .min(1, "Select at least one task.")
+    .max(BULK_MAX, `Up to ${BULK_MAX} tasks at once.`)
+    .transform((ids) => [...new Set(ids)]),
+  change: z.discriminatedUnion("type", [
+    z.strictObject({ type: z.literal("move"), columnId: objectId }),
+    z.strictObject({ type: z.literal("priority"), priority: z.enum(PRIORITIES) }),
+    z.strictObject({ type: z.literal("project"), projectId: objectId.nullable() }),
+    z.strictObject({ type: z.literal("delete") }),
+  ]),
 });
 
 /** First-run setup done or skipped; takes nothing. */
@@ -261,6 +305,47 @@ const shiftDay = (day: string, days: number) => {
   return d.toISOString().slice(0, 10);
 };
 
+const MONTHS: Record<string, number> = {
+  jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4, may: 5, jun: 6, june: 6,
+  jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9, september: 9, oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12,
+};
+const MONTH_WORDS = Object.keys(MONTHS).join("|");
+
+/** Date phrases besides single words, tried in order; each resolves against `today`. */
+const DUE_PHRASES: { re: RegExp; day: (m: RegExpMatchArray, today: string) => string | null }[] = [
+  {
+    re: /(?:^|\s)in (\d{1,3}) ?(d|days?|w|wks?|weeks?)(?=\s|$)/i,
+    day: (m, today) => shiftDay(today, Number(m[1]) * (m[2].toLowerCase().startsWith("w") ? 7 : 1)),
+  },
+  {
+    re: /(?:^|\s)next week(?=\s|$)/i,
+    day: (_, today) => shiftDay(today, ((8 - new Date(`${today}T00:00:00Z`).getUTCDay()) % 7) || 7),
+  },
+  {
+    re: /(?:^|\s)eom(?=\s|$)/i,
+    day: (_, today) => {
+      const [y, m] = today.split("-").map(Number);
+      return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+    },
+  },
+  {
+    re: new RegExp(`(?:^|\\s)(?:(\\d{1,2}) (${MONTH_WORDS})|(${MONTH_WORDS}) (\\d{1,2}))(?=\\s|$)`, "i"),
+    day: (m, today) => {
+      const dayOfMonth = Number(m[1] ?? m[4]);
+      const month = MONTHS[(m[2] ?? m[3]).toLowerCase()];
+      const year = Number(today.slice(0, 4));
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const thisYear = `${year}-${pad(month)}-${pad(dayOfMonth)}`;
+      // The next such date: this year unless it has passed
+      const candidate = thisYear >= today ? thisYear : `${year + 1}-${pad(month)}-${pad(dayOfMonth)}`;
+      return isRealDay(candidate) ? candidate : null;
+    },
+  },
+];
+
+const REPEAT_TOKEN = /(?:^|\s)~(daily|weekdays|weekly|monthly)(?=\s|$)/i;
+const WEIGHT_TOKEN = /(?:^|\s)\+(1|2|4|8)(?=\s|$)/;
+
 const isRealDay = (day: string) =>
   !Number.isNaN(Date.parse(`${day}T00:00:00Z`)) && new Date(`${day}T00:00:00Z`).toISOString().startsWith(day) && day >= "2000-01-01" && day <= "2100-12-31";
 
@@ -271,7 +356,10 @@ const isRealDay = (day: string) =>
  *
  *   #project      project by slug
  *   !priority     critical, high, medium or low
- *   due day       today, tomorrow, a weekday (the next one after today) or YYYY-MM-DD
+ *   due day       today, tomorrow, a weekday (the next one after today), YYYY-MM-DD,
+ *                 in 3d / in 2w, next week (next Monday), 15 nov / nov 15, eom (month end)
+ *   +1 +2 +4 +8   weight
+ *   ~daily        repeat: ~daily, ~weekdays, ~weekly or ~monthly
  *   \token        kept in the title as typed, without the backslash ("bug \#12 \!high")
  *
  * Each token is read once (the first match) and removed from the title. Dates resolve
@@ -283,6 +371,8 @@ export function parseQuickCapture(input: string, today: string = new Date().toIS
   projectSlug?: string;
   priority?: Exclude<Priority, "none">;
   dueDate?: string;
+  weight?: 1 | 2 | 4 | 8;
+  repeat?: "daily" | "weekdays" | "weekly" | "monthly";
 } {
   // Backslash-escaped words are set aside before parsing and put back without the
   // backslash, so no rule below can read them (placeholders hold no #, ! or @)
@@ -294,6 +384,8 @@ export function parseQuickCapture(input: string, today: string = new Date().toIS
   let projectSlug: string | undefined;
   let priority: Exclude<Priority, "none"> | undefined;
   let dueDate: string | undefined;
+  let weight: 1 | 2 | 4 | 8 | undefined;
+  let repeat: "daily" | "weekdays" | "weekly" | "monthly" | undefined;
   const take = (match: RegExpMatchArray) => {
     text = (text.slice(0, match.index) + " " + text.slice(match.index! + match[0].length)).replace(/\s+/g, " ").trim();
   };
@@ -312,8 +404,32 @@ export function parseQuickCapture(input: string, today: string = new Date().toIS
     take(priorityMatch);
   }
 
-  // Extract a due day
-  const dueMatch = text.match(DUE_TOKEN);
+  // Extract +weight
+  const weightMatch = text.match(WEIGHT_TOKEN);
+  if (weightMatch) {
+    weight = Number(weightMatch[1]) as 1 | 2 | 4 | 8;
+    take(weightMatch);
+  }
+
+  // Extract ~repeat
+  const repeatMatch = text.match(REPEAT_TOKEN);
+  if (repeatMatch) {
+    repeat = repeatMatch[1].toLowerCase() as typeof repeat;
+    take(repeatMatch);
+  }
+
+  // Extract a due day: phrases first ("in 3d", "15 nov"), then single words
+  for (const phrase of DUE_PHRASES) {
+    const m = text.match(phrase.re);
+    if (!m) continue;
+    const day = phrase.day(m, today);
+    if (day && isRealDay(day)) {
+      dueDate = day;
+      take(m);
+      break;
+    }
+  }
+  const dueMatch = dueDate ? null : text.match(DUE_TOKEN);
   if (dueMatch) {
     const word = dueMatch[1].toLowerCase();
     const weekday = WEEKDAY_WORDS[word];
@@ -336,6 +452,8 @@ export function parseQuickCapture(input: string, today: string = new Date().toIS
     projectSlug,
     priority,
     dueDate,
+    weight,
+    repeat,
   };
 }
 

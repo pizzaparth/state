@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { ArrowRight, CalendarCheck, Loader2, Trash2 } from "lucide-react";
-import { deleteTaskAction, placeTaskAction, restoreTaskAction, setTaskDueAction } from "@/app/(app)/actions";
+import { ArrowRight, Loader2, Trash2 } from "lucide-react";
+import { deleteTaskAction, placeTaskAction, restoreTaskAction } from "@/app/(app)/actions";
 import type { BoardTarget } from "@/db/queries";
 import { cn } from "@/lib/utils";
 import { useNotice } from "./notice";
@@ -18,41 +18,18 @@ export function TaskActions({
   task,
   targets,
 }: {
-  /** `due` is the due day (YYYY-MM-DD) in the viewer's timezone. */
-  task: { id: string; title: string; completed: boolean; inInbox: boolean; due: string | null };
+  task: { id: string; title: string; completed: boolean; inInbox: boolean };
   /** Boards in the task's workspace; empty when the task is already on a board. */
   targets: BoardTarget[];
 }) {
   const notify = useNotice();
   const [error, setError] = React.useState<string | null>(null);
-  const [pending, setPending] = React.useState<"due" | "clear" | "move" | "delete" | null>(null);
-  const dueRef = React.useRef<HTMLInputElement>(null);
+  const [pending, setPending] = React.useState<"move" | "delete" | null>(null);
   const [, startTransition] = React.useTransition();
 
   const defaultColumn = targets[0]?.columns.find((c) => c.stateType === "backlog")?.id ?? targets[0]?.columns[0]?.id ?? "";
 
   const closePanel = useClosePanel();
-
-  const saveDue = (dueDate: string | null) => {
-    if (pending) return;
-    if (dueDate === "") {
-      setError("Pick a date.");
-      dueRef.current?.focus();
-      return;
-    }
-    setPending(dueDate === null ? "clear" : "due");
-    startTransition(async () => {
-      const result = await setTaskDueAction({ taskId: task.id, dueDate });
-      setPending(null);
-      if (!result.ok) {
-        setError(result.error);
-        dueRef.current?.focus();
-        return;
-      }
-      setError(null);
-      notify(dueDate === null ? "Due date cleared." : `Due ${new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${dueDate}T00:00:00Z`))}.`);
-    });
-  };
 
   const remove = () => {
     if (pending) return;
@@ -77,52 +54,6 @@ export function TaskActions({
       <h3 id="task-actions-heading" className={cn(TICK, "text-[11px] text-[#71717A]")}>
         Actions
       </h3>
-
-      {!task.completed && (
-        <form
-          className="mt-4 space-y-1.5"
-          noValidate
-          onSubmit={(e) => {
-            e.preventDefault();
-            saveDue(dueRef.current?.value ?? "");
-          }}
-        >
-          <label htmlFor="task-due" className={cn(TICK, "text-[11px] text-[#71717A]")}>
-            Due
-          </label>
-          <div className="flex gap-2">
-            {/* Keyed by the saved day so a save or another tab's change resets the field */}
-            <input
-              key={task.due ?? "none"}
-              ref={dueRef}
-              id="task-due"
-              name="due"
-              type="date"
-              defaultValue={task.due ?? ""}
-              className="app-input h-11 w-full min-w-0 rounded-[14px] px-3 text-base"
-            />
-            <button
-              type="submit"
-              disabled={pending !== null}
-              className="app-btn inline-flex h-11 shrink-0 items-center gap-1.5 rounded-[14px] px-4 text-base font-medium disabled:opacity-50"
-            >
-              {pending === "due" ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <CalendarCheck className="size-4" aria-hidden="true" />}
-              Set
-            </button>
-            {task.due && (
-              <button
-                type="button"
-                onClick={() => saveDue(null)}
-                disabled={pending !== null}
-                className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-[14px] px-3 text-base text-[#52525B] hover:text-[#0A0A0A] disabled:opacity-50"
-              >
-                {pending === "clear" && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                Clear
-              </button>
-            )}
-          </div>
-        </form>
-      )}
 
       {task.inInbox && !task.completed && targets.length > 0 && (
         <form

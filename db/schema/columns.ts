@@ -8,6 +8,8 @@ export const columns = pgTable(
     boardId: text("board_id").notNull().references(() => boards.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     position: integer("position").notNull().default(0),
+    // Work-in-progress limit: the header warns past it, never blocks
+    wipLimit: integer("wip_limit"),
     stateType: text("state_type").notNull().default("backlog"), // "backlog" | "active" | "review" | "done" (done = terminal, triggers commit)
   },
   (table) => [

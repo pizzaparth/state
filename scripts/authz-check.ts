@@ -17,8 +17,8 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getEligibleDays, getCommits, getInbox, getObjectives, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone } from "../lib/mutations";
-import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, importSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema } from "../lib/validation";
+import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone, completeTask, addColumn, bulkRestoreTasks, bulkUpdateTasks, deleteColumn, moveColumn, renameColumn, setColumnLimit } from "../lib/mutations";
+import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, importSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, bulkUpdateSchema } from "../lib/validation";
 import { buildExport } from "../lib/data/export";
 import { parseImport } from "../lib/data/import";
 import { parseCsv, toCsv } from "../lib/data/csv";
@@ -579,7 +579,8 @@ async function main() {
   [ok, detail] = await expectError(() => addBoardTask({ id: outsiderId, personalWorkspaceId: parth.ws.id, readable: new Set(), writable: new Set() }, { title: "x", weight: 2 }), "not_found");
   const badFirst = [
     { title: "x", weight: 2, boardId: aarav.board.id },
-    { title: "x", weight: 2, columnId: aarav.col("done").id },
+    // A foreign columnId passes the schema and is refused by the mutation (AB1)
+    { title: "x", weight: 2, columnId: "not an id!" },
     { title: "x", weight: 2, workspaceId: aarav.ws.id },
     { title: "x", weight: 3 },
     { title: " ", weight: 2 },
@@ -603,6 +604,65 @@ async function main() {
     tasks: (await one(db.select({ n: sql<number>`count(*)::int` }).from(s.tasks).where(eq(s.tasks.workspaceId, workspaceId)))).n,
     commits: (await one(db.select({ n: sql<number>`count(*)::int` }).from(s.commits).where(eq(s.commits.workspaceId, workspaceId)))).n,
   });
+
+  // ------------------------------------------------------------ complete, add on board, columns, bulk
+  const probe = await addBoardTask(A, { title: "probe card" });
+  [ok, detail] = await expectError(() => completeTask(B, { taskId: probe.id }), "not_found");
+  record("CT1", "Complete another user's task", ok && (await snapshot(probe.id)).d === null, detail);
+  const inboxProbe = await captureTask(A, { text: "inbox probe +4" });
+  const completed = await completeTask(A, { taskId: inboxProbe.id });
+  const inboxRow = await snapshot(inboxProbe.id);
+  record("CT2", "Completing an Inbox task places it on the board's Done and records its commit", completed.committed === 4 && inboxRow.c === parth.col("done").id && inboxRow.d !== null, JSON.stringify(completed));
+  [ok, detail] = await expectError(() => completeTask(A, { taskId: inboxProbe.id }), "conflict");
+  record("CT3", "Completing a done task twice is refused", ok, detail);
+
+  [ok, detail] = await expectError(() => addBoardTask(A, { title: "x", columnId: aarav.col("backlog").id }), "not_found");
+  record("AB1", "Add a card to another user's column", ok, detail);
+  [ok, detail] = await expectError(() => addBoardTask(A, { title: "x", columnId: parth.col("done").id }), "invalid");
+  record("AB2", "Adding straight to Done is refused (no commit without a move)", ok, detail);
+  const tokens = await addBoardTask(A, { title: `tokens #${parth.project.slug} !high +8 ~weekly`, columnId: parth.col("active").id });
+  const tokensRow = await one(db.select().from(s.tasks).where(eq(s.tasks.id, tokens.id)));
+  record("AB3", "Board add reads capture tokens and starts tasks added to Active", tokensRow.projectId === parth.project.id && tokensRow.priority === "high" && tokensRow.weight === 8 && tokensRow.recurrenceRule === "weekly" && tokensRow.startedAt !== null && tokensRow.title === "tokens");
+
+  const colChecks = await Promise.all([
+    expectError(() => renameColumn(B, { columnId: parth.col("backlog").id, name: "Pwned" }), "not_found"),
+    expectError(() => setColumnLimit(B, { columnId: parth.col("active").id, limit: 1 }), "not_found"),
+    expectError(() => addColumn(B, { afterColumnId: parth.col("backlog").id, name: "Pwned", stateType: "active" }), "not_found"),
+    expectError(() => moveColumn(B, { columnId: parth.col("active").id, direction: "left" }), "not_found"),
+    expectError(() => deleteColumn(B, { columnId: parth.col("active").id }), "not_found"),
+  ]);
+  const parthCols = await db.select({ name: s.columns.name, wip: s.columns.wipLimit }).from(s.columns).where(eq(s.columns.boardId, parth.board.id));
+  record("COL1", "Rename, limit, add, move or delete another user's columns", colChecks.every(([pass]) => pass) && parthCols.length === 3 && !parthCols.some((c) => c.name === "Pwned" || c.wip !== null), JSON.stringify(colChecks.map(([, d]) => d)));
+  [ok, detail] = await expectError(() => deleteColumn(A, { columnId: parth.col("done").id }), "invalid");
+  record("COL2", "The Done column cannot be deleted", ok, detail);
+  [ok, detail] = await expectError(() => addColumn(A, { afterColumnId: parth.col("done").id, name: "After", stateType: "active" }), "invalid");
+  record("COL3", "No column goes after Done", ok, detail);
+  const review = await addColumn(A, { afterColumnId: parth.col("active").id, name: "Review", stateType: "review" });
+  await setColumnLimit(A, { columnId: review.id, limit: 2 });
+  await deleteColumn(A, { columnId: review.id });
+  record("COL4", "Own empty column: add, limit and delete", !(await one(db.select({ id: s.columns.id }).from(s.columns).where(eq(s.columns.id, review.id)))));
+  [ok, detail] = await expectError(() => deleteColumn(A, { columnId: parth.col("active").id }), "conflict");
+  record("COL5", "A column with tasks cannot be deleted", ok, detail);
+
+  const priorityBefore = await priorityOf(probe.id);
+  const foreignBulk = await bulkUpdateTasks(B, { taskIds: [probe.id], change: { type: "priority", priority: "critical" } });
+  record("BU1", "Bulk change skips another user's task ids", foreignBulk.changed === 0 && (await priorityOf(probe.id)) === priorityBefore, JSON.stringify(foreignBulk));
+  [ok, detail] = await expectError(() => bulkUpdateTasks(B, { taskIds: [aarav.task.id], change: { type: "move", columnId: parth.col("active").id } }), "not_found");
+  record("BU2", "Bulk move into another user's column is refused", ok, detail);
+  await bulkUpdateTasks(A, { taskIds: [probe.id], change: { type: "delete" } });
+  const foreignRestore = await bulkRestoreTasks(B, { taskIds: [probe.id] });
+  record("BU3", "Bulk restore of another user's deleted tasks does nothing", foreignRestore.restored === 0 && (await snapshot(probe.id)).x !== null, JSON.stringify(foreignRestore));
+  const bulkParse = [
+    bulkUpdateSchema.safeParse({ taskIds: Array.from({ length: 101 }, (_, i) => `t${i}`), change: { type: "delete" } }).success,
+    bulkUpdateSchema.safeParse({ taskIds: ["a"], change: { type: "complete" } }).success,
+    bulkUpdateSchema.safeParse({ taskIds: ["a"], change: { type: "delete" }, workspaceId: "x" }).success,
+  ];
+  record("BU4", "Bulk schema: at most 100 ids, known changes only, no extra keys", bulkParse.every((v) => !v), JSON.stringify(bulkParse));
+  await bulkRestoreTasks(A, { taskIds: [probe.id] });
+  const moved = await bulkUpdateTasks(A, { taskIds: [probe.id, tokens.id], change: { type: "move", columnId: parth.col("done").id } });
+  record("BU5", "Bulk move to Done records each commit", moved.changed === 2 && moved.committed === 2 + 8, JSON.stringify(moved));
+  await db.delete(s.commits).where(inArray(s.commits.taskId, [probe.id, tokens.id, inboxProbe.id]));
+  await db.delete(s.tasks).where(inArray(s.tasks.id, [probe.id, tokens.id, inboxProbe.id]));
 
   // ------------------------------------------------------------ time zone
   const tzParse = [

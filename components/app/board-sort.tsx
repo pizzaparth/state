@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { TICK } from "./primitives";
 
 const iconBtn =
-  "mi-press grid size-8 shrink-0 place-items-center rounded-full text-[#52525B] transition-colors duration-150 hover:bg-black/[0.05] hover:text-[#0A0A0A] focus-visible:outline-2";
+  "mi-press grid size-8 shrink-0 place-items-center rounded-full [@media(pointer:coarse)]:size-11 text-[#52525B] transition-colors duration-150 hover:bg-black/[0.05] hover:text-[#0A0A0A] focus-visible:outline-2";
 
 /**
  * Sort keys for the board, in priority order: each key flips direction, moves earlier or
@@ -42,7 +42,7 @@ export function BoardSortBar({ sort, onChange }: { sort: SortKey[]; onChange: (n
                   type="button"
                   onClick={() => flip(i)}
                   aria-label={`${meta.label}: ${meta[key.dir].toLowerCase()}. Switch to ${meta[nextDir].toLowerCase()}`}
-                  className="mi-press ml-1 inline-flex h-8 items-center gap-1 rounded-full px-2 text-sm text-[#52525B] transition-colors duration-150 hover:bg-black/[0.05] hover:text-[#0A0A0A] focus-visible:outline-2"
+                  className="mi-press ml-1 inline-flex h-8 items-center [@media(pointer:coarse)]:h-11 gap-1 rounded-full px-2 text-sm text-[#52525B] transition-colors duration-150 hover:bg-black/[0.05] hover:text-[#0A0A0A] focus-visible:outline-2"
                 >
                   {key.dir === "asc" ? <ArrowUp aria-hidden="true" className="size-3.5" /> : <ArrowDown aria-hidden="true" className="size-3.5" />}
                   <span className="whitespace-nowrap">{meta[key.dir]}</span>

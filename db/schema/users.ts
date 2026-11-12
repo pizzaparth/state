@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, index, jsonb } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const users = pgTable(
@@ -14,6 +14,8 @@ export const users = pgTable(
     // Throwaway demo visitor: deleted on sign-out, on tab close, or after DEMO_TTL (lib/demo/session.ts)
     isDemo: boolean("is_demo").default(false).notNull(),
     defaultWorkspaceId: text("default_workspace_id"),
+    // Personal settings (lib/preferences.ts parses them with defaults)
+    preferences: jsonb("preferences").$type<Record<string, unknown>>().default({}).notNull(),
     // Set when first-run setup (/platform/start) is finished or skipped
     onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
