@@ -48,6 +48,7 @@ jobs:
       - run: npm audit --audit-level=moderate
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm test
       - run: npm run db:migrate
       - run: npx tsx scripts/seed.ts
       - run: npm run authz:check
