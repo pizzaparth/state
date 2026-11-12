@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import type { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { loadActor, MutationError, type Actor } from "@/lib/authz";
-import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone, completeTask, addColumn, bulkRestoreTasks, bulkUpdateTasks, deleteColumn, moveColumn, renameColumn, setColumnLimit, captureMany, setTaskTags } from "@/lib/mutations";
+import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone, completeTask, addColumn, bulkRestoreTasks, bulkUpdateTasks, deleteColumn, moveColumn, renameColumn, setColumnLimit, captureMany, setTaskTags, restoreCommit, withdrawCommit } from "@/lib/mutations";
 import { consumeThrottle } from "@/lib/security/throttle";
-import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkRestoreSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema, captureManySchema, setTaskTagsSchema } from "@/lib/validation";
+import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkRestoreSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema, captureManySchema, setTaskTagsSchema, commitRefSchema } from "@/lib/validation";
 
 /**
  * Server Actions for the product. Each one re-verifies everything itself: Server Actions
@@ -166,4 +166,12 @@ export async function captureManyAction(input: unknown) {
 
 export async function setTaskTagsAction(input: unknown) {
   return run(setTaskTagsSchema, input, setTaskTags);
+}
+
+export async function withdrawCommitAction(input: unknown) {
+  return run(commitRefSchema, input, withdrawCommit);
+}
+
+export async function restoreCommitAction(input: unknown) {
+  return run(commitRefSchema, input, restoreCommit);
 }

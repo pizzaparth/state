@@ -15,9 +15,9 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../db";
 import * as s from "../db/schema";
-import { getBoard, getCommitDetail, getEligibleDays, getCommits, getInbox, getObjectives, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
+import { getBoard, getCommitDetail, getEligibleDays, getDeletedTasks, getCommitTotals, getCommits, getInbox, getObjectives, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone, completeTask, addColumn, bulkRestoreTasks, bulkUpdateTasks, deleteColumn, moveColumn, renameColumn, setColumnLimit } from "../lib/mutations";
+import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone, completeTask, addColumn, bulkRestoreTasks, bulkUpdateTasks, deleteColumn, moveColumn, renameColumn, setColumnLimit, withdrawCommit, restoreCommit } from "../lib/mutations";
 import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, importSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, bulkUpdateSchema } from "../lib/validation";
 import { buildExport } from "../lib/data/export";
 import { parseImport } from "../lib/data/import";
@@ -127,7 +127,7 @@ async function main() {
   record("R1", "Read another user's personal task by id", (await getTaskDetail(parth.task.id, readable(B))) === null);
   record("R2", "Read another user's commit by id", (await getCommitDetail(parth.commit.id, readable(B))) === null);
   record("R3", "Read another user's personal board by id", (await getBoard(parth.board.id, readable(B))) === null);
-  const xProjects = await getProjects(readable(X));
+  const xProjects = await getProjects(readable(X), "UTC");
   record("R6", "Project list leaks no foreign projects", xProjects.length === 0, `${xProjects.length} rows`);
   const xCommits = await getCommits({ workspaceIds: readable(X) });
   record("R7", "Commit ledger leaks no foreign commits", xCommits.length === 0, `${xCommits.length} rows`);
@@ -247,10 +247,10 @@ async function main() {
   await setProjectArchived(A, { projectId: mine.id, archived: true });
   const archivedCapture = await captureTask(A, { text: "After archive #authz-probe-2" });
   [ok, detail] = await expectError(() => createManualCommit(A, { message: "x", projectId: mine.id, weight: 1 }), "not_found");
-  const listed = (await getProjects([parth.ws.id])).some((p) => p.id === mine.id);
+  const listed = (await getProjects([parth.ws.id], "UTC")).some((p) => p.id === mine.id);
   record("W48", "Archived project leaves lists, #capture and commits", ok && archivedCapture.projectName === null && !listed && (await projectRow(mine.id)).archivedAt !== null, detail);
   await setProjectArchived(A, { projectId: mine.id, archived: false });
-  record("W49", "Unarchive restores the project", (await projectRow(mine.id)).archivedAt === null && (await getProjects([parth.ws.id])).some((p) => p.id === mine.id));
+  record("W49", "Unarchive restores the project", (await projectRow(mine.id)).archivedAt === null && (await getProjects([parth.ws.id], "UTC")).some((p) => p.id === mine.id));
   await db.update(s.tasks).set({ deletedAt: new Date() }).where(inArray(s.tasks.id, [recaptured.id, archivedCapture.id]));
 
   // ------------------------------------------------------------ mass assignment / tampering
@@ -663,6 +663,27 @@ async function main() {
   record("BU5", "Bulk move to Done records each commit", moved.changed === 2 && moved.committed === 2 + 8, JSON.stringify(moved));
   await db.delete(s.commits).where(inArray(s.commits.taskId, [probe.id, tokens.id, inboxProbe.id]));
   await db.delete(s.tasks).where(inArray(s.tasks.id, [probe.id, tokens.id, inboxProbe.id]));
+
+  // ------------------------------------------------------------ withdraw, trash, history totals
+  const parthTaskIdsAll = new Set((await db.select({ id: s.tasks.id }).from(s.tasks).where(eq(s.tasks.workspaceId, parth.ws.id))).map((t) => t.id));
+  const oops = await createManualCommit(A, { message: "oops +8", projectId: null, weight: 8 });
+  [ok, detail] = await expectError(() => withdrawCommit(B, { commitId: oops.id }), "not_found");
+  record("WD1", "Withdraw another user's commit", ok, detail);
+  const taskCommit = await one(db.select({ id: s.commits.id }).from(s.commits).where(and(eq(s.commits.workspaceId, parth.ws.id), eq(s.commits.source, "task_completion"), isNull(s.commits.deletedAt))));
+  [ok, detail] = await expectError(() => withdrawCommit(A, { commitId: taskCommit.id }), "invalid");
+  record("WD2", "Task commits cannot be withdrawn directly", ok, detail);
+  const oldManual = (await db.insert(s.commits).values({ workspaceId: parth.ws.id, userId: parthId, message: "old", executionValue: 2, source: "manual", createdAt: new Date(Date.now() - 25 * 3_600_000) }).returning())[0];
+  [ok, detail] = await expectError(() => withdrawCommit(A, { commitId: oldManual.id }), "invalid");
+  record("WD3", "Manual commits older than 24 hours stay", ok, detail);
+  await withdrawCommit(A, { commitId: oops.id });
+  [ok, detail] = await expectError(() => restoreCommit(B, { commitId: oops.id }), "not_found");
+  record("WD4", "Restore another user's withdrawn commit", ok, detail);
+  const restored = await restoreCommit(A, { commitId: oops.id });
+  record("WD5", "Own withdrawal can be undone", restored.message === "oops +8");
+  await db.delete(s.commits).where(inArray(s.commits.id, [oops.id, oldManual.id]));
+  record("TR1", "Deleted-task list leaks no foreign tasks", (await getDeletedTasks(readable(X))).every((t) => !parthTaskIdsAll.has(t.id)));
+  const xTotals = await getCommitTotals({ workspaceIds: readable(X), userId: parthId });
+  record("TR2", "History totals sum no foreign commits", xTotals.count === 0, JSON.stringify(xTotals));
 
   // ------------------------------------------------------------ time zone
   const tzParse = [

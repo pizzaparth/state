@@ -1,8 +1,9 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { accounts, users } from "@/db/schema";
+import { accounts, users, workspaces } from "@/db/schema";
 import { auth } from "@/lib/auth";
+import { purgeDeleted } from "@/lib/mutations";
 import { provisionAccount } from "@/lib/accounts/provision";
 import { AUTHOR } from "@/lib/site";
 
@@ -51,4 +52,7 @@ async function ensureOwner(code: string): Promise<void> {
 export async function signInOwner(code: string, headers: Headers): Promise<void> {
   await ensureOwner(code);
   await auth.api.signInEmail({ body: { email: OWNER_EMAIL, password: code, rememberMe: false }, headers });
+  // Maintenance on sign-in (no cron or queue): tasks deleted over 30 days ago go for good
+  const [ws] = await db.select({ id: workspaces.id }).from(workspaces).where(and(eq(workspaces.ownerId, OWNER_ID), eq(workspaces.type, "personal"))).limit(1);
+  if (ws) await purgeDeleted(ws.id).catch((error) => console.error("[maintenance] purge", error));
 }

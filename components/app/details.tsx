@@ -11,6 +11,10 @@ import { recurrenceLabel } from "@/lib/recurrence";
 import { TaskTitle } from "./task-title";
 import { CommitEditor } from "./commit-editor";
 import { PanelLink } from "./detail-drawer";
+import { WithdrawCommit } from "./record-actions";
+
+// Hours left in the 24-hour window for withdrawing a manual commit (lib/mutations.ts)
+const withdrawHoursLeft = (createdAt: Date) => 24 - (Date.now() - createdAt.getTime()) / 3_600_000;
 
 type Task = NonNullable<Awaited<ReturnType<typeof getTaskDetail>>>;
 type Commit = NonNullable<Awaited<ReturnType<typeof getCommitDetail>>>;
@@ -298,6 +302,7 @@ export function CommitDetail({ commit, tz, projects }: { commit: Commit; tz: str
           time + value locked · message, project, tags fixable
         </p>
         {projects && <CommitEditor commit={commit} projects={projects} />}
+        {projects && commit.source === "manual" && withdrawHoursLeft(commit.createdAt) > 0 && <WithdrawCommit commitId={commit.id} hoursLeft={withdrawHoursLeft(commit.createdAt)} />}
       </div>
     </div>
   );

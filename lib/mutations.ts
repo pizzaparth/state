@@ -6,7 +6,7 @@ import { keyBetween } from "@/lib/position";
 import { dayIn, nextDueDay } from "@/lib/recurrence";
 import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
 import type { z } from "zod";
-import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema, captureManySchema, setTaskTagsSchema } from "@/lib/validation";
+import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema, captureManySchema, setTaskTagsSchema, commitRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -1389,4 +1389,66 @@ export async function setTaskTags(actor: Actor, input: z.infer<typeof setTaskTag
 /** One audit row per task change (C21): shown as the task's history in its panel. */
 async function auditTask(tx: Tx | typeof db, actor: Actor, workspaceId: string, taskId: string, action: string, metadata?: Record<string, unknown>) {
   await tx.insert(auditEvents).values({ workspaceId, actorId: actor.id, action, targetType: "task", targetId: taskId, metadata: metadata ?? null });
+}
+
+// ------------------------------------------------------------------ withdrawing a manual commit
+
+/** How long after logging a manual commit can still be withdrawn. */
+export const WITHDRAW_WINDOW_HOURS = 24;
+
+/**
+ * Withdraws a mistaken manual commit: a soft delete with an audit record, never an edit of
+ * its time or value. Only the author, only manual commits, only within 24 hours. Task
+ * commits are withdrawn by reopening their task.
+ */
+export async function withdrawCommit(actor: Actor, input: z.infer<typeof commitRefSchema>): Promise<{ message: string; executionValue: number }> {
+  return db.transaction(async (tx) => {
+    const [commit] = await tx
+      .select({ id: commits.id, workspaceId: commits.workspaceId, userId: commits.userId, source: commits.source, createdAt: commits.createdAt, message: commits.message, executionValue: commits.executionValue })
+      .from(commits)
+      .where(and(eq(commits.id, input.commitId), isNull(commits.deletedAt)))
+      .limit(1)
+      .for("update");
+    if (!commit) throw new MutationError("not_found", "That commit no longer exists.");
+    assertWritable(actor, commit.workspaceId);
+    if (commit.userId !== actor.id) throw new MutationError("forbidden", "Only its author can withdraw this commit.");
+    if (commit.source !== "manual") throw new MutationError("invalid", "Task commits are withdrawn by reopening their task.");
+    if (Date.now() - commit.createdAt.getTime() > WITHDRAW_WINDOW_HOURS * 3_600_000) {
+      throw new MutationError("invalid", `Manual commits can be withdrawn for ${WITHDRAW_WINDOW_HOURS} hours. This one is part of your record now.`);
+    }
+    await tx.update(commits).set({ deletedAt: new Date() }).where(eq(commits.id, commit.id));
+    await tx.insert(auditEvents).values({ workspaceId: commit.workspaceId, actorId: actor.id, action: "commit.withdrawn", targetType: "commit", targetId: commit.id });
+    return { message: commit.message, executionValue: commit.executionValue };
+  });
+}
+
+/** Undo for withdrawCommit, within 10 minutes of withdrawing. */
+export async function restoreCommit(actor: Actor, input: z.infer<typeof commitRefSchema>): Promise<{ message: string }> {
+  return db.transaction(async (tx) => {
+    const [commit] = await tx
+      .select({ id: commits.id, workspaceId: commits.workspaceId, userId: commits.userId, source: commits.source, message: commits.message, deletedAt: commits.deletedAt })
+      .from(commits)
+      .where(and(eq(commits.id, input.commitId), isNotNull(commits.deletedAt)))
+      .limit(1)
+      .for("update");
+    if (!commit) throw new MutationError("not_found", "That commit can no longer be restored.");
+    assertWritable(actor, commit.workspaceId);
+    if (commit.userId !== actor.id || commit.source !== "manual" || Date.now() - commit.deletedAt!.getTime() > 10 * 60_000) {
+      throw new MutationError("not_found", "That commit can no longer be restored.");
+    }
+    await tx.update(commits).set({ deletedAt: null }).where(eq(commits.id, commit.id));
+    await tx.insert(auditEvents).values({ workspaceId: commit.workspaceId, actorId: actor.id, action: "commit.restored", targetType: "commit", targetId: commit.id });
+    return { message: commit.message };
+  });
+}
+
+// ------------------------------------------------------------------ maintenance
+
+/** Permanently removes tasks deleted more than 30 days ago (run on owner sign-in). */
+export async function purgeDeleted(workspaceId: string): Promise<number> {
+  const gone = await db
+    .delete(tasks)
+    .where(and(eq(tasks.workspaceId, workspaceId), isNotNull(tasks.deletedAt), sql`${tasks.deletedAt} < now() - interval '30 days'`))
+    .returning({ id: tasks.id });
+  return gone.length;
 }

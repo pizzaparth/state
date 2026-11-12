@@ -9,7 +9,7 @@ export const metadata = { title: "Projects" };
 
 export default async function ProjectsPage() {
   const viewer = await getViewer();
-  const [all, archived] = await Promise.all([getProjects(viewer.workspaceIds), getArchivedProjects(viewer.workspaceIds)]);
+  const [all, archived] = await Promise.all([getProjects(viewer.workspaceIds, viewer.tz), getArchivedProjects(viewer.workspaceIds)]);
   const personal = all.filter((p) => p.workspaceId === viewer.personalWorkspaceId);
 
   return (

@@ -138,8 +138,8 @@ export interface CommitFilters {
   weight?: number;
   /** Message contains (case-insensitive). */
   q?: string;
-  /** Only commits strictly older than this (cursor pagination). */
-  before?: Date;
+  /** Only commits after this one in newest-first order (cursor pagination). */
+  before?: { at: Date; id: string };
 }
 
 const commitFilterWhere = (scope: Scope, opts: CommitFilters): SQL[] => {
@@ -150,7 +150,7 @@ const commitFilterWhere = (scope: Scope, opts: CommitFilters): SQL[] => {
   if (opts.source) where.push(eq(commits.source, opts.source));
   if (opts.weight) where.push(eq(commits.executionValue, opts.weight));
   if (opts.q) where.push(sql`${commits.message} ilike ${likePattern(opts.q)}`);
-  if (opts.before) where.push(lt(commits.createdAt, opts.before));
+  if (opts.before) where.push(sql`(${commits.createdAt}, ${commits.id}) < (${opts.before.at.toISOString()}::timestamptz, ${opts.before.id})`);
   if (opts.tag)
     where.push(sql`exists (select 1 from ${commitTags} join ${tags} on ${tags.id} = ${commitTags.tagId} where ${commitTags.commitId} = ${commits.id} and ${tags.name} = ${opts.tag})`);
   return where;
@@ -710,7 +710,8 @@ export async function getProjectOptions(workspaceId: string, workspaceIds: strin
     .limit(200);
 }
 
-export async function getProjects(workspaceIds: string[]): Promise<ProjectSummary[]> {
+/** Live projects with counts. "7d" and "30d" are the viewer's last 7 and 30 local days, today included. */
+export async function getProjects(workspaceIds: string[], tz: string): Promise<ProjectSummary[]> {
   if (workspaceIds.length === 0) return [];
   const taskCounts = db
     .select({
@@ -725,8 +726,8 @@ export async function getProjects(workspaceIds: string[]): Promise<ProjectSummar
   const commitStats = db
     .select({
       projectId: commits.projectId,
-      c7: sql<number>`count(*) filter (where ${commits.createdAt} >= now() - interval '7 days')::int`.as("c7"),
-      e30: sql<number>`coalesce(sum(${commits.executionValue}) filter (where ${commits.createdAt} >= now() - interval '30 days'), 0)::int`.as("e30"),
+      c7: sql<number>`count(*) filter (where ${commits.createdAt} >= ${localDayStart(tz, 6)})::int`.as("c7"),
+      e30: sql<number>`coalesce(sum(${commits.executionValue}) filter (where ${commits.createdAt} >= ${localDayStart(tz, 29)}), 0)::int`.as("e30"),
       last: sql<Date>`max(${commits.createdAt})`.as("last"),
     })
     .from(commits)
@@ -752,7 +753,8 @@ export async function getProjects(workspaceIds: string[]): Promise<ProjectSummar
     .leftJoin(taskCounts, eq(taskCounts.projectId, projects.id))
     .leftJoin(commitStats, eq(commitStats.projectId, projects.id))
     .where(and(inArray(projects.workspaceId, workspaceIds), isNull(projects.archivedAt)))
-    .orderBy(sql`case ${projects.status} when 'active' then 0 when 'planned' then 1 when 'paused' then 2 else 3 end`, asc(projects.name));
+    .orderBy(sql`case ${projects.status} when 'active' then 0 when 'planned' then 1 when 'paused' then 2 else 3 end`, asc(projects.name))
+    .limit(200);
   return rows.map((r) => ({ ...r, lastCommitAt: r.lastCommitAt ? new Date(r.lastCommitAt) : null }));
 }
 
@@ -819,39 +821,98 @@ export async function getOpenTasks(scope: Scope): Promise<(TaskCard & { columnNa
  * worked out here: the sum of commit execution since it started, in its linked project
  * when it has one, otherwise across its workspace.
  */
-export async function getObjectives(workspaceIds: string[]) {
+export async function getObjectives(workspaceIds: string[], opts: { archived?: boolean } = {}) {
   if (workspaceIds.length === 0) return [];
   const rows = await db
     .select()
     .from(objectives)
-    .where(and(inArray(objectives.workspaceId, workspaceIds), isNull(objectives.archivedAt)))
-    .orderBy(asc(objectives.deadlineAt), asc(objectives.createdAt))
+    .where(and(inArray(objectives.workspaceId, workspaceIds), opts.archived ? isNotNull(objectives.archivedAt) : isNull(objectives.archivedAt)))
+    .orderBy(opts.archived ? desc(objectives.archivedAt) : asc(objectives.deadlineAt), asc(objectives.createdAt))
     .limit(50);
   if (rows.length === 0) return [];
+  const ids = rows.map((o) => o.id);
   const links = await db
     .select({ objectiveId: objectiveProjects.objectiveId, projectId: projects.id, name: projects.name })
     .from(objectiveProjects)
     .innerJoin(projects, eq(projects.id, objectiveProjects.projectId))
-    .where(inArray(objectiveProjects.objectiveId, rows.map((o) => o.id)))
+    .where(inArray(objectiveProjects.objectiveId, ids))
     .limit(500);
+
+  // Execution objectives: every sum in one grouped query (commits since start, in the
+  // linked projects when there are any, otherwise across the workspace)
+  const executionIds = rows.filter((o) => o.measure === "execution").map((o) => o.id);
+  const sums = executionIds.length
+    ? await db
+        .select({ id: objectives.id, total: sql<number>`coalesce(sum(${commits.executionValue}), 0)::int` })
+        .from(objectives)
+        .leftJoin(
+          commits,
+          and(
+            eq(commits.workspaceId, objectives.workspaceId),
+            isNull(commits.deletedAt),
+            gte(commits.createdAt, objectives.startAt),
+            sql`(not exists (select 1 from ${objectiveProjects} op where op.objective_id = ${objectives.id}) or ${commits.projectId} in (select op.project_id from ${objectiveProjects} op where op.objective_id = ${objectives.id}))`
+          )
+        )
+        .where(inArray(objectives.id, executionIds))
+        .groupBy(objectives.id)
+    : [];
+  const sumOf = new Map(sums.map((r) => [r.id, r.total]));
+
   return Promise.all(
     rows.map(async (o) => {
       const linked = links.filter((l) => l.objectiveId === o.id);
-      if (o.measure !== "execution") return { ...o, projectName: linked[0]?.name ?? null };
-      const [{ total }] = await db
-        .select({ total: sql<number>`coalesce(sum(${commits.executionValue}), 0)::int` })
-        .from(commits)
-        .where(
-          and(
-            eq(commits.workspaceId, o.workspaceId),
-            isNull(commits.deletedAt),
-            gte(commits.createdAt, o.startAt),
-            linked.length ? inArray(commits.projectId, linked.map((l) => l.projectId)) : undefined
-          )
-        );
-      return { ...o, currentValue: total, completedAt: total >= o.targetValue ? (o.completedAt ?? new Date()) : null, projectName: linked[0]?.name ?? null };
+      const projectName = linked[0]?.name ?? null;
+      const projectId = linked[0]?.projectId ?? null;
+      if (o.measure !== "execution") return { ...o, projectName, projectId };
+      const total = sumOf.get(o.id) ?? 0;
+      let completedAt = total >= o.targetValue ? o.completedAt : null;
+      if (total >= o.targetValue && !completedAt) completedAt = await settleCompletion(o, linked.map((l) => l.projectId));
+      return { ...o, currentValue: total, completedAt, projectName, projectId };
     })
   );
+}
+
+/**
+ * When an execution objective first reads as reached: the time of the commit whose
+ * running sum crossed the target, stored once so it never moves again.
+ */
+async function settleCompletion(o: { id: string; workspaceId: string; startAt: Date; targetValue: number }, projectIds: string[]): Promise<Date> {
+  const running = db
+    .select({
+      at: commits.createdAt,
+      total: sql<number>`sum(${commits.executionValue}) over (order by ${commits.createdAt}, ${commits.id})`.as("total"),
+    })
+    .from(commits)
+    .where(
+      and(
+        eq(commits.workspaceId, o.workspaceId),
+        isNull(commits.deletedAt),
+        gte(commits.createdAt, o.startAt),
+        projectIds.length ? inArray(commits.projectId, projectIds) : undefined
+      )
+    )
+    .as("running");
+  const [crossing] = await db.select({ at: running.at }).from(running).where(sql`${running.total} >= ${o.targetValue}`).orderBy(asc(running.at)).limit(1);
+  const at = crossing?.at ?? new Date();
+  const [row] = await db
+    .update(objectives)
+    .set({ completedAt: at })
+    .where(and(eq(objectives.id, o.id), isNull(objectives.completedAt)))
+    .returning({ completedAt: objectives.completedAt });
+  return row?.completedAt ?? at;
+}
+
+/** Deleted tasks from the last 30 days, newest first (Settings → Data). */
+export async function getDeletedTasks(workspaceIds: string[], limit = 100) {
+  if (workspaceIds.length === 0) return [];
+  return db
+    .select({ id: tasks.id, title: tasks.title, deletedAt: tasks.deletedAt, projectName: projects.name })
+    .from(tasks)
+    .leftJoin(projects, eq(projects.id, tasks.projectId))
+    .where(and(inArray(tasks.workspaceId, workspaceIds), isNotNull(tasks.deletedAt), sql`${tasks.deletedAt} >= now() - interval '30 days'`))
+    .orderBy(desc(tasks.deletedAt))
+    .limit(limit);
 }
 
 /** Tag names in the viewer's workspaces (filters and suggestions), A–Z. */

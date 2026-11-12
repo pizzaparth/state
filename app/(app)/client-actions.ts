@@ -79,3 +79,5 @@ export const bulkUpdateTasksAction = guard(server.bulkUpdateTasksAction);
 export const bulkRestoreTasksAction = guard(server.bulkRestoreTasksAction);
 export const captureManyAction = guard(server.captureManyAction, false);
 export const setTaskTagsAction = guard(server.setTaskTagsAction);
+export const withdrawCommitAction = guard(server.withdrawCommitAction);
+export const restoreCommitAction = guard(server.restoreCommitAction);

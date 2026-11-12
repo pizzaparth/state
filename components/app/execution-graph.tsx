@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import type { Route } from "next";
+import { useRouter } from "next/navigation";
 import type { DailyExecution } from "@/db/queries";
 import { cn } from "@/lib/utils";
 
@@ -23,8 +26,13 @@ const label = (key: string, opts: Intl.DateTimeFormatOptions) => {
 /**
  * Horizontal execution graph: columns are weeks, rows Monday to Sunday. Hover or focus
  * and use arrow keys to read a day; the dark readout states exactly what it counts.
+ * Each day opens its commits in History (click, or Enter on the focused day). Today has
+ * a black ring. Without `linkDays` (landing page) cells are plain.
  */
-export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
+export function ExecutionGraph({ days, linkDays = true }: { days: DailyExecution[]; linkDays?: boolean }) {
+  const router = useRouter();
+  const today = days.at(-1)?.day;
+  const dayHref = (day: string) => `/platform/history?day=${day}` as Route;
   // Pad so the first column starts on Monday
   const firstWeekday = (new Date(`${days[0].day}T00:00:00Z`).getUTCDay() + 6) % 7;
   const cells: (DailyExecution | null)[] = [...Array(firstWeekday).fill(null), ...days];
@@ -47,6 +55,11 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
   }
 
   const move = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter" && linkDays && active !== null && cells[active]) {
+      event.preventDefault();
+      router.push(dayHref(cells[active]!.day));
+      return;
+    }
     const delta = { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -7, ArrowRight: 7 }[event.key];
     if (delta === undefined) return;
     event.preventDefault();
@@ -89,7 +102,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
             <div
               role="group"
               tabIndex={0}
-              aria-label="Execution graph. Use arrow keys to read a day."
+              aria-label={`Execution graph. Use arrow keys to read a day${linkDays ? ", Enter to open it" : ""}.`}
               onKeyDown={move}
               onFocus={() => setActive((i) => i ?? cells.length - 1)}
               onBlur={() => setActive(null)}
@@ -97,23 +110,21 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
               className="app-field relative grid flex-1 grid-flow-col rounded-[10px] p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A]/70"
               style={{ gridTemplateRows: "repeat(7, auto)", gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))`, gap }}
             >
-              {cells.map((d, i) =>
-                d ? (
-                  <span
-                    key={d.day}
-                    onPointerEnter={() => setActive(i)}
-                    // Active day: a crisp ring in the 3px gap, raised above its neighbours so no
-                    // side is painted over (scaling the cell blurred and clipped the outline)
-                    className={cn(
-                      "relative aspect-square animate-cell-in rounded-[3px]",
-                      active === i && "z-[1] outline outline-2 outline-offset-1 outline-[#0A0A0A]"
-                    )}
-                    style={{ backgroundColor: FILL[level(d.execution)], animationDelay: `${Math.floor(i / 7) * Math.min(14, 420 / weeks)}ms` }}
-                  />
+              {cells.map((d, i) => {
+                if (!d) return <span key={`pad-${i}`} className="aspect-square" />;
+                const className = cn(
+                  "relative block aspect-square animate-cell-in rounded-[3px]",
+                  d.day === today && "outline outline-1 outline-offset-1 outline-[#0A0A0A]",
+                  active === i && "z-[1] outline outline-2 outline-offset-1 outline-[#0A0A0A]"
+                );
+                const style = { backgroundColor: FILL[level(d.execution)], animationDelay: `${Math.floor(i / 7) * Math.min(14, 420 / weeks)}ms` };
+                // Active day: a crisp ring in the 3px gap, raised above its neighbours
+                return linkDays ? (
+                  <Link key={d.day} href={dayHref(d.day)} tabIndex={-1} aria-hidden="true" onPointerEnter={() => setActive(i)} className={className} style={style} />
                 ) : (
-                  <span key={`pad-${i}`} className="aspect-square" />
-                )
-              )}
+                  <span key={d.day} onPointerEnter={() => setActive(i)} className={className} style={style} />
+                );
+              })}
 
               {shown && (
                 <div
@@ -125,9 +136,9 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
                     transform: "translate(-50%, -100%)",
                   }}
                 >
-                  <p className="font-semibold">{label(shown.day, { weekday: "short", day: "numeric", month: "short" })}</p>
-                  <p className="mt-1 tabular-nums text-accent-muted">
-                    {shown.execution} execution, {shown.commits} {shown.commits === 1 ? "commit" : "commits"}
+                  <p className="font-mono tabular-nums">
+                    <span className="font-semibold">{label(shown.day, { weekday: "short", day: "numeric", month: "short" })}</span>
+                    {shown.day === today ? " (today)" : ""} · +{shown.execution} · {shown.commits} {shown.commits === 1 ? "commit" : "commits"}
                   </p>
                 </div>
               )}

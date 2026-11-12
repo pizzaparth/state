@@ -219,6 +219,9 @@ export const editCommitSchema = z.strictObject({
   tags: tagList(COMMIT_TAGS_MAX),
 });
 
+/** Withdraw (and Undo) a mistaken manual commit. */
+export const commitRefSchema = z.strictObject({ commitId: objectId });
+
 /** Task tags (C16): same rules as commit tags. */
 export const setTaskTagsSchema = z.strictObject({ taskId: objectId, tags: tagList(COMMIT_TAGS_MAX) });
 

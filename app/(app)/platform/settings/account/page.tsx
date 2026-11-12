@@ -1,5 +1,6 @@
 import * as React from "react";
-import { getAccount } from "@/db/queries";
+import { getAccount, getDeletedTasks } from "@/db/queries";
+import { RestoreButton } from "@/components/app/record-actions";
 import { getViewer } from "@/lib/viewer";
 import { formatDate } from "@/lib/format";
 import { PageHeader, Panel } from "@/components/app/primitives";
@@ -13,7 +14,7 @@ export const metadata = { title: "Account" };
 
 export default async function AccountSettingsPage() {
   const viewer = await getViewer();
-  const account = await getAccount(viewer.id);
+  const [account, deleted] = await Promise.all([getAccount(viewer.id), getDeletedTasks(viewer.workspaceIds)]);
   return (
     <>
       <PageHeader label="Settings" title="Account" />
@@ -37,6 +38,25 @@ export default async function AccountSettingsPage() {
           </Row>
           <Row label="Import" hint="into your personal workspace">
             <ImportForm />
+          </Row>
+          <Row label="Deleted tasks" hint="kept 30 days, then removed">
+            {deleted.length === 0 ? (
+              <span className="font-normal text-[#71717A]">None</span>
+            ) : (
+              <ul className="space-y-1.5">
+                {deleted.map((t) => (
+                  <li key={t.id} className="flex min-w-0 items-center justify-between gap-3">
+                    <span className="min-w-0">
+                      <span className="block truncate">{t.title}</span>
+                      <span className="block font-mono text-[12px] font-normal text-[#71717A]">
+                        {[t.projectName, t.deletedAt ? `deleted ${formatDate(t.deletedAt, viewer.tz)}` : null].filter(Boolean).join(" · ")}
+                      </span>
+                    </span>
+                    <RestoreButton kind="task" id={t.id} name={t.title} />
+                  </li>
+                ))}
+              </ul>
+            )}
           </Row>
         </dl>
       </Panel>

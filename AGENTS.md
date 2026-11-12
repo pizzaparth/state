@@ -12,6 +12,7 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 - MUST: Automatically generate a commit when a task transitions to a terminal Done state.
 - MUST: Allow manual commit logging for executed work that did not originate from a planned task.
 - MUST: Keep commits immutable in their timestamp and completion integrity; edits are limited to message clarification and project tag reassignments.
+- MAY: Let the author withdraw a mistaken **manual** commit within 24 hours of logging it (soft delete, `commit.withdrawn` audit event, Undo). Time and value are never edited; task commits are withdrawn only by reopening the task.
 - MUST: Support deterministic task weighting: Small = 1, Normal = 2, Major = 4, Milestone = 8.
 - NEVER: Introduce gamification, XP, badges, motivational quotes, or confetti celebrations.
 
