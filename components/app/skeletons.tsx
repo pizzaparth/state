@@ -60,19 +60,26 @@ export function BoardSkeleton({ columns = 3 }: { columns?: number }) {
   return (
     <div role="status" aria-label="Loading board" className="space-y-8">
       <HeaderSkeleton />
-      <div className="grid gap-5 md:grid-flow-col md:auto-cols-[minmax(15rem,1fr)]">
-        {Array.from({ length: columns }, (_, c) => (
-          <div key={c} className="app-panel space-y-3 p-3">
-            <Bar className="mx-1 mb-1 h-3 w-20" />
-            {Array.from({ length: 4 - (c % 2) }, (_, i) => (
-              <div key={i} className="app-card space-y-3 p-3.5">
-                <Bar className="h-3.5 w-3/4" />
-                <Bar className="h-3 w-1/3" />
-                <Bar className="h-3 w-1/2" />
-              </div>
-            ))}
-          </div>
-        ))}
+      <div>
+        {/* Sort bar */}
+        <div className="app-panel mb-5 flex h-14 items-center gap-3 rounded-[20px] px-4">
+          <Bar className="h-3 w-10" />
+          <Bar className="h-3 w-16" />
+        </div>
+        <div className="grid gap-5 md:grid-flow-col md:auto-cols-[minmax(15rem,1fr)]">
+          {Array.from({ length: columns }, (_, c) => (
+            <div key={c} className="app-panel space-y-3 p-3">
+              <Bar className="mx-1 mb-1 h-3 w-20" />
+              {Array.from({ length: 4 - (c % 2) }, (_, i) => (
+                <div key={i} className="app-card space-y-3 p-3.5">
+                  <Bar className="h-3.5 w-3/4" />
+                  <Bar className="h-3 w-1/3" />
+                  <Bar className="h-3 w-1/2" />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
       <span className="sr-only">Loading…</span>
     </div>

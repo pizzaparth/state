@@ -27,6 +27,8 @@ import { Avatar, DISPLAY, DueLabel, PriorityMark, TICK, WeightMark } from "./pri
 import { moveTaskAction, type ActionResult } from "@/app/(app)/actions";
 import type { MoveResult } from "@/lib/mutations";
 import { useNotice } from "./notice";
+import { BoardSortBar } from "./board-sort";
+import { BOARD_SORT_COOKIE, BOARD_SORT_PARAM, formatBoardSort, parseBoardSort, sortCards, type SortKey } from "@/lib/board-sort";
 
 export interface BoardCard {
   id: string;
@@ -36,6 +38,10 @@ export interface BoardCard {
   priority: string;
   weight: number;
   due: DueState | null;
+  /** Epoch ms, for sorting */
+  dueAt: number | null;
+  /** Epoch ms, for sorting */
+  createdAt: number;
   assigneeName: string | null;
   assigneeInitials: string | null;
   tags: string[];
@@ -57,6 +63,10 @@ export type MoveTask = (input: { taskId: string; columnId: string; afterTaskId: 
  *
  * `move` defaults to the real Server Action; the landing page's demo board passes a
  * local one. Without `taskHref`, card titles are plain text.
+ *
+ * With `initialSort`, a sort bar orders every column by those keys (kept in the URL and a
+ * cookie). While sorted, a drag only changes the column; the card lands at the end of the
+ * column's manual order, so switching back to manual keeps the old arrangement.
  */
 export function Kanban({
   columns,
@@ -64,6 +74,7 @@ export function Kanban({
   taskHref,
   showAssignee,
   doneWindowDays,
+  initialSort,
   move = moveTaskAction,
 }: {
   columns: BoardColumn[];
@@ -71,11 +82,42 @@ export function Kanban({
   taskHref?: Record<string, string>;
   showAssignee: boolean;
   doneWindowDays: number;
+  /** Shows the sort bar, starting from these keys (empty = manual). */
+  initialSort?: SortKey[];
   move?: MoveTask;
 }) {
   const [cards, setCards] = React.useState(initial);
   // Fresh server data (after a save or a refresh) replaces the optimistic copy
   React.useEffect(() => setCards(initial), [initial]);
+  const [sort, setSort] = React.useState<SortKey[]>(initialSort ?? []);
+  // Back/forward or a server render with another sort replaces the local one
+  const initialValue = initialSort ? formatBoardSort(initialSort) : null;
+  React.useEffect(() => {
+    if (initialValue !== null) setSort(parseBoardSort(initialValue));
+  }, [initialValue]);
+  const sorted = sort.length > 0;
+  const sortValue = formatBoardSort(sort);
+  const changeSort = (next: SortKey[]) => {
+    setSort(next);
+    const value = formatBoardSort(next);
+    // URL for deep links (no server round trip: the order is computed here), cookie so the
+    // board opens the same way next time
+    const url = new URL(window.location.href);
+    if (next.length > 0) url.searchParams.set(BOARD_SORT_PARAM, value);
+    else url.searchParams.delete(BOARD_SORT_PARAM);
+    window.history.replaceState(window.history.state, "", url);
+    document.cookie = `${BOARD_SORT_COOKIE}=${encodeURIComponent(value)}; path=/; max-age=31536000; samesite=lax`;
+  };
+  const shown = React.useMemo(() => sortCards(cards, sort), [cards, sort]);
+  // Task links carry the live sort, so opening a task keeps the board as it is
+  const hrefFor = (id: string) => {
+    const href = taskHref?.[id];
+    if (!href || !initialSort) return href;
+    const url = new URL(href, "http://board.local");
+    if (sorted) url.searchParams.set(BOARD_SORT_PARAM, sortValue);
+    else url.searchParams.delete(BOARD_SORT_PARAM);
+    return url.pathname + url.search;
+  };
   const [dragging, setDragging] = React.useState<BoardCard | null>(null);
   const [overColumn, setOverColumn] = React.useState<string | null>(null);
   // Card that just reached Done: a brief flash acknowledges the recorded commit
@@ -153,11 +195,19 @@ export function Kanban({
       return;
     }
     let next = cards;
-    if (active.id !== over.id && cards.some((c) => c.id === over.id)) {
+    if (!sorted && active.id !== over.id && cards.some((c) => c.id === over.id)) {
       next = arrayMove(cards, cards.findIndex((c) => c.id === active.id), cards.findIndex((c) => c.id === over.id));
       setCards(next);
     }
     const before = beforeDrag.current;
+    if (sorted) {
+      // Sorted view: only the column can change; append to that column's manual order
+      if (startColumn.current === card.columnId) return setCards(before);
+      next = [...cards.filter((c) => c.id !== card.id), card];
+      setCards(next);
+      void persist(card, startColumn.current, card.columnId, next, before);
+      return;
+    }
     // Nothing changed: same column, same neighbours
     const order = (list: BoardCard[]) => list.filter((c) => c.columnId === card.columnId).map((c) => c.id).join();
     if (startColumn.current === card.columnId && order(next) === order(before)) return;
@@ -179,11 +229,12 @@ export function Kanban({
         setCards(beforeDrag.current);
       }}
     >
+      {initialSort && <BoardSortBar sort={sort} onChange={changeSort} />}
       <div
         className={cn("grid gap-5 overflow-x-auto pb-4 md:grid-flow-col md:auto-cols-[minmax(15rem,1fr)]", dragging && "select-none")}
       >
         {columns.map((column) => {
-          const columnCards = cards.filter((c) => c.columnId === column.id);
+          const columnCards = shown.filter((c) => c.columnId === column.id);
           const isDone = column.id === doneId;
           return (
             <Column key={column.id} column={column} highlighted={overColumn === column.id && dragging?.columnId !== startColumn.current}>
@@ -202,14 +253,14 @@ export function Kanban({
                   </span>
                 </span>
               </div>
-              <SortableContext items={columnCards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+              <SortableContext items={columnCards.map((c) => c.id)} strategy={sorted ? noReorder : verticalListSortingStrategy}>
                 <ul className="flex min-h-24 flex-col gap-3">
                   {columnCards.map((card) => (
                     <SortableCard
                       key={card.id}
                       card={card}
                       flash={flashId === card.id}
-                      href={taskHref?.[card.id]}
+                      href={hrefFor(card.id)}
                       done={isDone}
                       showAssignee={showAssignee}
                       columns={columns}
@@ -239,6 +290,9 @@ export function Kanban({
     </DndContext>
   );
 }
+
+// Sorted columns do not make room under the pointer: the sort decides where a card lands
+const noReorder = () => null;
 
 const sumWeight = (cards: { weight: number }[]) => cards.reduce((sum, c) => sum + c.weight, 0);
 

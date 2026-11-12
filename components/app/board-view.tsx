@@ -2,6 +2,7 @@ import * as React from "react";
 import { getBoard } from "@/db/queries";
 import { dueState, initials } from "@/lib/format";
 import type { Viewer } from "@/lib/viewer";
+import type { SortKey } from "@/lib/board-sort";
 import { EmptyState, Panel } from "./primitives";
 import { Kanban } from "./kanban";
 import { withParam } from "./task-row";
@@ -13,12 +14,15 @@ export async function BoardView({
   params,
   basePath,
   showAssignee,
+  sort,
 }: {
   boardId: string | null;
   viewer: Viewer;
   params: Record<string, string | undefined>;
   basePath: string;
   showAssignee: boolean;
+  /** Starting sort; passing it shows the sort bar. */
+  sort?: SortKey[];
 }) {
   const board = boardId ? await getBoard(boardId, viewer.workspaceIds) : null;
   if (!board) {
@@ -39,6 +43,8 @@ export async function BoardView({
       priority: t.priority,
       weight: t.weight,
       due: t.dueAt ? dueState(t.dueAt, now, viewer.tz) : null,
+      dueAt: t.dueAt?.getTime() ?? null,
+      createdAt: t.createdAt.getTime(),
       assigneeName: t.assigneeName,
       assigneeInitials: t.assigneeName ? initials(t.assigneeName) : null,
       tags: t.tags,
@@ -52,6 +58,7 @@ export async function BoardView({
       taskHref={taskHref}
       showAssignee={showAssignee}
       doneWindowDays={board.doneWindowDays}
+      initialSort={sort}
     />
   );
 }
