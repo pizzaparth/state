@@ -29,7 +29,7 @@ export async function provisionAccount(userId: string): Promise<string> {
 
     const [board] = await tx
       .insert(boards)
-      .values({ workspaceId: workspace.id, name: "Personal", type: "personal" })
+      .values({ workspaceId: workspace.id, name: "Board", type: "personal" })
       .returning({ id: boards.id });
 
     await tx.insert(columns).values(

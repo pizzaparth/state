@@ -120,6 +120,13 @@
       "when": 1794387962568,
       "tag": "0016_owner_and_demo",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794459712788,
+      "tag": "0017_board_name",
+      "breakpoints": true
     }
   ]
 }

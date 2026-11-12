@@ -4,18 +4,18 @@ import { PageHeader } from "@/components/app/primitives";
 import { BoardView } from "@/components/app/board-view";
 import { Drawers, type PageSearchParams } from "@/components/app/drawers";
 
-export const metadata = { title: "Personal board" };
+export const metadata = { title: "Board" };
 
-export default async function PersonalBoardPage({ searchParams }: { searchParams: PageSearchParams }) {
+export default async function BoardPage({ searchParams }: { searchParams: PageSearchParams }) {
   const params = await searchParams;
   const viewer = await getViewer();
   return (
     <>
       <PageHeader
         label="Work"
-        title="Personal"
+        title="Board"
       />
-      <BoardView boardId={viewer.personalBoardId} viewer={viewer} params={params} basePath="/platform/personal" showAssignee={false} />
+      <BoardView boardId={viewer.personalBoardId} viewer={viewer} params={params} basePath="/platform/board" showAssignee={false} />
       <Drawers params={params} viewer={viewer} />
     </>
   );

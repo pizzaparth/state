@@ -62,7 +62,7 @@ async function actionIdOn(path, name, cookie) {
   return null;
 }
 
-async function callAction(id, args, { cookie, origin = ORIGIN, path = "/platform/personal", ip = nextIp() } = {}) {
+async function callAction(id, args, { cookie, origin = ORIGIN, path = "/platform/board", ip = nextIp() } = {}) {
   const headers = { "next-action": id, "content-type": "text/plain;charset=UTF-8", accept: "text/x-component", "x-forwarded-for": ip };
   if (cookie) headers.cookie = cookie;
   if (origin) headers.origin = origin;
@@ -206,9 +206,9 @@ async function checkDemo() {
   const { rows: demoRows } = await db.query("select id, is_demo from users where id = any($1)", [[userA, userB]]);
   record("DM4", "Each demo is its own throwaway account", Boolean(userA) && Boolean(userB) && userA !== userB && demoRows.length === 2 && demoRows.every((r) => r.is_demo), `${userA} ${userB}`);
 
-  const moveId = await actionIdOn("/platform/personal", "moveTaskAction", a.cookie);
+  const moveId = await actionIdOn("/platform/board", "moveTaskAction", a.cookie);
   const captureId = await actionIdOn("/platform/inbox", "captureTaskAction", a.cookie);
-  const commitId = await actionIdOn("/platform/personal", "createCommitAction", a.cookie);
+  const commitId = await actionIdOn("/platform/board", "createCommitAction", a.cookie);
   record("SA0", "Product Server Action ids discovered", Boolean(moveId && captureId && commitId));
   if (!moveId || !captureId || !commitId) return;
 
@@ -273,7 +273,7 @@ function readEnvFile() {
 async function checkSurface() {
   const { cookie } = await startDemo();
   const chunks = new Set();
-  for (const path of ["/", "/login", "/demo", "/platform/today", "/platform/personal", "/platform/inbox", "/platform/settings/account"]) {
+  for (const path of ["/", "/login", "/demo", "/platform/today", "/platform/board", "/platform/inbox", "/platform/settings/account"]) {
     const page = await req(path, { headers: cookie ? { cookie } : {} });
     for (const m of page.text.matchAll(/<script[^>]+src="([^"]+\.js)"/g)) chunks.add(m[1]);
   }

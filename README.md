@@ -54,7 +54,7 @@ How the demo is cleaned up (`lib/demo/session.ts`, `lib/demo/tab.ts`):
 app/
 ├── (marketing)/      Landing, principles, comparisons
 ├── (auth)/           /login (owner code), /demo (starts a demo), session Server Actions
-├── (app)/platform/   Today, Inbox, Activity, History, Metrics, Personal board, Projects, Settings
+├── (app)/platform/   Today, Inbox, Activity, History, Metrics, Board, Projects, Settings
 └── api/              export, import, search, health
 lib/
 ├── auth/             better-auth (sessions only) and the owner account

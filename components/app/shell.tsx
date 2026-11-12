@@ -13,12 +13,12 @@ import {
   FolderKanban,
   History,
   Inbox,
+  LayoutGrid,
   Loader2,
   Menu as MenuIcon,
   Plus,
   Search,
   Settings,
-  User,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -61,7 +61,7 @@ function navSections(data: ShellData): { title?: string; items: NavItem[] }[] {
     {
       title: "Work",
       items: [
-        { name: "Personal", href: "/platform/personal", icon: User, shortcut: "G P" },
+        { name: "Board", href: "/platform/board", icon: LayoutGrid, shortcut: "G B" },
         { name: "Projects", href: "/platform/projects", icon: FolderKanban },
       ],
     },
@@ -95,7 +95,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
       a: "/platform/activity",
       h: "/platform/history",
       m: "/platform/metrics",
-      p: "/platform/personal",
+      b: "/platform/board",
     };
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {

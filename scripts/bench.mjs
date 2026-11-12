@@ -66,7 +66,7 @@ let writes = null;
 // (BENCH_COOKIE="better-auth.session_token=…")
 if (process.env.BENCH_COOKIE) {
   cookie = process.env.BENCH_COOKIE;
-  for (const route of ["/platform/today", "/platform/personal", "/platform/metrics", "/platform/activity", "/platform/inbox"]) rows.push(await bench(route));
+  for (const route of ["/platform/today", "/platform/board", "/platform/metrics", "/platform/activity", "/platform/inbox"]) rows.push(await bench(route));
 
   // Write latency: sequential captures through the real Server Action (stays under the
   // 60-per-minute write budget)

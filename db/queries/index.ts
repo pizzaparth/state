@@ -799,7 +799,7 @@ export async function searchWork(q: string, workspaceIds: string[]): Promise<Sea
       kind: "task" as const,
       title: t.title,
       context: place(t.projectName),
-      href: t.boardId ? `/platform/personal?task=${t.id}` : `/platform/inbox?task=${t.id}`,
+      href: t.boardId ? `/platform/board?task=${t.id}` : `/platform/inbox?task=${t.id}`,
       at: t.createdAt,
       done: t.completedAt !== null,
     })),

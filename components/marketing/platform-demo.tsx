@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Activity, BarChart3, Calendar, FolderKanban, History, Inbox, Plus, Search, Settings, User } from "lucide-react";
+import { Activity, BarChart3, Calendar, FolderKanban, History, Inbox, LayoutGrid, Plus, Search, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AUTHOR } from "@/lib/site";
 import { Sparkline } from "@/components/app/charts";
@@ -51,7 +51,7 @@ const NAV = [
   { name: "Activity", icon: Activity },
   { name: "History", icon: History },
   { section: "Work" },
-  { name: "Personal", icon: User, screen: "board" as Screen },
+  { name: "Board", icon: LayoutGrid, screen: "board" as Screen },
   { name: "Projects", icon: FolderKanban },
 ] as const;
 
@@ -548,7 +548,7 @@ function BoardScreen({
   return (
     <>
       <p className={cn(tick, "text-accent")}>Work</p>
-      <p className="text-[56px] font-semibold leading-[1] tracking-[-0.045em]">Personal</p>
+      <p className="text-[56px] font-semibold leading-[1] tracking-[-0.045em]">Board</p>
       <div data-target="board-grid" className="mt-4 grid grid-cols-3 gap-4">
         {Object.entries(cols).map(([name, cards]) => (
           <div key={name} className={cn(panel, "p-3 transition-colors duration-300", drag && name === "Done" && "border-accent/60 bg-[#FBEFF4]")}>

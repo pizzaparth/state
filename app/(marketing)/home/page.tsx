@@ -245,7 +245,7 @@ export default function LandingPage() {
       <section aria-label="State's app" className="mx-auto w-full max-w-[1200px] px-3 sm:px-5">
         <div className="animate-fade-in [animation-delay:1000ms]">
           <div data-tilt suppressHydrationWarning>
-            <PlatformDemo caption="State's app in use: a task is captured and finished, today's execution rises, then Metrics and the Personal board open, with demo data" />
+            <PlatformDemo caption="State's app in use: a task is captured and finished, today's execution rises, then Metrics and the Board open, with demo data" />
           </div>
         </div>
       </section>
