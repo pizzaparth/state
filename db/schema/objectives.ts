@@ -2,7 +2,6 @@ import { pgTable, text, doublePrecision, timestamp, index, primaryKey } from "dr
 import { workspaces } from "./workspaces";
 import { users } from "./users";
 import { projects } from "./projects";
-import { tasks } from "./tasks";
 
 // Objectives are measurable positions: current / target over a deadline (docs/state_desc.md §24)
 export const objectives = pgTable(
@@ -41,17 +40,5 @@ export const objectiveProjects = pgTable(
   (table) => [
     primaryKey({ columns: [table.objectiveId, table.projectId] }),
     index("objective_projects_project_idx").on(table.projectId),
-  ]
-);
-
-export const objectiveTasks = pgTable(
-  "objective_tasks",
-  {
-    objectiveId: text("objective_id").notNull().references(() => objectives.id, { onDelete: "cascade" }),
-    taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" }),
-  },
-  (table) => [
-    primaryKey({ columns: [table.objectiveId, table.taskId] }),
-    index("objective_tasks_task_idx").on(table.taskId),
   ]
 );

@@ -6,7 +6,6 @@ export * from "./columns";
 export * from "./tasks";
 export * from "./commits";
 export * from "./tags";
-export * from "./metrics";
 export * from "./objectives";
 export * from "./events";
 export * from "./security";

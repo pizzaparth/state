@@ -5,7 +5,6 @@ import {
   columns,
   commitTags,
   commits,
-  notifications,
   objectiveProjects,
   objectives,
   projects,
@@ -1028,10 +1027,6 @@ export async function getTagNames(workspaceIds: string[], limit = 200): Promise<
   if (workspaceIds.length === 0) return [];
   const rows = await db.select({ name: tags.name }).from(tags).where(inArray(tags.workspaceId, workspaceIds)).orderBy(asc(tags.name)).limit(limit);
   return rows.map((r) => r.name);
-}
-
-export async function getNotifications(userId: string, limit = 10) {
-  return db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt)).limit(limit);
 }
 
 export async function getAccount(userId: string) {

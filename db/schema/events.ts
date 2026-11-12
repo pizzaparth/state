@@ -21,21 +21,3 @@ export const auditEvents = pgTable(
     index("audit_events_actor_idx").on(table.actorId),
   ]
 );
-
-export const notifications = pgTable(
-  "notifications",
-  {
-    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-    // "task.assigned" | "task.mentioned" | "organisation.invited" | "task.due_soon" | "task.overdue" | "project.status_changed"
-    type: text("type").notNull(),
-    targetType: text("target_type"),
-    targetId: text("target_id"),
-    metadata: jsonb("metadata"),
-    readAt: timestamp("read_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  },
-  (table) => [
-    index("notifications_user_created_idx").on(table.userId, table.createdAt),
-  ]
-);

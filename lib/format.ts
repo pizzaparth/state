@@ -69,16 +69,3 @@ export function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
 }
-
-/** Provider amount in the currency's minor unit (paise, cents) as money: ₹199, $4.99. */
-export function formatMoney(minor: number, currency: string): string {
-  const format = new Intl.NumberFormat("en-IN", { style: "currency", currency });
-  const digits = format.resolvedOptions().maximumFractionDigits ?? 2;
-  const value = minor / 10 ** digits;
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: Number.isInteger(value) ? 0 : digits,
-    maximumFractionDigits: digits,
-  }).format(value);
-}
