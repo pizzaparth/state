@@ -49,7 +49,7 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 - NEVER: Motivational slogans in the product; punchy is fine, cheerleading is not.
 
 ### Flat Surface Hierarchy
-- MUST: Multi-layer parallax on every page (`components/motion/parallax.tsx`): `ParallaxBackdrop` puts three tiled layers (far dots, mid outlines, near marks) behind the content, moving at different speeds with scroll and pointer; `data-depth` makes headings and hero type drift against the scroll. Transform only; off under reduced motion. Panels are slightly translucent with a blur so the layers read through.
+- MUST: Multi-layer parallax on every page (`components/motion/parallax.tsx`): `ParallaxBackdrop` puts three tiled layers (far dots, mid outlines, near marks) behind the content, moving at different speeds with scroll and pointer; `data-depth` makes headings and hero type drift against the scroll. Transform only; off under reduced motion; only elements near the view are measured each frame. Panels are opaque with no `backdrop-filter` (a blur re-renders on every scroll frame).
 - NEVER: Nest cards inside cards to fake depth; depth comes from the parallax layers.
 - MUST: Use the classes in `styles/product.css`; never hand-roll surface styles:
   - **Page:** `#FFFFFF` body, tables, text rows, ledger rows, graph labels, separators. No surface.

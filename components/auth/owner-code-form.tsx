@@ -5,10 +5,17 @@ import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { Button } from "@/components/ui/button";
 import { signInOwnerAction } from "@/app/(auth)/actions";
+import { isSafeRedirectPath } from "@/lib/auth/redirect";
 import { AuthField } from "./auth-field";
 
+/** Where to go after sign-in: a safe ?next= product path, else Today. */
+function redirectTarget(): string {
+  const next = new URLSearchParams(window.location.search).get("next");
+  return isSafeRedirectPath(next) && next.startsWith("/platform") ? next : "/platform/today";
+}
+
 /** One field: the owner's access code. The session lasts until the browser closes. */
-export function OwnerCodeForm({ redirectTo }: { redirectTo: string }) {
+export function OwnerCodeForm() {
   const router = useRouter();
   const [error, setError] = React.useState<string | null>(null);
   const [pending, startTransition] = React.useTransition();
@@ -37,7 +44,7 @@ export function OwnerCodeForm({ redirectTo }: { redirectTo: string }) {
           try {
             sessionStorage.removeItem("state.demo");
           } catch {}
-          router.replace(redirectTo as Route);
+          router.replace(redirectTarget() as Route);
           router.refresh();
         });
       }}

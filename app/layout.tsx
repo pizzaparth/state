@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { connection } from "next/server";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { archivo } from "@/lib/fonts";
@@ -27,15 +26,11 @@ export const viewport: Viewport = {
   themeColor: "#FFFFFF",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Per-request rendering for every page: the nonce CSP in middleware.ts needs a fresh
-  // nonce on each response, which a prerendered page cannot carry
-  await connection();
-
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${archivo.variable}`}>
       <body className="min-h-screen font-sans bg-white text-[#0A0A0A] antialiased selection:bg-accent selection:text-accent-ink">

@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
-// Static security headers for every response. The CSP is per-request (nonce) and set
-// in middleware.ts.
+// Static security headers for every response. The CSP is set below for prerendered
+// pages and per request (nonce) in middleware.ts for product pages.
 const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -19,13 +19,37 @@ const securityHeaders = [
   { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
 ];
 
+// CSP for prerendered pages (marketing, auth). A static page cannot carry a per-request
+// nonce, so its own inline scripts (Next's flight data) are allowed by 'unsafe-inline'.
+// These pages render no user content. Product pages (/platform) get the nonce CSP from
+// middleware.ts instead.
+const dev = process.env.NODE_ENV !== "production";
+const staticCsp = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self'",
+  `connect-src 'self'${dev ? " ws: wss:" : ""}`,
+  "frame-src 'none'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  ...(process.env.VERCEL ? ["upgrade-insecure-requests"] : []),
+].join("; ");
+
 const nextConfig: NextConfig = {
   // Optional separate output dir so a production build or test run can coexist with
   // a running `next dev` (both otherwise write to .next)
   distDir: process.env.NEXT_DIST_DIR || ".next",
   reactStrictMode: true,
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      // Everything except /platform, which middleware.ts covers with a nonce CSP
+      { source: "/:path((?!platform(?:/|$)).*)", headers: [{ key: "Content-Security-Policy", value: staticCsp }] },
+    ];
   },
   async redirects() {
     // The landing page is served at / (see rewrites) so the root URL carries its search

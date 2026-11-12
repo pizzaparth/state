@@ -1,9 +1,10 @@
 import * as React from "react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { getSession } from "@/lib/auth/session";
-import { getViewer } from "@/lib/viewer";
-import { getInboxCount, getProjects, getTicker } from "@/db/queries";
+import { getViewer, getViewerTicker } from "@/lib/viewer";
+import { getInboxCount, getProjects } from "@/db/queries";
 import { formatDate } from "@/lib/format";
 import { AppShell } from "@/components/app/shell";
 
@@ -15,6 +16,9 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Product pages render per request: the nonce CSP in middleware.ts needs a fresh nonce
+  // on each response. Marketing and auth pages are prerendered (static CSP, next.config.ts).
+  await connection();
   const session = await getSession();
   if (!session) redirect("/login");
 
@@ -22,7 +26,7 @@ export default async function AppLayout({
   const [inboxCount, projects, ticker] = await Promise.all([
     getInboxCount(viewer.personalWorkspaceId),
     getProjects(viewer.workspaceIds),
-    getTicker({ workspaceIds: viewer.workspaceIds, userId: viewer.id }, viewer.tz),
+    getViewerTicker(viewer),
   ]);
 
   return (

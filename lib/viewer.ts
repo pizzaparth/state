@@ -4,6 +4,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { boards, projects, users, workspaces } from "@/db/schema";
 import { getSession } from "@/lib/auth/session";
+import { getTicker } from "@/db/queries";
 
 export interface Viewer {
   id: string;
@@ -25,22 +26,16 @@ export const getViewer = cache(async (): Promise<Viewer> => {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
-  if (!user) redirect("/login");
-
-  const [personal] = await db
-    .select({ id: workspaces.id })
-    .from(workspaces)
-    .where(and(eq(workspaces.ownerId, user.id), eq(workspaces.type, "personal")))
+  // One round trip: the user, their personal workspace and its personal board
+  const [row] = await db
+    .select({ user: users, personalWorkspaceId: workspaces.id, personalBoardId: boards.id })
+    .from(users)
+    .leftJoin(workspaces, and(eq(workspaces.ownerId, users.id), eq(workspaces.type, "personal")))
+    .leftJoin(boards, and(eq(boards.workspaceId, workspaces.id), eq(boards.type, "personal")))
+    .where(eq(users.id, session.user.id))
     .limit(1);
-
-  const [personalBoard] = personal
-    ? await db
-        .select({ id: boards.id })
-        .from(boards)
-        .where(and(eq(boards.workspaceId, personal.id), eq(boards.type, "personal")))
-        .limit(1)
-    : [];
+  if (!row) redirect("/login");
+  const { user, personalWorkspaceId, personalBoardId } = row;
 
   return {
     id: user.id,
@@ -49,11 +44,16 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     tz: user.timezone,
     isDemo: user.isDemo,
     onboardedAt: user.onboardedAt,
-    personalWorkspaceId: personal?.id ?? null,
-    personalBoardId: personalBoard?.id ?? null,
-    workspaceIds: personal ? [personal.id] : [],
+    personalWorkspaceId: personalWorkspaceId ?? null,
+    personalBoardId: personalBoardId ?? null,
+    workspaceIds: personalWorkspaceId ? [personalWorkspaceId] : [],
   };
 });
+
+/** The viewer's ticker, once per request: the app layout and Today both show it. */
+export const getViewerTicker = cache((viewer: Viewer) =>
+  getTicker({ workspaceIds: viewer.workspaceIds, userId: viewer.id }, viewer.tz)
+);
 
 /** Live projects the viewer can capture to (#slug). */
 export async function getCaptureProjects(viewer: Viewer): Promise<{ slug: string; name: string }[]> {

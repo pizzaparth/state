@@ -34,6 +34,10 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24,
     updateAge: 60 * 60,
+    // Signed copy of the session in a cookie, so page renders skip the session lookup.
+    // The session token cookie is still required, sign-out clears both, and getViewer()
+    // still loads the user row, so a deleted demo account is caught on its next request.
+    cookieCache: { enabled: true, maxAge: 60 * 60 },
   },
   // Per-IP limits, stored in Postgres so they hold across serverless instances. The IP
   // comes from x-forwarded-for, which Vercel overwrites at the edge.

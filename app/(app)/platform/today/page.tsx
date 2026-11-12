@@ -1,7 +1,7 @@
 import * as React from "react";
-import { getTicker, getToday, hasCommits } from "@/db/queries";
+import { getToday, hasCommits } from "@/db/queries";
 import { redirect } from "next/navigation";
-import { getCaptureProjects, getViewer } from "@/lib/viewer";
+import { getCaptureProjects, getViewer, getViewerTicker } from "@/lib/viewer";
 import { formatDate } from "@/lib/format";
 import { DISPLAY, PageHeader, Panel, EmptyState, TICK } from "@/components/app/primitives";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,7 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
   const [today, projects, ticker] = await Promise.all([
     getToday(scope, viewer.tz),
     getCaptureProjects(viewer),
-    getTicker(scope, viewer.tz),
+    getViewerTicker(viewer),
   ]);
   const done = today.executionToday;
   // Today against the 7-day average (last 7 local days, today included)

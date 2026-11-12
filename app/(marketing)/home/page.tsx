@@ -37,6 +37,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
+// Prerendered and served from the CDN. The sample figures are dated relative to today,
+// so the page is rebuilt once a day.
+export const revalidate = 86400;
+
 // Black on white, tight grotesk; the accent marks data and one icon tile (about 15%)
 const container = "mx-auto w-full max-w-[1120px] px-5 sm:px-8";
 const heading = "font-semibold tracking-[-0.045em] text-balance";

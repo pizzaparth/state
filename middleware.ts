@@ -1,12 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-// Every product page lives under /platform
-const PROTECTED_PREFIXES = ["/platform"];
-
-function isProtected(pathname: string) {
-  return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-}
+/**
+ * Runs only for product pages (/platform). Marketing and auth pages are prerendered and
+ * served from the CDN with a static CSP (next.config.ts), so they skip middleware and its
+ * function invocation entirely.
+ */
 
 /**
  * Per-request nonce CSP. 'strict-dynamic' lets nonce-bearing scripts load their own
@@ -34,8 +33,8 @@ export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   // Optimistic gate only: checks cookie presence, not validity. Every page, Server Action
-  // and Route Handler under (app) must still verify the session and subscription server-side.
-  if (isProtected(pathname) && !getSessionCookie(request)) {
+  // and Route Handler under (app) must still verify the session server-side.
+  if (!getSessionCookie(request)) {
     const url = new URL("/login", request.url);
     url.searchParams.set("next", pathname + search);
     return NextResponse.redirect(url);
@@ -58,6 +57,6 @@ export function middleware(request: NextRequest) {
 export const config = {
   // better-auth/cookies pulls in jose, which uses Node-only APIs
   runtime: "nodejs",
-  // Every page; API routes return JSON and set their own headers
-  matcher: ["/((?!api/|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"],
+  // Product pages only; every other page carries the static CSP from next.config.ts
+  matcher: ["/platform", "/platform/:path*"],
 };

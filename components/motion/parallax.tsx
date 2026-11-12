@@ -13,10 +13,14 @@ import * as React from "react";
  *   [data-depth]       elements inside the content drift against the scroll by their
  *                      distance from the viewport centre × depth.
  *
- * Reads happen before writes in one animation frame. Reduced motion turns it all off.
+ * Reads happen before writes in one animation frame. Only elements near the view
+ * (IntersectionObserver) are measured and moved; the element list is rebuilt when the
+ * DOM changes, not on every frame. Reduced motion turns it all off.
  */
 
 type Scroller = "window" | string;
+
+const MOVING = "[data-depth], [data-tilt]";
 
 function useParallax(scroller: Scroller, root: React.RefObject<HTMLElement | null>) {
   React.useEffect(() => {
@@ -25,30 +29,38 @@ function useParallax(scroller: Scroller, root: React.RefObject<HTMLElement | nul
     if (!target) return;
     const scrollTop = () => (target === window ? window.scrollY : (target as HTMLElement).scrollTop);
     const viewH = () => (target === window ? window.innerHeight : (target as HTMLElement).clientHeight);
+    const scope: ParentNode = target === window ? document : (target as HTMLElement);
     const finePointer = window.matchMedia("(pointer: fine)").matches;
     let px = 0;
     let py = 0;
     let frame = 0;
+    let scan = 0;
 
-    const update = () => {
+    // Backdrop layers that move (the light tone's stay still); fixed for the page's life
+    const layers = root.current ? Array.from(root.current.querySelectorAll<HTMLElement>("[data-layer]")) : [];
+    const observed = new Set<HTMLElement>();
+    const visible = new Set<HTMLElement>();
+    const busy = () => layers.length > 0 || visible.size > 0;
+
+    const update = (elements: Iterable<HTMLElement>) => {
       frame = 0;
       const top = scrollTop();
       const mid = viewH() / 2;
+      const h = mid * 2;
       // Reads
-      const layers = root.current ? Array.from(root.current.querySelectorAll<HTMLElement>("[data-layer]")) : [];
-      const scope: ParentNode = target === window ? document : (target as HTMLElement);
-      const items = Array.from(scope.querySelectorAll<HTMLElement>("[data-depth]")).map((el) => {
+      const items: { el: HTMLElement; depth: number; offset: number }[] = [];
+      const tilts: { el: HTMLElement; p: number }[] = [];
+      for (const el of elements) {
         const anchor = el.parentElement?.getBoundingClientRect();
-        return { el, depth: Number(el.dataset.depth) || 0, offset: anchor ? anchor.top + anchor.height / 2 - mid : 0 };
-      });
-      // [data-tilt]: 0 while the frame's top is at the bottom of the view, 1 once it has
-      // risen three quarters of the way up
-      const tilts = Array.from(scope.querySelectorAll<HTMLElement>("[data-tilt]")).map((el) => {
-        const anchor = el.parentElement?.getBoundingClientRect();
-        const h = mid * 2;
-        const p = anchor ? Math.min(1, Math.max(0, (h - anchor.top) / (h * 0.75))) : 1;
-        return { el, p };
-      });
+        if (el.dataset.depth !== undefined) {
+          items.push({ el, depth: Number(el.dataset.depth) || 0, offset: anchor ? anchor.top + anchor.height / 2 - mid : 0 });
+        }
+        // [data-tilt]: 0 while the frame's top is at the bottom of the view, 1 once it
+        // has risen three quarters of the way up
+        if (el.dataset.tilt !== undefined) {
+          tilts.push({ el, p: anchor ? Math.min(1, Math.max(0, (h - anchor.top) / (h * 0.75))) : 1 });
+        }
+      }
       // Writes
       for (const { el, p } of tilts) {
         const eased = 1 - Math.pow(1 - p, 3);
@@ -66,7 +78,7 @@ function useParallax(scroller: Scroller, root: React.RefObject<HTMLElement | nul
       }
     };
     const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(update);
+      if (!frame && busy()) frame = requestAnimationFrame(() => update(visible));
     };
     const onPointer = (e: PointerEvent) => {
       px = e.clientX / window.innerWidth - 0.5;
@@ -74,20 +86,55 @@ function useParallax(scroller: Scroller, root: React.RefObject<HTMLElement | nul
       schedule();
     };
 
-    update();
+    // Tracks which moving elements are within a quarter view of the scroller
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const el = entry.target as HTMLElement;
+          if (entry.isIntersecting) visible.add(el);
+          else visible.delete(el);
+        }
+        schedule();
+      },
+      { root: target === window ? null : (target as HTMLElement), rootMargin: "25% 0px" }
+    );
+    // Observe new moving elements, forget removed ones
+    const rescan = () => {
+      scan = 0;
+      const found = new Set(scope.querySelectorAll<HTMLElement>(MOVING));
+      for (const el of observed) {
+        if (found.has(el)) continue;
+        io.unobserve(el);
+        observed.delete(el);
+        visible.delete(el);
+      }
+      for (const el of found) {
+        if (observed.has(el)) continue;
+        io.observe(el);
+        observed.add(el);
+      }
+    };
+
+    rescan();
+    // First pass over everything so nothing jumps before the observer reports
+    update(observed);
     target.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
     if (finePointer) window.addEventListener("pointermove", onPointer, { passive: true });
-    // New content (route changes, streamed sections) may bring new [data-depth] elements
-    const observer = new MutationObserver(schedule);
+    // New content (route changes, streamed sections) may bring new moving elements
+    const observer = new MutationObserver(() => {
+      if (!scan) scan = requestAnimationFrame(rescan);
+    });
     if (target !== window) observer.observe(target as HTMLElement, { childList: true, subtree: true });
     else observer.observe(document.body, { childList: true, subtree: true });
     return () => {
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(scan);
       target.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
       window.removeEventListener("pointermove", onPointer);
       observer.disconnect();
+      io.disconnect();
     };
   }, [scroller, root]);
 }

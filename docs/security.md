@@ -132,7 +132,7 @@ malformed `?task=`/`?commit=` parameters never reach a query. Tried with
 | 5 | Database | Postgres is reached only from the server. All queries are parameterised by Drizzle. No service key reaches the browser (F1). The app is not on Supabase or Firebase, so RLS does not apply; tenant scoping is enforced in the query layer and tested. |
 | 6 | Secrets | `.env` was never committed (history scanned). Known key patterns and the real `.env` values appear in no tracked file, no history and no client chunk. |
 | 7–8 | SQL and command injection | Drizzle parameters only; the raw `sql` fragments interpolate bound values. Strict id regex (M6, S1, S2). No shell execution anywhere. |
-| 9 | XSS | React escaping; no `dangerouslySetInnerHTML` on user data. Nonce CSP with `strict-dynamic` (H1, X1, X2). |
+| 9 | XSS | React escaping; no `dangerouslySetInnerHTML` on user data. Product pages: nonce CSP with `strict-dynamic`. Prerendered marketing and auth pages: static CSP, `script-src 'self' 'unsafe-inline'`; they render no user content (H1, X1, X2). |
 | 10 | CSRF | Better Auth Origin checks (C1, C2), billing and import Origin guard (C3), Server Action Origin/Host check (SA3), SameSite cookies (K1). |
 | 11–13 | Sessions, JWT, OAuth | Opaque random session tokens, server-side revocation (K2), every session revoked on password reset (PR8), 14-day expiry. The reset token is removed from the address bar and history when the page loads. No JWTs. OAuth uses Better Auth's state and PKCE; account linking is pinned to verified emails, no trusted providers and no cross-email linking. |
 | 14–15 | API, mass assignment | Endpoints enumerated (E1); strict schemas (M1–M5, SA4, M2); bounded payloads (64 KB Server Actions, 16 KB billing JSON, list limits). |
@@ -205,7 +205,9 @@ verified after the overrides.
 - **Targeted lockout.** The per-account sign-in throttle lets anyone delay one person's
   sign-ins for up to 15 minutes.
 - **`style-src 'unsafe-inline'`** remains for React style attributes and next/font.
-  Scripts are nonce-only.
+  Scripts are nonce-only on product pages. Prerendered marketing and auth pages cannot
+  carry a nonce, so their CSP allows inline scripts from the page itself; they render
+  no user content.
 - **Volumetric DDoS** is left to the hosting edge.
 - **Not run here:** Semgrep, gitleaks, OSV-Scanner, Trivy, OWASP ZAP and a human
   penetration test. Run them against staging before launch.

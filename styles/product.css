@@ -10,12 +10,10 @@
      .app-overlay  Dialogs, palette, drawers, menus
    ========================================================================== */
 
-/* Panels are slightly see-through so the parallax layers behind (components/motion)
-   read through them as depth */
+/* Opaque, no backdrop-filter: a blurred panel inside the scrolling content is re-blurred
+   on every scroll frame, which made scrolling janky on Safari and low-power GPUs */
 .app-panel {
-  background-color: rgba(245, 245, 245, 0.88);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  background-color: #F5F5F5;
   border: 1px solid var(--app-line);
   border-radius: var(--radius-card);
 }

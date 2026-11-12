@@ -89,8 +89,10 @@ async function checkHeaders() {
     const csp = h.get("content-security-policy") || "";
     const missing = [];
     if (!/frame-ancestors 'none'/.test(csp)) missing.push("CSP frame-ancestors");
-    if (!/script-src[^;]*'nonce-/.test(csp)) missing.push("CSP script nonce");
-    if (/script-src[^;]*'unsafe-inline'(?![^;]*'nonce-)/.test(csp)) missing.push("CSP allows unsafe-inline scripts");
+    // These pages are prerendered, so they cannot carry a nonce: their CSP (next.config.ts)
+    // allows inline scripts but no eval and no other origin. Product pages use the nonce
+    // CSP from middleware.ts.
+    if (!/script-src 'self'(?: 'unsafe-inline')?(?:;|$)/.test(csp)) missing.push("CSP script-src beyond 'self' and inline");
     if (!/object-src 'none'/.test(csp)) missing.push("CSP object-src");
     if (!/base-uri 'self'/.test(csp)) missing.push("CSP base-uri");
     if (h.get("x-frame-options") !== "DENY") missing.push("X-Frame-Options");

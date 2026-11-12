@@ -20,7 +20,7 @@ export default function AuthLayout({
       </header>
 
       <main className="relative z-10 max-w-md mx-auto w-full my-auto py-8">
-        <div className="rounded-[28px] bg-[#F5F5F5]/90 p-6 backdrop-blur-sm sm:p-8">{children}</div>
+        <div className="rounded-[28px] bg-[#F5F5F5] p-6 sm:p-8">{children}</div>
       </main>
 
       <footer className="relative z-10 pb-8 text-center text-xs text-[#71717A]">
