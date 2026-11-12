@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowUpRight, Folder, LayoutGrid, Lock, PenLine, Repeat, SignalHigh, UserRound, Weight } from "lucide-react";
+import { ArrowUpRight, Folder, Lock, PenLine, Repeat, SignalHigh, UserRound, Weight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { getCommitDetail, getTaskDetail } from "@/db/queries";
 import { dueState, formatDateTime, formatDuration } from "@/lib/format";
@@ -144,9 +144,6 @@ export function TaskDetail({ task, tz, now, editable = false }: { task: Task; tz
         <dl>
           <Prop icon={Folder} label="Project">
             {task.projectName ?? <None />}
-          </Prop>
-          <Prop icon={LayoutGrid} label="Board">
-            {task.boardName ?? "Inbox"}
           </Prop>
           <Prop icon={SignalHigh} label="Priority">
             {editable ? <TaskPriority taskId={task.id} priority={task.priority} /> : task.priority === "none" ? <None /> : <PriorityMark priority={task.priority} />}
