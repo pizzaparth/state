@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "dark-cta" | "dark-secondary";
+  variant?: "dark-cta" | "dark-secondary" | "light-cta" | "light-secondary";
   size?: "sm" | "md" | "lg";
   isLoading?: boolean;
   /** Render the single child (e.g. a <Link>) with button styling instead of a <button>. */
@@ -18,8 +18,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variantClasses = {
       "dark-cta": "bg-accent text-accent-ink hover:bg-accent-hover border border-accent font-semibold",
-      "dark-secondary":
-        "bg-[#0B2A48] text-[#FFFFFF] hover:bg-[#123352] border border-white/[0.16] hover:border-accent-line",
+      "dark-secondary": "bg-[#F2F2F2] text-[#0A0A0A] hover:bg-[#E8E8E8] border border-transparent",
+      // Black primary, grey secondary
+      "light-cta": "bg-[#0A0A0A] text-white hover:bg-[#262626] border border-[#0A0A0A] font-semibold",
+      "light-secondary": "bg-[#F2F2F2] text-[#0A0A0A] hover:bg-[#E8E8E8] border border-transparent",
     };
 
     const sizeClasses = {

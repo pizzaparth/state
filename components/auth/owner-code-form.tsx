@@ -54,7 +54,7 @@ export function OwnerCodeForm({ redirectTo }: { redirectTo: string }) {
         error={error ?? undefined}
         onChange={() => setError(null)}
       />
-      <Button type="submit" variant="dark-cta" size="md" className="w-full" isLoading={pending}>
+      <Button type="submit" variant="light-cta" size="md" className="w-full" isLoading={pending}>
         Sign in
       </Button>
     </form>

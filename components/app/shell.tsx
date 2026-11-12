@@ -133,8 +133,8 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
     <NoticeProvider>
       <ShellContext.Provider value={{ openPalette: () => setPaletteOpen(true), openCommit: () => setCommitOpen(true) }}>
         {data.demoUserId && <DemoGuard userId={data.demoUserId} />}
-        <ParallaxBackdrop scroller="#content" />
-        <div className="relative z-10 flex h-[100dvh] w-full overflow-hidden text-[#FFFFFF]">
+        <ParallaxBackdrop scroller="#content" tone="light" />
+        <div className="relative z-10 flex h-[100dvh] w-full overflow-hidden text-[#0A0A0A]">
           <aside className="hidden w-64 shrink-0 p-3 lg:block">
             <div className="app-panel flex h-full flex-col rounded-[28px]">
               <SidebarContent data={data} pathname={pathname} scope="rail" />
@@ -158,11 +158,11 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
                 <button
                   type="button"
                   onClick={() => setPaletteOpen(true)}
-                  className="app-field hidden h-10 items-center gap-2 rounded-[12px] px-3 text-sm text-[#B4BEDB] transition-colors hover:text-[#FFFFFF] sm:flex"
+                  className="app-field hidden h-10 items-center gap-2 rounded-[12px] px-3 text-sm text-[#52525B] transition-colors hover:text-[#0A0A0A] sm:flex"
                 >
                   <Search className="size-3.5" aria-hidden="true" />
                   <span className="w-28 text-left">Search…</span>
-                  <kbd className="rounded-[6px] bg-white/[0.07] px-1.5 py-0.5 font-mono text-[12px]">⌘&nbsp;K</kbd>
+                  <kbd className="rounded-[6px] bg-black/[0.05] px-1.5 py-0.5 font-mono text-[12px]">⌘&nbsp;K</kbd>
                 </button>
                 <button
                   type="button"
@@ -204,10 +204,10 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
         {/* Mobile navigation drawer */}
         <Dialog.Root open={navOpen} onOpenChange={setNavOpen}>
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-50 bg-[#001A33]/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in lg:hidden" />
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in lg:hidden" />
             <Dialog.Content
               aria-describedby={undefined}
-              className="fixed inset-y-3 left-3 z-50 flex data-[state=closed]:animate-nav-out data-[state=open]:animate-nav-in w-[17rem] flex-col overscroll-contain rounded-[28px] bg-[#001A33] border border-white/10 outline-none lg:hidden"
+              className="fixed inset-y-3 left-3 z-50 flex data-[state=closed]:animate-nav-out data-[state=open]:animate-nav-in w-[17rem] flex-col overscroll-contain rounded-[28px] bg-white border border-black/[0.06] outline-none lg:hidden"
             >
               <Dialog.Title className="sr-only">Navigation</Dialog.Title>
               <Dialog.Close aria-label="Close navigation" className="app-btn absolute right-3 top-3 grid size-9 place-items-center rounded-full">
@@ -243,7 +243,7 @@ function TickerStrip({ ticker, dateLabel }: { ticker: ShellData["ticker"]; dateL
         <>
           <CountUp value={String(ticker.last7)} />
           {change !== null && (
-            <span className={cn("ml-1.5", up ? "text-[#FFFFFF]" : "text-[#B4BEDB]")}>
+            <span className={cn("ml-1.5", up ? "text-[#0A0A0A]" : "text-[#52525B]")}>
               {up ? "▲" : "▼"}
               {Math.abs(change)}%
             </span>
@@ -258,14 +258,14 @@ function TickerStrip({ ticker, dateLabel }: { ticker: ShellData["ticker"]; dateL
   ];
   return (
     <dl aria-label="Your execution, last 7 days" className="flex min-w-0 items-center gap-x-5 overflow-hidden font-mono text-[13px] uppercase tabular-nums">
-      <div className="hidden shrink-0 text-[#B4BEDB] sm:block">
+      <div className="hidden shrink-0 text-[#52525B] sm:block">
         <dt className="sr-only">Date</dt>
         <dd>{dateLabel}</dd>
       </div>
       {items.map((item) => (
-        <div key={item.label} title={item.title} className={cn("flex shrink-0 items-baseline gap-2 border-l border-white/[0.1] pl-5 first:border-l-0 first:pl-0 sm:first:border-l sm:first:pl-5", item.className)}>
-          <dt className="text-[11px] tracking-[0.16em] text-[#8E9AC0]">{item.label}</dt>
-          <dd className="font-semibold text-[#FFFFFF]">{item.value}</dd>
+        <div key={item.label} title={item.title} className={cn("flex shrink-0 items-baseline gap-2 border-l border-black/[0.08] pl-5 first:border-l-0 first:pl-0 sm:first:border-l sm:first:pl-5", item.className)}>
+          <dt className="text-[11px] tracking-[0.16em] text-[#71717A]">{item.label}</dt>
+          <dd className="font-semibold text-[#0A0A0A]">{item.value}</dd>
         </div>
       ))}
     </dl>
@@ -278,10 +278,10 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
     <LayoutGroup id={`nav-${scope}`}>
       <div className="px-5 pb-4 pt-5">
         <Link href="/platform/today" className="block rounded-[8px]">
-          <span className="block font-mono text-[11px] uppercase tracking-[0.18em] text-[#8E9AC0]" translate="no">
+          <span className="block font-mono text-[11px] uppercase tracking-[0.18em] text-[#71717A]" translate="no">
             {AUTHOR}
           </span>
-          <span className="block font-display text-2xl font-extrabold uppercase leading-none tracking-[-0.03em] [font-stretch:125%]" translate="no">
+          <span className="block font-sans text-2xl font-semibold leading-none tracking-[-0.04em]" translate="no">
             State
           </span>
         </Link>
@@ -289,7 +289,7 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
       <nav aria-label="Main" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3">
         {navSections(data).map((section, i) => (
           <div key={i}>
-            {section.title && <p className="px-3 pb-1 font-mono text-[11px] uppercase tracking-[0.18em] text-[#8E9AC0]">{section.title}</p>}
+            {section.title && <p className="px-3 pb-1 font-mono text-[11px] uppercase tracking-[0.18em] text-[#71717A]">{section.title}</p>}
             <ul className="space-y-0.5">
               {section.items.map((item) => {
                 const active = isActive(pathname, item.href);
@@ -300,7 +300,7 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
                       <Icon className="size-4 shrink-0" aria-hidden="true" />
                       <span className="min-w-0 flex-1 truncate">{item.name}</span>
                       {item.badge ? (
-                        <span className={cn("font-mono text-[13px] tabular-nums", active ? "text-accent-muted" : "text-[#B4BEDB]")}>{item.badge}</span>
+                        <span className={cn("font-mono text-[13px] tabular-nums", active ? "text-accent-muted" : "text-[#52525B]")}>{item.badge}</span>
                       ) : null}
                     </NavLink>
                   </li>
@@ -310,18 +310,18 @@ function SidebarContent({ data, pathname, scope }: { data: ShellData; pathname: 
           </div>
         ))}
       </nav>
-      <div className="space-y-2 border-t border-white/[0.08] p-3">
+      <div className="space-y-2 border-t border-black/[0.05] p-3">
         <NavLink href="/platform/settings" active={isActive(pathname, "/platform/settings")}>
           <Settings className="size-4" aria-hidden="true" />
           Settings
         </NavLink>
-        <p className="px-3 font-mono text-[11px] leading-snug text-[#8E9AC0]">{BYLINE}</p>
+        <p className="px-3 font-mono text-[11px] leading-snug text-[#71717A]">{BYLINE}</p>
       </div>
     </LayoutGroup>
   );
 }
 
-/** Nav item whose near-white active pill slides between items (shared layout animation). */
+/** Nav item whose black active pill slides between items (shared layout animation). */
 function NavLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
   const router = useRouter();
   // Intent prefetch: fetch the full page on hover/focus so the click renders instantly.
@@ -337,14 +337,14 @@ function NavLink({ href, active, children }: { href: string; active: boolean; ch
       aria-current={active ? "page" : undefined}
       className={cn(
         "mi-nudge mi-press relative flex items-center gap-3 rounded-[12px] px-3 py-2 text-[15px] font-semibold tracking-[-0.01em] transition-colors duration-150",
-        active ? "text-accent-ink" : "text-[#DCE2F2] hover:bg-white/[0.05] hover:text-[#FFFFFF]"
+        active ? "text-accent-ink" : "text-[#27272A] hover:bg-black/[0.03] hover:text-[#0A0A0A]"
       )}
     >
       {active && (
         <motion.span
           layoutId="nav-active"
           aria-hidden="true"
-          className="absolute inset-0 rounded-[12px] bg-accent"
+          className="absolute inset-0 rounded-[12px] bg-[#0A0A0A]"
           transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.8 }}
         />
       )}
@@ -447,14 +447,14 @@ function CommandPalette({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#001A33]/75 backdrop-blur-sm data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content
           aria-describedby={undefined}
           className="app-overlay fixed left-1/2 top-[12vh] z-50 origin-top data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[24px] outline-none"
         >
           <Dialog.Title className="sr-only">Command palette</Dialog.Title>
-          <div className="flex items-center gap-3 border-b border-white/10 px-5">
-            <Search className="size-4 text-[#B4BEDB]" aria-hidden="true" />
+          <div className="flex items-center gap-3 border-b border-black/[0.06] px-5">
+            <Search className="size-4 text-[#52525B]" aria-hidden="true" />
             <input
               autoFocus
               value={query}
@@ -476,16 +476,16 @@ function CommandPalette({
               aria-controls="palette-results"
               aria-activedescendant={results[index] ? `cmd-${index}` : undefined}
               placeholder="Search tasks, commits, commands…"
-              className="h-14 flex-1 bg-transparent text-base text-[#FFFFFF] placeholder:text-[#8E9AC0] focus:outline-none"
+              className="h-14 flex-1 bg-transparent text-base text-[#0A0A0A] placeholder:text-[#71717A] focus:outline-none"
             />
-            {search.loading && <Loader2 className="size-4 animate-spin text-[#8E9AC0]" aria-hidden="true" />}
-            <kbd className="rounded-[6px] bg-white/10 px-1.5 py-0.5 font-mono text-[12px] text-[#B4BEDB]">esc</kbd>
+            {search.loading && <Loader2 className="size-4 animate-spin text-[#71717A]" aria-hidden="true" />}
+            <kbd className="rounded-[6px] bg-black/[0.06] px-1.5 py-0.5 font-mono text-[12px] text-[#52525B]">esc</kbd>
           </div>
           <p role="status" className="sr-only">
             {q.length >= 2 && !search.loading ? `${results.length} results` : ""}
           </p>
           <ul id="palette-results" role="listbox" className="max-h-[50vh] overflow-y-auto overscroll-contain p-2">
-            {results.length === 0 && <li className="px-3 py-6 text-center text-base text-[#B4BEDB]">{search.loading ? "Searching…" : "No matches."}</li>}
+            {results.length === 0 && <li className="px-3 py-6 text-center text-base text-[#52525B]">{search.loading ? "Searching…" : "No matches."}</li>}
             {results.map((c, i) => (
               <li
                 key={`${c.group}-${c.id}`}
@@ -494,14 +494,14 @@ function CommandPalette({
                 aria-selected={i === index}
                 onPointerMove={() => setIndex(i)}
                 onClick={() => run(c)}
-                className={cn("flex cursor-pointer items-center gap-3 rounded-[12px] px-3 py-2.5 text-base", i === index ? "bg-white/10 text-white" : "text-[#DCE2F2]")}
+                className={cn("flex cursor-pointer items-center gap-3 rounded-[12px] px-3 py-2.5 text-base", i === index ? "bg-black/[0.05] text-[#0A0A0A]" : "text-[#27272A]")}
               >
-                <span className="w-16 shrink-0 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#8E9AC0]">{c.group}</span>
+                <span className="w-16 shrink-0 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#71717A]">{c.group}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate">{c.label}</span>
-                  {c.detail && <span className="block truncate text-sm text-[#8E9AC0]">{c.detail}</span>}
+                  {c.detail && <span className="block truncate text-sm text-[#71717A]">{c.detail}</span>}
                 </span>
-                {c.hint && <kbd className="font-mono text-[12px] text-[#8E9AC0]">{c.hint}</kbd>}
+                {c.hint && <kbd className="font-mono text-[12px] text-[#71717A]">{c.hint}</kbd>}
               </li>
             ))}
           </ul>
@@ -513,7 +513,7 @@ function CommandPalette({
 
 // ------------------------------------------------------------------ manual commit
 const selectClass =
-  "app-field h-11 w-full rounded-[14px] bg-[#001A33] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
+  "app-field h-11 w-full rounded-[14px] bg-white px-3 text-base text-[#0A0A0A] focus:border-black/40 focus:outline-none";
 
 function CommitDialog({
   open,
@@ -532,10 +532,10 @@ function CommitDialog({
   return (
     <Dialog.Root open={open} onOpenChange={(o) => (setError(null), setWeight(2), onOpenChange(o))}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#001A33]/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
-        <Dialog.Content className="fixed left-1/2 top-[14vh] z-50 origin-top data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 overscroll-contain rounded-[28px] bg-[#001A33] p-6 border border-white/10 outline-none">
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
+        <Dialog.Content className="fixed left-1/2 top-[14vh] z-50 origin-top data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 overscroll-contain rounded-[28px] bg-white p-6 border border-black/[0.06] outline-none">
           <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">Log work</Dialog.Title>
-          <Dialog.Description className="mt-1 text-base text-[#B4BEDB]">
+          <Dialog.Description className="mt-1 text-base text-[#52525B]">
             Done something unplanned? Log it.
           </Dialog.Description>
           <form
@@ -565,7 +565,7 @@ function CommitDialog({
             }}
           >
             <div className="space-y-1.5">
-              <label htmlFor="commit-message" className="text-sm font-medium text-[#B4BEDB]">
+              <label htmlFor="commit-message" className="text-sm font-medium text-[#52525B]">
                 What did you do?
               </label>
               <textarea
@@ -582,14 +582,14 @@ function CommitDialog({
                 className="app-input w-full resize-none rounded-[16px] px-4 py-3 text-base max-md:text-base"
               />
               {error && (
-                <p id="commit-message-error" className="text-sm text-[#F0A39B]">
+                <p id="commit-message-error" className="text-sm text-[#B42318]">
                   {error}
                 </p>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label htmlFor="commit-project" className="text-sm font-medium text-[#B4BEDB]">
+                <label htmlFor="commit-project" className="text-sm font-medium text-[#52525B]">
                   Project
                 </label>
                 <select id="commit-project" name="project" className={selectClass} defaultValue="">
@@ -602,7 +602,7 @@ function CommitDialog({
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="commit-weight" className="text-sm font-medium text-[#B4BEDB]">
+                <label htmlFor="commit-weight" className="text-sm font-medium text-[#52525B]">
                   Weight
                 </label>
                 <select
@@ -621,11 +621,11 @@ function CommitDialog({
                 </select>
               </div>
             </div>
-            <p id="commit-weight-hint" className="-mt-1 text-sm leading-relaxed text-[#B4BEDB]">
+            <p id="commit-weight-hint" className="-mt-1 text-sm leading-relaxed text-[#52525B]">
               {weightHint(weight)}
             </p>
             <div className="flex items-center justify-between gap-3 pt-2">
-              <p className="text-sm text-[#B4BEDB]">
+              <p className="text-sm text-[#52525B]">
                 <kbd className="font-mono">⌘&nbsp;Enter</kbd> to commit
               </p>
               <div className="flex gap-2">

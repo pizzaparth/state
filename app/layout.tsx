@@ -23,8 +23,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Every surface is navy (#001A33)
-  themeColor: "#001A33",
+  // Every surface is white
+  themeColor: "#FFFFFF",
 };
 
 export default async function RootLayout({
@@ -38,7 +38,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${archivo.variable}`}>
-      <body className="min-h-screen font-sans bg-[#001A33] text-[#FFFFFF] antialiased selection:bg-accent selection:text-accent-ink">
+      <body className="min-h-screen font-sans bg-white text-[#0A0A0A] antialiased selection:bg-accent selection:text-accent-ink">
         {children}
       </body>
     </html>

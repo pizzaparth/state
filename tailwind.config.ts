@@ -65,8 +65,10 @@ const config: Config = {
       // text on a pink fill is white (4.6:1).
       textColor: {
         accent: {
-          DEFAULT: "#FF5C99",
-          hover: "#FF7AAD",
+          DEFAULT: "#C21F63",
+          hover: "#A51A54",
+          // Accent as small text on the white marketing pages (5.7:1 on white, 5.2:1 on #F5F5F5)
+          deep: "#C21F63",
           ink: "#FFFFFF",
           muted: "#FFFFFF",
         },

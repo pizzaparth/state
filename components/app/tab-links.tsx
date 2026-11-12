@@ -35,14 +35,14 @@ export function TabLinks({
             className={cn(
               "mi-press relative shrink-0 font-medium transition-colors duration-150",
               size === "md" ? "rounded-[10px] px-4 py-2 text-base" : "rounded-[9px] px-3 py-1.5 text-sm",
-              item.active ? "font-semibold text-accent-ink" : "text-[#B4BEDB] hover:text-[#FFFFFF]"
+              item.active ? "font-semibold text-accent-ink" : "text-[#52525B] hover:text-[#0A0A0A]"
             )}
           >
             {item.active && (
               <motion.span
                 layoutId="tab-active"
                 aria-hidden="true"
-                className="absolute inset-0 rounded-[inherit] bg-accent"
+                className="absolute inset-0 rounded-[inherit] bg-[#0A0A0A]"
                 transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.8 }}
               />
             )}

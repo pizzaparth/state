@@ -41,26 +41,26 @@ export default function PrinciplesPage() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto px-6 pt-40 pb-20 md:pb-28 space-y-16">
+    <div className="max-w-4xl mx-auto px-6 pt-20 pb-20 md:pb-28 space-y-16">
       <div className="space-y-4">
-        <span className="text-sm font-mono uppercase tracking-widest text-accent">
+        <span className="text-sm font-mono uppercase tracking-widest text-accent-deep">
           Manifesto
         </span>
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[#FFFFFF] uppercase">
+        <h1 className="text-4xl md:text-6xl font-semibold tracking-[-0.045em] text-[#0A0A0A]">
           Product Principles
         </h1>
-        <p className="text-[#B4BEDB] text-base md:text-base leading-relaxed">
+        <p className="text-[#52525B] text-base md:text-base leading-relaxed">
           State is a personal hobby project by Parth Pancholi for measuring execution. These principles guide its architecture and design.
         </p>
       </div>
 
-      <div className="divide-y divide-white/[0.1] border-y border-white/[0.1]">
+      <div className="divide-y divide-black/[0.08] border-y border-black/[0.08]">
         {principles.map((p) => (
           <div key={p.number} className="mi-row grid grid-cols-1 items-start gap-4 px-2 py-8 md:grid-cols-4">
-            <span className="font-mono text-base font-semibold text-accent">{p.number}</span>
+            <span className="font-mono text-base font-semibold text-accent-deep">{p.number}</span>
             <div className="md:col-span-3 space-y-2">
-              <h2 className="text-lg font-semibold text-[#FFFFFF]">{p.title}</h2>
-              <p className="text-base text-[#B4BEDB] leading-relaxed">{p.desc}</p>
+              <h2 className="text-lg font-semibold text-[#0A0A0A]">{p.title}</h2>
+              <p className="text-base text-[#52525B] leading-relaxed">{p.desc}</p>
             </div>
           </div>
         ))}

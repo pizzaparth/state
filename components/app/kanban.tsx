@@ -189,14 +189,14 @@ export function Kanban({
             <Column key={column.id} column={column} highlighted={overColumn === column.id && dragging?.columnId !== startColumn.current}>
               {/* Count and Σ weight: what the column holds, in execution */}
               <div className="mb-3 flex items-baseline justify-between gap-3 px-1">
-                <h2 className={cn(DISPLAY, "text-lg leading-none text-[#FFFFFF]")}>{column.name}</h2>
+                <h2 className={cn(DISPLAY, "text-lg leading-none text-[#0A0A0A]")}>{column.name}</h2>
                 <span
-                  className="font-mono text-[13px] tabular-nums text-[#B4BEDB]"
+                  className="font-mono text-[13px] tabular-nums text-[#52525B]"
                   title={isDone ? `${columnCards.length} done in ${doneWindowDays} days, ${sumWeight(columnCards)} execution` : `${columnCards.length} tasks, ${sumWeight(columnCards)} execution queued`}
                 >
                   {columnCards.length}
-                  {isDone && <span className="text-[#8E9AC0]">/{doneWindowDays}d</span>}
-                  <span className="ml-2 font-semibold text-[#FFFFFF]">
+                  {isDone && <span className="text-[#71717A]">/{doneWindowDays}d</span>}
+                  <span className="ml-2 font-semibold text-[#0A0A0A]">
                     {isDone ? "+" : "Σ"}
                     {sumWeight(columnCards)}
                   </span>
@@ -217,7 +217,7 @@ export function Kanban({
                     />
                   ))}
                   {columnCards.length === 0 && (
-                    <li className="rounded-[14px] border border-dashed border-white/10 px-3 py-6 text-center text-sm text-[#B4BEDB]">
+                    <li className="rounded-[14px] border border-dashed border-black/[0.06] px-3 py-6 text-center text-sm text-[#52525B]">
                       drop here
                     </li>
                   )}
@@ -250,7 +250,7 @@ function Column({ column, highlighted, children }: { column: BoardColumn; highli
       aria-label={column.name}
       className={cn(
         "rounded-[24px] p-3 transition-[box-shadow,background-color] duration-150",
-        highlighted ? "app-field bg-[#001A33]" : "app-panel"
+        highlighted ? "app-field bg-white" : "app-panel"
       )}
     >
       {children}
@@ -290,20 +290,20 @@ function SortableCard({
       <Menu.Root>
         <Menu.Trigger
           aria-label={`Move “${card.title}” to another column`}
-          className="absolute right-2 top-2 grid size-7 place-items-center rounded-full text-[#B4BEDB] transition-colors hover:bg-white/[0.06] hover:text-[#FFFFFF] data-[state=open]:bg-white/[0.06]"
+          className="absolute right-2 top-2 grid size-7 place-items-center rounded-full text-[#52525B] transition-colors hover:bg-black/[0.05] hover:text-[#0A0A0A] data-[state=open]:bg-black/[0.05]"
         >
           <MoreHorizontal className="size-4" aria-hidden="true" />
         </Menu.Trigger>
         <Menu.Portal>
           <Menu.Content align="end" sideOffset={6} className="app-card z-50 origin-[var(--radix-dropdown-menu-content-transform-origin)] data-[state=closed]:animate-menu-out data-[state=open]:animate-menu-in min-w-44 rounded-[16px] p-1.5 text-base">
-            <Menu.Label className="px-3 pb-1 pt-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#B4BEDB]">Move to…</Menu.Label>
+            <Menu.Label className="px-3 pb-1 pt-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#52525B]">Move to…</Menu.Label>
             {columns
               .filter((c) => c.id !== card.columnId)
               .map((c) => (
                 <Menu.Item
                   key={c.id}
                   onSelect={() => onMove(c.id)}
-                  className="cursor-pointer rounded-[10px] px-3 py-2 text-[#FFFFFF] outline-none data-[highlighted]:bg-white/[0.06]"
+                  className="cursor-pointer rounded-[10px] px-3 py-2 text-[#0A0A0A] outline-none data-[highlighted]:bg-black/[0.05]"
                 >
                   {c.name}
                 </Menu.Item>
@@ -331,7 +331,7 @@ function CardFace({
   flash?: boolean;
 }) {
   const title = (
-    <span className={cn("block pr-8 text-base font-medium leading-snug", done ? "text-[#B4BEDB] line-through decoration-white/30" : "text-[#FFFFFF]")}>
+    <span className={cn("block pr-8 text-base font-medium leading-snug", done ? "text-[#52525B] line-through decoration-black/30" : "text-[#0A0A0A]")}>
       {card.title}
     </span>
   );
@@ -339,7 +339,7 @@ function CardFace({
     <div
       className={cn(
         "relative rounded-[16px] p-3.5",
-        lifted ? "app-card rotate-[1.5deg] scale-[1.04] cursor-grabbing border-accent bg-[#0B2A48]" : "app-card"
+        lifted ? "app-card rotate-[1.5deg] scale-[1.04] cursor-grabbing border-accent bg-white" : "app-card"
       )}
     >
       {flash && <span aria-hidden="true" className="pointer-events-none absolute inset-0 animate-flash rounded-[16px] bg-accent/25" />}
@@ -350,7 +350,7 @@ function CardFace({
       ) : (
         title
       )}
-      {card.projectName && <p className={cn(TICK, "mt-1.5 truncate text-[11px] text-[#8E9AC0]")}>{card.projectName}</p>}
+      {card.projectName && <p className={cn(TICK, "mt-1.5 truncate text-[11px] text-[#71717A]")}>{card.projectName}</p>}
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
         {card.due && !done && <DueLabel due={card.due} />}
         <PriorityMark priority={card.priority} />

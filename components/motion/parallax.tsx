@@ -112,25 +112,50 @@ const NEAR = svg(
   440
 );
 
-const LAYERS = [
-  { depth: 0.08, tile: 28, image: FAR },
-  { depth: 0.25, tile: 640, image: MID },
-  { depth: 0.5, tile: 440, image: NEAR },
-] as const;
+// Light tone for the white marketing pages: the same three layers in faint black, with a
+// few accent marks, so the page stays clean
+const FAR_LIGHT = svg(`<circle cx='2' cy='2' r='1.1' fill='rgba(0,0,0,0.12)'/>`, 28);
+const MID_LIGHT = svg(
+  `<circle cx='140' cy='160' r='90' fill='none' stroke='rgba(0,0,0,0.08)' stroke-width='1.5'/>` +
+    `<rect x='430' y='380' width='120' height='120' rx='14' fill='none' stroke='rgba(0,0,0,0.08)' stroke-width='1.5' transform='rotate(12 490 440)'/>` +
+    `<circle cx='560' cy='120' r='36' fill='none' stroke='rgba(217, 43, 116,0.18)' stroke-width='1.5'/>`,
+  720
+);
+const NEAR_LIGHT = svg(
+  `<path d='M60 52v16M52 60h16' stroke='rgba(0,0,0,0.2)' stroke-width='1.5'/>` +
+    `<rect x='300' y='210' width='6' height='6' fill='rgba(217, 43, 116,0.55)'/>` +
+    `<path d='M420 380v12M414 386h12' stroke='rgba(217, 43, 116,0.45)' stroke-width='1.5'/>`,
+  520
+);
+
+const LAYERS = {
+  dark: [
+    { depth: 0.08, tile: 28, image: FAR },
+    { depth: 0.25, tile: 640, image: MID },
+    { depth: 0.5, tile: 440, image: NEAR },
+  ],
+  light: [
+    { depth: 0.08, tile: 32, image: FAR_LIGHT },
+    { depth: 0.25, tile: 880, image: MID_LIGHT },
+    { depth: 0.5, tile: 620, image: NEAR_LIGHT },
+  ],
+} as const;
 
 /** Three fixed parallax layers behind a page, plus the controller for [data-depth]. */
-export function ParallaxBackdrop({ scroller = "window" }: { scroller?: Scroller }) {
+export function ParallaxBackdrop({ scroller = "window", tone = "dark" }: { scroller?: Scroller; tone?: "dark" | "light" }) {
   const root = React.useRef<HTMLDivElement>(null);
   useParallax(scroller, root);
+  // The light tone's layers stay still behind the page; only [data-depth] content drifts
+  const still = tone === "light";
   return (
     <div ref={root} aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      {LAYERS.map((l) => (
+      {LAYERS[tone].map((l) => (
         <div
           key={l.depth}
-          data-layer={l.depth}
+          data-layer={still ? undefined : l.depth}
           data-tile={l.tile}
-          className="absolute -inset-x-16 top-0 will-change-transform"
-          style={{ height: `calc(100% + ${l.tile * 2}px)`, top: `-${l.tile}px`, backgroundImage: l.image, backgroundRepeat: "repeat" }}
+          className={still ? "absolute inset-0" : "absolute -inset-x-16 top-0 will-change-transform"}
+          style={still ? { backgroundImage: l.image, backgroundRepeat: "repeat" } : { height: `calc(100% + ${l.tile * 2}px)`, top: `-${l.tile}px`, backgroundImage: l.image, backgroundRepeat: "repeat" }}
         />
       ))}
     </div>

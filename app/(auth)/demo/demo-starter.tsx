@@ -33,10 +33,10 @@ export function DemoStarter() {
 
   return (
     <div className="space-y-3">
-      <Button type="button" variant="dark-cta" size="md" className="w-full" isLoading={pending || !error} onClick={start}>
+      <Button type="button" variant="light-cta" size="md" className="w-full" isLoading={pending || !error} onClick={start}>
         {pending || !error ? "Preparing demo…" : "Try again"}
       </Button>
-      <p aria-live="polite" className="min-h-5 text-sm text-[#E5A3A3]">
+      <p aria-live="polite" className="min-h-5 text-sm text-[#B42318]">
         {error}
       </p>
     </div>

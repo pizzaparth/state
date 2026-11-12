@@ -5,7 +5,7 @@ import type { DailyExecution } from "@/db/queries";
 import { cn } from "@/lib/utils";
 
 // Lightness ramp from the card layer to the accent: readable without colour vision
-const FILL = ["#0B2A48", "#55306E", "#8C347C", "#C53985", "#D92B74"] as const;
+const FILL = ["#EBEBEB", "#F5C6D9", "#EC94B8", "#E25F96", "#D92B74"] as const;
 
 function level(execution: number): 0 | 1 | 2 | 3 | 4 {
   if (execution === 0) return 0;
@@ -69,7 +69,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
           className="relative pl-8 pt-5"
           style={{ minWidth: `calc(${weeks} * 0.8rem + 2rem)`, maxWidth: `calc(${weeks} * 2rem + 2rem)` }}
         >
-          <div aria-hidden="true" className="absolute left-8 right-0 top-0 h-4 text-[12px] text-[#B4BEDB]">
+          <div aria-hidden="true" className="absolute left-8 right-0 top-0 h-4 text-[12px] text-[#52525B]">
             {months.map((m) => (
               <span key={`${m.week}-${m.text}`} className="absolute" style={{ left: `${(m.week / weeks) * 100}%` }}>
                 {m.text}
@@ -78,7 +78,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
           </div>
 
           <div className="flex gap-2">
-            <div aria-hidden="true" className="-ml-8 grid w-6 py-2 text-[12px] leading-none text-[#B4BEDB]" style={{ gridTemplateRows: "repeat(7, 1fr)", rowGap: gap }}>
+            <div aria-hidden="true" className="-ml-8 grid w-6 py-2 text-[12px] leading-none text-[#52525B]" style={{ gridTemplateRows: "repeat(7, 1fr)", rowGap: gap }}>
               {["Mon", "", "Wed", "", "Fri", "", ""].map((d, i) => (
                 <span key={i} className="flex items-center">
                   {d}
@@ -94,7 +94,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
               onFocus={() => setActive((i) => i ?? cells.length - 1)}
               onBlur={() => setActive(null)}
               onPointerLeave={() => setActive(null)}
-              className="app-field relative grid flex-1 grid-flow-col rounded-[10px] p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFFFFF]/70"
+              className="app-field relative grid flex-1 grid-flow-col rounded-[10px] p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A0A0A]/70"
               style={{ gridTemplateRows: "repeat(7, auto)", gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))`, gap }}
             >
               {cells.map((d, i) =>
@@ -106,7 +106,7 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
                     // side is painted over (scaling the cell blurred and clipped the outline)
                     className={cn(
                       "relative aspect-square animate-cell-in rounded-[3px]",
-                      active === i && "z-[1] outline outline-2 outline-offset-1 outline-[#FFFFFF]"
+                      active === i && "z-[1] outline outline-2 outline-offset-1 outline-[#0A0A0A]"
                     )}
                     style={{ backgroundColor: FILL[level(d.execution)], animationDelay: `${Math.floor(i / 7) * Math.min(14, 420 / weeks)}ms` }}
                   />
@@ -137,17 +137,17 @@ export function ExecutionGraph({ days }: { days: DailyExecution[] }) {
       </div>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm">
-        <p aria-live="polite" className="tabular-nums text-[#B4BEDB]">
+        <p aria-live="polite" className="tabular-nums text-[#52525B]">
           {shown ? (
             <>
-              <span className="font-semibold text-[#FFFFFF]">{label(shown.day, { weekday: "long", day: "numeric", month: "long" })}</span>
+              <span className="font-semibold text-[#0A0A0A]">{label(shown.day, { weekday: "long", day: "numeric", month: "long" })}</span>
               {`: ${shown.commits} ${shown.commits === 1 ? "commit" : "commits"}, ${shown.tasks} done, ${shown.execution} execution, ${shown.projects} ${shown.projects === 1 ? "project" : "projects"}`}
             </>
           ) : (
             "Hover a day · or ← → keys"
           )}
         </p>
-        <span className="flex items-center gap-1.5 text-[#B4BEDB]" aria-hidden="true">
+        <span className="flex items-center gap-1.5 text-[#52525B]" aria-hidden="true">
           0
           {FILL.map((f) => (
             <span key={f} className="size-2.5 rounded-[2px]" style={{ backgroundColor: f }} />

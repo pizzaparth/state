@@ -1,7 +1,7 @@
 import * as React from "react";
 
 export const inputClasses =
-  "w-full h-11 px-4 text-base bg-[#001A33] text-[#FFFFFF] rounded-input border border-white/[0.16] focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-[#8E9AC0] transition-[border-color,box-shadow] touch-manipulation aria-[invalid=true]:border-[#E5A3A3]/60";
+  "w-full h-11 px-4 text-base bg-white text-[#0A0A0A] rounded-input border border-black/[0.08] focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-[#71717A] transition-[border-color,box-shadow] touch-manipulation aria-[invalid=true]:border-[#B42318]/60";
 
 /** Labelled input with its inline error, shared by the auth forms. */
 export const AuthField = React.forwardRef<
@@ -11,7 +11,7 @@ export const AuthField = React.forwardRef<
   return (
     <div className="space-y-1">
       <div className="flex items-baseline justify-between gap-3">
-        <label htmlFor={name} className="block text-sm font-medium text-[#B4BEDB]">
+        <label htmlFor={name} className="block text-sm font-medium text-[#52525B]">
           {label}
         </label>
         {aside}
@@ -26,7 +26,7 @@ export const AuthField = React.forwardRef<
         {...props}
       />
       {error && (
-        <p id={`${name}-error`} aria-live="polite" className="text-sm text-[#E5A3A3]">
+        <p id={`${name}-error`} aria-live="polite" className="text-sm text-[#B42318]">
           {error}
         </p>
       )}

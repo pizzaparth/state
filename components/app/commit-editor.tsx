@@ -8,7 +8,7 @@ import { useNotice } from "./notice";
 
 type FieldName = "message" | "projectId" | "tags";
 
-const selectClass = "app-field h-11 w-full rounded-[14px] bg-[#001A33] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
+const selectClass = "app-field h-11 w-full rounded-[14px] bg-white px-3 text-base text-[#0A0A0A] focus:border-black/40 focus:outline-none";
 
 const splitTags = (text: string) =>
   text
@@ -73,7 +73,7 @@ export function CommitEditor({
 
   const fieldError = (field: FieldName) =>
     errors[field] && (
-      <p id={`commit-${field}-error`} className="text-sm text-[#F0A39B]">
+      <p id={`commit-${field}-error`} className="text-sm text-[#B42318]">
         {errors[field]}
       </p>
     );
@@ -83,7 +83,7 @@ export function CommitEditor({
       ref={formRef}
       data-drawer-escape
       noValidate
-      className="mt-6 space-y-4 border-t border-white/[0.08] pt-5"
+      className="mt-6 space-y-4 border-t border-black/[0.05] pt-5"
       onKeyDown={(e) => {
         if (e.key === "Escape") {
           e.preventDefault();
@@ -112,7 +112,7 @@ export function CommitEditor({
       }}
     >
       <div className="space-y-1.5">
-        <label htmlFor="commit-message" className="text-sm font-medium text-[#B4BEDB]">
+        <label htmlFor="commit-message" className="text-sm font-medium text-[#52525B]">
           Message
         </label>
         <textarea
@@ -133,7 +133,7 @@ export function CommitEditor({
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="commit-project" className="text-sm font-medium text-[#B4BEDB]">
+        <label htmlFor="commit-project" className="text-sm font-medium text-[#52525B]">
           Project
         </label>
         <select
@@ -156,8 +156,8 @@ export function CommitEditor({
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="commit-tags" className="text-sm font-medium text-[#B4BEDB]">
-          Tags <span className="text-[#8E9AC0]">(optional)</span>
+        <label htmlFor="commit-tags" className="text-sm font-medium text-[#52525B]">
+          Tags <span className="text-[#71717A]">(optional)</span>
         </label>
         <input
           id="commit-tags"
@@ -173,18 +173,18 @@ export function CommitEditor({
           className="app-input h-11 w-full rounded-[14px] px-3 text-base"
         />
         {errors.tags ? fieldError("tags") : (
-          <p id="commit-tags-hint" className="font-mono text-sm text-[#8E9AC0]">
+          <p id="commit-tags-hint" className="font-mono text-sm text-[#71717A]">
             comma-separated · up to 10
           </p>
         )}
       </div>
 
-      <p aria-live="polite" className="min-h-5 text-sm text-[#F0A39B]">
+      <p aria-live="polite" className="min-h-5 text-sm text-[#B42318]">
         {errors.form}
       </p>
 
       <div className="flex justify-end gap-2">
-        <button type="button" onClick={stop} className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#B4BEDB] hover:text-[#FFFFFF]">
+        <button type="button" onClick={stop} className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#52525B] hover:text-[#0A0A0A]">
           Cancel
         </button>
         <button type="submit" disabled={pending} className="app-btn inline-flex h-11 items-center gap-1.5 rounded-[14px] px-5 text-base font-semibold disabled:opacity-60">

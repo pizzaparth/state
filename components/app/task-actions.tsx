@@ -11,7 +11,7 @@ import { useNotice } from "./notice";
 import { TICK } from "./primitives";
 
 const selectClass =
-  "app-field h-11 w-full min-w-0 rounded-[14px] bg-[#001A33] px-3 text-base text-[#FFFFFF] focus:border-white/45 focus:outline-none";
+  "app-field h-11 w-full min-w-0 rounded-[14px] bg-white px-3 text-base text-[#0A0A0A] focus:border-black/40 focus:outline-none";
 
 /**
  * Writes available from the task panel: Inbox triage onto a board, and delete with an
@@ -84,8 +84,8 @@ export function TaskActions({
   };
 
   return (
-    <section aria-labelledby="task-actions-heading" className="mt-8 border-t border-white/[0.08] pt-6">
-      <h3 id="task-actions-heading" className={cn(TICK, "text-[#B4BEDB]")}>
+    <section aria-labelledby="task-actions-heading" className="mt-8 border-t border-black/[0.05] pt-6">
+      <h3 id="task-actions-heading" className={cn(TICK, "text-[#52525B]")}>
         Actions
       </h3>
 
@@ -98,7 +98,7 @@ export function TaskActions({
             saveDue(dueRef.current?.value ?? "");
           }}
         >
-          <label htmlFor="task-due" className={cn(TICK, "text-[11px] text-[#8E9AC0]")}>
+          <label htmlFor="task-due" className={cn(TICK, "text-[11px] text-[#71717A]")}>
             Due
           </label>
           <div className="flex gap-2">
@@ -125,7 +125,7 @@ export function TaskActions({
                 type="button"
                 onClick={() => saveDue(null)}
                 disabled={pending !== null}
-                className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-[14px] px-3 text-base text-[#B4BEDB] hover:text-[#FFFFFF] disabled:opacity-50"
+                className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-[14px] px-3 text-base text-[#52525B] hover:text-[#0A0A0A] disabled:opacity-50"
               >
                 {pending === "clear" && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
                 Clear
@@ -152,7 +152,7 @@ export function TaskActions({
             });
           }}
         >
-          <label htmlFor="task-move-column" className={cn(TICK, "text-[11px] text-[#8E9AC0]")}>
+          <label htmlFor="task-move-column" className={cn(TICK, "text-[11px] text-[#71717A]")}>
             Move to board
           </label>
           <div className="flex gap-2">
@@ -180,20 +180,20 @@ export function TaskActions({
       )}
 
       {task.completed ? (
-        <p className="mt-3 font-mono text-[12px] text-[#8E9AC0]">done = history · move out of Done to delete</p>
+        <p className="mt-3 font-mono text-[12px] text-[#71717A]">done = history · move out of Done to delete</p>
       ) : (
         <button
           type="button"
           onClick={remove}
           disabled={pending !== null}
-          className="app-btn mt-4 inline-flex h-11 items-center gap-1.5 rounded-[14px] px-4 text-base font-medium text-[#F0A39B] disabled:opacity-50"
+          className="app-btn mt-4 inline-flex h-11 items-center gap-1.5 rounded-[14px] px-4 text-base font-medium text-[#B42318] disabled:opacity-50"
         >
           {pending === "delete" ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Trash2 className="size-4" aria-hidden="true" />}
           Delete
         </button>
       )}
 
-      <p aria-live="polite" className="mt-2 min-h-5 text-sm text-[#F0A39B]">
+      <p aria-live="polite" className="mt-2 min-h-5 text-sm text-[#B42318]">
         {error}
       </p>
     </section>

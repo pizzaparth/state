@@ -95,7 +95,7 @@ export function ImportForm() {
   return (
     <form onSubmit={submit} noValidate className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <label className="app-field relative flex h-10 min-w-0 max-w-full cursor-pointer items-center rounded-[12px] px-3 text-base focus-within:border-white/45">
+        <label className="app-field relative flex h-10 min-w-0 max-w-full cursor-pointer items-center rounded-[12px] px-3 text-base focus-within:border-black/40">
           <span className="sr-only">Import file</span>
           <input
             ref={inputRef}
@@ -109,17 +109,17 @@ export function ImportForm() {
             }}
             className="absolute inset-0 cursor-pointer opacity-0"
           />
-          <span className={cn("truncate", file ? "text-[#FFFFFF]" : "text-[#8E9AC0]")}>{file ? file.name : "Choose file…"}</span>
+          <span className={cn("truncate", file ? "text-[#0A0A0A]" : "text-[#71717A]")}>{file ? file.name : "Choose file…"}</span>
         </label>
         <button type="submit" disabled={pending} className={button}>
           {pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Upload className="size-4" aria-hidden="true" />}
           Import
         </button>
       </div>
-      <p id="import-hint" className={cn(TICK, "text-[#8E9AC0]")}>
+      <p id="import-hint" className={cn(TICK, "text-[#71717A]")}>
         JSON export · CSV of tasks, commits or projects · 4&nbsp;MB
       </p>
-      <p id="import-status" aria-live="polite" className={cn("text-sm", status?.kind === "error" ? "text-[#F0A39B]" : "font-mono tabular-nums text-[#FFFFFF]")}>
+      <p id="import-status" aria-live="polite" className={cn("text-sm", status?.kind === "error" ? "text-[#B42318]" : "font-mono tabular-nums text-[#0A0A0A]")}>
         {status?.text}
       </p>
     </form>

@@ -29,20 +29,20 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 
 ---
 
-## Visual Design: Flat Navy Product
+## Visual Design: White, Black, 15% Accent
 
-### Dual Environment Split
-- MUST: Separate marketing and product surfaces into two distinct visual environments:
-  - **Public Marketing Surfaces:** Navy (`#001A33` to `#123352`) with white and the accent, editorial, technical, high-contrast.
-  - **Logged-in Product Application:** Navy (`#001A33`), flat, dense, numbers-first. Depth comes from 1px hairlines and small tonal steps only.
-- NEVER: Use neumorphism (soft extruded or inset shadows) anywhere in the product.
-- MUST: Palette is 75% navy `#001A33` and white `#FFFFFF`, 25% accent `#D92B74` (tokens in `styles/tokens.css`, Tailwind `accent`). The accent fills focal surfaces (`.app-inverse`: `+ COMMIT`, the Today execution instrument, the headline metric, the active nav item, tooltips, toasts), primary CTAs, page labels, data marks and focus rings.
-- MUST: Text on the accent is white `#FFFFFF` (4.6:1 on `#D92B74`). NEVER: Dark text on the accent.
-- MUST: Accent as small text uses Tailwind `text-accent` (`#FF5C99`, AA on every layer); `#D92B74` is for fills, marks and large type.
-- NEVER: Tint the product page grey or turn large regions white.
+### One Environment
+- MUST: Marketing, auth and product share one look: white-dominant black and white, after the Mobbin landing page style (centred hero, grey framed app picture, grey rounded tiles, dark footer).
+  - **Page:** `#FFFFFF`; type `#0A0A0A`; secondary `#52525B` / `#71717A`; panels and tiles `#F5F5F5`; hairlines `rgba(0,0,0,.06–.10)`.
+  - **Primary CTA:** black pill (`Button variant="light-cta"`); secondary is a grey pill (`light-secondary`).
+- MUST: Accent `#D92B74` on about 15% of any screen: `+ COMMIT`, the Today execution instrument, the headline metric, toasts, data marks (bars, heatmap, `+N`), small labels, focus rings. Selected nav items and segmented controls are black, not pink.
+- MUST: Text on an accent fill is white `#FFFFFF` (4.6:1). Accent as small text uses Tailwind `text-accent` (`#C21F63`, AA on white and `#F5F5F5`); `#D92B74` is for fills, marks and large type.
+- NEVER: Neumorphism, gradients, or any colour other than the accent, black, white and greys.
+- MUST: Landing page motion lives in `styles/motion.css` and `components/motion/`: `Reveal` for section entrances, `Marquee` for self-running strips (hover never pauses; a pause button wherever a strip carries content), `PlatformDemo` for the scripted hero cursor, `ScrollWords`, `ScrollProgress`. Transform/opacity only; reduced motion stops all of it.
+- MAY: Third-party brand logos (Simple Icons, own colours) only where a section names those tools, with the trademark line.
 
 ### Type & Copy (quant, short attention span)
-- MUST: Page titles, column names and headline numbers use the landing page's extended display face (`DISPLAY` in `components/app/primitives.tsx`); labels read like a ticker in mono caps (`TICK`).
+- MUST: Page titles, column names and headline numbers use the tight grotesk (`DISPLAY` in `lib/type.ts`: Geist, semibold, tracking -0.04em, sentence case); labels read like a ticker in mono caps (`TICK`).
 - MUST: Lead with numbers: `+4` for weight, `Σ` totals on columns, ▲/▼ with % for change (arrow and sign, never colour alone).
 - MUST: Minimal copy. No page descriptions; empty states are a short title only; labels ≤ 3 words; helper text is one mono line at most. Metrics keep a short formula line.
 - MUST: Copy works for any discipline (study, build, write, train, design), never only software.
@@ -52,15 +52,14 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 - MUST: Multi-layer parallax on every page (`components/motion/parallax.tsx`): `ParallaxBackdrop` puts three tiled layers (far dots, mid outlines, near marks) behind the content, moving at different speeds with scroll and pointer; `data-depth` makes headings and hero type drift against the scroll. Transform only; off under reduced motion. Panels are slightly translucent with a blur so the layers read through.
 - NEVER: Nest cards inside cards to fake depth; depth comes from the parallax layers.
 - MUST: Use the classes in `styles/product.css`; never hand-roll surface styles:
-  - **Page:** `#001A33` body, tables, text rows, ledger rows, graph labels, separators. No surface.
-  - **Panel (`.app-panel`):** Board columns, toolbars, metric panels (`#05223F`, 1px `rgba(255,255,255,.10)` border).
-  - **Card / Control (`.app-card`, `.app-btn`):** Task cards, buttons, toggles, menus (`#0B2A48`, 1px `rgba(255,255,255,.16)` border; hover `#123352`, accent edge).
-  - **Field (`.app-field`, `.app-input`):** Inputs, selects, progress rails, segmented troughs (`#001A33`, 1px `rgba(255,255,255,.16)` border; focus border accent).
-  - **Overlay (`.app-overlay`):** Dialogs, drawers, command palette, menus (`#05223F` with a hairline).
-- MUST: Micro-interactions on every interactive element via `styles/motion.css` (`mi-press`, `mi-lift`, `mi-nudge`, `mi-spin`, `mi-arrow`, `mi-underline`, `mi-row`, `mi-pop`, `mi-live`): transform/opacity only, ≤ 260ms, no shadows, no endless loops.
-- MUST: Product text uses `#FFFFFF` / `#B4BEDB` / `#8E9AC0` (all pass WCAG AA on every surface); on inverse (accent) surfaces use `#FFFFFF`.
+  - **Page:** `#FFFFFF` body, tables, text rows, ledger rows, graph labels, separators. No surface.
+  - **Panel (`.app-panel`):** Board columns, toolbars, metric panels (`#F5F5F5`, 1px `rgba(0,0,0,.06)` border).
+  - **Card / Control (`.app-card`, `.app-btn`):** Task cards, buttons, toggles, menus (`#FFFFFF`, 1px `rgba(0,0,0,.10)` border; hover `#FAFAFA`, accent edge).
+  - **Field (`.app-field`, `.app-input`):** Inputs, selects, progress rails, segmented troughs (`#FFFFFF`, 1px `rgba(0,0,0,.10)` border; focus border accent).
+  - **Overlay (`.app-overlay`):** Dialogs, drawers, command palette, menus (`#FFFFFF` with a hairline over a `bg-black/30` scrim).
+- MUST: Micro-interactions on every interactive element via `styles/motion.css` (`mi-press`, `mi-lift`, `mi-nudge`, `mi-spin`, `mi-arrow`, `mi-underline`, `mi-row`, `mi-pop`, `mi-live`): transform/opacity only, ≤ 260ms, no shadows, no endless loops in the product.
+- MUST: Product text uses `#0A0A0A` / `#52525B` / `#71717A` (all pass WCAG AA on white and `#F5F5F5`); on inverse (accent) surfaces use `#FFFFFF`.
 - NEVER: Add box-shadows, glows or inset shadows to separate surfaces; use a hairline.
-- NEVER: Use gradients or any colour other than the accent `#D92B74`.
 
 ---
 
@@ -225,7 +224,7 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 
 ## Dark Mode & Theming
 
-- MUST: `color-scheme: dark` on `<html>` for dark themes
+- MUST: `color-scheme: light` on `<html>`
 - SHOULD: `<meta name="theme-color">` matches page background
 - MUST: Native `<select>`: explicit `background-color` and `color` (Windows fix)
 

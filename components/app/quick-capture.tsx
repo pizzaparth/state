@@ -79,7 +79,7 @@ export function QuickCapture({
           aria-invalid={Boolean(error)}
           aria-describedby="quick-capture-status"
           placeholder={placeholder}
-          className="h-10 min-w-0 flex-1 bg-transparent text-base text-[#FFFFFF] placeholder:text-[#8E9AC0] focus:outline-none max-md:text-base"
+          className="h-10 min-w-0 flex-1 bg-transparent text-base text-[#0A0A0A] placeholder:text-[#71717A] focus:outline-none max-md:text-base"
         />
         <button
           type="submit"
@@ -91,12 +91,12 @@ export function QuickCapture({
         </button>
       </form>
 
-      <p id="quick-capture-status" aria-live="polite" className="mt-2 min-h-5 px-2 text-sm text-[#B4BEDB]">
+      <p id="quick-capture-status" aria-live="polite" className="mt-2 min-h-5 px-2 text-sm text-[#52525B]">
         {error ? (
-          <span className="text-[#F0A39B]">{error}</span>
+          <span className="text-[#B42318]">{error}</span>
         ) : parsed?.title && (
           <>
-            Task <span className="font-medium text-[#FFFFFF]">“{parsed.title}”</span>
+            Task <span className="font-medium text-[#0A0A0A]">“{parsed.title}”</span>
             {parsed.projectSlug && (project ? `, project ${project.name}` : `, unknown project #${parsed.projectSlug}`)}
             {parsed.priority && `, ${parsed.priority} priority`}
             {parsed.dueDate && `, due ${new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${parsed.dueDate}T00:00:00Z`))}`}
@@ -110,8 +110,8 @@ export function QuickCapture({
             <li key={c.id} className="flex animate-row-in items-center gap-3 rounded-[12px] px-3 py-2 text-base">
               <span aria-hidden="true" className="app-field size-3 rounded-full" />
               <span className="min-w-0 flex-1 truncate font-medium">{c.title}</span>
-              <span className="text-sm text-[#8E9AC0]">{[c.project, c.priority].filter(Boolean).join(", ") || "Unsorted"}</span>
-              <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#B4BEDB]">In Inbox</span>
+              <span className="text-sm text-[#71717A]">{[c.project, c.priority].filter(Boolean).join(", ") || "Unsorted"}</span>
+              <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#52525B]">In Inbox</span>
             </li>
           ))}
         </ul>

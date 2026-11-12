@@ -42,7 +42,7 @@ export function NoticeProvider({ children }: { children: React.ReactNode }) {
                   setNotice(null);
                   notice.action?.run();
                 }}
-                className="pointer-events-auto -my-1 -mr-2 shrink-0 rounded-full px-3 py-1 font-semibold underline underline-offset-2 hover:bg-[#001A33]/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#001A33]"
+                className="pointer-events-auto -my-1 -mr-2 shrink-0 rounded-full px-3 py-1 font-semibold underline underline-offset-2 hover:bg-black/[0.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#001A33]"
               >
                 {notice.action.label}
               </button>

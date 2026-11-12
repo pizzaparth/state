@@ -34,9 +34,9 @@ export function DetailDrawer({ param, title, children }: { param: string; title:
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && close()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#001A33]/70 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content
-          className="fixed inset-y-0 right-0 z-50 flex w-full data-[state=closed]:animate-drawer-out data-[state=open]:animate-drawer-in max-w-[30rem] flex-col overscroll-contain bg-[#001A33] border-l border-white/10 outline-none sm:inset-y-3 sm:right-3 sm:rounded-[28px]"
+          className="fixed inset-y-0 right-0 z-50 flex w-full data-[state=closed]:animate-drawer-out data-[state=open]:animate-drawer-in max-w-[30rem] flex-col overscroll-contain bg-white border-l border-black/[0.06] outline-none sm:inset-y-3 sm:right-3 sm:rounded-[28px]"
           aria-describedby={undefined}
           // Inline editors inside the panel use Escape to cancel, not to close
           onEscapeKeyDown={(e) => {

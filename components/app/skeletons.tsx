@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
  * so content swaps in without layout shift. Faint pulse; static under reduced motion.
  */
 function Bar({ className }: { className?: string }) {
-  return <span aria-hidden="true" className={cn("block animate-pulse rounded-[6px] bg-white/[0.06]", className)} />;
+  return <span aria-hidden="true" className={cn("block animate-pulse rounded-[6px] bg-black/[0.05]", className)} />;
 }
 
 function HeaderSkeleton() {

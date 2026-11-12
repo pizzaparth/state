@@ -13,7 +13,8 @@
   }
 
   html {
-    color-scheme: dark;
+    color-scheme: light;
+    background-color: #FFFFFF;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -28,17 +29,6 @@
   ::selection {
     background-color: var(--accent);
     color: var(--accent-ink);
-  }
-
-  /* Dark marketing/auth surfaces: native controls & scrollbars render dark */
-  .dark {
-    color-scheme: dark;
-  }
-
-  /* Dark mode focus visible override */
-  .dark :focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
   }
 
   /* Tabular numbers for all quantitative metrics comparisons */

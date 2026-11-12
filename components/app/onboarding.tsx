@@ -13,18 +13,18 @@ import { useNotice } from "./notice";
 
 function Step({ n, title, state, children }: { n: number; title: string; state: "done" | "current" | "next"; children?: React.ReactNode }) {
   return (
-    <li className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-4 border-t border-white/[0.08] py-6 first:border-t-0 first:pt-0">
+    <li className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-4 border-t border-black/[0.05] py-6 first:border-t-0 first:pt-0">
       <span
         aria-hidden="true"
         className={cn(
           "grid size-10 place-items-center rounded-full font-mono text-sm tabular-nums",
-          state === "done" ? "app-inverse mi-pop" : state === "current" ? "app-card text-[#FFFFFF]" : "app-field text-[#8E9AC0]"
+          state === "done" ? "app-inverse mi-pop" : state === "current" ? "app-card text-[#0A0A0A]" : "app-field text-[#71717A]"
         )}
       >
         {state === "done" ? "✓" : n}
       </span>
       <div className="min-w-0">
-        <h2 className={cn("text-lg font-semibold", state === "next" ? "text-[#8E9AC0]" : "text-[#FFFFFF]")}>
+        <h2 className={cn("text-lg font-semibold", state === "next" ? "text-[#71717A]" : "text-[#0A0A0A]")}>
           {title}
           <span className="sr-only">{state === "done" ? " (done)" : state === "current" ? " (current step)" : ""}</span>
         </h2>
@@ -51,7 +51,7 @@ function useFinish() {
 export function SkipSetup() {
   const { finish, pending } = useFinish();
   return (
-    <button type="button" onClick={finish} disabled={pending} className="inline-flex min-h-9 items-center gap-1.5 text-sm text-[#B4BEDB] underline-offset-4 hover:text-[#FFFFFF] hover:underline disabled:opacity-60">
+    <button type="button" onClick={finish} disabled={pending} className="inline-flex min-h-9 items-center gap-1.5 text-sm text-[#52525B] underline-offset-4 hover:text-[#0A0A0A] hover:underline disabled:opacity-60">
       {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
       Skip setup
     </button>
@@ -90,13 +90,13 @@ export function Onboarding({
   return (
     <ol>
       <Step n={1} title="Workspace" state="done">
-        <p className="text-base text-[#B4BEDB]">Personal</p>
+        <p className="text-base text-[#52525B]">Personal</p>
       </Step>
 
       <Step n={2} title="Plan one task" state={taskState}>
         {task || commit ? (
-          <p className="text-base text-[#B4BEDB]">
-            <span className="text-[#FFFFFF]">{task?.title ?? commit?.message}</span> · +{task?.weight ?? commit?.executionValue} on done
+          <p className="text-base text-[#52525B]">
+            <span className="text-[#0A0A0A]">{task?.title ?? commit?.message}</span> · +{task?.weight ?? commit?.executionValue} on done
           </p>
         ) : (
           <form
@@ -143,7 +143,7 @@ export function Onboarding({
                     key={w.value}
                     className={cn(
                       "flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-accent",
-                      weight === w.value ? "bg-accent text-accent-ink" : "text-[#B4BEDB] hover:text-[#FFFFFF]"
+                      weight === w.value ? "bg-[#0A0A0A] text-white" : "text-[#52525B] hover:text-[#0A0A0A]"
                     )}
                   >
                     <input type="radio" name="weight" value={w.value} checked={weight === w.value} onChange={() => setWeight(w.value as Weight)} className="sr-only" />
@@ -153,7 +153,7 @@ export function Onboarding({
               </div>
             </fieldset>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p id="first-task-hint" className="font-mono text-sm text-[#8E9AC0]">
+              <p id="first-task-hint" className="font-mono text-sm text-[#71717A]">
                 goes to your board · Queued
               </p>
               <button type="submit" disabled={pending} className="app-btn inline-flex h-11 items-center gap-1.5 rounded-[14px] px-5 text-base font-semibold disabled:opacity-60">
@@ -162,7 +162,7 @@ export function Onboarding({
               </button>
             </div>
             {error && (
-              <p id="first-task-error" aria-live="polite" className="text-sm text-[#F0A39B]">
+              <p id="first-task-error" aria-live="polite" className="text-sm text-[#B42318]">
                 {error}
               </p>
             )}
@@ -173,12 +173,12 @@ export function Onboarding({
       <Step n={3} title="Finish it" state={doneState}>
         {commit ? (
           <div aria-live="polite">
-            <p className="text-base text-[#FFFFFF]">Your first commit has been recorded.</p>
+            <p className="text-base text-[#0A0A0A]">Your first commit has been recorded.</p>
             <div className="app-inverse mt-4 flex items-baseline justify-between rounded-[20px] px-5 py-4">
               <span className={cn(TICK, "text-accent-muted")}>Execution</span>
               <span className={cn(DISPLAY, "text-5xl leading-none tabular-nums")}>+{commit.executionValue}</span>
             </div>
-            <p className="mt-2 font-mono text-sm text-[#8E9AC0]">execution = Σ weights of done tasks</p>
+            <p className="mt-2 font-mono text-sm text-[#71717A]">execution = Σ weights of done tasks</p>
             <button type="button" onClick={finish} disabled={finishing} className="app-btn mt-5 inline-flex h-11 items-center gap-1.5 rounded-[14px] px-5 text-base font-semibold disabled:opacity-60">
               {finishing && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
               Open Today
@@ -186,7 +186,7 @@ export function Onboarding({
           </div>
         ) : task && doneColumnId ? (
           <>
-            <p className="font-mono text-sm text-[#8E9AC0]">done → commit, automatically</p>
+            <p className="font-mono text-sm text-[#71717A]">done → commit, automatically</p>
             <button
               type="button"
               disabled={pending}
@@ -204,7 +204,7 @@ export function Onboarding({
             </button>
           </>
         ) : (
-          <p className="font-mono text-sm text-[#8E9AC0]">done → commit, automatically</p>
+          <p className="font-mono text-sm text-[#71717A]">done → commit, automatically</p>
         )}
       </Step>
     </ol>

@@ -41,7 +41,7 @@ export function CommitLedger({
         return (
           <section key={group.key} aria-label={grouped ? dayLabel(group.key, today) : undefined}>
             {grouped && (
-              <h3 className="mb-1 flex items-baseline justify-between px-3 text-[13px] font-semibold uppercase tracking-[0.12em] text-[#B4BEDB]">
+              <h3 className="mb-1 flex items-baseline justify-between px-3 text-[13px] font-semibold uppercase tracking-[0.12em] text-[#52525B]">
                 <span>{dayLabel(group.key, today)}</span>
                 <span className="font-mono tabular-nums normal-case tracking-normal">
                   {group.rows.length} {group.rows.length === 1 ? "commit" : "commits"}, +{total}
@@ -50,20 +50,20 @@ export function CommitLedger({
             )}
             <ol className="app-stagger relative">
               {/* Thin connector behind the markers */}
-              <span aria-hidden="true" className="absolute bottom-3 left-[4.4rem] top-3 w-px bg-white/[0.08]" />
+              <span aria-hidden="true" className="absolute bottom-3 left-[4.4rem] top-3 w-px bg-black/[0.05]" />
               {group.rows.map((c) => (
                 <li key={c.id}>
                   <Row href={hrefFor?.(c.id)}>
-                    <time dateTime={c.createdAt.toISOString()} className="font-mono text-sm tabular-nums text-[#B4BEDB]">
+                    <time dateTime={c.createdAt.toISOString()} className="font-mono text-sm tabular-nums text-[#52525B]">
                       {formatTime(c.createdAt, tz)}
                     </time>
                     <span
                       aria-hidden="true"
-                      className={cn("relative z-[1] mx-auto size-2 rounded-full", c.source === "manual" ? "border border-accent bg-[#001A33]" : "bg-accent")}
+                      className={cn("relative z-[1] mx-auto size-2 rounded-full", c.source === "manual" ? "border border-accent bg-white" : "bg-accent")}
                     />
                     <span className="min-w-0">
-                      <span className="block truncate text-base font-medium text-[#FFFFFF]">{c.message}</span>
-                      <span className="block truncate text-sm text-[#8E9AC0]">
+                      <span className="block truncate text-base font-medium text-[#0A0A0A]">{c.message}</span>
+                      <span className="block truncate text-sm text-[#71717A]">
                         {[c.projectName, showAuthor ? c.authorName : null, c.source === "manual" ? "manual" : null].filter(Boolean).join(", ")}
                       </span>
                     </span>

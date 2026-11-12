@@ -30,14 +30,14 @@ export function TaskRow({
       >
         <span
           aria-hidden="true"
-          className={cn("size-3 shrink-0 rounded-full", done ? "mi-pop bg-accent" : "app-field border border-white/10")}
+          className={cn("size-3 shrink-0 rounded-full", done ? "mi-pop bg-accent" : "app-field border border-black/[0.06]")}
         />
         <span className="min-w-0 flex-1 basis-[calc(100%-2rem)] sm:basis-auto">
-          <span className={cn("block truncate text-base font-medium", done ? "text-[#B4BEDB]" : "text-[#FFFFFF]")}>
+          <span className={cn("block truncate text-base font-medium", done ? "text-[#52525B]" : "text-[#0A0A0A]")}>
             {task.title}
             {done && <span className="sr-only"> (done)</span>}
           </span>
-          {task.projectName && <span className="block truncate text-sm text-[#8E9AC0]">{task.projectName}</span>}
+          {task.projectName && <span className="block truncate text-sm text-[#71717A]">{task.projectName}</span>}
         </span>
         <span className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 pl-6 sm:pl-0">
           {task.dueAt && !done && <DueLabel due={dueState(task.dueAt, now, tz)} />}

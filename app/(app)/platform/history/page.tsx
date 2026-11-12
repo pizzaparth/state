@@ -43,7 +43,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Page
                 scroll={false}
                 className={cn(
                   "mi-press rounded-full px-3 py-1.5 text-sm font-medium transition-[transform,background-color,color]",
-                  active ? "bg-accent text-accent-ink" : "app-btn text-[#B4BEDB] hover:text-[#FFFFFF]"
+                  active ? "bg-[#0A0A0A] text-white" : "app-btn text-[#52525B] hover:text-[#0A0A0A]"
                 )}
               >
                 {p.label}

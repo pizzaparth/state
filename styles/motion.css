@@ -94,7 +94,7 @@
 }
 @media (hover: hover) {
   .mi-row:hover {
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: rgba(0, 0, 0, 0.03);
   }
   .mi-row:hover::before {
     transform: scaleY(1);
@@ -166,7 +166,7 @@
     transform: translateY(-1px);
   }
   .app-panel:hover {
-    border-color: rgba(255, 255, 255, 0.16);
+    border-color: rgba(0, 0, 0, 0.12);
   }
 }
 .app-panel {
@@ -254,3 +254,291 @@ textarea {
   animation: mi-strike 700ms var(--ease-restrained) both;
   animation-delay: inherit;
 }
+
+/* ==========================================================================
+   Landing page motion (transform/opacity only; reduced motion stops all of it)
+   ========================================================================== */
+
+/* Marquees: the track holds two copies and slides by one copy's length forever.
+   The pause button stops it (WCAG 2.2.2); hover does not. */
+@keyframes marquee-x {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+@keyframes marquee-y {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -50%, 0); }
+}
+.marquee-track {
+  animation: var(--marquee-name, marquee-x) var(--marquee-duration, 40s) linear infinite;
+  animation-direction: var(--marquee-direction, normal);
+  will-change: transform;
+}
+.marquee[data-paused] .marquee-track {
+  animation-play-state: paused;
+}
+.marquee-fade-x {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+.marquee-fade-y {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+}
+
+/* Section reveals: set by components/motion/reveal.tsx once a section scrolls in */
+.rv[data-rv="waiting"] {
+  opacity: 0;
+}
+.rv[data-rv="waiting"].rv-up { transform: translate3d(0, 48px, 0); }
+.rv[data-rv="waiting"].rv-scale { transform: scale(0.92); }
+.rv[data-rv="waiting"].rv-left { transform: translate3d(-64px, 0, 0); }
+.rv[data-rv="waiting"].rv-right { transform: translate3d(64px, 0, 0); }
+.rv[data-rv="in"] {
+  transition:
+    opacity 900ms var(--ease-restrained),
+    transform 1100ms var(--ease-restrained);
+  transition-delay: var(--rv-delay, 0ms);
+}
+/* Groups: children rise one after another */
+.rv-group[data-rv="waiting"] > * {
+  opacity: 0;
+  transform: translate3d(0, 40px, 0) scale(0.97);
+}
+.rv-group[data-rv="in"] > * {
+  transition:
+    opacity 800ms var(--ease-restrained),
+    transform 1000ms var(--ease-restrained);
+}
+.rv-group[data-rv="in"] > :nth-child(2) { transition-delay: 90ms; }
+.rv-group[data-rv="in"] > :nth-child(3) { transition-delay: 180ms; }
+.rv-group[data-rv="in"] > :nth-child(4) { transition-delay: 270ms; }
+.rv-group[data-rv="in"] > :nth-child(5) { transition-delay: 360ms; }
+.rv-group[data-rv="in"] > :nth-child(6) { transition-delay: 450ms; }
+.rv-group[data-rv="in"] > :nth-child(n + 7) { transition-delay: 540ms; }
+
+/* Headline words rise from below their line */
+@keyframes word-rise {
+  from { transform: translate3d(0, 110%, 0) rotate(4deg); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.word-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+.word-rise {
+  display: inline-block;
+  animation: word-rise 1000ms var(--ease-restrained) both;
+  animation-delay: calc(var(--w, 0) * 70ms + var(--word-base, 0ms));
+}
+.rv[data-rv="waiting"] * { animation-play-state: paused; }
+
+/* Hero icon tiles: pop in, then bob gently */
+@keyframes tile-pop {
+  0% { transform: scale(0) rotate(-30deg); }
+  70% { transform: scale(1.15) rotate(6deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes tile-bob {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50% { transform: translate3d(0, -8%, 0) rotate(-6deg); }
+}
+.tile-pop {
+  animation: tile-pop 800ms var(--ease-restrained) both;
+  animation-delay: var(--tile-delay, 0ms);
+}
+.tile-bob {
+  display: inline-grid;
+  animation: tile-bob 3.2s ease-in-out infinite;
+  animation-delay: var(--tile-bob-delay, 0ms);
+}
+
+/* Cards: the picture inside lifts and grows under the pointer */
+.card-live {
+  transition: transform 500ms var(--ease-restrained), background-color 300ms var(--ease-restrained);
+}
+.card-live .card-art {
+  transition: transform 700ms var(--ease-restrained);
+}
+.card-live .card-label {
+  transition: transform 400ms var(--ease-restrained);
+}
+@media (hover: hover) {
+  .card-live:hover {
+    transform: translate3d(0, -6px, 0);
+    background-color: #EEEEEE;
+  }
+  .card-live:hover .card-art {
+    transform: translate3d(0, -10px, 0) scale(1.06) rotate(-1deg);
+  }
+  .card-live:hover .card-label {
+    transform: translate3d(6px, 0, 0);
+  }
+}
+
+/* Footer wordmark letters rise in */
+@keyframes letter-rise {
+  from { transform: translate3d(0, 60%, 0); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.rv[data-rv="in"] .letter-rise {
+  display: inline-block;
+  animation: letter-rise 1200ms var(--ease-restrained) both;
+  animation-delay: calc(var(--l, 0) * 90ms);
+}
+.rv[data-rv="waiting"] .letter-rise {
+  display: inline-block;
+  opacity: 0;
+}
+
+/* Scroll progress bar under the nav */
+.scroll-progress {
+  transform-origin: left;
+  transform: scaleX(0);
+}
+
+/* Floating comparison logos: each tile bobs on its own beat */
+@keyframes float-tile {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(var(--r, 0deg)); }
+  50% { transform: translate3d(0, -10px, 0) rotate(calc(var(--r, 0deg) * -1)); }
+}
+.float-tile {
+  animation: float-tile var(--float-d, 4s) ease-in-out infinite;
+}
+
+/* Hero platform demo: click ring, cursor press, typing caret */
+@keyframes demo-click {
+  from { transform: scale(0.3); opacity: 1; }
+  to { transform: scale(1.6); opacity: 0; }
+}
+.demo-click { animation: demo-click 600ms var(--ease-restrained) both; }
+@keyframes demo-press {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(0.82); }
+}
+.demo-press { animation: demo-press 260ms ease-out both; transform-origin: 3px 2px; }
+@keyframes demo-caret { 50% { opacity: 0; } }
+.demo-caret { animation: demo-caret 1s steps(1) infinite; }
+
+/* Hero: the last word cycles through what State measures */
+@keyframes cycle-in {
+  from { transform: translate3d(0, 100%, 0); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes cycle-out {
+  from { transform: none; opacity: 1; }
+  to { transform: translate3d(0, -100%, 0); opacity: 0; }
+}
+.cycle-in { animation: cycle-in 700ms var(--ease-restrained) both; }
+.cycle-out { animation: cycle-out 700ms var(--ease-restrained) both; }
+@keyframes underline-sweep {
+  0% { transform: scaleX(0); transform-origin: left; }
+  45% { transform: scaleX(1); transform-origin: left; }
+  55% { transform: scaleX(1); transform-origin: right; }
+  100% { transform: scaleX(0); transform-origin: right; }
+}
+.underline-sweep { animation: underline-sweep 2.6s var(--ease-restrained) infinite; }
+
+/* ---- Live card loops (landing page only) ---- */
+/* Typing: the text reveals left to right, holds, then clears */
+@keyframes live-type {
+  0% { transform: scaleX(1); }
+  45%, 85% { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+.live-type-mask {
+  transform-origin: right;
+  animation: live-type 5s steps(28, end) infinite;
+}
+@keyframes live-chip {
+  0%, 48% { transform: translate3d(0, 8px, 0) scale(0.9); opacity: 0; }
+  56%, 86% { transform: none; opacity: 1; }
+  96%, 100% { transform: translate3d(0, 8px, 0) scale(0.9); opacity: 0; }
+}
+.live-chip { animation: live-chip 5s var(--ease-restrained) infinite; }
+/* Bars fill, hold, drain */
+@keyframes live-fill {
+  0% { transform: scaleX(0); }
+  35%, 75% { transform: scaleX(var(--to, 1)); }
+  100% { transform: scaleX(0); }
+}
+.live-fill { transform-origin: left; animation: live-fill 4s var(--ease-restrained) infinite; }
+@keyframes live-grow {
+  0% { transform: scaleY(0.15); }
+  40%, 75% { transform: scaleY(1); }
+  100% { transform: scaleY(0.15); }
+}
+.live-grow { transform-origin: bottom; animation: live-grow 3.6s var(--ease-restrained) infinite; }
+/* Heatmap: a wave of brightness travels across the grid */
+@keyframes live-wave {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.8); }
+}
+.live-wave { animation: live-wave 2.8s ease-in-out infinite; }
+/* Commit: task strikes, arrow nudges, weight pops */
+@keyframes live-strike {
+  0%, 15% { transform: scaleX(0); }
+  35%, 85% { transform: scaleX(1); }
+  100% { transform: scaleX(0); }
+}
+.live-strike { transform-origin: left; animation: live-strike 3.6s var(--ease-restrained) infinite; }
+@keyframes live-pop {
+  0%, 35% { transform: scale(0.4); opacity: 0; }
+  45% { transform: scale(1.25); opacity: 1; }
+  55%, 85% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.4); opacity: 0; }
+}
+.live-pop { animation: live-pop 3.6s var(--ease-restrained) infinite; }
+@keyframes live-nudge {
+  0%, 25% { transform: translateX(0); }
+  35% { transform: translateX(6px); }
+  45%, 100% { transform: translateX(0); }
+}
+.live-nudge { animation: live-nudge 3.6s ease-in-out infinite; }
+/* Board: the top Doing card lifts, travels one column into Done's empty slot, settles,
+   fades, and reappears in Doing. The slot in Done tints while the card is over it. */
+@keyframes live-drag {
+  0%, 12% { transform: none; opacity: 1; }
+  22% { transform: translate3d(0, -6px, 0) rotate(-2deg) scale(1.05); }
+  52% { transform: translate3d(var(--travel), -6px, 0) rotate(2deg) scale(1.05); }
+  60%, 84% { transform: translate3d(var(--travel), 0, 0); opacity: 1; }
+  90% { transform: translate3d(var(--travel), 0, 0); opacity: 0; }
+  91% { transform: none; opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+.live-drag { animation: live-drag 6s var(--ease-restrained) infinite; }
+@keyframes live-slot {
+  0%, 36%, 66%, 100% { opacity: 0; }
+  44%, 58% { opacity: 1; }
+}
+.live-slot { animation: live-slot 6s var(--ease-restrained) infinite; }
+/* Checks tick in one after another */
+@keyframes live-check {
+  0%, 10% { transform: scale(0); }
+  20%, 80% { transform: scale(1); }
+  90%, 100% { transform: scale(0); }
+}
+.live-check { animation: live-check 4.5s var(--ease-restrained) infinite; }
+/* Rows slide in one by one */
+@keyframes live-row {
+  0%, 5% { transform: translate3d(-16px, 0, 0); opacity: 0; }
+  15%, 85% { transform: none; opacity: 1; }
+  95%, 100% { transform: translate3d(16px, 0, 0); opacity: 0; }
+}
+.live-row { animation: live-row 6s var(--ease-restrained) infinite; }
+/* Big numbers breathe */
+@keyframes live-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+.live-breathe { animation: live-breathe 3s ease-in-out infinite; transform-origin: left center; }
+
+/* A number that just changed settles back from slightly larger */
+@keyframes tick-pop {
+  from { transform: scale(1.12); }
+  to { transform: scale(1); }
+}
+.tick-pop { animation: tick-pop 220ms var(--ease-restrained) both; transform-origin: left bottom; }

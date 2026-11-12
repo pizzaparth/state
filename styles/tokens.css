@@ -4,11 +4,11 @@
      Reference: docs/style.md & docs/techstack.md
      ========================================================================== */
 
-  /* Palette: navy #001A33, white #FFFFFF, accent #D92B74. About a quarter of every screen
-     is accent; the rest is navy and white. Text on the accent is white (4.6:1, WCAG AA). Accent as small text uses --accent-text, which passes
-     on every layer. */
+  /* Palette: white #FFFFFF and black #0A0A0A, with accent #D92B74 on about 15% of every
+     screen. Text on the accent is white (4.6:1, WCAG AA). Accent as small text uses
+     --accent-text (#C21F63), which passes on white and on the #F5F5F5 panels. */
   --accent: #D92B74;
-  --accent-text: #FF5C99;
+  --accent-text: #C21F63;
   --accent-hover: #C4226A;
   --accent-ink: #FFFFFF;
   --accent-ink-muted: #FFFFFF;
@@ -18,45 +18,45 @@
   /* Surfaces: page, panel, card/control. Depth comes from the parallax layers behind
      the content (components/motion/parallax.tsx), not from nesting. */
 
-  /* Marketing surfaces (navy) */
-  --bg-0: #001A33;
-  --bg-1: #001A33;
-  --bg-2: #05223F;
+  /* Marketing surfaces (white) */
+  --bg-0: #FFFFFF;
+  --bg-1: #FFFFFF;
+  --bg-2: #F5F5F5;
 
-  --surface-1: #05223F;
-  --surface-2: #0B2A48;
-  --surface-3: #123352;
+  --surface-1: #F5F5F5;
+  --surface-2: #FFFFFF;
+  --surface-3: #F0F0F0;
 
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-default: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.20);
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-default: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.14);
 
-  --text-primary: #FFFFFF;
-  --text-secondary: #B4BEDB;
-  --text-tertiary: #8E9AC0;
-  --text-inverse: #001A33;
+  --text-primary: #0A0A0A;
+  --text-secondary: #52525B;
+  --text-tertiary: #71717A;
+  --text-inverse: #FFFFFF;
 
   --action-primary: var(--accent);
   --action-primary-text: var(--accent-ink);
 
-  /* Product theme (navy, flat: depth from hairline borders and tonal steps, never shadows) */
-  --app-bg: #001A33;
-  --app-panel: #05223F;
-  --app-raised: #0B2A48;
-  --app-raised-hover: #123352;
-  --app-field: #001A33;
-  --app-line: rgba(255, 255, 255, 0.1);
-  --app-line-strong: rgba(255, 255, 255, 0.16);
+  /* Product theme (white, flat: depth from hairline borders and tonal steps, never shadows) */
+  --app-bg: #FFFFFF;
+  --app-panel: #F5F5F5;
+  --app-raised: #FFFFFF;
+  --app-raised-hover: #FAFAFA;
+  --app-field: #FFFFFF;
+  --app-line: rgba(0, 0, 0, 0.06);
+  --app-line-strong: rgba(0, 0, 0, 0.1);
   --app-line-focus: var(--accent);
 
   /* Focal surfaces (+ COMMIT, Today instrument, headline metric, active nav, toasts) */
   --app-inverse: var(--accent);
   --app-inverse-text: var(--accent-ink);
 
-  --app-text-primary: #FFFFFF;
-  --app-text-secondary: #B4BEDB;
-  --app-text-tertiary: #8E9AC0;
-  --app-danger: #F0A39B;
+  --app-text-primary: #0A0A0A;
+  --app-text-secondary: #52525B;
+  --app-text-tertiary: #71717A;
+  --app-danger: #B42318;
 
   /* Corner Radii (Geometric Superellipses) */
   --radius-control: 12px;

@@ -31,11 +31,11 @@ const signed = (v: number, digits = 1) => `${v >= 0 ? "+" : "−"}${formatNumber
 
 /** ▲/▼ with percent: arrow and sign carry direction, never colour alone. */
 function Delta({ pct, days, inverse }: { pct: number | null; days: number; inverse?: boolean }) {
-  if (pct === null) return <span className={inverse ? "text-accent-muted" : "text-[#8E9AC0]"}>no prior {days}d</span>;
+  if (pct === null) return <span className={inverse ? "text-accent-muted" : "text-[#71717A]"}>no prior {days}d</span>;
   return (
-    <span className={inverse ? "text-white" : "text-[#B4BEDB]"}>
+    <span className={inverse ? "text-white" : "text-[#52525B]"}>
       {pct >= 0 ? "▲" : "▼"}
-      {formatNumber(Math.abs(pct), 1)}% <span className={inverse ? "text-accent-muted" : "text-[#8E9AC0]"}>vs prior {days}d</span>
+      {formatNumber(Math.abs(pct), 1)}% <span className={inverse ? "text-accent-muted" : "text-[#71717A]"}>vs prior {days}d</span>
     </span>
   );
 }
@@ -345,7 +345,7 @@ export function MetricsReport({
                 digits={1}
                 series={[{ label: "From peak", kind: "area", tone: "mid", values: dd }]}
               />
-              <p className="mt-2 font-mono text-[12px] text-[#8E9AC0]">(Σ7D − peak) ÷ peak</p>
+              <p className="mt-2 font-mono text-[12px] text-[#71717A]">(Σ7D − peak) ÷ peak</p>
             </Panel>
             <Panel title="Day distribution" aside={`σ ${sd === null ? "—" : formatNumber(sd, 2)}`}>
               <SeriesChart
@@ -354,7 +354,7 @@ export function MetricsReport({
                 ticks={HISTOGRAM.map((b) => b.label)}
                 series={[{ label: "Days", kind: "bar", tone: "hi", values: histogram }]}
               />
-              <p className="mt-2 font-mono text-[12px] text-[#8E9AC0]">days per execution band</p>
+              <p className="mt-2 font-mono text-[12px] text-[#71717A]">days per execution band</p>
             </Panel>
           </div>
 
@@ -378,11 +378,11 @@ export function MetricsReport({
             <Panel title="Mix">
               <div className="space-y-6">
                 <div>
-                  <h3 className={cn(TICK, "mb-3 text-[#8E9AC0]")}>By weight · Σ</h3>
+                  <h3 className={cn(TICK, "mb-3 text-[#71717A]")}>By weight · Σ</h3>
                   <MixBar label="Execution by weight" parts={weightParts} />
                 </div>
                 <div>
-                  <h3 className={cn(TICK, "mb-3 text-[#8E9AC0]")}>By source · commits</h3>
+                  <h3 className={cn(TICK, "mb-3 text-[#71717A]")}>By source · commits</h3>
                   <MixBar label="Commits by source" parts={sourceParts} />
                 </div>
               </div>
@@ -416,7 +416,7 @@ export function MetricsReport({
                   ] as const
                 ).map(([label, v]) => (
                   <div key={label} className="app-field rounded-[14px] px-3 py-2.5">
-                    <dt className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#B4BEDB]">{label}</dt>
+                    <dt className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#52525B]">{label}</dt>
                     <dd className="mt-1 text-lg font-semibold tabular-nums">{formatDuration(v)}</dd>
                   </div>
                 ))}
@@ -442,7 +442,7 @@ export function MetricsReport({
             <div className="-mx-2 overflow-x-auto">
               <table className="w-full min-w-[40rem] border-collapse text-base tabular-nums">
                 <thead>
-                  <tr className={cn(TICK, "text-left text-[#B4BEDB]")}>
+                  <tr className={cn(TICK, "text-left text-[#52525B]")}>
                     <th scope="col" className="px-2 pb-2 font-medium">Week</th>
                     <th scope="col" className="px-2 pb-2 text-right font-medium">Σ</th>
                     <th scope="col" className="px-2 pb-2 text-right font-medium">WoW</th>
@@ -460,18 +460,18 @@ export function MetricsReport({
                     const before = rows[i + 1];
                     const wow = before ? change(w.execution / w.span, before.execution / before.span) : null;
                     return (
-                      <tr key={w.week} className="border-t border-white/[0.08]">
+                      <tr key={w.week} className="border-t border-black/[0.05]">
                         <th scope="row" className="px-2 py-2.5 text-left font-medium">
                           {dayText(w.week, { day: "numeric", month: "short", year: "2-digit" })}
-                          {w.span < 7 && <span className="ml-1.5 font-mono text-[12px] font-normal text-[#8E9AC0]">{w.span}d</span>}
+                          {w.span < 7 && <span className="ml-1.5 font-mono text-[12px] font-normal text-[#71717A]">{w.span}d</span>}
                         </th>
                         <td className="px-2 py-2.5 text-right font-semibold">{w.execution}</td>
-                        <td className="px-2 py-2.5 text-right font-mono text-sm text-[#B4BEDB]">
+                        <td className="px-2 py-2.5 text-right font-mono text-sm text-[#52525B]">
                           {wow === null ? "—" : `${wow >= 0 ? "▲" : "▼"}${formatNumber(Math.abs(wow))}%`}
                         </td>
                         <td className="px-2 py-2.5 text-right">{w.commits}</td>
                         <td className="px-2 py-2.5 text-right">{w.tasks}</td>
-                        <td className="px-2 py-2.5 text-right text-[#B4BEDB]">
+                        <td className="px-2 py-2.5 text-right text-[#52525B]">
                           {w.active}/{w.span}
                         </td>
                         <td className="px-2 py-2.5 text-right">{formatNumber(w.velocity, 2)}</td>
@@ -486,17 +486,17 @@ export function MetricsReport({
                 </tbody>
               </table>
             </div>
-            <p className="mt-3 font-mono text-[12px] text-[#8E9AC0]">WoW = change in Σ ÷ days; partial weeks marked</p>
+            <p className="mt-3 font-mono text-[12px] text-[#71717A]">WoW = change in Σ ÷ days; partial weeks marked</p>
           </Panel>
 
           <Panel title="Projects" aside="Share of execution">
             {s.projects.length === 0 ? (
-              <p className="font-mono text-sm text-[#8E9AC0]">No execution</p>
+              <p className="font-mono text-sm text-[#71717A]">No execution</p>
             ) : (
               <div className="-mx-2 overflow-x-auto">
                 <table className="w-full min-w-[40rem] border-collapse text-base tabular-nums">
                   <thead>
-                    <tr className={cn(TICK, "text-left text-[#B4BEDB]")}>
+                    <tr className={cn(TICK, "text-left text-[#52525B]")}>
                       <th scope="col" className="px-2 pb-2 font-medium">Project</th>
                       <th scope="col" className="px-2 pb-2 text-right font-medium">Σ</th>
                       <th scope="col" className="w-[22%] px-2 pb-2 font-medium">Share</th>
@@ -511,7 +511,7 @@ export function MetricsReport({
                       const share = projectTotal ? p.execution / projectTotal : 0;
                       const delta = change(p.execution, p.previous);
                       return (
-                        <tr key={p.name} className="border-t border-white/[0.08]">
+                        <tr key={p.name} className="border-t border-black/[0.05]">
                           <th scope="row" className="max-w-[16rem] truncate px-2 py-2.5 text-left font-medium">
                             {p.name}
                           </th>
@@ -521,15 +521,15 @@ export function MetricsReport({
                               <span className="app-field block h-2 flex-1 overflow-hidden rounded-full" aria-hidden="true">
                                 <span className="block h-full origin-left rounded-full bg-accent" style={{ transform: `scaleX(${share})` }} />
                               </span>
-                              <span className="w-10 text-right font-mono text-sm text-[#B4BEDB]">{formatNumber(share * 100)}%</span>
+                              <span className="w-10 text-right font-mono text-sm text-[#52525B]">{formatNumber(share * 100)}%</span>
                             </span>
                           </td>
-                          <td className="px-2 py-2.5 text-right text-[#B4BEDB]">{p.previous}</td>
-                          <td className="px-2 py-2.5 text-right font-mono text-sm text-[#B4BEDB]">
+                          <td className="px-2 py-2.5 text-right text-[#52525B]">{p.previous}</td>
+                          <td className="px-2 py-2.5 text-right font-mono text-sm text-[#52525B]">
                             {delta === null ? (p.execution > 0 ? "new" : "—") : `${delta >= 0 ? "▲" : "▼"}${formatNumber(Math.abs(delta))}%`}
                           </td>
                           <td className="px-2 py-2.5 text-right">{p.commits}</td>
-                          <td className="px-2 py-2.5 text-right text-[#B4BEDB]">
+                          <td className="px-2 py-2.5 text-right text-[#52525B]">
                             {p.activeDays}/{days}
                           </td>
                         </tr>
@@ -549,14 +549,14 @@ export function MetricsReport({
               {objectives.length === 0 ? (
                 <EmptyState title="No objectives" />
               ) : (
-                <ul className="divide-y divide-white/[0.08]">
+                <ul className="divide-y divide-black/[0.05]">
                   {objectives.map((o) => {
                     const pos = objectivePosition(o, now);
                     return (
                       <li key={o.id} className="grid gap-4 py-4 first:pt-0 last:pb-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center">
                         <div className="min-w-0">
                           <p className="truncate font-medium">{o.name}</p>
-                          <p className="mt-0.5 text-sm text-[#8E9AC0] tabular-nums">
+                          <p className="mt-0.5 text-sm text-[#71717A] tabular-nums">
                             {formatNumber(o.currentValue)} / {formatNumber(o.targetValue)} {o.unit}
                             {o.projectName && ` · ${o.projectName}`}
                             {o.deadlineAt && `, due ${formatDate(o.deadlineAt, tz, { day: "numeric", month: "short", year: "numeric" })}`}
@@ -565,7 +565,7 @@ export function MetricsReport({
                             <ProgressRail value={o.currentValue} max={o.targetValue} label={`${o.name} progress`} />
                           </div>
                         </div>
-                        <p className="font-mono text-sm leading-relaxed tabular-nums text-[#B4BEDB]">
+                        <p className="font-mono text-sm leading-relaxed tabular-nums text-[#52525B]">
                           velocity {formatNumber(pos.velocity, 2)}/d
                           <br />
                           required {pos.required === null ? "—" : pos.required === Infinity ? "past deadline" : `${formatNumber(pos.required, 2)}/d`}
@@ -581,7 +581,7 @@ export function MetricsReport({
                           <span
                             className={cn(
                               "rounded-full px-2.5 py-1 text-[12px] font-semibold uppercase tracking-[0.12em]",
-                              pos.status === "behind" ? "app-inverse" : "app-field text-[#DCE2F2]"
+                              pos.status === "behind" ? "app-inverse" : "app-field text-[#27272A]"
                             )}
                           >
                             {pos.status}
