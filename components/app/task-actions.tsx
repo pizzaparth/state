@@ -1,13 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { Route } from "next";
 import { ArrowRight, CalendarCheck, Loader2, Trash2 } from "lucide-react";
 import { deleteTaskAction, placeTaskAction, restoreTaskAction, setTaskDueAction } from "@/app/(app)/actions";
 import type { BoardTarget } from "@/db/queries";
 import { cn } from "@/lib/utils";
 import { useNotice } from "./notice";
+import { useClosePanel } from "./detail-drawer";
 import { TICK } from "./primitives";
 
 
@@ -24,9 +23,6 @@ export function TaskActions({
   /** Boards in the task's workspace; empty when the task is already on a board. */
   targets: BoardTarget[];
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const notify = useNotice();
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState<"due" | "clear" | "move" | "delete" | null>(null);
@@ -35,12 +31,7 @@ export function TaskActions({
 
   const defaultColumn = targets[0]?.columns.find((c) => c.stateType === "backlog")?.id ?? targets[0]?.columns[0]?.id ?? "";
 
-  const closePanel = () => {
-    const next = new URLSearchParams(searchParams.toString());
-    next.delete("task");
-    const query = next.toString();
-    router.replace(`${pathname}${query ? `?${query}` : ""}` as Route, { scroll: false });
-  };
+  const closePanel = useClosePanel();
 
   const saveDue = (dueDate: string | null) => {
     if (pending) return;

@@ -33,6 +33,7 @@ import { NoticeProvider, useNotice } from "./notice";
 import { TimezoneCheck } from "./timezone-check";
 import { ShortcutSheet } from "./shortcut-sheet";
 import { ACTION_KEYS, JUMPS, shortcutFor } from "@/lib/shortcuts";
+import { watchPanelLinks } from "@/lib/panel-history";
 
 export interface ShellData {
   inboxCount: number;
@@ -91,6 +92,8 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
   const pathname = usePathname();
 
   React.useEffect(() => setNavOpen(false), [pathname]);
+  // Panels opened from in-app links close with Back (lib/panel-history.ts)
+  React.useEffect(() => watchPanelLinks(), []);
 
   // Keyboard-first, from lib/shortcuts.ts: ⌘K / Ctrl+K palette, single-key actions, G then a letter to jump
   React.useEffect(() => {

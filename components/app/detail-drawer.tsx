@@ -9,6 +9,7 @@ import { Check, ChevronRight, Link2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TICK } from "@/lib/type";
 import { useNotice } from "./notice";
+import { PANEL_PARAMS, clearPanelMark, panelCameFromApp, retargetPanel } from "@/lib/panel-history";
 
 /** Current URL with `remove` dropped and, when given, `set` added. */
 function useSwapHref() {
@@ -21,6 +22,32 @@ function useSwapHref() {
     const query = next.toString();
     return `${pathname}${query ? `?${query}` : ""}` as Route;
   };
+}
+
+/**
+ * Closes the panel in the URL: Back when the panel was opened from inside the app (so
+ * history stays page → panel → page), otherwise a replace that drops the panel params.
+ */
+export function useClosePanel() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  return React.useCallback(() => {
+    if (panelCameFromApp()) {
+      clearPanelMark();
+      router.back();
+      return;
+    }
+    const next = new URLSearchParams(searchParams.toString());
+    for (const p of PANEL_PARAMS) next.delete(p);
+    const query = next.toString();
+    router.replace(`${pathname}${query ? `?${query}` : ""}` as Route, { scroll: false });
+  }, [router, pathname, searchParams]);
+}
+
+/** A Close button for content inside the panel (empty and error states). */
+export function DrawerClose({ children = "Close" }: { children?: React.ReactNode }) {
+  return <Dialog.Close className="app-btn mi-press inline-flex h-10 items-center rounded-[12px] px-4 text-base font-medium">{children}</Dialog.Close>;
 }
 
 /**
@@ -43,8 +70,7 @@ export function DetailDrawer({
   crumbs?: string[];
   children: React.ReactNode;
 }) {
-  const router = useRouter();
-  const swapHref = useSwapHref();
+  const closePanel = useClosePanel();
   const [open, setOpen] = React.useState(true);
   const [scrolled, setScrolled] = React.useState(false);
   const contentRef = React.useRef<HTMLDivElement>(null);
@@ -53,7 +79,7 @@ export function DetailDrawer({
   const close = () => {
     setOpen(false);
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.setTimeout(() => router.replace(swapHref(param), { scroll: false }), reduced ? 0 : 140);
+    window.setTimeout(closePanel, reduced ? 0 : 140);
   };
 
   return (
@@ -68,6 +94,7 @@ export function DetailDrawer({
             "sm:inset-y-2 sm:right-2 sm:rounded-[24px] sm:border sm:border-black/[0.08] sm:pb-0 sm:pt-0"
           )}
           aria-describedby={undefined}
+          data-panel={param}
           ref={contentRef}
           // Focus the panel itself, not its first button (copy link), so Tab starts at
           // the top and no focus ring flashes on open
@@ -161,8 +188,9 @@ export function PanelLink({
   children: React.ReactNode;
 }) {
   const swapHref = useSwapHref();
+  const href = swapHref(from, { key: to, value: id });
   return (
-    <Link href={swapHref(from, { key: to, value: id })} replace scroll={false} className={className}>
+    <Link href={href} replace scroll={false} data-panel-swap="" onClick={() => retargetPanel(href)} className={className}>
       {children}
     </Link>
   );

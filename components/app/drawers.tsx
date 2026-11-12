@@ -2,7 +2,8 @@ import * as React from "react";
 import { getBoardTargets, getCommitDetail, getProjectOptions, getTaskDetail } from "@/db/queries";
 import { dayKey } from "@/lib/format";
 import type { Viewer } from "@/lib/viewer";
-import { DetailDrawer } from "./detail-drawer";
+import { DetailDrawer, DrawerClose } from "./detail-drawer";
+import { EmptyState } from "./primitives";
 import { CommitDetail, TaskDetail } from "./details";
 import { TaskActions } from "./task-actions";
 
@@ -58,5 +59,16 @@ export async function Drawers({ params, viewer }: { params: Record<string, strin
       );
     }
   }
+  // An id in the URL that is gone (deleted, or never readable): say so instead of nothing
+  if (taskId) return <MissingPanel param="task" title="Task" />;
+  if (commitId) return <MissingPanel param="commit" title="Commit" />;
   return null;
+}
+
+function MissingPanel({ param, title }: { param: string; title: string }) {
+  return (
+    <DetailDrawer param={param} title={title}>
+      <EmptyState title={`${title} not found`} action={<DrawerClose />} />
+    </DetailDrawer>
+  );
 }

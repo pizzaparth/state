@@ -50,9 +50,13 @@ export function TaskRow({
   );
 }
 
+/** Params that open a panel or a one-off action; a new panel link drops them all. */
+const TRANSIENT = new Set(["task", "commit", "objective", "metric", "capture"]);
+
+/** `path` with the page's params kept (filters, sort, period), any open panel dropped, and `key` set. */
 export function withParam(path: string, params: Record<string, string | undefined>, key: string, value: string) {
   const next = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) if (v && k !== key) next.set(k, v);
+  for (const [k, v] of Object.entries(params)) if (v && k !== key && !TRANSIENT.has(k)) next.set(k, v);
   next.set(key, value);
   return `${path}?${next.toString()}`;
 }
