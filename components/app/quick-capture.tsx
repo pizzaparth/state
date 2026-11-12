@@ -4,7 +4,7 @@ import * as React from "react";
 import { Loader2, Plus } from "lucide-react";
 import { captureManyAction, captureTaskAction, createProjectAction } from "@/app/(app)/client-actions";
 import { CAPTURE_MANY_MAX, parseQuickCapture, slugify } from "@/lib/validation";
-import { dayIn } from "@/lib/recurrence";
+import { dayKey } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useNotice } from "./notice";
 
@@ -67,7 +67,10 @@ export function QuickCapture({
   draftKey,
   onCaptured,
   inputRef: externalRef,
+  defaultProject,
 }: {
+  /** Files captures under this project unless the text names another (#slug). */
+  defaultProject?: string;
   projects: Project[];
   /** The person's timezone, so "today" in the preview is the server's today. */
   tz: string;
@@ -112,7 +115,7 @@ export function QuickCapture({
     if (autoFocus && window.matchMedia("(pointer: fine)").matches) inputRef.current?.focus();
   }, [autoFocus]);
 
-  const parsed = value.trim() ? parseQuickCapture(value, dayIn(new Date(), tz)) : null;
+  const parsed = value.trim() ? parseQuickCapture(value, dayKey(new Date(), tz)) : null;
   const slug = parsed?.projectSlug?.toLowerCase();
   const project = slug ? projects.find((p) => p.slug === slug) : undefined;
   const unknownSlugRaw = slug && !project ? parsed!.projectSlug! : null;
@@ -141,8 +144,9 @@ export function QuickCapture({
 
   // ---------------------------------------------------------------- saving
   const save = (opts: { queued?: boolean; close?: boolean; text?: string } = {}) => {
-    const text = opts.text ?? value;
-    const p = parseQuickCapture(text, dayIn(new Date(), tz));
+    const typed = opts.text ?? value;
+    const text = defaultProject && !parseQuickCapture(typed, dayKey(new Date(), tz)).projectSlug ? `${typed} #${defaultProject}` : typed;
+    const p = parseQuickCapture(text, dayKey(new Date(), tz));
     if (!p.title || pending) return;
     const s = p.projectSlug?.toLowerCase();
     if (s && !projects.some((x) => x.slug === s)) {

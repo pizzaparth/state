@@ -1,12 +1,12 @@
 import * as React from "react";
-import { ArrowUpRight, CalendarDays, Folder, Lock, Repeat, SignalHigh, Weight } from "lucide-react";
+import { ArrowUpRight, CalendarClock, CalendarDays, Folder, Lock, Repeat, SignalHigh, Tag, Weight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { getCommitDetail, getTaskDetail } from "@/db/queries";
-import { dayKey, dueState, formatDateTime, formatDuration } from "@/lib/format";
+import { dayKey, dueState, formatDate, formatDateTime, formatDuration, formatTime } from "@/lib/format";
 import { weightLabel } from "@/lib/weights";
 import { cn } from "@/lib/utils";
 import { Chip, DISPLAY, DueLabel, PriorityMark, TICK } from "./primitives";
-import { TaskDue, TaskPriority, TaskProject, TaskRecurrence, TaskStatus, TaskWeight } from "./task-fields";
+import { RepeatCustom, SkipNext, TaskDefer, TaskDescription, TaskDue, TaskPriority, TaskProject, TaskRecurrence, TaskStatus, TaskTags, TaskWeight } from "./task-fields";
 import { recurrenceLabel } from "@/lib/recurrence";
 import { TaskTitle } from "./task-title";
 import { CommitEditor } from "./commit-editor";
@@ -125,6 +125,8 @@ export function TaskDetail({
   editable = false,
   projects,
   statusColumns,
+  tagSuggestions = [],
+  history = [],
 }: {
   task: Task;
   tz: string;
@@ -133,6 +135,10 @@ export function TaskDetail({
   projects?: { id: string; name: string }[];
   /** The board's columns, for a board task the viewer may move. */
   statusColumns?: { id: string; name: string; stateType: string }[];
+  /** Existing tag names, for suggestions. */
+  tagSuggestions?: string[];
+  /** Last changes, already worded: "moved to Active". */
+  history?: { at: Date; text: string }[];
 }) {
   const done = Boolean(task.completedAt);
   const state = done ? "Done" : (task.columnName ?? "Inbox");
@@ -148,12 +154,10 @@ export function TaskDetail({
           ) : (
             <StatusPill state={state} done={done} started={Boolean(task.startedAt)} />
           )}
-          {task.tags.map((t) => (
-            <Chip key={t}>{t}</Chip>
-          ))}
+          {!editable && task.tags.map((t) => <Chip key={t}>{t}</Chip>)}
         </div>
         <TaskTitle taskId={task.id} title={task.title} editable={editable} />
-        {task.description && <p className="mt-3 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-[#52525B]">{task.description}</p>}
+        <TaskDescription taskId={task.id} description={task.description} editable={editable} />
       </div>
 
       <Stats
@@ -189,7 +193,27 @@ export function TaskDetail({
             {open ? <TaskDue taskId={task.id} due={task.dueAt ? dayKey(task.dueAt, tz) : null} /> : task.dueAt ? <DueLabel due={dueState(task.dueAt, now, tz)} /> : <None />}
           </Prop>
           <Prop icon={Repeat} label="Repeats">
-            {open ? <TaskRecurrence taskId={task.id} rule={task.recurrenceRule} /> : task.recurrenceRule ? recurrenceLabel(task.recurrenceRule) : <None />}
+            {open ? (
+              <>
+                <TaskRecurrence taskId={task.id} rule={task.recurrenceRule} />
+                <span className="flex flex-wrap items-baseline gap-x-4">
+                  <RepeatCustom taskId={task.id} rule={task.recurrenceRule} />
+                  {task.recurrenceRule && <SkipNext taskId={task.id} />}
+                </span>
+              </>
+            ) : task.recurrenceRule ? (
+              recurrenceLabel(task.recurrenceRule)
+            ) : (
+              <None />
+            )}
+          </Prop>
+          {open && (
+            <Prop icon={CalendarClock} label="Not before">
+              <TaskDefer taskId={task.id} until={task.deferUntil ? dayKey(task.deferUntil, tz) : null} today={dayKey(now, tz)} />
+            </Prop>
+          )}
+          <Prop icon={Tag} label="Tags">
+            {editable ? <TaskTags taskId={task.id} tags={task.tags} suggestions={tagSuggestions} /> : task.tags.length ? task.tags.join(", ") : <None />}
           </Prop>
         </dl>
       </PanelSection>
@@ -203,6 +227,15 @@ export function TaskDetail({
             { label: "Done", at: task.completedAt, final: true },
           ]}
         />
+        {history.length > 0 && (
+          <ol aria-label="Changes" className="mt-3 space-y-1 border-t border-black/[0.05] pt-3 font-mono text-[12px] tabular-nums text-[#71717A]">
+            {history.map((h, i) => (
+              <li key={i} className="truncate">
+                {formatDate(h.at, tz, { day: "numeric", month: "short" })} {formatTime(h.at, tz)} · <span className="text-[#52525B]">{h.text}</span>
+              </li>
+            ))}
+          </ol>
+        )}
       </PanelSection>
 
       <PanelSection title="Commit">

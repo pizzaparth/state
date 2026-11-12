@@ -46,7 +46,7 @@ export interface ShellData {
   inboxCount: number;
   projects: { id: string; name: string; slug: string; href: string }[];
   dateLabel: string;
-  ticker: { today: number; last7: number; prev7: number; activeDays7: number; eligible7: number };
+  ticker: { today: number; last7: number; prev7: number; activeDays7: number; eligible7: number; prior7: number };
   /** Set for a throwaway demo session (the user id); null for the owner. */
   demoUserId: string | null;
   /** The viewer's saved time zone. */

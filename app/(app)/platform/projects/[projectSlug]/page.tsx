@@ -1,7 +1,7 @@
 import * as React from "react";
 import { notFound } from "next/navigation";
-import { getProjectBySlug } from "@/db/queries";
-import { getViewer } from "@/lib/viewer";
+import { getOpenTasks, getProjectBySlug } from "@/db/queries";
+import { getCaptureProjects, getViewer } from "@/lib/viewer";
 import { BackLink, Chip, PageHeader } from "@/components/app/primitives";
 import { ProjectView } from "@/components/app/views";
 import { withParam } from "@/components/app/task-row";
@@ -41,13 +41,17 @@ export default async function ProjectPage({
       />
       {project.archivedAt && <ArchivedNotice archivedAt={project.archivedAt} tz={viewer.tz} />}
       <ProjectView
-        project={project}
+        project={{ ...project, archived: Boolean(project.archivedAt) }}
         scope={{ workspaceIds: [project.workspaceId] }}
         tz={viewer.tz}
         taskHref={(id) => withParam(base, query, "task", id)}
         commitHref={(id) => withParam(base, query, "commit", id)}
+        tab={query.tab === "done" ? "done" : "open"}
+        page={Math.max(0, Math.min(1000, Number(query.page) || 0))}
+        tabHref={(tab, page) => `${base}${tab === "done" ? `?tab=done${page ? `&page=${page}` : ""}` : ""}`}
+        capture={{ projects: await getCaptureProjects(viewer) }}
       />
-      <Drawers params={query} viewer={viewer} />
+      <Drawers params={query} viewer={viewer} siblings={(await getOpenTasks({ workspaceIds: [project.workspaceId], projectId: project.id })).map((t) => t.id)} />
     </>
   );
 }

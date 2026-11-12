@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { ArrowRight, Loader2, Trash2 } from "lucide-react";
-import { deleteTaskAction, placeTaskAction, restoreTaskAction } from "@/app/(app)/client-actions";
+import { ArrowRight, Check, Copy, Loader2, Trash2 } from "lucide-react";
+import { completeTaskAction, deleteTaskAction, duplicateTaskAction, placeTaskAction, restoreTaskAction } from "@/app/(app)/client-actions";
 import type { BoardTarget } from "@/db/queries";
 import { cn } from "@/lib/utils";
 import { useNotice } from "./notice";
@@ -24,7 +24,7 @@ export function TaskActions({
 }) {
   const notify = useNotice();
   const [error, setError] = React.useState<string | null>(null);
-  const [pending, setPending] = React.useState<"move" | "delete" | null>(null);
+  const [pending, setPending] = React.useState<"move" | "delete" | "copy" | "done" | null>(null);
   const [, startTransition] = React.useTransition();
 
   const defaultColumn = targets[0]?.columns.find((c) => c.stateType === "backlog")?.id ?? targets[0]?.columns[0]?.id ?? "";
@@ -98,6 +98,45 @@ export function TaskActions({
           </div>
         </form>
       )}
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={pending !== null}
+          onClick={() => {
+            setPending("copy");
+            startTransition(async () => {
+              const r = await duplicateTaskAction({ taskId: task.id });
+              setPending(null);
+              if (!r.ok) return setError(r.error);
+              notify(`Copied “${r.data.title}”.`);
+            });
+          }}
+          className="app-btn inline-flex h-11 items-center gap-1.5 rounded-[14px] px-4 text-base font-medium disabled:opacity-50"
+        >
+          {pending === "copy" ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Copy className="size-4" aria-hidden="true" />}
+          Duplicate
+        </button>
+        {task.inInbox && !task.completed && (
+          <button
+            type="button"
+            disabled={pending !== null}
+            onClick={() => {
+              setPending("done");
+              startTransition(async () => {
+                const r = await completeTaskAction({ taskId: task.id });
+                setPending(null);
+                if (!r.ok) return setError(r.error);
+                notify(`Logged as done. +${r.data.committed}.`);
+              });
+            }}
+            className="app-btn inline-flex h-11 items-center gap-1.5 rounded-[14px] px-4 text-base font-medium disabled:opacity-50"
+          >
+            {pending === "done" ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Check className="size-4" aria-hidden="true" />}
+            Log as done
+          </button>
+        )}
+      </div>
 
       {task.completed ? (
         <p className="mt-3 font-mono text-[12px] text-[#71717A]">done = history · move out of Done to delete</p>

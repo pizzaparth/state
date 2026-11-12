@@ -14,6 +14,7 @@ import {
   tasks,
   users,
   workspaces,
+  auditEvents,
 } from "../schema";
 
 /**
@@ -288,11 +289,13 @@ export interface Ticker {
   activeDays7: number;
   /** Days of the last 7 the account existed (Consistency denominator). */
   eligible7: number;
+  /** The seven complete days before today. */
+  prior7: number;
 }
 
 /** The shell's stat strip: one pass over the viewer's last 14 local days of commits. */
 export async function getTicker(scope: Scope & { userId: string }, tz: string): Promise<Ticker> {
-  if (empty(scope)) return { today: 0, last7: 0, prev7: 0, activeDays7: 0, eligible7: 7 };
+  if (empty(scope)) return { today: 0, last7: 0, prev7: 0, activeDays7: 0, eligible7: 7, prior7: 0 };
   const day0 = localDayStart(tz, 0);
   const day6 = localDayStart(tz, 6);
   const [[row], eligible7] = await Promise.all([
@@ -302,12 +305,13 @@ export async function getTicker(scope: Scope & { userId: string }, tz: string): 
       last7: sql<number>`coalesce(sum(${commits.executionValue}) filter (where ${commits.createdAt} >= ${day6}), 0)::int`,
       prev7: sql<number>`coalesce(sum(${commits.executionValue}) filter (where ${commits.createdAt} < ${day6}), 0)::int`,
       activeDays7: sql<number>`count(distinct (${commits.createdAt} at time zone ${tz})::date) filter (where ${commits.createdAt} >= ${day6})::int`,
+      prior7: sql<number>`coalesce(sum(${commits.executionValue}) filter (where ${commits.createdAt} >= ${localDayStart(tz, 7)} and ${commits.createdAt} < ${day0}), 0)::int`,
     })
     .from(commits)
     .where(and(...commitWhere(scope), gte(commits.createdAt, localDayStart(tz, 13)))),
     getEligibleDays(scope, tz, 7),
   ]);
-  return { ...(row ?? { today: 0, last7: 0, prev7: 0, activeDays7: 0 }), eligible7 };
+  return { ...(row ?? { today: 0, last7: 0, prev7: 0, activeDays7: 0, prior7: 0 }), eligible7 };
 }
 
 // ------------------------------------------------------------------ tasks
@@ -356,7 +360,8 @@ async function withTags<T extends { id: string }>(rows: T[]): Promise<(T & { tag
     .select({ taskId: taskTags.taskId, name: tags.name })
     .from(taskTags)
     .innerJoin(tags, eq(tags.id, taskTags.tagId))
-    .where(inArray(taskTags.taskId, rows.map((r) => r.id)));
+    .where(inArray(taskTags.taskId, rows.map((r) => r.id)))
+    .limit(rows.length * 50);
   const byTask = new Map<string, string[]>();
   for (const t of tagRows) byTask.set(t.taskId, [...(byTask.get(t.taskId) ?? []), t.name]);
   return rows.map((r) => ({ ...r, tags: byTask.get(r.id) ?? [] }));
@@ -416,12 +421,26 @@ export async function getBoard(boardId: string, workspaceIds: string[], doneWind
   return { ...board, columns: cols, tasks: await withTags(rows), doneWindowDays };
 }
 
+/** Card ids of a board in on-screen order (columns left to right, then position): panel J/K. */
+export async function getBoardTaskIds(boardId: string, workspaceIds: string[]): Promise<string[]> {
+  if (workspaceIds.length === 0) return [];
+  const rows = await db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .innerJoin(columns, eq(columns.id, tasks.columnId))
+    .where(and(eq(tasks.boardId, boardId), inArray(tasks.workspaceId, workspaceIds), isNull(tasks.deletedAt), isNull(tasks.completedAt)))
+    .orderBy(asc(columns.position), sql`${tasks.position} collate "C"`)
+    .limit(BOARD_CARD_LIMIT);
+  return rows.map((r) => r.id);
+}
+
 const inboxWhere = (personalWorkspaceId: string) =>
   and(eq(tasks.workspaceId, personalWorkspaceId), isNull(tasks.boardId), isNull(tasks.deletedAt), isNull(tasks.completedAt));
 
 export async function getInbox(personalWorkspaceId: string | null, limit = 200): Promise<TaskCard[]> {
   if (!personalWorkspaceId) return [];
-  const rows = await selectTaskCards().where(inboxWhere(personalWorkspaceId)).orderBy(desc(tasks.createdAt)).limit(limit);
+  // Oldest first, so nothing rots at the bottom (C14)
+  const rows = await selectTaskCards().where(inboxWhere(personalWorkspaceId)).orderBy(asc(tasks.createdAt)).limit(limit);
   return withTags(rows);
 }
 
@@ -502,31 +521,51 @@ export interface TodayData {
   queued: TaskCard[];
   overdue: TaskCard[];
   completed: TaskCard[];
+  /** Planned for today (C24), open first. */
+  planned: TaskCard[];
+  /** Planned for an earlier day and not done. */
+  carried: TaskCard[];
   commits: CommitRow[];
   executionToday: number;
 }
 
+/** Upper bound for each Today list; the panels say "100+" and link to the full view. */
+export const TODAY_LIMIT = 100;
+
 export async function getToday(scope: Scope & { userId: string }, tz: string): Promise<TodayData> {
-  if (empty(scope)) return { active: [], queued: [], overdue: [], completed: [], commits: [], executionToday: 0 };
+  if (empty(scope)) return { active: [], queued: [], overdue: [], completed: [], planned: [], carried: [], commits: [], executionToday: 0 };
   const open = and(...taskWhere(scope), isNull(tasks.completedAt), isNull(tasks.archivedAt));
   // Overdue tasks get their own list, so Active and Queued exclude them
   const notOverdue = sql`(${tasks.dueAt} is null or ${tasks.dueAt} >= ${localDayStart(tz, 0)})`;
+  // Deferred tasks wait until their day
+  const notDeferred = sql`(${tasks.deferUntil} is null or ${tasks.deferUntil} <= now())`;
+  const today = sql`(now() at time zone ${tz})::date`;
 
-  const [active, queued, overdue, completed, todayCommits] = await Promise.all([
+  const [active, queued, overdue, completed, planned, carried, todayCommits] = await Promise.all([
     selectTaskCards()
       .innerJoin(columns, eq(columns.id, tasks.columnId))
       .where(and(open, notOverdue, inArray(columns.stateType, ["active", "review"])))
-      .orderBy(asc(PRIORITY_RANK), asc(tasks.dueAt)),
+      .orderBy(asc(PRIORITY_RANK), asc(tasks.dueAt))
+      .limit(TODAY_LIMIT),
     selectTaskCards()
       .innerJoin(columns, eq(columns.id, tasks.columnId))
-      .where(and(open, notOverdue, eq(columns.stateType, "backlog")))
+      .where(and(open, notOverdue, notDeferred, eq(columns.stateType, "backlog")))
       .orderBy(sql`${tasks.dueAt} asc nulls last`, asc(PRIORITY_RANK))
       .limit(6),
-    selectTaskCards().where(and(open, isNotNull(tasks.dueAt), lt(tasks.dueAt, localDayStart(tz, 0)))).orderBy(asc(tasks.dueAt)),
+    selectTaskCards().where(and(open, isNotNull(tasks.dueAt), lt(tasks.dueAt, localDayStart(tz, 0)))).orderBy(asc(tasks.dueAt)).limit(TODAY_LIMIT),
     selectTaskCards()
       .where(and(...taskWhere(scope), gte(tasks.completedAt, localDayStart(tz, 0))))
-      .orderBy(desc(tasks.completedAt)),
-    getCommits(scope, { sinceDays: 1, tz }),
+      .orderBy(desc(tasks.completedAt))
+      .limit(TODAY_LIMIT),
+    selectTaskCards()
+      .where(and(...taskWhere(scope), sql`${tasks.plannedFor} = ${today}`))
+      .orderBy(sql`${tasks.completedAt} is not null`, asc(PRIORITY_RANK))
+      .limit(TODAY_LIMIT),
+    selectTaskCards()
+      .where(and(open, sql`${tasks.plannedFor} < ${today}`))
+      .orderBy(desc(tasks.plannedFor))
+      .limit(TODAY_LIMIT),
+    getCommits(scope, { sinceDays: 1, tz, limit: TODAY_LIMIT * 2 }),
   ]);
 
   return {
@@ -534,9 +573,38 @@ export async function getToday(scope: Scope & { userId: string }, tz: string): P
     queued: await withTags(queued),
     overdue: await withTags(overdue),
     completed: await withTags(completed),
+    planned: await withTags(planned),
+    carried: await withTags(carried),
     commits: todayCommits,
     executionToday: todayCommits.reduce((sum, c) => sum + c.executionValue, 0),
   };
+}
+
+/** Last changes to a task (audit events), newest first (C21). */
+export async function getTaskHistory(taskId: string, workspaceIds: string[], limit = 10) {
+  if (workspaceIds.length === 0) return [];
+  return db
+    .select({ action: auditEvents.action, metadata: auditEvents.metadata, createdAt: auditEvents.createdAt })
+    .from(auditEvents)
+    .where(and(eq(auditEvents.targetType, "task"), eq(auditEvents.targetId, taskId), inArray(auditEvents.workspaceId, workspaceIds)))
+    .orderBy(desc(auditEvents.createdAt))
+    .limit(limit);
+}
+
+/** Tags with how many tasks and commits carry each (Settings → Tags). */
+export async function getTagsWithCounts(workspaceIds: string[], limit = 200) {
+  if (workspaceIds.length === 0) return [];
+  return db
+    .select({
+      id: tags.id,
+      name: tags.name,
+      tasks: sql<number>`(select count(*) from ${taskTags} where ${taskTags.tagId} = ${tags.id})::int`,
+      commits: sql<number>`(select count(*) from ${commitTags} where ${commitTags.tagId} = ${tags.id})::int`,
+    })
+    .from(tags)
+    .where(inArray(tags.workspaceId, workspaceIds))
+    .orderBy(asc(tags.name))
+    .limit(limit);
 }
 
 // ------------------------------------------------------------------ metrics
@@ -829,6 +897,17 @@ export async function getProjectBySlug(workspaceId: string, slug: string) {
     .where(and(eq(projects.workspaceId, workspaceId), eq(projects.slug, slug)))
     .limit(1);
   return project ?? null;
+}
+
+/** A project's completed tasks, newest first, one page at a time. */
+export async function getDoneTasks(scope: Scope, page: number, size = 50): Promise<{ rows: TaskCard[]; more: boolean }> {
+  if (empty(scope)) return { rows: [], more: false };
+  const rows = await selectTaskCards()
+    .where(and(...taskWhere(scope), isNotNull(tasks.completedAt)))
+    .orderBy(desc(tasks.completedAt), desc(tasks.id))
+    .limit(size + 1)
+    .offset(Math.max(0, page) * size);
+  return { rows: await withTags(rows.slice(0, size)), more: rows.length > size };
 }
 
 export async function getOpenTasks(scope: Scope): Promise<(TaskCard & { columnName: string | null })[]> {

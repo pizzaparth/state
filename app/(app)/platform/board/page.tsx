@@ -5,6 +5,7 @@ import { BOARD_FILTER_COOKIE, BOARD_FILTER_KEYS, parseBoardFilter } from "@/lib/
 import { getViewer } from "@/lib/viewer";
 import { PageHeader } from "@/components/app/primitives";
 import { BoardView } from "@/components/app/board-view";
+import { getBoardTaskIds } from "@/db/queries";
 import { Drawers, type PageSearchParams } from "@/components/app/drawers";
 
 export const metadata = { title: "Board" };
@@ -24,7 +25,7 @@ export default async function BoardPage({ searchParams }: { searchParams: PageSe
         title="Board"
       />
       <BoardView boardId={viewer.personalBoardId} viewer={viewer} params={params} basePath="/platform/board" sort={sort} filter={filter} />
-      <Drawers params={params} viewer={viewer} />
+      <Drawers params={params} viewer={viewer} siblings={params.task && viewer.personalBoardId ? await getBoardTaskIds(viewer.personalBoardId, viewer.workspaceIds) : undefined} />
     </>
   );
 }

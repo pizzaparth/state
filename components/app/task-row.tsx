@@ -14,6 +14,7 @@ export function TaskRow({
   now,
   href,
   actions,
+  age,
 }: {
   task: TaskCard;
   tz: string;
@@ -21,10 +22,12 @@ export function TaskRow({
   href: string;
   /** Row actions shown after the link (Today, Inbox). */
   actions?: React.ReactNode;
+  /** Short age shown last ("4d"), for Inbox captures. */
+  age?: string;
 }) {
   const done = Boolean(task.completedAt);
   return (
-    <li className="mi-row group flex min-w-0 items-center gap-x-1.5 rounded-[12px] pl-1.5">
+    <li data-task-id={task.id} data-title={task.title} data-project={task.projectSlug ?? ""} className="mi-row group flex min-w-0 items-center gap-x-1.5 rounded-[12px] pl-1.5 data-[selected=true]:bg-accent-soft">
       <CompleteButton taskId={task.id} title={task.title} done={done} />
       <Link
         href={href as Route}
@@ -42,6 +45,11 @@ export function TaskRow({
           {task.dueAt && !done && <DueLabel due={dueState(task.dueAt, now, tz)} />}
           <PriorityMark priority={task.priority} />
           <WeightMark weight={task.weight} />
+          {age && (
+            <span title="Time since capture" className="w-8 text-right font-mono text-[12px] tabular-nums text-[#71717A]">
+              {age}
+            </span>
+          )}
         </span>
       </Link>
       {actions}

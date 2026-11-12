@@ -7,7 +7,8 @@ import { isTimeZone } from "@/lib/tz";
 export const PRIORITIES = ["none", "low", "medium", "high", "critical"] as const;
 export type Priority = (typeof PRIORITIES)[number];
 
-export const RECURRENCE_RULES = /^(daily|weekdays|weekly|monthly|interval:[1-9]\d{0,2})$/;
+/** daily, weekdays, weekly, monthly, every N days (interval:N), or set weekdays (days:1,3,5; 0 = Sunday). */
+export const RECURRENCE_RULES = /^(daily|weekdays|weekly|monthly|interval:[1-9]\d{0,2}|days:[0-6](,[0-6]){0,6})$/;
 
 // Only title is required; omitting boardId/columnId places the task in the Inbox
 export const taskSchema = z.object({
@@ -268,6 +269,35 @@ export const setObjectiveProgressSchema = z.strictObject({
 export const setObjectiveArchivedSchema = z.strictObject({
   objectiveId: objectId,
   archived: z.boolean(),
+});
+
+/** Task description (C15). Up to 10 000 characters; empty clears it. */
+export const setTaskDescriptionSchema = z.strictObject({
+  taskId: objectId,
+  description: z.string().max(10_000, "Keep the description under 10,000 characters.").transform((v) => v.replace(/\s+$/, "") || null),
+});
+
+/** "Not before" day (C17), or null to clear. */
+export const setTaskDeferSchema = z.strictObject({ taskId: objectId, until: calendarDay.nullable() });
+
+/** Plan for today (C24), or unplan. */
+export const setTaskPlannedSchema = z.strictObject({ taskId: objectId, planned: z.boolean() });
+
+/** Queue or start a task in one step (Inbox triage, Today rows). */
+export const setTaskStageSchema = z.strictObject({ taskId: objectId, stage: z.enum(["queued", "active"]) });
+
+/** Tags (Settings → Tags). */
+export const renameTagSchema = z.strictObject({
+  tagId: objectId,
+  name: z.string().trim().toLowerCase().min(1, "Name the tag.").max(50, "Keep tags under 50 characters.").regex(/^[^,#\s][^,]*$/, "No commas, and no # at the start."),
+});
+export const mergeTagsSchema = z.strictObject({ fromTagId: objectId, intoTagId: objectId });
+export const tagRefSchema = z.strictObject({ tagId: objectId });
+
+/** Project notes (C38). */
+export const setProjectNotesSchema = z.strictObject({
+  projectId: objectId,
+  notes: z.string().max(10_000, "Keep notes under 10,000 characters.").transform((v) => v.replace(/\s+$/, "") || null),
 });
 
 /**

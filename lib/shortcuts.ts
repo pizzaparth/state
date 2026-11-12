@@ -38,6 +38,15 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { keys: "F", label: "Filter", scope: "Board" },
   { keys: "X", label: "Select card", scope: "Board" },
   { keys: "⇧ Click", label: "Select card", scope: "Board" },
+  { keys: "J K", label: "Next / previous", scope: "Inbox" },
+  { keys: "1", label: "Queue", scope: "Inbox" },
+  { keys: "2", label: "Start", scope: "Inbox" },
+  { keys: "D", label: "Due date", scope: "Inbox" },
+  { keys: "P", label: "Project", scope: "Inbox" },
+  { keys: "E", label: "Rename", scope: "Inbox" },
+  { keys: "⌫", label: "Delete", scope: "Inbox" },
+  { keys: "X", label: "Select", scope: "Inbox" },
+  { keys: "J K", label: "Next / previous task", scope: "Task panel" },
   { keys: "Esc", label: "Close", scope: "Task panel" },
 ];
 

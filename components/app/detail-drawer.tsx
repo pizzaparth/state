@@ -5,7 +5,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
-import { Check, ChevronRight, Link2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, ChevronUp, Link2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TICK } from "@/lib/type";
 import { useNotice } from "./notice";
@@ -63,8 +63,11 @@ export function DetailDrawer({
   title,
   crumbs = [],
   recent,
+  nav,
   children,
 }: {
+  /** Neighbouring objects in the page's list: J/K and the arrow buttons swap to them. */
+  nav?: { prevId: string | null; nextId: string | null };
   param: string;
   /** Remembered for the palette's recent list ("task" / "commit" panels). */
   recent?: { kind: "task" | "commit"; id: string; title: string };
@@ -75,7 +78,28 @@ export function DetailDrawer({
   children: React.ReactNode;
 }) {
   const closePanel = useClosePanel();
+  const swap = useSwapHref();
+  const router = useRouter();
   const [open, setOpen] = React.useState(true);
+  const goTo = React.useCallback(
+    (id: string | null) => {
+      if (!id) return;
+      const href = swap(param, { key: param, value: id });
+      retargetPanel(href);
+      router.replace(href, { scroll: false });
+    },
+    [swap, param, router]
+  );
+  React.useEffect(() => {
+    if (!nav) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement).closest("input, textarea, select, [contenteditable=true]")) return;
+      if (e.key === "j" || e.key === "J") goTo(nav.nextId);
+      else if (e.key === "k" || e.key === "K") goTo(nav.prevId);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [nav, goTo]);
   const recentKey = recent ? `${recent.kind}:${recent.id}:${recent.title}` : null;
   React.useEffect(() => {
     if (!recent) return;
@@ -141,6 +165,16 @@ export function DetailDrawer({
               </nav>
             )}
             <div className="ml-auto flex shrink-0 items-center gap-1">
+              {nav && (
+                <>
+                  <button type="button" disabled={!nav.prevId} onClick={() => goTo(nav.prevId)} aria-label="Previous (K)" title="Previous (K)" className="mi-press grid size-9 place-items-center rounded-full text-[#52525B] hover:bg-black/[0.05] disabled:opacity-30">
+                    <ChevronUp className="size-4" aria-hidden="true" />
+                  </button>
+                  <button type="button" disabled={!nav.nextId} onClick={() => goTo(nav.nextId)} aria-label="Next (J)" title="Next (J)" className="mi-press grid size-9 place-items-center rounded-full text-[#52525B] hover:bg-black/[0.05] disabled:opacity-30">
+                    <ChevronDown className="size-4" aria-hidden="true" />
+                  </button>
+                </>
+              )}
               <CopyLinkButton />
               <kbd aria-hidden="true" className="mx-1 hidden rounded-[6px] border border-black/[0.10] px-1.5 py-0.5 font-mono text-[11px] text-[#71717A] [@media(pointer:fine)]:inline">
                 Esc

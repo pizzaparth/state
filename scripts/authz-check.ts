@@ -15,9 +15,9 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../db";
 import * as s from "../db/schema";
-import { getBoard, getCommitDetail, getEligibleDays, getDeletedTasks, getCommitTotals, getCommits, getInbox, getObjectives, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
+import { getBoard, getCommitDetail, getEligibleDays, getDeletedTasks, getCommitTotals, getTaskHistory, getTagsWithCounts, getDoneTasks, getBoardTaskIds, getTasksInWindow, getToday, getCommits, getInbox, getObjectives, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone, completeTask, addColumn, bulkRestoreTasks, bulkUpdateTasks, deleteColumn, moveColumn, renameColumn, setColumnLimit, withdrawCommit, restoreCommit } from "../lib/mutations";
+import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone, completeTask, addColumn, bulkRestoreTasks, bulkUpdateTasks, deleteColumn, moveColumn, renameColumn, setColumnLimit, withdrawCommit, restoreCommit, setTaskDescription, setTaskDefer, setTaskPlanned, setTaskStage, skipRecurrence, duplicateTask, renameTag, mergeTags, deleteTag, setProjectNotes, setTaskTags, updateObjective } from "../lib/mutations";
 import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, importSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, bulkUpdateSchema } from "../lib/validation";
 import { buildExport } from "../lib/data/export";
 import { parseImport } from "../lib/data/import";
@@ -684,6 +684,50 @@ async function main() {
   record("TR1", "Deleted-task list leaks no foreign tasks", (await getDeletedTasks(readable(X))).every((t) => !parthTaskIdsAll.has(t.id)));
   const xTotals = await getCommitTotals({ workspaceIds: readable(X), userId: parthId });
   record("TR2", "History totals sum no foreign commits", xTotals.count === 0, JSON.stringify(xTotals));
+
+  // ------------------------------------------------------------ task depth, tags, notes
+  const deep = await addBoardTask(A, { title: "depth probe ~weekly 2030-01-10" });
+  const before2 = JSON.stringify(await one(db.select().from(s.tasks).where(eq(s.tasks.id, deep.id))));
+  const tagRow = (await db.insert(s.tags).values({ workspaceId: parth.ws.id, name: `probe-${stamp}` }).returning())[0];
+  const parthObjective = await one(db.select().from(s.objectives).where(eq(s.objectives.workspaceId, parth.ws.id)));
+  const tagRow2 = (await db.insert(s.tags).values({ workspaceId: parth.ws.id, name: `probe2-${stamp}` }).returning())[0];
+  const foreign = await Promise.all([
+    expectError(() => setTaskDescription(B, { taskId: deep.id, description: "x" }), "not_found"),
+    expectError(() => setTaskDefer(B, { taskId: deep.id, until: "2031-01-01" }), "not_found"),
+    expectError(() => setTaskPlanned(B, { taskId: deep.id, planned: true }), "not_found"),
+    expectError(() => setTaskStage(B, { taskId: deep.id, stage: "active" }), "not_found"),
+    expectError(() => skipRecurrence(B, { taskId: deep.id }), "not_found"),
+    expectError(() => duplicateTask(B, { taskId: deep.id }), "not_found"),
+    expectError(() => setTaskTags(B, { taskId: deep.id, tags: ["x"] }), "not_found"),
+    expectError(() => renameTag(B, { tagId: tagRow.id, name: "pwned" }), "not_found"),
+    expectError(() => mergeTags(B, { fromTagId: tagRow.id, intoTagId: tagRow2.id }), "not_found"),
+    expectError(() => deleteTag(B, { tagId: tagRow.id }), "not_found"),
+    expectError(() => setProjectNotes(B, { projectId: parth.project.id, notes: "pwned" }), "not_found"),
+    expectError(() => updateObjective(B, { objectiveId: parthObjective.id, name: "x", unit: "u", targetValue: 1, deadline: null, projectId: null }), "not_found"),
+  ]);
+  const after2 = JSON.stringify(await one(db.select().from(s.tasks).where(eq(s.tasks.id, deep.id))));
+  record("DP1", "Notes, defer, plan, stage, skip, duplicate, tags, tag edits, project notes and objective edits refuse another user", foreign.every(([pass]) => pass) && before2 === after2, JSON.stringify(foreign.filter(([p]) => !p)));
+  // Mixed tenants: B's tag cannot be merged into A's
+  const bTag = (await db.insert(s.tags).values({ workspaceId: aarav.ws.id, name: `b-${stamp}` }).returning())[0];
+  [ok, detail] = await expectError(() => mergeTags(A, { fromTagId: tagRow.id, intoTagId: bTag.id }), "not_found");
+  record("DP2", "Tags cannot be merged across tenants", ok, detail);
+  const xReads = [
+    (await getTaskHistory(deep.id, readable(X))).length,
+    (await getTagsWithCounts(readable(X))).length,
+    (await getDoneTasks({ workspaceIds: readable(X), projectId: parth.project.id }, 0)).rows.length,
+    (await getBoardTaskIds(parth.board.id, readable(X))).length,
+    (await getTasksInWindow({ workspaceIds: readable(X), userId: parthId }, "UTC", "2000-01-01", "2100-01-01", "completed")).length,
+  ];
+  record("DP3", "History, tags, done pages, board order and metric lists leak nothing to an outsider", xReads.every((n) => n === 0), JSON.stringify(xReads));
+  await setTaskStage(A, { taskId: deep.id, stage: "active" });
+  await setTaskPlanned(A, { taskId: deep.id, planned: true });
+  const todayA = await getToday({ workspaceIds: readable(A), userId: parthId }, "UTC");
+  record("DP4", "Started and planned tasks show on Today", todayA.active.some((t) => t.id === deep.id) && todayA.planned.some((t) => t.id === deep.id));
+  const skipped = await skipRecurrence(A, { taskId: deep.id });
+  record("DP5", "Skip next moves a weekly task's due date by a week", skipped.dueDay === "2030-01-17", skipped.dueDay);
+  const copy = await duplicateTask(A, { taskId: deep.id });
+  await db.delete(s.tasks).where(inArray(s.tasks.id, [deep.id, copy.id]));
+  await db.delete(s.tags).where(inArray(s.tags.id, [tagRow.id, tagRow2.id, bTag.id]));
 
   // ------------------------------------------------------------ time zone
   const tzParse = [

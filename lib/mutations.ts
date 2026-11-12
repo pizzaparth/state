@@ -3,10 +3,11 @@ import { db } from "@/db";
 import { auditEvents, objectiveProjects, objectives, boards, columns, commitTags, commits, projects, tags, taskTags, tasks, users } from "@/db/schema";
 import { assertWritable, MutationError, type Actor } from "@/lib/authz";
 import { keyBetween } from "@/lib/position";
-import { dayIn, nextDueDay } from "@/lib/recurrence";
+import { nextDueDay, step as recurrenceStep } from "@/lib/recurrence";
+import { dayKey } from "@/lib/format";
 import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
 import type { z } from "zod";
-import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema, captureManySchema, setTaskTagsSchema, commitRefSchema, updateObjectiveSchema } from "@/lib/validation";
+import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema, captureManySchema, setTaskTagsSchema, commitRefSchema, updateObjectiveSchema, mergeTagsSchema, renameTagSchema, setProjectNotesSchema, setTaskDeferSchema, setTaskDescriptionSchema, setTaskPlannedSchema, setTaskStageSchema, tagRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -106,6 +107,7 @@ async function moveInTx(tx: Tx, actor: Actor, input: z.infer<typeof moveTaskSche
     if (toDone && !wasDone) update.completedAt = now;
     if (!toDone && wasDone) update.completedAt = null;
     await tx.update(tasks).set(update).where(eq(tasks.id, task.id));
+    if (task.columnId !== column.id) await auditTask(tx, actor, task.workspaceId, task.id, "task.moved", { columnId: column.id });
 
     let committed = 0;
     if (toDone && !wasDone) {
@@ -143,7 +145,7 @@ async function moveInTx(tx: Tx, actor: Actor, input: z.infer<typeof moveTaskSche
         .limit(1);
       if (!existing && queued) {
         const [{ tz }] = await tx.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
-        const dueDay = nextDueDay(task.recurrenceRule, task.dueAt ? dayIn(task.dueAt, tz) : null, dayIn(now, tz));
+        const dueDay = nextDueDay(task.recurrenceRule, task.dueAt ? dayKey(task.dueAt, tz) : null, dayKey(now, tz));
         const [top] = await tx
           .select({ position: tasks.position })
           .from(tasks)
@@ -314,7 +316,7 @@ async function captureContext(tx: Tx, actor: Actor, queued: boolean): Promise<Ca
 }
 
 async function captureOne(tx: Tx, actor: Actor, ctx: CaptureContext, text: string): Promise<CaptureResult> {
-  const parsed = parseQuickCapture(text, dayIn(new Date(), ctx.tz));
+  const parsed = parseQuickCapture(text, dayKey(new Date(), ctx.tz));
   const title = parsed.title.trim();
   if (!title) throw new MutationError("invalid", "Add a title as well as the #project, !priority or date.");
 
@@ -384,7 +386,7 @@ export async function addBoardTask(actor: Actor, input: z.infer<typeof addBoardT
   if (column.stateType === "done") throw new MutationError("invalid", "Add it to another column, then move it to Done so its commit is recorded.");
 
   const [{ tz }] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
-  const parsed = parseQuickCapture(input.title, dayIn(new Date(), tz));
+  const parsed = parseQuickCapture(input.title, dayKey(new Date(), tz));
   const title = parsed.title.trim();
   if (!title) throw new MutationError("invalid", "Add a title as well as the #project, !priority or date.");
   let project: { id: string; name: string } | undefined;
@@ -495,6 +497,7 @@ export async function placeTask(actor: Actor, input: z.infer<typeof placeTaskSch
     const update: Partial<typeof tasks.$inferInsert> = { boardId: column.boardId, columnId: column.id, position: keyBetween(null, first?.position ?? null), columnEnteredAt: new Date() };
     if (column.stateType !== "backlog" && !task.startedAt) update.startedAt = new Date();
     await tx.update(tasks).set(update).where(eq(tasks.id, task.id));
+    await auditTask(tx, actor, task.workspaceId, task.id, "task.moved", { columnId: column.id });
     return { boardName: column.boardName, columnName: column.name };
   });
 }
@@ -513,6 +516,7 @@ export async function renameTask(actor: Actor, input: z.infer<typeof renameTaskS
   assertWritable(actor, task.workspaceId);
 
   await db.update(tasks).set({ title: input.title }).where(and(eq(tasks.id, task.id), isNull(tasks.deletedAt)));
+  await auditTask(db, actor, task.workspaceId, task.id, "task.renamed", { title: input.title });
   return { title: input.title };
 }
 
@@ -527,6 +531,7 @@ export async function setTaskPriority(actor: Actor, input: z.infer<typeof setTas
   assertWritable(actor, task.workspaceId);
 
   await db.update(tasks).set({ priority: input.priority }).where(and(eq(tasks.id, task.id), isNull(tasks.deletedAt)));
+  await auditTask(db, actor, task.workspaceId, task.id, "task.priority", { priority: input.priority });
   return { priority: input.priority };
 }
 
@@ -559,6 +564,7 @@ export async function setTaskProject(actor: Actor, input: z.infer<typeof setTask
     if (input.projectId === task.projectId) return { projectName };
 
     await tx.update(tasks).set({ projectId: input.projectId }).where(eq(tasks.id, task.id));
+    await auditTask(tx, actor, task.workspaceId, task.id, "task.project", { project: projectName });
     const moved = await tx
       .update(commits)
       .set({ projectId: input.projectId })
@@ -601,6 +607,7 @@ export async function setTaskDue(actor: Actor, input: z.infer<typeof setTaskDueS
     .set({ dueAt })
     .where(and(eq(tasks.id, task.id), isNull(tasks.deletedAt)))
     .returning({ dueAt: tasks.dueAt });
+  await auditTask(db, actor, task.workspaceId, task.id, "task.due", { due: input.dueDate });
   return { dueAt: row?.dueAt ?? null };
 }
 
@@ -622,6 +629,7 @@ export async function setTaskWeight(actor: Actor, input: z.infer<typeof setTaskW
     if (task.completedAt) throw new MutationError("invalid", "Weight is fixed once a task is done. Its commit already recorded the execution.");
 
     await tx.update(tasks).set({ weight: input.weight }).where(eq(tasks.id, task.id));
+    await auditTask(tx, actor, task.workspaceId, task.id, "task.weight", { weight: input.weight });
     return { weight: input.weight };
   });
 }
@@ -643,6 +651,7 @@ export async function setTaskRecurrence(actor: Actor, input: z.infer<typeof setT
     if (task.completedAt) throw new MutationError("invalid", "This task is done. Change the repeat on its next occurrence.");
 
     await tx.update(tasks).set({ recurrenceRule: input.rule }).where(eq(tasks.id, task.id));
+    await auditTask(tx, actor, task.workspaceId, task.id, "task.repeat", { rule: input.rule });
     return { rule: input.rule };
   });
 }
@@ -881,7 +890,7 @@ export async function createObjective(actor: Actor, input: z.infer<typeof create
     if (!project) throw new MutationError("not_found", "That project no longer exists.");
   }
   const [{ tz }] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
-  if (input.deadline && input.deadline < dayIn(new Date(), tz)) throw new MutationError("invalid", "Pick a deadline from today on.");
+  if (input.deadline && input.deadline < dayKey(new Date(), tz)) throw new MutationError("invalid", "Pick a deadline from today on.");
 
   return db.transaction(async (tx) => {
     // Serialise per workspace so the cap holds under concurrent creates
@@ -925,8 +934,8 @@ export async function updateObjective(actor: Actor, input: z.infer<typeof update
   const objective = await writableObjective(actor, input.objectiveId);
   const [{ tz }] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
   const [current] = await db.select({ deadlineAt: objectives.deadlineAt, currentValue: objectives.currentValue }).from(objectives).where(eq(objectives.id, objective.id)).limit(1);
-  const currentDay = current.deadlineAt ? dayIn(current.deadlineAt, tz) : null;
-  if (input.deadline && input.deadline !== currentDay && input.deadline < dayIn(new Date(), tz)) throw new MutationError("invalid", "Pick a deadline from today on.");
+  const currentDay = current.deadlineAt ? dayKey(current.deadlineAt, tz) : null;
+  if (input.deadline && input.deadline !== currentDay && input.deadline < dayKey(new Date(), tz)) throw new MutationError("invalid", "Pick a deadline from today on.");
   if (objective.measure === "manual" && !input.unit) throw new MutationError("invalid", "Name what you count, like modules.");
   if (input.projectId) {
     const [project] = await db
@@ -1494,4 +1503,206 @@ export async function purgeDeleted(workspaceId: string): Promise<number> {
     .where(and(eq(tasks.workspaceId, workspaceId), isNotNull(tasks.deletedAt), sql`${tasks.deletedAt} < now() - interval '30 days'`))
     .returning({ id: tasks.id });
   return gone.length;
+}
+
+// ------------------------------------------------------------------ task depth
+
+/** A live task the actor may write, row-locked inside `tx`. */
+async function lockedTask(tx: Tx, actor: Actor, taskId: string) {
+  const [task] = await tx
+    .select({
+      id: tasks.id,
+      workspaceId: tasks.workspaceId,
+      boardId: tasks.boardId,
+      columnId: tasks.columnId,
+      title: tasks.title,
+      completedAt: tasks.completedAt,
+      dueAt: tasks.dueAt,
+      recurrenceRule: tasks.recurrenceRule,
+    })
+    .from(tasks)
+    .where(and(eq(tasks.id, taskId), isNull(tasks.deletedAt)))
+    .limit(1)
+    .for("update");
+  if (!task) throw new MutationError("not_found", "That task no longer exists.");
+  assertWritable(actor, task.workspaceId);
+  return task;
+}
+
+const actorZone = async (q: Tx | typeof db, actor: Actor) => (await q.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1))[0]?.tz ?? "UTC";
+
+export async function setTaskDescription(actor: Actor, input: z.infer<typeof setTaskDescriptionSchema>): Promise<{ description: string | null }> {
+  return db.transaction(async (tx) => {
+    const task = await lockedTask(tx, actor, input.taskId);
+    await tx.update(tasks).set({ description: input.description }).where(eq(tasks.id, task.id));
+    await auditTask(tx, actor, task.workspaceId, task.id, "task.described");
+    return { description: input.description };
+  });
+}
+
+/**
+ * Defers an open task until a day (start of that day in the actor's zone): it leaves
+ * Today's Queued list and waits greyed at the bottom of its column until then.
+ */
+export async function setTaskDefer(actor: Actor, input: z.infer<typeof setTaskDeferSchema>): Promise<{ until: string | null }> {
+  return db.transaction(async (tx) => {
+    const task = await lockedTask(tx, actor, input.taskId);
+    if (task.completedAt) throw new MutationError("invalid", "This task is done.");
+    const tz = await actorZone(tx, actor);
+    if (input.until && input.until <= dayKey(new Date(), tz)) throw new MutationError("invalid", "Pick a day after today.");
+    await tx
+      .update(tasks)
+      .set({ deferUntil: input.until === null ? null : sql<Date>`((${input.until})::date)::timestamp at time zone ${tz}` })
+      .where(eq(tasks.id, task.id));
+    await auditTask(tx, actor, task.workspaceId, task.id, "task.deferred", { until: input.until });
+    return { until: input.until };
+  });
+}
+
+/** Plans an open task for today (a plain list on Today, no target), or clears it. */
+export async function setTaskPlanned(actor: Actor, input: z.infer<typeof setTaskPlannedSchema>): Promise<{ plannedFor: string | null }> {
+  return db.transaction(async (tx) => {
+    const task = await lockedTask(tx, actor, input.taskId);
+    if (task.completedAt && input.planned) throw new MutationError("invalid", "This task is done.");
+    const plannedFor = input.planned ? dayKey(new Date(), await actorZone(tx, actor)) : null;
+    await tx.update(tasks).set({ plannedFor }).where(eq(tasks.id, task.id));
+    await auditTask(tx, actor, task.workspaceId, task.id, input.planned ? "task.planned" : "task.unplanned");
+    return { plannedFor };
+  });
+}
+
+/**
+ * Queues or starts a task in one step: an Inbox task is placed on the personal board, a
+ * board task moves, to the top of the board's first queued or in-progress column.
+ */
+export async function setTaskStage(actor: Actor, input: z.infer<typeof setTaskStageSchema>): Promise<{ columnId: string; columnName: string; previousColumnId: string | null }> {
+  return db.transaction(async (tx) => {
+    const task = await lockedTask(tx, actor, input.taskId);
+    if (task.completedAt) throw new MutationError("invalid", "This task is done. Reopen it from the board.");
+    let boardId = task.boardId;
+    if (!boardId) {
+      const [board] = await tx.select({ id: boards.id }).from(boards).where(and(eq(boards.workspaceId, task.workspaceId), eq(boards.type, "personal"))).limit(1);
+      if (!board) throw new MutationError("not_found", "Your board is still being set up. Try again in a moment.");
+      boardId = board.id;
+      await tx.update(tasks).set({ boardId }).where(eq(tasks.id, task.id));
+    }
+    const [column] = await tx
+      .select({ id: columns.id, name: columns.name })
+      .from(columns)
+      .where(and(eq(columns.boardId, boardId), input.stage === "queued" ? eq(columns.stateType, "backlog") : inArray(columns.stateType, ["active", "review"])))
+      .orderBy(sql`${columns.stateType} = 'active' desc`, asc(columns.position))
+      .limit(1);
+    if (!column) throw new MutationError("not_found", "That column no longer exists.");
+    if (task.columnId !== column.id) await moveInTx(tx, actor, { taskId: task.id, columnId: column.id, afterTaskId: null });
+    return { columnId: column.id, columnName: column.name, previousColumnId: task.columnId };
+  });
+}
+
+/** A recurring task's due date moves one step (no commit): "Skip next". */
+export async function skipRecurrence(actor: Actor, input: z.infer<typeof taskRefSchema>): Promise<{ dueDay: string }> {
+  return db.transaction(async (tx) => {
+    const task = await lockedTask(tx, actor, input.taskId);
+    if (!task.recurrenceRule) throw new MutationError("invalid", "This task does not repeat.");
+    if (task.completedAt) throw new MutationError("invalid", "This task is done.");
+    const tz = await actorZone(tx, actor);
+    const dueDay = recurrenceStep(task.dueAt ? dayKey(task.dueAt, tz) : dayKey(new Date(), tz), task.recurrenceRule);
+    await tx.update(tasks).set({ dueAt: sql<Date>`((${dueDay})::date + time '23:59') at time zone ${tz}` }).where(eq(tasks.id, task.id));
+    await auditTask(tx, actor, task.workspaceId, task.id, "task.skipped", { due: dueDay });
+    return { dueDay };
+  });
+}
+
+/** A copy of a task (title, fields, tags) in the same column, just below it; never done. */
+export async function duplicateTask(actor: Actor, input: z.infer<typeof taskRefSchema>): Promise<{ id: string; title: string }> {
+  return db.transaction(async (tx) => {
+    await lockedTask(tx, actor, input.taskId);
+    const [src] = await tx.select().from(tasks).where(eq(tasks.id, input.taskId)).limit(1);
+    // A copy of a done task goes back to the board's first queued column
+    let columnId = src.columnId;
+    if (src.completedAt && src.boardId) {
+      const [queued] = await tx.select({ id: columns.id }).from(columns).where(and(eq(columns.boardId, src.boardId), eq(columns.stateType, "backlog"))).orderBy(asc(columns.position)).limit(1);
+      columnId = queued?.id ?? null;
+    }
+    let position = "a0";
+    if (src.boardId && columnId) {
+      const [after] = await tx
+        .select({ position: tasks.position })
+        .from(tasks)
+        .where(and(eq(tasks.boardId, src.boardId), eq(tasks.columnId, columnId), isNull(tasks.deletedAt), sql`${tasks.position} collate "C" > ${src.position} collate "C"`))
+        .orderBy(asc(byPosition))
+        .limit(1);
+      position = columnId === src.columnId ? keyBetween(src.position, after?.position ?? null) : keyBetween(null, null);
+    }
+    const title = `${src.title}`.slice(0, 500);
+    const [row] = await tx
+      .insert(tasks)
+      .values({
+        workspaceId: src.workspaceId,
+        projectId: src.projectId,
+        boardId: src.boardId,
+        columnId,
+        position,
+        creatorId: actor.id,
+        assigneeId: actor.id,
+        title,
+        description: src.description,
+        priority: src.priority,
+        weight: src.weight,
+        recurrenceRule: src.recurrenceRule,
+        dueAt: src.completedAt ? null : src.dueAt,
+      })
+      .returning({ id: tasks.id });
+    const labels = await tx.select({ tagId: taskTags.tagId }).from(taskTags).where(eq(taskTags.taskId, src.id)).limit(50);
+    if (labels.length) await tx.insert(taskTags).values(labels.map((l) => ({ taskId: row.id, tagId: l.tagId })));
+    await auditTask(tx, actor, src.workspaceId, row.id, "task.duplicated", { from: src.id });
+    return { id: row.id, title };
+  });
+}
+
+// ------------------------------------------------------------------ tags (Settings → Tags)
+
+async function writableTag(q: Tx | typeof db, actor: Actor, tagId: string) {
+  const [tag] = await q.select({ id: tags.id, workspaceId: tags.workspaceId, name: tags.name }).from(tags).where(eq(tags.id, tagId)).limit(1);
+  if (!tag) throw new MutationError("not_found", "That tag no longer exists.");
+  assertWritable(actor, tag.workspaceId);
+  return tag;
+}
+
+export async function renameTag(actor: Actor, input: z.infer<typeof renameTagSchema>): Promise<{ name: string }> {
+  return db.transaction(async (tx) => {
+    const tag = await writableTag(tx, actor, input.tagId);
+    const [clash] = await tx.select({ id: tags.id }).from(tags).where(and(eq(tags.workspaceId, tag.workspaceId), eq(tags.name, input.name), ne(tags.id, tag.id))).limit(1);
+    if (clash) throw new MutationError("conflict", `“${input.name}” already exists. Merge into it instead.`);
+    await tx.update(tags).set({ name: input.name }).where(eq(tags.id, tag.id));
+    return { name: input.name };
+  });
+}
+
+/** Moves every task and commit from one tag to another, then deletes the first. */
+export async function mergeTags(actor: Actor, input: z.infer<typeof mergeTagsSchema>): Promise<{ into: string }> {
+  if (input.fromTagId === input.intoTagId) throw new MutationError("invalid", "Pick two different tags.");
+  return db.transaction(async (tx) => {
+    const from = await writableTag(tx, actor, input.fromTagId);
+    const into = await writableTag(tx, actor, input.intoTagId);
+    if (from.workspaceId !== into.workspaceId) throw new MutationError("not_found", "That tag no longer exists.");
+    await tx.execute(sql`insert into ${taskTags} (task_id, tag_id) select task_id, ${into.id} from ${taskTags} where tag_id = ${from.id} on conflict do nothing`);
+    await tx.execute(sql`insert into ${commitTags} (commit_id, tag_id) select commit_id, ${into.id} from ${commitTags} where tag_id = ${from.id} on conflict do nothing`);
+    await tx.delete(tags).where(eq(tags.id, from.id));
+    return { into: into.name };
+  });
+}
+
+/** Deletes a tag; tasks and commits simply lose it. */
+export async function deleteTag(actor: Actor, input: z.infer<typeof tagRefSchema>): Promise<{ name: string }> {
+  const tag = await writableTag(db, actor, input.tagId);
+  await db.delete(tags).where(eq(tags.id, tag.id));
+  return { name: tag.name };
+}
+
+export async function setProjectNotes(actor: Actor, input: z.infer<typeof setProjectNotesSchema>): Promise<{ notes: string | null }> {
+  const [project] = await db.select({ id: projects.id, workspaceId: projects.workspaceId }).from(projects).where(eq(projects.id, input.projectId)).limit(1);
+  if (!project) throw new MutationError("not_found", "That project no longer exists.");
+  assertWritable(actor, project.workspaceId);
+  await db.update(projects).set({ notes: input.notes }).where(eq(projects.id, project.id));
+  return { notes: input.notes };
 }

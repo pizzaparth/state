@@ -6,6 +6,7 @@ import { TabLinks } from "./tab-links";
 const ITEMS = [
   { href: "/platform/settings/account", label: "Account" },
   { href: "/platform/settings/preferences", label: "Preferences" },
+  { href: "/platform/settings/tags", label: "Tags" },
 ] as const;
 
 export function SettingsNav({ active }: { active: (typeof ITEMS)[number]["href"] }) {
