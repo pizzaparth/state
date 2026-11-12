@@ -8,6 +8,8 @@ import { addBoardTaskAction, finishOnboardingAction, moveTaskAction } from "@/ap
 import { addBoardTaskSchema } from "@/lib/validation";
 import { WEIGHT_LEVELS, type Weight } from "@/lib/weights";
 import { cn } from "@/lib/utils";
+import type { DailyExecution } from "@/db/queries";
+import { ExecutionGraph } from "./execution-graph";
 import { DISPLAY, TICK } from "./primitives";
 import { useNotice } from "./notice";
 
@@ -39,11 +41,11 @@ function useFinish() {
   const router = useRouter();
   const notify = useNotice();
   const [pending, startTransition] = React.useTransition();
-  const finish = () =>
+  const finish = (to: string = "/platform/today") =>
     startTransition(async () => {
       const result = await finishOnboardingAction({});
       if (!result.ok) return notify(result.error);
-      router.push("/platform/today" as Route);
+      router.push(to as Route);
     });
   return { finish, pending };
 }
@@ -51,7 +53,7 @@ function useFinish() {
 export function SkipSetup() {
   const { finish, pending } = useFinish();
   return (
-    <button type="button" onClick={finish} disabled={pending} className="inline-flex min-h-9 items-center gap-1.5 text-sm text-[#52525B] underline-offset-4 hover:text-[#0A0A0A] hover:underline disabled:opacity-60">
+    <button type="button" onClick={() => finish()} disabled={pending} className="inline-flex min-h-9 items-center gap-1.5 text-sm text-[#52525B] underline-offset-4 hover:text-[#0A0A0A] hover:underline disabled:opacity-60">
       {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
       Skip setup
     </button>
@@ -66,10 +68,13 @@ export function Onboarding({
   task,
   doneColumnId,
   commit,
+  graph,
 }: {
   task: { id: string; title: string; weight: number } | null;
   doneColumnId: string | null;
   commit: { message: string; executionValue: number } | null;
+  /** The last four weeks, so the first commit is seen landing on today's cell. */
+  graph?: DailyExecution[];
 }) {
   const router = useRouter();
   const notify = useNotice();
@@ -178,11 +183,21 @@ export function Onboarding({
               <span className={cn(TICK, "text-accent-muted")}>Execution</span>
               <span className={cn(DISPLAY, "text-5xl leading-none tabular-nums")}>+{commit.executionValue}</span>
             </div>
-            <p className="mt-2 font-mono text-sm text-[#71717A]">execution = Σ weights of done tasks</p>
-            <button type="button" onClick={finish} disabled={finishing} className="app-btn mt-5 inline-flex h-11 items-center gap-1.5 rounded-[14px] px-5 text-base font-semibold disabled:opacity-60">
-              {finishing && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-              Open Today
-            </button>
+            <p className="mt-2 font-mono text-sm text-[#71717A]">commit = finished work · weight = its size</p>
+            {graph && graph.length > 0 && (
+              <div className="mt-5">
+                <ExecutionGraph days={graph} linkDays={false} />
+              </div>
+            )}
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button type="button" onClick={() => finish("/platform/today")} disabled={finishing} className="app-inverse inline-flex h-11 items-center gap-1.5 rounded-[14px] px-5 text-base font-semibold disabled:opacity-60">
+                {finishing && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+                Open Today
+              </button>
+              <button type="button" onClick={() => finish("/platform/activity")} disabled={finishing} className="app-btn inline-flex h-11 items-center gap-1.5 rounded-[14px] px-5 text-base font-semibold disabled:opacity-60">
+                Open Activity
+              </button>
+            </div>
           </div>
         ) : task && doneColumnId ? (
           <>
