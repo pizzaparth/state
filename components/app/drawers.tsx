@@ -28,7 +28,11 @@ export async function Drawers({ params, viewer }: { params: Record<string, strin
       const inInbox = task.boardId === null;
       const targets = writable && inInbox && !task.completedAt ? await getBoardTargets(task.workspaceId, viewer.workspaceIds) : [];
       return (
-        <DetailDrawer param="task" title="Task">
+        <DetailDrawer
+          param="task"
+          title="Task"
+          crumbs={[task.projectName, task.boardName ?? "Inbox", task.completedAt ? "Done" : task.columnName].filter((c): c is string => Boolean(c))}
+        >
           <TaskDetail task={task} tz={viewer.tz} now={new Date()} editable={writable} />
           {writable && (
             <TaskActions
@@ -45,7 +49,7 @@ export async function Drawers({ params, viewer }: { params: Record<string, strin
     if (commit) {
       const projects = canEditCommit(viewer, commit) ? await getProjectOptions(commit.workspaceId, viewer.workspaceIds) : undefined;
       return (
-        <DetailDrawer param="commit" title="Commit">
+        <DetailDrawer param="commit" title="Commit" crumbs={commit.projectName ? [commit.projectName] : []}>
           <CommitDetail commit={commit} tz={viewer.tz} projects={projects} />
         </DetailDrawer>
       );

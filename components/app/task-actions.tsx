@@ -84,8 +84,8 @@ export function TaskActions({
   };
 
   return (
-    <section aria-labelledby="task-actions-heading" className="mt-8 border-t border-black/[0.05] pt-6">
-      <h3 id="task-actions-heading" className={cn(TICK, "text-[#52525B]")}>
+    <section aria-labelledby="task-actions-heading" className="mt-8 border-t border-black/[0.06] pt-6">
+      <h3 id="task-actions-heading" className={cn(TICK, "text-[11px] text-[#71717A]")}>
         Actions
       </h3>
 

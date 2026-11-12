@@ -6,7 +6,7 @@ import { renameTaskAction } from "@/app/(app)/actions";
 import { useNotice } from "./notice";
 
 // Display face without caps: task titles are user text and can run long
-const headingClass = "font-sans text-2xl font-bold leading-tight tracking-[-0.02em] text-[#0A0A0A]";
+const headingClass = "font-sans text-[1.75rem] font-semibold leading-[1.08] tracking-[-0.04em] text-[#0A0A0A]";
 
 /**
  * Task panel heading with an inline Rename… form. Enter saves, Escape cancels without
