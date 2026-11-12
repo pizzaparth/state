@@ -8,6 +8,8 @@
      .app-inverse  Accent focal surface (+ COMMIT, Today instrument, headline metric)
      .app-accent-panel  Accent-tinted panel (demo banner, callouts)
      .app-overlay  Dialogs, palette, drawers, menus
+     .app-scrim    The dim layer under every overlay (no blur)
+     .app-select   Native selects (own chevron, same focus as inputs)
    ========================================================================== */
 
 /* Opaque, no backdrop-filter: a blurred panel inside the scrolling content is re-blurred
@@ -73,9 +75,13 @@ button.app-inverse:active {
   transition: border-color var(--duration-fast) var(--ease-restrained);
 }
 
-.app-input:focus-visible {
-  outline: none;
+/* One focus style for every form control: accent border plus a soft accent ring */
+.app-input:focus-visible,
+.app-select:focus-visible,
+.app-focus:focus-visible {
   border-color: var(--app-line-focus);
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 0;
 }
 
 .app-input::placeholder {
@@ -109,8 +115,29 @@ a.app-inverse:hover {
   border: 1px solid var(--app-line-strong);
 }
 
+/* Scrim under dialogs, drawers and the palette. Opaque tint only: a backdrop-filter blur
+   re-renders the page under it on every frame. */
+.app-scrim {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.app-select {
+  height: 2.75rem;
+  width: 100%;
+  min-width: 0;
+  padding-left: 0.75rem;
+  font-size: 1rem;
+  border-radius: 14px;
+  background-color: var(--app-field);
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--radius-control);
+  color: var(--app-text-primary);
+  transition: border-color var(--duration-fast) var(--ease-restrained);
+}
+
 /* Native selects: own chevron with room on the right (the platform arrow hugs the edge).
    Specificity beats Tailwind's px-* utilities, so every product select gets the gutter. */
+select.app-select,
 select.app-field {
   -webkit-appearance: none;
   appearance: none;
@@ -121,6 +148,7 @@ select.app-field {
   background-size: 1rem;
 }
 
+select.app-select:disabled,
 select.app-field:disabled {
   cursor: not-allowed;
 }

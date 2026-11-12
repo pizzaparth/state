@@ -142,7 +142,7 @@ export function PriorityMark({ priority }: { priority: string }) {
   return (
     <span
       title={`${p.label} priority`}
-      className={cn("inline-flex items-center gap-1 text-[13px]", critical ? "font-semibold text-[#B42318]" : "text-[#52525B]")}
+      className={cn("inline-flex items-center gap-1 text-[13px]", critical ? "font-semibold text-danger" : "text-[#52525B]")}
     >
       <svg viewBox="0 0 12 12" aria-hidden="true" className="size-3">
         {[0, 1, 2].map((i) => (
@@ -169,7 +169,7 @@ export function DueLabel({ due }: { due: DueState }) {
     <span
       className={cn(
         "inline-flex items-center gap-1 text-[13px] tabular-nums",
-        due.tone === "overdue" ? "font-semibold text-[#B42318]" : due.tone === "today" ? "font-semibold text-[#0A0A0A]" : "text-[#52525B]"
+        due.tone === "overdue" ? "font-semibold text-danger" : due.tone === "today" ? "font-semibold text-[#0A0A0A]" : "text-[#52525B]"
       )}
     >
       {due.tone === "overdue" && (

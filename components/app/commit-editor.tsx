@@ -8,7 +8,6 @@ import { useNotice } from "./notice";
 
 type FieldName = "message" | "projectId" | "tags";
 
-const selectClass = "app-field h-11 w-full rounded-[14px] bg-white px-3 text-base text-[#0A0A0A] focus:border-black/40 focus:outline-none";
 
 const splitTags = (text: string) =>
   text
@@ -73,7 +72,7 @@ export function CommitEditor({
 
   const fieldError = (field: FieldName) =>
     errors[field] && (
-      <p id={`commit-${field}-error`} className="text-sm text-[#B42318]">
+      <p id={`commit-${field}-error`} className="text-sm text-danger">
         {errors[field]}
       </p>
     );
@@ -143,7 +142,7 @@ export function CommitEditor({
           onChange={(e) => set("projectId", e.target.value)}
           aria-invalid={Boolean(errors.projectId)}
           aria-describedby={errors.projectId ? "commit-projectId-error" : undefined}
-          className={selectClass}
+          className="app-select"
         >
           <option value="">No project</option>
           {options.map((p) => (
@@ -179,7 +178,7 @@ export function CommitEditor({
         )}
       </div>
 
-      <p aria-live="polite" className="min-h-5 text-sm text-[#B42318]">
+      <p aria-live="polite" className="min-h-5 text-sm text-danger">
         {errors.form}
       </p>
 

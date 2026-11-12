@@ -37,6 +37,7 @@ export default async function AppLayout({
         dateLabel: formatDate(new Date(), viewer.tz, { weekday: "short", day: "numeric", month: "short" }),
         ticker,
         demoUserId: viewer.isDemo ? viewer.id : null,
+        tz: viewer.tz,
       }}
     >
       {children}

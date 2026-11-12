@@ -31,7 +31,7 @@ export async function pruneDemos(now = Date.now()): Promise<number> {
 }
 
 /** Creates a seeded demo account and signs it in for this browser session. */
-export async function startDemo(headers: Headers): Promise<{ userId: string }> {
+export async function startDemo(headers: Headers, timezone = "UTC"): Promise<{ userId: string }> {
   await pruneDemos();
   const context = await auth.$context;
   const userId = `demo-${crypto.randomUUID()}`;
@@ -39,11 +39,11 @@ export async function startDemo(headers: Headers): Promise<{ userId: string }> {
   // Random, never shown: it exists only so the server can open the session
   const password = randomBytes(24).toString("base64url");
 
-  await db.insert(users).values({ id: userId, name: "Demo visitor", email, emailVerified: true, isDemo: true });
+  await db.insert(users).values({ id: userId, name: "Demo visitor", email, emailVerified: true, isDemo: true, timezone });
   try {
     await db.insert(accounts).values({ id: crypto.randomUUID(), userId, accountId: userId, providerId: "credential", password: await context.password.hash(password) });
     await provisionAccount(userId);
-    await seedDemoData(userId);
+    await seedDemoData(userId, Date.now(), timezone);
     await auth.api.signInEmail({ body: { email, password, rememberMe: false }, headers });
   } catch (error) {
     await db.delete(users).where(eq(users.id, userId));

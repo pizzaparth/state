@@ -117,7 +117,7 @@ export function TaskTitle({ taskId, title, editable }: { taskId: string; title: 
         className="app-input h-12 w-full rounded-[14px] px-3 text-xl font-semibold tracking-[-0.01em]"
       />
       {error && (
-        <p id="task-title-error" aria-live="polite" className="mt-1.5 text-sm text-[#B42318]">
+        <p id="task-title-error" aria-live="polite" className="mt-1.5 text-sm text-danger">
           {error}
         </p>
       )}

@@ -119,7 +119,7 @@ export function ImportForm() {
       <p id="import-hint" className={cn(TICK, "text-[#71717A]")}>
         JSON export · CSV of tasks, commits or projects · 4&nbsp;MB
       </p>
-      <p id="import-status" aria-live="polite" className={cn("text-sm", status?.kind === "error" ? "text-[#B42318]" : "font-mono tabular-nums text-[#0A0A0A]")}>
+      <p id="import-status" aria-live="polite" className={cn("text-sm", status?.kind === "error" ? "text-danger" : "font-mono tabular-nums text-[#0A0A0A]")}>
         {status?.text}
       </p>
     </form>

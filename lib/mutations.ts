@@ -6,7 +6,7 @@ import { keyBetween } from "@/lib/position";
 import { dayIn, nextDueDay } from "@/lib/recurrence";
 import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
 import type { z } from "zod";
-import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, taskRefSchema } from "@/lib/validation";
+import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -262,6 +262,35 @@ export async function addBoardTask(actor: Actor, input: z.infer<typeof addBoardT
     })
     .returning({ id: tasks.id });
   return { id: row.id, columnId: column.id };
+}
+
+/**
+ * Changes the actor's time zone. Open tasks' due dates and live objectives' deadlines keep
+ * their calendar day: the day is read in the old zone and stored as 23:59 of that day in
+ * the new one, in the same transaction.
+ */
+export async function setTimezone(actor: Actor, input: z.infer<typeof setTimezoneSchema>): Promise<{ timezone: string; moved: number }> {
+  assertWritable(actor, actor.personalWorkspaceId);
+  const workspaceId = actor.personalWorkspaceId;
+  return db.transaction(async (tx) => {
+    const [user] = await tx.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1).for("update");
+    if (!user) throw new MutationError("not_found", "That account no longer exists.");
+    if (user.tz === input.timezone) return { timezone: input.timezone, moved: 0 };
+    const keepDay = (column: typeof tasks.dueAt | typeof objectives.deadlineAt) =>
+      sql<Date>`((${column} at time zone ${user.tz})::date + time '23:59') at time zone ${input.timezone}`;
+    const dues = await tx
+      .update(tasks)
+      .set({ dueAt: keepDay(tasks.dueAt) })
+      .where(and(eq(tasks.workspaceId, workspaceId), isNotNull(tasks.dueAt), isNull(tasks.completedAt), isNull(tasks.deletedAt)))
+      .returning({ id: tasks.id });
+    const deadlines = await tx
+      .update(objectives)
+      .set({ deadlineAt: keepDay(objectives.deadlineAt) })
+      .where(and(eq(objectives.workspaceId, workspaceId), isNotNull(objectives.deadlineAt), isNull(objectives.completedAt)))
+      .returning({ id: objectives.id });
+    await tx.update(users).set({ timezone: input.timezone, updatedAt: new Date() }).where(eq(users.id, actor.id));
+    return { timezone: input.timezone, moved: dues.length + deadlines.length };
+  });
 }
 
 /** Marks first-run setup as finished (or skipped). Idempotent. */

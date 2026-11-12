@@ -1,13 +1,14 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import * as s from "@/db/schema";
+import { zoneOffsetMs } from "@/lib/tz";
 
 /**
  * Sample data for a demo visitor's workspace: about 60 days of finished work across
  * study, build, train and design, a few open cards, Inbox captures and two objectives.
  * Runs once, right after the demo account and its empty personal workspace are created.
  *
- * Timestamps are relative to `now` and the visitor's timezone is UTC, so Today always
+ * Timestamps are relative to `now` and laid out on the visitor's local days, so Today always
  * has recent work. Ids are random: many demo workspaces exist side by side.
  */
 
@@ -81,12 +82,14 @@ function mulberry32(seed: number) {
 }
 
 /** Fills the user's (already provisioned, empty) personal workspace with sample work. */
-export async function seedDemoData(userId: string, now = Date.now()): Promise<void> {
+export async function seedDemoData(userId: string, now = Date.now(), tz = "UTC"): Promise<void> {
   const rand = mulberry32(Math.floor(now / DAY));
   const pick = <T,>(items: readonly T[]) => items[Math.floor(rand() * items.length)];
   const between = (min: number, max: number) => min + rand() * (max - min);
   const weighted = (): Weight => pick([1, 2, 2, 2, 2, 4, 4, 8] as const);
-  const todayStart = Math.floor(now / DAY) * DAY;
+  // Local midnight in the visitor's zone, as epoch ms
+  const offset = zoneOffsetMs(tz, new Date(now));
+  const todayStart = Math.floor((now + offset) / DAY) * DAY - offset;
   const at = (daysAgo: number, hour: number) => new Date(todayStart - daysAgo * DAY + hour * HOUR);
   const id = () => crypto.randomUUID();
 

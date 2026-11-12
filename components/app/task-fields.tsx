@@ -69,7 +69,7 @@ function InlineSelect<T extends string | number>({
               });
             }}
             // appearance-none drops the native inset, so the text lines up with read-only values
-            className="peer h-9 w-full min-w-0 cursor-pointer appearance-none truncate rounded-[10px] border border-transparent bg-white py-0 pl-[7px] pr-8 text-base font-medium text-[#0A0A0A] transition-colors duration-150 hover:border-black/[0.10] focus:border-accent focus:outline-none disabled:cursor-default disabled:opacity-60"
+            className="peer h-9 w-full min-w-0 cursor-pointer appearance-none truncate rounded-[10px] border border-transparent bg-white py-0 pl-[7px] pr-8 text-base font-medium text-[#0A0A0A] transition-colors duration-150 app-focus hover:border-black/[0.10] disabled:cursor-default disabled:opacity-60"
           >
             {options.map((o) => (
               <option key={o.value} value={String(o.value)}>
@@ -87,7 +87,7 @@ function InlineSelect<T extends string | number>({
         </p>
       )}
       {error && (
-        <p id={errorId} aria-live="polite" className="mt-1.5 text-sm text-[#B42318]">
+        <p id={errorId} aria-live="polite" className="mt-1.5 text-sm text-danger">
           {error}
         </p>
       )}

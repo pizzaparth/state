@@ -7,6 +7,7 @@ import { getSession } from "@/lib/auth/session";
 import { isOwnerCode, signInOwner } from "@/lib/auth/owner";
 import { endDemo, startDemo } from "@/lib/demo/session";
 import { consumeThrottle } from "@/lib/security/throttle";
+import { isTimeZone } from "@/lib/tz";
 
 /**
  * Session actions: owner sign-in by access code, starting a demo, and signing out.
@@ -53,7 +54,12 @@ export async function signInOwnerAction(input: unknown): Promise<SessionResult> 
   }
 }
 
-export async function startDemoAction(): Promise<SessionResult & { userId?: string }> {
+const demoSchema = z.strictObject({ timezone: z.string().max(64).refine(isTimeZone).optional() }).optional();
+
+/** Starts a demo. The browser's time zone is set silently at seed time (UTC if missing or unknown). */
+export async function startDemoAction(input?: unknown): Promise<SessionResult & { userId?: string }> {
+  const parsed = demoSchema.safeParse(input);
+  const timezone = (parsed.success && parsed.data?.timezone) || "UTC";
   try {
     const session = await getSession();
     // Already inside a demo (or signed in as the owner): keep that session
@@ -62,7 +68,7 @@ export async function startDemoAction(): Promise<SessionResult & { userId?: stri
     if (!(await consumeThrottle(`demo:${ip}`, 10, 60 * 60)) || !(await consumeThrottle("demo", 300, 60 * 60))) {
       return { ok: false, error: "Too many demos started from here. Try again in an hour." };
     }
-    const { userId } = await startDemo(await headers());
+    const { userId } = await startDemo(await headers(), timezone);
     return { ok: true, userId };
   } catch (error) {
     console.error("[session] start demo", error);

@@ -10,8 +10,6 @@ import { cn } from "@/lib/utils";
 import { useNotice } from "./notice";
 import { TICK } from "./primitives";
 
-const selectClass =
-  "app-field h-11 w-full min-w-0 rounded-[14px] bg-white px-3 text-base text-[#0A0A0A] focus:border-black/40 focus:outline-none";
 
 /**
  * Writes available from the task panel: Inbox triage onto a board, and delete with an
@@ -156,7 +154,7 @@ export function TaskActions({
             Move to board
           </label>
           <div className="flex gap-2">
-            <select id="task-move-column" name="column" defaultValue={defaultColumn} className={selectClass}>
+            <select id="task-move-column" name="column" defaultValue={defaultColumn} className="app-select">
               {targets.map((b) => (
                 <optgroup key={b.id} label={b.name}>
                   {b.columns.map((c) => (
@@ -186,14 +184,14 @@ export function TaskActions({
           type="button"
           onClick={remove}
           disabled={pending !== null}
-          className="app-btn mt-4 inline-flex h-11 items-center gap-1.5 rounded-[14px] px-4 text-base font-medium text-[#B42318] disabled:opacity-50"
+          className="app-btn mt-4 inline-flex h-11 items-center gap-1.5 rounded-[14px] px-4 text-base font-medium text-danger disabled:opacity-50"
         >
           {pending === "delete" ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Trash2 className="size-4" aria-hidden="true" />}
           Delete
         </button>
       )}
 
-      <p aria-live="polite" className="mt-2 min-h-5 text-sm text-[#B42318]">
+      <p aria-live="polite" className="mt-2 min-h-5 text-sm text-danger">
         {error}
       </p>
     </section>

@@ -93,7 +93,7 @@ export function QuickCapture({
 
       <p id="quick-capture-status" aria-live="polite" className="mt-2 min-h-5 px-2 text-sm text-[#52525B]">
         {error ? (
-          <span className="text-[#B42318]">{error}</span>
+          <span className="text-danger">{error}</span>
         ) : parsed?.title && (
           <>
             Task <span className="font-medium text-[#0A0A0A]">“{parsed.title}”</span>

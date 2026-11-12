@@ -30,6 +30,7 @@ import { DemoGuard } from "./demo-guard";
 import { ParallaxBackdrop } from "@/components/motion/parallax";
 import { SignOutButton } from "./sign-out-button";
 import { NoticeProvider, useNotice } from "./notice";
+import { TimezoneCheck } from "./timezone-check";
 
 export interface ShellData {
   inboxCount: number;
@@ -38,6 +39,8 @@ export interface ShellData {
   ticker: { today: number; last7: number; prev7: number; activeDays7: number };
   /** Set for a throwaway demo session (the user id); null for the owner. */
   demoUserId: string | null;
+  /** The viewer's saved time zone. */
+  tz: string;
 }
 
 type NavItem = { name: string; href: string; icon: React.ComponentType<{ className?: string }>; badge?: number; shortcut?: string };
@@ -133,6 +136,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
     <NoticeProvider>
       <ShellContext.Provider value={{ openPalette: () => setPaletteOpen(true), openCommit: () => setCommitOpen(true) }}>
         {data.demoUserId && <DemoGuard userId={data.demoUserId} />}
+        <TimezoneCheck tz={data.tz} demo={Boolean(data.demoUserId)} />
         <ParallaxBackdrop scroller="#content" tone="light" />
         <div className="relative z-10 flex h-[100dvh] w-full overflow-hidden text-[#0A0A0A]">
           <aside className="hidden w-64 shrink-0 p-3 lg:block">
@@ -204,7 +208,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
         {/* Mobile navigation drawer */}
         <Dialog.Root open={navOpen} onOpenChange={setNavOpen}>
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in lg:hidden" />
+            <Dialog.Overlay className="fixed inset-0 z-50 app-scrim data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in lg:hidden" />
             <Dialog.Content
               aria-describedby={undefined}
               className="fixed inset-y-3 left-3 z-50 flex data-[state=closed]:animate-nav-out data-[state=open]:animate-nav-in w-[17rem] flex-col overscroll-contain rounded-[28px] bg-white border border-black/[0.06] outline-none lg:hidden"
@@ -447,7 +451,7 @@ function CommandPalette({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
+        <Dialog.Overlay className="fixed inset-0 z-50 app-scrim data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content
           aria-describedby={undefined}
           className="app-overlay fixed left-1/2 top-[12vh] z-50 origin-top data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[24px] outline-none"
@@ -512,8 +516,6 @@ function CommandPalette({
 }
 
 // ------------------------------------------------------------------ manual commit
-const selectClass =
-  "app-field h-11 w-full rounded-[14px] bg-white px-3 text-base text-[#0A0A0A] focus:border-black/40 focus:outline-none";
 
 function CommitDialog({
   open,
@@ -532,7 +534,7 @@ function CommitDialog({
   return (
     <Dialog.Root open={open} onOpenChange={(o) => (setError(null), setWeight(2), onOpenChange(o))}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
+        <Dialog.Overlay className="fixed inset-0 z-50 app-scrim data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content className="fixed left-1/2 top-[14vh] z-50 origin-top data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 overscroll-contain rounded-[28px] bg-white p-6 border border-black/[0.06] outline-none">
           <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">Log work</Dialog.Title>
           <Dialog.Description className="mt-1 text-base text-[#52525B]">
@@ -582,7 +584,7 @@ function CommitDialog({
                 className="app-input w-full resize-none rounded-[16px] px-4 py-3 text-base max-md:text-base"
               />
               {error && (
-                <p id="commit-message-error" className="text-sm text-[#B42318]">
+                <p id="commit-message-error" className="text-sm text-danger">
                   {error}
                 </p>
               )}
@@ -592,7 +594,7 @@ function CommitDialog({
                 <label htmlFor="commit-project" className="text-sm font-medium text-[#52525B]">
                   Project
                 </label>
-                <select id="commit-project" name="project" className={selectClass} defaultValue="">
+                <select id="commit-project" name="project" className="app-select" defaultValue="">
                   <option value="">None</option>
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -608,7 +610,7 @@ function CommitDialog({
                 <select
                   id="commit-weight"
                   name="weight"
-                  className={selectClass}
+                  className="app-select"
                   value={weight}
                   onChange={(e) => setWeight(Number(e.target.value))}
                   aria-describedby="commit-weight-hint"

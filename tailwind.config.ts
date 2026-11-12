@@ -20,6 +20,8 @@ const config: Config = {
           soft: "rgba(217, 43, 116, 0.12)",
           line: "rgba(217, 43, 116, 0.5)",
         },
+        // Errors, destructive actions and overdue only (AGENTS.md); 6.6:1 on white
+        danger: "#B42318",
         // Marketing / Brand Dark Theme
         dark: {
           bg: {

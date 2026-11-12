@@ -17,8 +17,8 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getCommits, getInbox, getObjectives, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight } from "../lib/mutations";
-import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, importSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, taskRefSchema } from "../lib/validation";
+import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone } from "../lib/mutations";
+import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, importSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema } from "../lib/validation";
 import { buildExport } from "../lib/data/export";
 import { parseImport } from "../lib/data/import";
 import { parseCsv, toCsv } from "../lib/data/csv";
@@ -602,6 +602,25 @@ async function main() {
     tasks: (await one(db.select({ n: sql<number>`count(*)::int` }).from(s.tasks).where(eq(s.tasks.workspaceId, workspaceId)))).n,
     commits: (await one(db.select({ n: sql<number>`count(*)::int` }).from(s.commits).where(eq(s.commits.workspaceId, workspaceId)))).n,
   });
+
+  // ------------------------------------------------------------ time zone
+  const tzParse = [
+    setTimezoneSchema.safeParse({ timezone: "Mars/Olympus" }).success,
+    setTimezoneSchema.safeParse({ timezone: "Asia/Kolkata" }).success,
+    setTimezoneSchema.safeParse({ timezone: "Asia/Kolkata", userId: aaravId }).success,
+  ];
+  record("TZ1", "Time zone schema accepts only known zones and no extra keys", JSON.stringify(tzParse) === "[false,true,false]", JSON.stringify(tzParse));
+  const tzProbeA = await captureTask(A, { text: "tz probe 2030-03-15" });
+  const tzProbeB = await captureTask(B, { text: "tz probe 2030-03-15" });
+  const bDueBefore = await dueOf(tzProbeB.id);
+  await setTimezone(A, { timezone: "Asia/Kolkata" });
+  const localDue = await one(
+    db.select({ d: sql<string>`to_char(${s.tasks.dueAt} at time zone 'Asia/Kolkata', 'YYYY-MM-DD HH24:MI')` }).from(s.tasks).where(eq(s.tasks.id, tzProbeA.id))
+  );
+  record("TZ2", "Changing time zone keeps open due days, only in the actor's workspace", localDue.d === "2030-03-15 23:59" && (await dueOf(tzProbeB.id)) === bDueBefore, localDue.d);
+  [ok, detail] = await expectError(() => setTimezone({ ...X, personalWorkspaceId: aarav.ws.id }, { timezone: "UTC" }), "not_found");
+  record("TZ3", "Time zone change for a workspace the actor cannot write is refused", ok, detail);
+  await setTimezone(A, { timezone: "UTC" });
 
   const aaravExport = await buildExport(aaravId);
   const parthTaskIds = new Set((await db.select({ id: s.tasks.id }).from(s.tasks).where(eq(s.tasks.workspaceId, parth.ws.id))).map((t) => t.id));

@@ -11,7 +11,6 @@ type Measure = (typeof OBJECTIVE_MEASURES)[number];
 type FieldName = "name" | "measure" | "unit" | "targetValue" | "deadline" | "projectId";
 
 const inputClass = "app-input h-11 w-full rounded-[14px] px-3 text-base";
-const selectClass = "app-field h-11 w-full rounded-[14px] bg-white px-3 text-base text-[#0A0A0A] focus:border-black/40 focus:outline-none";
 
 const empty = { name: "", measure: "manual" as Measure, unit: "", targetValue: "", deadline: "", projectId: "" };
 
@@ -44,7 +43,7 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
   });
   const fieldError = (field: FieldName) =>
     errors[field] && (
-      <p id={`objective-${field}-error`} className="text-sm text-[#B42318]">
+      <p id={`objective-${field}-error`} className="text-sm text-danger">
         {errors[field]}
       </p>
     );
@@ -70,7 +69,7 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
+        <Dialog.Overlay className="fixed inset-0 z-50 app-scrim data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content
           onOpenAutoFocus={(e) => {
             if (!window.matchMedia("(pointer: fine)").matches) e.preventDefault();
@@ -163,7 +162,7 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
             {projects.length > 0 && (
               <div className="space-y-1.5">
                 {label("projectId", "Project", true)}
-                <select {...props("projectId")} value={values.projectId} onChange={(e) => set("projectId", e.target.value)} className={selectClass}>
+                <select {...props("projectId")} value={values.projectId} onChange={(e) => set("projectId", e.target.value)} className="app-select">
                   <option value="">Whole workspace</option>
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -175,7 +174,7 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
               </div>
             )}
 
-            <p aria-live="polite" className="min-h-5 text-sm text-[#B42318]">
+            <p aria-live="polite" className="min-h-5 text-sm text-danger">
               {errors.form}
             </p>
             <div className="flex justify-end gap-2">
@@ -242,7 +241,7 @@ export function ObjectiveProgress({ objectiveId, name, value, unit }: { objectiv
         </button>
       </div>
       {error && (
-        <p id={`${id}-error`} aria-live="polite" className="text-sm text-[#B42318]">
+        <p id={`${id}-error`} aria-live="polite" className="text-sm text-danger">
           {error}
         </p>
       )}

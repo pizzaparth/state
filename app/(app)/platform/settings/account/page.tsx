@@ -6,6 +6,8 @@ import { PageHeader, Panel } from "@/components/app/primitives";
 import { Row, SettingsNav } from "@/components/app/settings-nav";
 import { SignOutButton } from "@/components/app/sign-out-button";
 import { ExportLinks, ImportForm } from "@/components/app/data-transfer";
+import { TimezoneField } from "@/components/app/timezone-field";
+import { timeZones } from "@/lib/tz";
 
 export const metadata = { title: "Account" };
 
@@ -22,8 +24,8 @@ export default async function AccountSettingsPage() {
           <Row label="Account" hint={viewer.isDemo ? "deleted on sign-out or tab close" : "the only permanent account"}>
             {viewer.isDemo ? "Demo" : "Owner"}
           </Row>
-          <Row label="Timezone" hint="your day starts at 00:00 here">
-            {account?.timezone}
+          <Row label="Time zone" hint="your day starts at 00:00 here">
+            <TimezoneField timezone={account?.timezone ?? viewer.tz} zones={timeZones()} />
           </Row>
           <Row label="Since">{account ? formatDate(account.createdAt, viewer.tz, { day: "numeric", month: "long", year: "numeric" }) : ""}</Row>
         </dl>

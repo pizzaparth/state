@@ -4,6 +4,7 @@ import type { Route } from "next";
 import type { CommitRow } from "@/db/queries";
 import { dayKey, dayLabel, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { zoneAbbreviation } from "@/lib/tz";
 
 /**
  * Technical event stream: aligned times, a commit marker on a thin connector, message,
@@ -42,7 +43,12 @@ export function CommitLedger({
           <section key={group.key} aria-label={grouped ? dayLabel(group.key, today) : undefined}>
             {grouped && (
               <h3 className="mb-1 flex items-baseline justify-between px-3 text-[13px] font-semibold uppercase tracking-[0.12em] text-[#52525B]">
-                <span>{dayLabel(group.key, today)}</span>
+                <span>
+                  {dayLabel(group.key, today)}
+                  <span className="ml-2 font-mono text-[11px] font-normal tracking-normal text-[#71717A]" title={`Times in ${tz}`}>
+                    {zoneAbbreviation(tz, group.rows[0].createdAt)}
+                  </span>
+                </span>
                 <span className="font-mono tabular-nums normal-case tracking-normal">
                   {group.rows.length} {group.rows.length === 1 ? "commit" : "commits"}, +{total}
                 </span>

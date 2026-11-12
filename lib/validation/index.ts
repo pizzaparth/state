@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isTimeZone } from "@/lib/tz";
 
 /**
  * Task creation & update schemas
@@ -117,6 +118,11 @@ export const setTaskRecurrenceSchema = z.strictObject({
 export const addBoardTaskSchema = z.strictObject({
   title: z.string().trim().min(1, "Give the task a title.").max(500, "Keep the title under 500 characters."),
   weight: z.union([z.literal(1), z.literal(2), z.literal(4), z.literal(8)]),
+});
+
+/** The person's time zone (IANA name). Due days and deadlines keep their calendar day. */
+export const setTimezoneSchema = z.strictObject({
+  timezone: z.string().trim().min(1, "Pick a time zone.").max(64).refine(isTimeZone, "Pick a time zone from the list."),
 });
 
 /** First-run setup done or skipped; takes nothing. */

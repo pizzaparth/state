@@ -15,8 +15,6 @@ type Values = { name: string; slug: string; description: string; status: Status 
 
 const STATUS_LABEL: Record<Status, string> = { planned: "Planned", active: "Active", paused: "Paused", completed: "Completed" };
 
-const selectClass =
-  "app-field h-11 w-full rounded-[14px] bg-white px-3 text-base text-[#0A0A0A] focus:border-black/40 focus:outline-none";
 
 /**
  * Project form in a dialog, shared by create and edit. Validates with the server's Zod
@@ -82,7 +80,7 @@ function ProjectDialog({
 
   const fieldError = (field: FieldName) =>
     errors[field] && (
-      <p id={`project-${field}-error`} className="text-sm text-[#B42318]">
+      <p id={`project-${field}-error`} className="text-sm text-danger">
         {errors[field]}
       </p>
     );
@@ -98,7 +96,7 @@ function ProjectDialog({
     >
       <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px] data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
+        <Dialog.Overlay className="fixed inset-0 z-50 app-scrim data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content
           onOpenAutoFocus={(e) => {
             // Desktop: focus the name field; leave mobile keyboards closed
@@ -201,7 +199,7 @@ function ProjectDialog({
                 <label htmlFor="project-status" className="text-sm font-medium text-[#52525B]">
                   Status
                 </label>
-                <select {...fieldProps("status")} value={values.status} onChange={(e) => set("status", e.target.value)} className={selectClass}>
+                <select {...fieldProps("status")} value={values.status} onChange={(e) => set("status", e.target.value)} className="app-select">
                   {PROJECT_STATUSES.map((s) => (
                     <option key={s} value={s}>
                       {STATUS_LABEL[s]}
@@ -237,7 +235,7 @@ function ProjectDialog({
               </div>
             </div>
 
-            <p aria-live="polite" className="min-h-5 text-sm text-[#B42318]">
+            <p aria-live="polite" className="min-h-5 text-sm text-danger">
               {errors.form}
             </p>
 
@@ -369,7 +367,7 @@ export function ProjectActions({
           {project.archived ? "Unarchive" : "Archive"}
         </button>
       </div>
-      <p aria-live="polite" className="text-sm text-[#B42318]">
+      <p aria-live="polite" className="text-sm text-danger">
         {error}
       </p>
     </div>

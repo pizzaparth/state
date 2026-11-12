@@ -14,7 +14,13 @@ export function DemoStarter() {
   const start = React.useCallback(() => {
     setError(null);
     startTransition(async () => {
-      const result = await startDemoAction();
+      let timezone: string | undefined;
+      try {
+        timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+      } catch {
+        timezone = undefined;
+      }
+      const result = await startDemoAction(timezone ? { timezone } : undefined);
       if (!result.ok) {
         setError(result.error);
         return;
@@ -36,7 +42,7 @@ export function DemoStarter() {
       <Button type="button" variant="light-cta" size="md" className="w-full" isLoading={pending || !error} onClick={start}>
         {pending || !error ? "Preparing demo…" : "Try again"}
       </Button>
-      <p aria-live="polite" className="min-h-5 text-sm text-[#B42318]">
+      <p aria-live="polite" className="min-h-5 text-sm text-danger">
         {error}
       </p>
     </div>

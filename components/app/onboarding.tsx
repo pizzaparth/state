@@ -162,7 +162,7 @@ export function Onboarding({
               </button>
             </div>
             {error && (
-              <p id="first-task-error" aria-live="polite" className="text-sm text-[#B42318]">
+              <p id="first-task-error" aria-live="polite" className="text-sm text-danger">
                 {error}
               </p>
             )}

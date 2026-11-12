@@ -56,7 +56,9 @@
   --app-text-primary: #0A0A0A;
   --app-text-secondary: #52525B;
   --app-text-tertiary: #71717A;
-  --app-danger: #B42318;
+  /* The one colour besides the accent: errors, destructive actions and overdue only */
+  --danger: #B42318;
+  --app-danger: var(--danger);
 
   /* Corner Radii (Geometric Superellipses) */
   --radius-control: 12px;

@@ -37,7 +37,7 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
   - **Primary CTA:** black pill (`Button variant="light-cta"`); secondary is a grey pill (`light-secondary`).
 - MUST: Accent `#D92B74` on about 15% of any screen: `+ COMMIT`, the Today execution instrument, the headline metric, toasts, data marks (bars, heatmap, `+N`), small labels, focus rings. Selected nav items and segmented controls are black, not pink.
 - MUST: Text on an accent fill is white `#FFFFFF` (4.6:1). Accent as small text uses Tailwind `text-accent` (`#C21F63`, AA on white and `#F5F5F5`); `#D92B74` is for fills, marks and large type.
-- NEVER: Neumorphism, gradients, or any colour other than the accent, black, white and greys.
+- NEVER: Neumorphism, gradients, or any colour other than the accent, black, white and greys, with one exception: `--danger` (`#B42318`, Tailwind `danger`) for errors, destructive actions and overdue only, always beside a glyph or word.
 - MUST: Landing page motion lives in `styles/motion.css` and `components/motion/`: `Reveal` for section entrances, `Marquee` for self-running strips (hover never pauses; a pause button wherever a strip carries content), `PlatformDemo` for the scripted hero cursor, `ScrollWords`, `ScrollProgress`. Transform/opacity only; reduced motion stops all of it.
 - MAY: Third-party brand logos (Simple Icons, own colours) only where a section names those tools, with the trademark line.
 
