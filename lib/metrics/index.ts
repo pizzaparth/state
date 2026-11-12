@@ -72,11 +72,13 @@ export function mean(values: number[]): number | null {
   return values.length === 0 ? null : values.reduce((s, v) => s + v, 0) / values.length;
 }
 
-export type ObjectiveStatus = "completed" | "ahead" | "on track" | "behind";
+export type ObjectiveStatus = "completed" | "ahead" | "on track" | "behind" | "open" | "overdue";
 
 /**
  * Objective position (docs/state_desc.md §24): current velocity since start versus the
  * velocity required to reach the target by the deadline. Status bands are ±10%.
+ * Without a deadline there is nothing to be on track against: "open". A deadline that
+ * has passed with the target not reached is "overdue", with the days past.
  */
 export function objectivePosition(
   o: { currentValue: number; targetValue: number; startAt: Date; deadlineAt: Date | null; completedAt: Date | null },
@@ -92,10 +94,12 @@ export function objectivePosition(
 
   let status: ObjectiveStatus;
   if (o.completedAt || remaining === 0) status = "completed";
-  else if (required === null) status = "on track";
-  else if (velocity >= required * 1.1) status = "ahead";
-  else if (velocity >= required * 0.9) status = "on track";
+  else if (o.deadlineAt === null) status = "open";
+  else if (now.getTime() > o.deadlineAt.getTime()) status = "overdue";
+  else if (velocity >= required! * 1.1) status = "ahead";
+  else if (velocity >= required! * 0.9) status = "on track";
   else status = "behind";
 
-  return { velocity, required, projected, daysLeft, remaining, status };
+  const daysOver = o.deadlineAt && now.getTime() > o.deadlineAt.getTime() ? Math.ceil((now.getTime() - o.deadlineAt.getTime()) / DAY) : 0;
+  return { velocity, required, projected, daysLeft, remaining, status, daysOver };
 }

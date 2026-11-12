@@ -250,6 +250,16 @@ export const createObjectiveSchema = z
   })
   .refine((o) => o.measure === "execution" || o.unit.length > 0, { path: ["unit"], message: "Name what you count, like modules." });
 
+/** Objective edit: name, target, deadline and linked project. The measure and start stay. */
+export const updateObjectiveSchema = z.strictObject({
+  objectiveId: objectId,
+  name: z.string().trim().min(1, "Name the objective.").max(100, "Keep the name under 100 characters."),
+  unit: z.string().trim().max(24, "Keep the unit under 24 characters."),
+  targetValue: objectiveAmount.min(1, "Set a target above 0."),
+  deadline: calendarDay.nullable(),
+  projectId: objectId.nullable(),
+});
+
 export const setObjectiveProgressSchema = z.strictObject({
   objectiveId: objectId,
   currentValue: objectiveAmount,

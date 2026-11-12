@@ -34,6 +34,10 @@ const PRIORITY_RANK = sql`case ${tasks.priority} when 'critical' then 0 when 'hi
 const localDayStart = (tz: string, daysBack: number) =>
   sql`(date_trunc('day', now() at time zone ${tz}) - make_interval(days => ${daysBack})) at time zone ${tz}`;
 
+/** `column` before the start of the day after the window's last day (`end` days ago); none when the window ends today. */
+const beforeEnd = (column: SQL | typeof commits.createdAt | typeof tasks.createdAt | typeof tasks.completedAt, tz: string, end: number): SQL | undefined =>
+  end > 0 ? lt(column as typeof commits.createdAt, localDayStart(tz, end - 1)) : undefined;
+
 function commitWhere(scope: Scope): SQL[] {
   const where: SQL[] = [inArray(commits.workspaceId, scope.workspaceIds), isNull(commits.deletedAt)];
   if (scope.userId) where.push(eq(commits.userId, scope.userId));
@@ -59,8 +63,8 @@ export interface DailyExecution {
   projects: number;
 }
 
-/** One entry per local day, oldest first, including zero days. */
-export async function getDailyExecution(scope: Scope, tz: string, days: number): Promise<DailyExecution[]> {
+/** One entry per local day, oldest first, including zero days. The window ends `end` days ago (0 = today). */
+export async function getDailyExecution(scope: Scope, tz: string, days: number, end = 0): Promise<DailyExecution[]> {
   const rows = empty(scope)
     ? []
     : await db
@@ -72,7 +76,7 @@ export async function getDailyExecution(scope: Scope, tz: string, days: number):
           projects: sql<number>`count(distinct ${commits.projectId})::int`,
         })
         .from(commits)
-        .where(and(...commitWhere(scope), gte(commits.createdAt, localDayStart(tz, days - 1))))
+        .where(and(...commitWhere(scope), gte(commits.createdAt, localDayStart(tz, days - 1 + end)), beforeEnd(commits.createdAt, tz, end)))
         .groupBy(sql`1`);
 
   const byDay = new Map(rows.map((r) => [r.day, r]));
@@ -81,7 +85,7 @@ export async function getDailyExecution(scope: Scope, tz: string, days: number):
   const out: DailyExecution[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(`${today}T00:00:00Z`);
-    d.setUTCDate(d.getUTCDate() - i);
+    d.setUTCDate(d.getUTCDate() - i - end);
     const key = d.toISOString().slice(0, 10);
     out.push(byDay.get(key) ?? { day: key, commits: 0, execution: 0, tasks: 0, projects: 0 });
   }
@@ -93,7 +97,7 @@ export async function getDailyExecution(scope: Scope, tz: string, days: number):
  * existed (the earlier of its workspace's creation and its first commit). Today counts.
  * A new account therefore starts at 1 eligible day, not the whole period.
  */
-export async function getEligibleDays(scope: Scope, tz: string, days: number): Promise<number> {
+export async function getEligibleDays(scope: Scope, tz: string, days: number, end = 0): Promise<number> {
   if (empty(scope)) return days;
   const firstCommit = db
     .select({ at: sql`min(${commits.createdAt})` })
@@ -101,10 +105,10 @@ export async function getEligibleDays(scope: Scope, tz: string, days: number): P
     .where(and(...commitWhere(scope)));
   const created = db.select({ at: sql`min(${workspaces.createdAt})` }).from(workspaces).where(inArray(workspaces.id, scope.workspaceIds));
   const [row] = await db.execute<{ n: number | null }>(
-    sql`select ((now() at time zone ${tz})::date - (least((${created}), (${firstCommit})) at time zone ${tz})::date + 1)::int as n`
+    sql`select ((now() at time zone ${tz})::date - ${end}::int - (least((${created}), (${firstCommit})) at time zone ${tz})::date + 1)::int as n`
   ).then((r) => ("rows" in r ? (r.rows as { n: number | null }[]) : (r as unknown as { n: number | null }[])));
   const n = row?.n;
-  return n === null || n === undefined ? days : Math.max(1, Math.min(days, n));
+  return n === null || n === undefined ? days : Math.max(0, Math.min(days, n));
 }
 
 // ------------------------------------------------------------------ commits
@@ -202,6 +206,26 @@ async function withCommitTags<T extends { id: string }>(rows: T[]): Promise<(T &
   const by = new Map<string, string[]>();
   for (const t of tagRows) by.set(t.commitId, [...(by.get(t.commitId) ?? []), t.name]);
   return rows.map((r) => ({ ...r, tags: by.get(r.id) ?? [] }));
+}
+
+/** Tasks completed (or created on a board) between two local days, newest first: what a metric counted. */
+export async function getTasksInWindow(scope: Scope, tz: string, from: string, to: string, kind: "completed" | "planned", limit = 100) {
+  if (empty(scope)) return [];
+  const column = kind === "completed" ? tasks.completedAt : tasks.createdAt;
+  return db
+    .select({ id: tasks.id, title: tasks.title, weight: tasks.weight, createdAt: tasks.createdAt, startedAt: tasks.startedAt, completedAt: tasks.completedAt, projectName: projects.name })
+    .from(tasks)
+    .leftJoin(projects, eq(projects.id, tasks.projectId))
+    .where(
+      and(
+        ...taskWhere(scope),
+        gte(column, dayStartAt(tz, from)),
+        lt(column, sql`${dayStartAt(tz, to)} + interval '1 day'`),
+        kind === "planned" ? isNotNull(tasks.boardId) : undefined
+      )
+    )
+    .orderBy(desc(column))
+    .limit(limit);
 }
 
 /** Tasks created and completed between two local days, inclusive (week review). */
@@ -532,13 +556,13 @@ export interface MetricsData {
   byProject: { name: string; execution: number }[];
 }
 
-export async function getMetrics(scope: Scope, tz: string, days: number): Promise<MetricsData> {
-  const daily = await getDailyExecution(scope, tz, days);
+export async function getMetrics(scope: Scope, tz: string, days: number, end = 0): Promise<MetricsData> {
+  const daily = await getDailyExecution(scope, tz, days, end);
   if (empty(scope)) {
     return { days, execution: 0, previousExecution: 0, commits: 0, tasksCompleted: 0, activeDays: 0, eligibleDays: days, plannedTasks: 0, plannedCompleted: 0, cycleTimesMs: [], daily, byProject: [] };
   }
-  const start = localDayStart(tz, days - 1);
-  const previousStart = localDayStart(tz, 2 * days - 1);
+  const start = localDayStart(tz, days - 1 + end);
+  const previousStart = localDayStart(tz, 2 * days - 1 + end);
 
   const [[previous], cycle, [planned], byProject, eligibleDays] = await Promise.all([
     db
@@ -548,23 +572,24 @@ export async function getMetrics(scope: Scope, tz: string, days: number): Promis
     db
       .select({ ms: sql<number>`extract(epoch from (${tasks.completedAt} - ${tasks.startedAt})) * 1000` })
       .from(tasks)
-      .where(and(...taskWhere(scope), gte(tasks.completedAt, start), isNotNull(tasks.startedAt))),
+      .where(and(...taskWhere(scope), gte(tasks.completedAt, start), beforeEnd(tasks.completedAt, tz, end), isNotNull(tasks.startedAt)))
+      .limit(5000),
     db
       .select({
         total: sql<number>`count(*)::int`,
         completed: sql<number>`count(${tasks.completedAt})::int`,
       })
       .from(tasks)
-      .where(and(...taskWhere(scope), isNotNull(tasks.boardId), gte(tasks.createdAt, start))),
+      .where(and(...taskWhere(scope), isNotNull(tasks.boardId), gte(tasks.createdAt, start), beforeEnd(tasks.createdAt, tz, end))),
     db
       .select({ name: sql<string>`coalesce(${projects.name}, 'No project')`, execution: sql<number>`sum(${commits.executionValue})::int` })
       .from(commits)
       .leftJoin(projects, eq(projects.id, commits.projectId))
-      .where(and(...commitWhere(scope), gte(commits.createdAt, start)))
+      .where(and(...commitWhere(scope), gte(commits.createdAt, start), beforeEnd(commits.createdAt, tz, end)))
       .groupBy(sql`1`)
       .orderBy(sql`2 desc`)
       .limit(50),
-    getEligibleDays(scope, tz, days),
+    getEligibleDays(scope, tz, days, end),
   ]);
 
   return {
@@ -573,7 +598,7 @@ export async function getMetrics(scope: Scope, tz: string, days: number): Promis
     execution: daily.reduce((s, d) => s + d.execution, 0),
     previousExecution: previous.execution,
     commits: daily.reduce((s, d) => s + d.commits, 0),
-    tasksCompleted: cycle.length + (await countCompletedWithoutStart(scope, start)),
+    tasksCompleted: cycle.length + (await countCompletedWithoutStart(scope, start, beforeEnd(tasks.completedAt, tz, end))),
     activeDays: daily.filter((d) => d.commits > 0).length,
     plannedTasks: planned.total,
     plannedCompleted: planned.completed,
@@ -583,17 +608,19 @@ export async function getMetrics(scope: Scope, tz: string, days: number): Promis
   };
 }
 
-async function countCompletedWithoutStart(scope: Scope, start: SQL) {
+async function countCompletedWithoutStart(scope: Scope, start: SQL, upper?: SQL) {
   const [row] = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(tasks)
-    .where(and(...taskWhere(scope), gte(tasks.completedAt, start), isNull(tasks.startedAt)));
+    .where(and(...taskWhere(scope), gte(tasks.completedAt, start), upper, isNull(tasks.startedAt)));
   return row.n;
 }
 
 export interface MetricSeries {
   /** Daily execution over `history` days (the period, the prior period and SMA warm-up). */
   history: DailyExecution[];
+  /** Tasks reaching Done per day (tasks.completedAt), aligned with `history`. */
+  completedDaily: number[];
   /** Commits by local ISO weekday (1 = Monday) and hour, current period. */
   punchcard: { dow: number; hour: number; commits: number; execution: number }[];
   /** Commits grouped by execution value, current period. */
@@ -607,12 +634,13 @@ export interface MetricSeries {
 }
 
 /** Time-series inputs for the Metrics page; every list is bounded. */
-export async function getMetricSeries(scope: Scope, tz: string, days: number): Promise<MetricSeries> {
+export async function getMetricSeries(scope: Scope, tz: string, days: number, end = 0): Promise<MetricSeries> {
   const historyDays = Math.max(2 * days, days + 27);
-  const history = await getDailyExecution(scope, tz, historyDays);
-  if (empty(scope)) return { history, punchcard: [], weights: [], flow: [], cycles: [], projects: [] };
-  const start = localDayStart(tz, days - 1);
-  const previousStart = localDayStart(tz, 2 * days - 1);
+  const history = await getDailyExecution(scope, tz, historyDays, end);
+  if (empty(scope)) return { history, completedDaily: history.map(() => 0), punchcard: [], weights: [], flow: [], cycles: [], projects: [] };
+  const start = localDayStart(tz, days - 1 + end);
+  const previousStart = localDayStart(tz, 2 * days - 1 + end);
+  const historyStart = localDayStart(tz, historyDays - 1 + end);
   const localDay = (column: typeof tasks.createdAt | typeof tasks.completedAt) => sql<string>`to_char(${column} at time zone ${tz}, 'YYYY-MM-DD')`;
 
   const [punchcard, weights, created, completed, cycles, byProject] = await Promise.all([
@@ -624,7 +652,7 @@ export async function getMetricSeries(scope: Scope, tz: string, days: number): P
         execution: sql<number>`coalesce(sum(${commits.executionValue}), 0)::int`,
       })
       .from(commits)
-      .where(and(...commitWhere(scope), gte(commits.createdAt, start)))
+      .where(and(...commitWhere(scope), gte(commits.createdAt, start), beforeEnd(commits.createdAt, tz, end)))
       .groupBy(sql`1`, sql`2`)
       .limit(168),
     db
@@ -634,26 +662,26 @@ export async function getMetricSeries(scope: Scope, tz: string, days: number): P
         execution: sql<number>`coalesce(sum(${commits.executionValue}), 0)::int`,
       })
       .from(commits)
-      .where(and(...commitWhere(scope), gte(commits.createdAt, start)))
+      .where(and(...commitWhere(scope), gte(commits.createdAt, start), beforeEnd(commits.createdAt, tz, end)))
       .groupBy(commits.executionValue)
       .orderBy(asc(commits.executionValue))
       .limit(50),
     db
       .select({ day: localDay(tasks.createdAt), n: sql<number>`count(*)::int` })
       .from(tasks)
-      .where(and(...taskWhere(scope), gte(tasks.createdAt, start)))
+      .where(and(...taskWhere(scope), gte(tasks.createdAt, start), beforeEnd(tasks.createdAt, tz, end)))
       .groupBy(sql`1`)
       .limit(400),
     db
       .select({ day: localDay(tasks.completedAt), n: sql<number>`count(*)::int` })
       .from(tasks)
-      .where(and(...taskWhere(scope), gte(tasks.completedAt, start)))
+      .where(and(...taskWhere(scope), gte(tasks.completedAt, historyStart), beforeEnd(tasks.completedAt, tz, end)))
       .groupBy(sql`1`)
-      .limit(400),
+      .limit(4000),
     db
       .select({ day: localDay(tasks.completedAt), ms: sql<number>`extract(epoch from (${tasks.completedAt} - ${tasks.startedAt})) * 1000` })
       .from(tasks)
-      .where(and(...taskWhere(scope), gte(tasks.completedAt, previousStart), isNotNull(tasks.startedAt)))
+      .where(and(...taskWhere(scope), gte(tasks.completedAt, previousStart), beforeEnd(tasks.completedAt, tz, end), isNotNull(tasks.startedAt)))
       .orderBy(asc(tasks.completedAt))
       .limit(5000),
     db
@@ -666,7 +694,7 @@ export async function getMetricSeries(scope: Scope, tz: string, days: number): P
       })
       .from(commits)
       .leftJoin(projects, eq(projects.id, commits.projectId))
-      .where(and(...commitWhere(scope), gte(commits.createdAt, previousStart)))
+      .where(and(...commitWhere(scope), gte(commits.createdAt, previousStart), beforeEnd(commits.createdAt, tz, end)))
       .groupBy(sql`1`)
       .orderBy(sql`2 desc`, sql`3 desc`)
       .limit(50),
@@ -676,6 +704,7 @@ export async function getMetricSeries(scope: Scope, tz: string, days: number): P
   const completedBy = new Map(completed.map((r) => [r.day, r.n]));
   return {
     history,
+    completedDaily: history.map((d) => completedBy.get(d.day) ?? 0),
     punchcard,
     weights,
     flow: history.slice(-days).map((d) => ({ day: d.day, created: createdBy.get(d.day) ?? 0, completed: completedBy.get(d.day) ?? 0 })),

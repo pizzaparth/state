@@ -202,6 +202,7 @@ export function Measure({
   delta,
   inverse,
   spark,
+  href,
 }: {
   label: string;
   value: string;
@@ -211,9 +212,11 @@ export function Measure({
   inverse?: boolean;
   /** Recent values drawn as a trend line beside the label. */
   spark?: number[];
+  /** Opens the explanation panel: the formula with real numbers and its records. */
+  href?: string;
 }) {
-  return (
-    <div className={cn("min-w-0 p-5", inverse ? "app-inverse rounded-[24px]" : "app-panel")}>
+  const body = (
+    <>
       <div className="flex items-start justify-between gap-3">
         <p className={cn(TICK, inverse ? "text-accent-muted" : "text-[#52525B]")}>{label}</p>
         {spark && <Sparkline values={spark} inverse={inverse} />}
@@ -228,6 +231,15 @@ export function Measure({
       {formula && (
         <p className={cn("mt-3 font-mono text-[12px] leading-relaxed", inverse ? "text-accent-muted" : "text-[#71717A]")}>{formula}</p>
       )}
-    </div>
+    </>
+  );
+  const className = cn("block min-w-0 p-5", inverse ? "app-inverse rounded-[24px]" : "app-panel");
+  return href ? (
+    <Link href={href as Route} scroll={false} title="Explain this number" className={cn(className, "mi-lift transition-colors hover:border-black/[0.14]")}>
+      {body}
+      <span className="sr-only"> (explain)</span>
+    </Link>
+  ) : (
+    <div className={className}>{body}</div>
   );
 }

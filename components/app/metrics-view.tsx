@@ -1,19 +1,57 @@
 import * as React from "react";
 import { getMetrics, getMetricSeries, getObjectives, type DailyExecution, type MetricSeries, type MetricsData, type Scope } from "@/db/queries";
-import { formatDate, formatDuration, formatNumber } from "@/lib/format";
-import { calculateCompletionRate, calculateConsistency, mean, objectivePosition, percentile } from "@/lib/metrics";
+import { dayKey, formatDate, formatDuration, formatNumber } from "@/lib/format";
+import { calculateCompletionRate, calculateConsistency, calculateThroughput, calculateVelocity, mean, objectivePosition, percentile } from "@/lib/metrics";
 import { autocorrelation, byWeek, change, cumulative, drawdown, linearTrend, rollingMean, stdev, streaks, sum } from "@/lib/metrics/series";
 import { weightLabel } from "@/lib/weights";
 import { cn } from "@/lib/utils";
 import { CycleHistogram, MixBar, StatGrid } from "./charts";
 import { ExecutionGraph } from "./execution-graph";
-import { EmptyState, Measure, Panel, ProgressRail, SegmentedLinks, TICK } from "./primitives";
-import { ArchiveObjective, NewObjective, ObjectiveProgress } from "./objectives";
+import { EmptyState, Measure, Panel, ProgressRail, TICK } from "./primitives";
+import { MetricSection } from "./metric-sections";
+import { ArchiveObjective, EditObjective, NewObjective, ObjectiveProgress } from "./objectives";
+import { RestoreButton } from "./record-actions";
+import Link from "next/link";
+import type { Route } from "next";
 import { Punchcard, SeriesChart } from "./series-chart";
 
 export const PERIODS = { "7d": 7, "30d": 30, "90d": 90, "180d": 180, "1y": 365 } as const;
 export type PeriodKey = keyof typeof PERIODS;
-export const toPeriod = (value: string | undefined): PeriodKey => (value && value in PERIODS ? (value as PeriodKey) : "30d");
+
+/** The window shown: `days` local days ending `end` days ago (0 = today). */
+export interface MetricRange {
+  key: PeriodKey | "all" | "custom";
+  days: number;
+  end: number;
+  /** First and last day, YYYY-MM-DD */
+  from: string;
+  to: string;
+}
+
+const MAX_DAYS = 1826; // five years
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const shift = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+const between = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
+
+/**
+ * Reads ?period= (7d … 1y, all) or ?from=&to= (a custom range, capped at five years and
+ * never past today). `allDays` is how many days the account has existed.
+ */
+export function toRange(params: Record<string, string | undefined>, today: string, allDays: number): MetricRange {
+  if (params.from && params.to && DAY_RE.test(params.from) && DAY_RE.test(params.to)) {
+    const to = params.to > today ? today : params.to;
+    let from = params.from <= to ? params.from : to;
+    if (between(from, to) + 1 > MAX_DAYS) from = shift(to, -(MAX_DAYS - 1));
+    return { key: "custom", days: between(from, to) + 1, end: between(to, today), from, to };
+  }
+  if (params.period === "all") {
+    const days = Math.max(1, Math.min(MAX_DAYS, allDays));
+    return { key: "all", days, end: 0, from: shift(today, -(days - 1)), to: today };
+  }
+  const key = params.period && params.period in PERIODS ? (params.period as PeriodKey) : "30d";
+  const days = PERIODS[key];
+  return { key, days, end: 0, from: shift(today, -(days - 1)), to: today };
+}
 
 const dayText = (key: string, opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }) => {
   const [y, m, d] = key.split("-").map(Number);
@@ -54,28 +92,52 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export async function MetricsView({
   scope,
   tz,
-  period,
-  basePath,
+  range,
+  metricHref,
+  objectiveHref,
   objectiveWorkspaceIds,
   objectiveControls = null,
+  collapsed = [],
 }: {
+  objectiveHref?: (id: string) => string;
   scope: Scope;
   tz: string;
-  period: PeriodKey;
-  basePath: string;
+  range: MetricRange;
+  /** Link that opens a metric's explanation panel. */
+  metricHref?: (key: string) => string;
   objectiveWorkspaceIds: string[];
   /** Set when the viewer can create and update objectives in that workspace. */
   objectiveControls?: ObjectiveControls | null;
+  /** Sections the viewer collapsed (cookie). */
+  collapsed?: string[];
 }) {
-  const days = PERIODS[period];
-  const [m, s, objectives] = await Promise.all([getMetrics(scope, tz, days), getMetricSeries(scope, tz, days), getObjectives(objectiveWorkspaceIds)]);
-  return <MetricsReport metrics={m} series={s} objectives={objectives} objectiveControls={objectiveControls} tz={tz} period={period} basePath={basePath} />;
+  const [m, s, objectives, archived] = await Promise.all([
+    getMetrics(scope, tz, range.days, range.end),
+    getMetricSeries(scope, tz, range.days, range.end),
+    getObjectives(objectiveWorkspaceIds),
+    objectiveControls ? getObjectives(objectiveWorkspaceIds, { archived: true }) : [],
+  ]);
+  return (
+    <MetricsReport
+      metrics={m}
+      series={s}
+      objectives={objectives}
+      archivedObjectives={archived}
+      objectiveControls={objectiveControls}
+      tz={tz}
+      days={range.days}
+      metricHref={metricHref}
+      objectiveHref={objectiveHref}
+      collapsed={collapsed}
+    />
+  );
 }
 
 type Objective = Awaited<ReturnType<typeof getObjectives>>[number];
 
 export interface ObjectiveControls {
   projects: { id: string; name: string }[];
+  tz: string;
 }
 
 /**
@@ -86,22 +148,25 @@ export function MetricsReport({
   metrics: m,
   series: s,
   objectives,
+  archivedObjectives = [],
   objectiveControls = null,
   tz,
-  period,
-  basePath,
-  overview = false,
+  days,
+  metricHref,
+  objectiveHref,
+  collapsed = [],
 }: {
+  objectiveHref?: (id: string) => string;
   metrics: MetricsData;
   series: MetricSeries;
   objectives: Objective[];
+  archivedObjectives?: Objective[];
   objectiveControls?: ObjectiveControls | null;
   tz: string;
-  period: PeriodKey;
-  basePath: string | null;
-  overview?: boolean;
+  days: number;
+  metricHref?: (key: string) => string;
+  collapsed?: string[];
 }) {
-  const days = PERIODS[period];
   const now = new Date();
 
   // ---------------------------------------------------------------- series
@@ -127,8 +192,12 @@ export function MetricsReport({
   const maxDrawdown = ddValues.length ? Math.min(...ddValues) : 0;
 
   // ---------------------------------------------------------------- headline numbers
-  const velocity = m.execution / days;
-  const throughput = m.tasksCompleted / days;
+  const velocity = calculateVelocity(m.execution, days);
+  const throughput = calculateThroughput(m.tasksCompleted, days);
+  // Throughput and Tasks done: one source, tasks.completedAt (A24)
+  const doneHistory = s.completedDaily;
+  const doneCur = doneHistory.slice(-days);
+  const donePrev = doneHistory.slice(-2 * days, -days);
   const completion = calculateCompletionRate(m.plannedCompleted, m.plannedTasks);
   const consistency = calculateConsistency(m.activeDays, m.eligibleDays);
   const prevActive = prev.filter((d) => d.commits > 0).length;
@@ -220,48 +289,47 @@ export function MetricsReport({
 
   return (
     <>
-      {basePath !== null && (
-        <SegmentedLinks
-          label="Period"
-          items={Object.keys(PERIODS).map((key) => ({ href: `${basePath}?period=${key}`, label: key.toUpperCase(), active: key === period }))}
-        />
-      )}
-
+      <MetricSection id="summary" title="Summary" collapsed={collapsed.includes("summary")}>
       <div className="app-stagger grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <Measure
           inverse
           label={`Execution / ${days}d`}
           value={formatNumber(m.execution)}
           formula="Σ task + manual weights"
-          spark={spark(col(history, "execution"))}
+          spark={tail(col(history, "execution"))}
           delta={<Delta inverse pct={change(m.execution, m.previousExecution)} days={days} />}
+          href={metricHref?.("execution")}
         />
         <Measure
           label="Velocity"
           value={formatNumber(velocity, 2)}
           unit="/ day"
-          formula={`${m.execution} ÷ ${days} days`}
-          spark={spark(col(history, "execution"))}
+          formula={`${m.execution} ÷ ${days} days · spark 7D mean`}
+          spark={tail(rollingMean(col(history, "execution"), 7)) as number[]}
           delta={<Delta pct={change(m.execution, m.previousExecution)} days={days} />}
+          href={metricHref?.("velocity")}
         />
         <Measure
           label="Throughput"
           value={formatNumber(throughput, 2)}
           unit="tasks / day"
           formula={`${m.tasksCompleted} ÷ ${days} days`}
-          spark={spark(col(history, "tasks"))}
-          delta={<Delta pct={change(sum(col(cur, "tasks")), sum(col(prev, "tasks")))} days={days} />}
+          spark={spark(doneHistory)}
+          delta={<Delta pct={change(sum(doneCur), sum(donePrev))} days={days} />}
+          href={metricHref?.("throughput")}
         />
         <Measure
           label="Completion"
           value={m.plannedTasks ? `${formatNumber(completion, 1)}%` : "—"}
-          formula={`${m.plannedCompleted} ÷ ${m.plannedTasks} planned`}
+          formula={`${m.plannedCompleted} done ÷ ${m.plannedTasks} planned, tasks created this period`}
+          href={metricHref?.("completion")}
         />
         <Measure
           label="Cycle time"
           value={formatDuration(median)}
-          formula="median(done − started)"
+          formula={`median of ${m.cycleTimesMs.length} of ${m.tasksCompleted} tasks with a start`}
           delta={<Delta pct={median === null || priorMedian === null ? null : change(median, priorMedian)} days={days} />}
+          href={metricHref?.("cycle")}
         />
         <Measure
           label="Consistency"
@@ -269,6 +337,7 @@ export function MetricsReport({
           formula={`${m.activeDays} ÷ ${m.eligibleDays} eligible days`}
           spark={spark(activeSeries)}
           delta={<Delta pct={change(m.activeDays, prevActive)} days={days} />}
+          href={metricHref?.("consistency")}
         />
         <Measure
           label="Commits"
@@ -276,16 +345,20 @@ export function MetricsReport({
           formula="tasks + manual"
           spark={spark(col(history, "commits"))}
           delta={<Delta pct={change(m.commits, sum(col(prev, "commits")))} days={days} />}
+          href={metricHref?.("commits")}
         />
         <Measure
           label="Tasks done"
           value={formatNumber(m.tasksCompleted)}
-          formula="reached Done"
-          spark={cumulative(col(cur, "tasks"))}
-          delta={<Delta pct={change(sum(col(cur, "tasks")), sum(col(prev, "tasks")))} days={days} />}
+          formula="reached Done (completed time)"
+          spark={cumulative(doneCur)}
+          delta={<Delta pct={change(sum(doneCur), sum(donePrev))} days={days} />}
+          href={metricHref?.("tasks")}
         />
       </div>
+      </MetricSection>
 
+      <MetricSection id="series" title="Series" collapsed={collapsed.includes("series")}>
       <Panel title="Execution series" aside={trend ? `trend ${signed(trend.slope, 2)}/d · R² ${formatNumber(trend.r2, 2)}` : undefined}>
         <SeriesChart
           title="Daily execution with 7-day moving average and linear trend"
@@ -301,7 +374,6 @@ export function MetricsReport({
         />
       </Panel>
 
-      {!overview && (
         <div className="grid gap-5 lg:grid-cols-2">
           <Panel title="Cumulative" aside={<Delta pct={change(sum(exec), sum(prevExec))} days={days} />}>
             <SeriesChart
@@ -327,14 +399,11 @@ export function MetricsReport({
             />
           </Panel>
         </div>
-      )}
 
       <Panel title="Statistics" aside={`n = ${days} days`}>
         <StatGrid stats={stats} />
       </Panel>
 
-      {!overview && (
-        <>
           <div className="grid gap-5 lg:grid-cols-2">
             <Panel title="Drawdown" aside={`max ${formatNumber(maxDrawdown, 1)}% · now ${formatNumber(dd.at(-1) ?? 0, 1)}%`}>
               <SeriesChart
@@ -389,55 +458,6 @@ export function MetricsReport({
             </Panel>
           </div>
 
-          <Panel title="Commit hours" aside={`${allCommits} commits · local time`}>
-            <Punchcard cells={s.punchcard} />
-          </Panel>
-
-          <Panel title="Flow" aside={`${created} in · ${completed} out · net ${signed(created - completed, 0)} open`}>
-            <SeriesChart
-              title={`Tasks created and completed per ${flowDaily ? "day" : "week"}`}
-              labels={flowRows.map((r) => r.label)}
-              ticks={spacedTicks(flowRows.map((r) => r.tick), 8)}
-              series={[
-                { label: "Created", kind: "bar", tone: "mid", values: flowRows.map((r) => r.created) },
-                { label: "Completed", kind: "bar", tone: "hi", values: flowRows.map((r) => r.completed) },
-              ]}
-            />
-          </Panel>
-
-          <div className="grid gap-5 lg:grid-cols-2">
-            <Panel title="Cycle time" aside={`${m.cycleTimesMs.length} tasks`}>
-              <dl className="mb-5 grid grid-cols-3 gap-3">
-                {(
-                  [
-                    ["Median", median],
-                    ["Average", mean(m.cycleTimesMs)],
-                    ["75th pct", percentile(m.cycleTimesMs, 75)],
-                  ] as const
-                ).map(([label, v]) => (
-                  <div key={label} className="app-field rounded-[14px] px-3 py-2.5">
-                    <dt className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#52525B]">{label}</dt>
-                    <dd className="mt-1 text-lg font-semibold tabular-nums">{formatDuration(v)}</dd>
-                  </div>
-                ))}
-              </dl>
-              <CycleHistogram durationsMs={cycleCur} />
-            </Panel>
-            <Panel title="Cycle trend" aside="hours, weekly">
-              <SeriesChart
-                title="Weekly median and 75th percentile cycle time, in hours"
-                labels={cycleTrend.map((w) => `${w.label} · ${w.n} tasks`)}
-                ticks={spacedTicks(cycleTrend.map((w) => w.tick))}
-                unit="h"
-                digits={1}
-                series={[
-                  { label: "Median", kind: "line", tone: "hi", values: cycleTrend.map((w) => toHours(w.median)) },
-                  { label: "P75", kind: "line", tone: "mid", dashed: true, values: cycleTrend.map((w) => toHours(w.p75)) },
-                ]}
-              />
-            </Panel>
-          </div>
-
           <Panel title="Weekly ledger" aside={`${weeks.length} weeks`}>
             <div className="-mx-2 overflow-x-auto">
               <table className="w-full min-w-[40rem] border-collapse text-base tabular-nums">
@@ -489,6 +509,65 @@ export function MetricsReport({
             <p className="mt-3 font-mono text-[12px] text-[#71717A]">WoW = change in Σ ÷ days; partial weeks marked</p>
           </Panel>
 
+          <Panel title="Commit hours" aside={`${allCommits} commits · local time`}>
+            <Punchcard cells={s.punchcard} />
+          </Panel>
+
+      </MetricSection>
+
+      <MetricSection id="flow" title="Flow" collapsed={collapsed.includes("flow")}>
+          <Panel title="Flow" aside={`${created} in · ${completed} out · net ${signed(created - completed, 0)} open`}>
+            <SeriesChart
+              title={`Tasks created and completed per ${flowDaily ? "day" : "week"}`}
+              labels={flowRows.map((r) => r.label)}
+              ticks={spacedTicks(flowRows.map((r) => r.tick), 8)}
+              series={[
+                { label: "Created", kind: "bar", tone: "mid", values: flowRows.map((r) => r.created) },
+                { label: "Completed", kind: "bar", tone: "hi", values: flowRows.map((r) => r.completed) },
+              ]}
+            />
+          </Panel>
+
+      </MetricSection>
+
+      <MetricSection id="cycle" title="Cycle" collapsed={collapsed.includes("cycle")}>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <Panel title="Cycle time" aside={`${m.cycleTimesMs.length} tasks`}>
+              <dl className="mb-5 grid grid-cols-3 gap-3">
+                {(
+                  [
+                    ["Median", median],
+                    ["Average", mean(m.cycleTimesMs)],
+                    ["75th pct", percentile(m.cycleTimesMs, 75)],
+                  ] as const
+                ).map(([label, v]) => (
+                  <div key={label} className="app-field rounded-[14px] px-3 py-2.5">
+                    <dt className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#52525B]">{label}</dt>
+                    <dd className="mt-1 text-lg font-semibold tabular-nums">{formatDuration(v)}</dd>
+                  </div>
+                ))}
+              </dl>
+              <CycleHistogram durationsMs={cycleCur} />
+            </Panel>
+            <Panel title="Cycle trend" aside="hours, weekly">
+              <SeriesChart
+                title="Weekly median and 75th percentile cycle time, in hours"
+                labels={cycleTrend.map((w) => `${w.label} · ${w.n} tasks`)}
+                ticks={spacedTicks(cycleTrend.map((w) => w.tick))}
+                unit="h"
+                digits={1}
+                series={[
+                  { label: "Median", kind: "line", tone: "hi", values: cycleTrend.map((w) => toHours(w.median)) },
+                  { label: "P75", kind: "line", tone: "mid", dashed: true, values: cycleTrend.map((w) => toHours(w.p75)) },
+                ]}
+              />
+            </Panel>
+          </div>
+
+
+      </MetricSection>
+
+      <MetricSection id="projects" title="Projects" collapsed={collapsed.includes("projects")}>
           <Panel title="Projects" aside="Share of execution">
             {s.projects.length === 0 ? (
               <p className="font-mono text-sm text-[#71717A]">No execution</p>
@@ -541,7 +620,10 @@ export function MetricsReport({
             )}
           </Panel>
 
-          {(objectives.length > 0 || objectiveControls) && (
+      </MetricSection>
+
+          {(objectives.length > 0 || archivedObjectives.length > 0 || objectiveControls) && (
+      <MetricSection id="objectives" title="Objectives" collapsed={collapsed.includes("objectives")}>
             <Panel
               title="Objectives"
               aside={objectiveControls && <NewObjective projects={objectiveControls.projects} />}
@@ -555,7 +637,13 @@ export function MetricsReport({
                     return (
                       <li key={o.id} className="grid gap-4 py-4 first:pt-0 last:pb-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center">
                         <div className="min-w-0">
-                          <p className="truncate font-medium">{o.name}</p>
+                          {objectiveHref ? (
+                            <Link href={objectiveHref(o.id) as Route} scroll={false} className="block truncate font-medium hover:underline">
+                              {o.name}
+                            </Link>
+                          ) : (
+                            <p className="truncate font-medium">{o.name}</p>
+                          )}
                           <p className="mt-0.5 text-sm text-[#71717A] tabular-nums">
                             {formatNumber(o.currentValue)} / {formatNumber(o.targetValue)} {o.unit}
                             {o.projectName && ` · ${o.projectName}`}
@@ -568,7 +656,7 @@ export function MetricsReport({
                         <p className="font-mono text-sm leading-relaxed tabular-nums text-[#52525B]">
                           velocity {formatNumber(pos.velocity, 2)}/d
                           <br />
-                          required {pos.required === null ? "—" : pos.required === Infinity ? "past deadline" : `${formatNumber(pos.required, 2)}/d`}
+                          {pos.status === "open" ? "no deadline" : pos.status === "overdue" ? `${pos.daysOver}d past deadline` : `required ${pos.required === null ? "—" : pos.required === Infinity ? "past deadline" : `${formatNumber(pos.required, 2)}/d`}`}
                           {pos.projected && pos.status !== "completed" && (
                             <>
                               <br />
@@ -581,11 +669,26 @@ export function MetricsReport({
                           <span
                             className={cn(
                               "rounded-full px-2.5 py-1 text-[12px] font-semibold uppercase tracking-[0.12em]",
-                              pos.status === "behind" ? "app-inverse" : "app-field text-[#27272A]"
+                              pos.status === "behind" || pos.status === "overdue" ? "app-inverse" : "app-field text-[#27272A]"
                             )}
                           >
+                            {pos.status === "behind" || pos.status === "overdue" ? "▼ " : pos.status === "ahead" ? "▲ " : ""}
                             {pos.status}
                           </span>
+                          {objectiveControls && (
+                            <EditObjective
+                              projects={objectiveControls.projects}
+                              objective={{
+                                id: o.id,
+                                name: o.name,
+                                measure: o.measure as "manual" | "execution",
+                                unit: o.unit,
+                                targetValue: o.targetValue,
+                                deadline: o.deadlineAt ? dayKey(o.deadlineAt, objectiveControls.tz) : null,
+                                projectId: o.projectId,
+                              }}
+                            />
+                          )}
                           {objectiveControls && <ArchiveObjective objectiveId={o.id} name={o.name} />}
                         </div>
                       </li>
@@ -593,10 +696,24 @@ export function MetricsReport({
                   })}
                 </ul>
               )}
+              {archivedObjectives.length > 0 && (
+                <details className="mt-5 border-t border-black/[0.05] pt-4">
+                  <summary className={cn(TICK, "cursor-pointer text-[#52525B]")}>Archived · {archivedObjectives.length}</summary>
+                  <ul className="mt-2">
+                    {archivedObjectives.map((o) => (
+                      <li key={o.id} className="flex min-w-0 items-center justify-between gap-3 py-1.5">
+                        <span className="min-w-0 truncate text-[#52525B]">
+                          {o.name} <span className="font-mono text-[12px] tabular-nums text-[#71717A]">{formatNumber(o.currentValue)}/{formatNumber(o.targetValue)}</span>
+                        </span>
+                        {objectiveControls && <RestoreButton kind="objective" id={o.id} name={o.name} />}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
             </Panel>
+      </MetricSection>
           )}
-        </>
-      )}
     </>
   );
 }

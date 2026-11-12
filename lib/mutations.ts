@@ -6,7 +6,7 @@ import { keyBetween } from "@/lib/position";
 import { dayIn, nextDueDay } from "@/lib/recurrence";
 import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
 import type { z } from "zod";
-import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema, captureManySchema, setTaskTagsSchema, commitRefSchema } from "@/lib/validation";
+import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema, captureManySchema, setTaskTagsSchema, commitRefSchema, updateObjectiveSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -914,6 +914,49 @@ async function writableObjective(actor: Actor, objectiveId: string) {
   if (!objective) throw new MutationError("not_found", "That objective no longer exists.");
   assertWritable(actor, objective.workspaceId);
   return objective;
+}
+
+/**
+ * Edits an objective's name, unit (hand-counted only), target, deadline and project. A
+ * new deadline is the end of that day in the actor's zone and cannot be in the past
+ * (an unchanged one may be). Completion follows the new target.
+ */
+export async function updateObjective(actor: Actor, input: z.infer<typeof updateObjectiveSchema>): Promise<{ name: string }> {
+  const objective = await writableObjective(actor, input.objectiveId);
+  const [{ tz }] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
+  const [current] = await db.select({ deadlineAt: objectives.deadlineAt, currentValue: objectives.currentValue }).from(objectives).where(eq(objectives.id, objective.id)).limit(1);
+  const currentDay = current.deadlineAt ? dayIn(current.deadlineAt, tz) : null;
+  if (input.deadline && input.deadline !== currentDay && input.deadline < dayIn(new Date(), tz)) throw new MutationError("invalid", "Pick a deadline from today on.");
+  if (objective.measure === "manual" && !input.unit) throw new MutationError("invalid", "Name what you count, like modules.");
+  if (input.projectId) {
+    const [project] = await db
+      .select({ id: projects.id })
+      .from(projects)
+      .where(and(eq(projects.id, input.projectId), eq(projects.workspaceId, objective.workspaceId), isNull(projects.archivedAt)))
+      .limit(1);
+    if (!project) throw new MutationError("not_found", "That project no longer exists.");
+  }
+  await db.transaction(async (tx) => {
+    await tx
+      .update(objectives)
+      .set({
+        name: input.name,
+        unit: objective.measure === "execution" ? "execution" : input.unit,
+        targetValue: input.targetValue,
+        deadlineAt: input.deadline === null ? null : sql<Date>`((${input.deadline})::date + time '23:59') at time zone ${tz}`,
+        // Hand-counted: completion follows the new target. Execution: re-settled on next read.
+        completedAt:
+          objective.measure === "manual"
+            ? current.currentValue >= input.targetValue
+              ? sql`coalesce(${objectives.completedAt}, now())`
+              : null
+            : null,
+      })
+      .where(eq(objectives.id, objective.id));
+    await tx.delete(objectiveProjects).where(eq(objectiveProjects.objectiveId, objective.id));
+    if (input.projectId) await tx.insert(objectiveProjects).values({ objectiveId: objective.id, projectId: input.projectId });
+  });
+  return { name: input.name };
 }
 
 /** Sets a hand-counted objective's current value; reaching the target marks it completed. */

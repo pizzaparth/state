@@ -81,3 +81,4 @@ export const captureManyAction = guard(server.captureManyAction, false);
 export const setTaskTagsAction = guard(server.setTaskTagsAction);
 export const withdrawCommitAction = guard(server.withdrawCommitAction);
 export const restoreCommitAction = guard(server.restoreCommitAction);
+export const updateObjectiveAction = guard(server.updateObjectiveAction);

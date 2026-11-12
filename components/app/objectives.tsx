@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Archive, Loader2, Plus } from "lucide-react";
-import { createObjectiveAction, setObjectiveArchivedAction, setObjectiveProgressAction } from "@/app/(app)/client-actions";
-import { createObjectiveSchema, OBJECTIVE_MEASURES } from "@/lib/validation";
+import { Archive, Loader2, Pencil, Plus } from "lucide-react";
+import { createObjectiveAction, setObjectiveArchivedAction, setObjectiveProgressAction, updateObjectiveAction } from "@/app/(app)/client-actions";
+import { createObjectiveSchema, OBJECTIVE_MEASURES, updateObjectiveSchema } from "@/lib/validation";
 import { useNotice } from "./notice";
 
 type Measure = (typeof OBJECTIVE_MEASURES)[number];
@@ -14,15 +14,38 @@ const inputClass = "app-input h-11 w-full rounded-[14px] px-3 text-base";
 
 const empty = { name: "", measure: "manual" as Measure, unit: "", targetValue: "", deadline: "", projectId: "" };
 
+export interface EditableObjective {
+  id: string;
+  name: string;
+  measure: Measure;
+  unit: string;
+  targetValue: number;
+  /** YYYY-MM-DD in the viewer's zone */
+  deadline: string | null;
+  projectId: string | null;
+}
+
 /** "New objective…": a measurable target, counted by hand or summed from commit execution. */
 export function NewObjective({ projects }: { projects: { id: string; name: string }[] }) {
+  return <ObjectiveDialog projects={projects} />;
+}
+
+/** "Edit…": name, unit, target, deadline and project; the measure stays. */
+export function EditObjective({ projects, objective }: { projects: { id: string; name: string }[]; objective: EditableObjective }) {
+  return <ObjectiveDialog projects={projects} edit={objective} />;
+}
+
+function ObjectiveDialog({ projects, edit }: { projects: { id: string; name: string }[]; edit?: EditableObjective }) {
   const notify = useNotice();
   const [open, setOpen] = React.useState(false);
-  const [values, setValues] = React.useState(empty);
+  const initial = edit
+    ? { name: edit.name, measure: edit.measure, unit: edit.measure === "execution" ? "" : edit.unit, targetValue: String(edit.targetValue), deadline: edit.deadline ?? "", projectId: edit.projectId ?? "" }
+    : empty;
+  const [values, setValues] = React.useState(initial);
   const [errors, setErrors] = React.useState<Partial<Record<FieldName | "form", string>>>({});
   const [pending, startTransition] = React.useTransition();
   const formRef = React.useRef<HTMLFormElement>(null);
-  const dirty = open && JSON.stringify(values) !== JSON.stringify(empty);
+  const dirty = open && JSON.stringify(values) !== JSON.stringify(initial);
 
   React.useEffect(() => {
     if (!dirty) return;
@@ -58,15 +81,21 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        setValues(empty);
+        setValues(initial);
         setErrors({});
       }}
     >
       <Dialog.Trigger asChild>
-        <button type="button" className="app-btn inline-flex h-9 items-center gap-1.5 rounded-[12px] px-3 text-sm font-medium text-[#0A0A0A]">
-          <Plus className="size-4" aria-hidden="true" />
-          New objective…
-        </button>
+        {edit ? (
+          <button type="button" aria-label={`Edit ${edit.name}…`} title="Edit…" className="app-btn grid size-9 place-items-center rounded-full">
+            <Pencil className="size-4" aria-hidden="true" />
+          </button>
+        ) : (
+          <button type="button" className="app-btn inline-flex h-9 items-center gap-1.5 rounded-[12px] px-3 text-sm font-medium text-[#0A0A0A]">
+            <Plus className="size-4" aria-hidden="true" />
+            New objective…
+          </button>
+        )}
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 app-scrim data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
@@ -76,7 +105,7 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
           }}
           className="fixed left-1/2 top-[8vh] z-50 max-h-[88vh] w-[min(30rem,calc(100vw-2rem))] origin-top -translate-x-1/2 overflow-y-auto overscroll-contain rounded-[28px] border border-black/[0.06] bg-white p-6 outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in"
         >
-          <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">New objective</Dialog.Title>
+          <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">{edit ? "Edit objective" : "New objective"}</Dialog.Title>
           <Dialog.Description className="mt-1 font-mono text-sm text-[#71717A]">status = velocity vs required velocity</Dialog.Description>
 
           <form
@@ -94,6 +123,21 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
                 deadline: values.deadline || null,
                 projectId: values.projectId || null,
               };
+              if (edit) {
+                const update = updateObjectiveSchema.safeParse({ objectiveId: edit.id, name: input.name, unit: input.unit, targetValue: input.targetValue, deadline: input.deadline, projectId: input.projectId });
+                if (!update.success) {
+                  const next: typeof errors = {};
+                  for (const issue of update.error.issues) next[issue.path[0] as FieldName] ??= issue.message;
+                  return setErrors(next);
+                }
+                startTransition(async () => {
+                  const result = await updateObjectiveAction(update.data);
+                  if (!result.ok) return setErrors({ form: result.error });
+                  setOpen(false);
+                  notify(`Saved “${update.data.name}”.`);
+                });
+                return;
+              }
               const parsed = createObjectiveSchema.safeParse(input);
               if (!parsed.success) {
                 const next: typeof errors = {};
@@ -117,7 +161,7 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
               {fieldError("name")}
             </div>
 
-            <fieldset className="space-y-1.5">
+            <fieldset className="space-y-1.5" disabled={Boolean(edit)} hidden={Boolean(edit)}>
               <legend className="text-sm font-medium text-[#52525B]">Measure</legend>
               <div className="app-field grid grid-cols-2 gap-1 rounded-[14px] p-1">
                 {(
@@ -181,7 +225,7 @@ export function NewObjective({ projects }: { projects: { id: string; name: strin
               <Dialog.Close className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#52525B] hover:text-[#0A0A0A]">Cancel</Dialog.Close>
               <button type="submit" disabled={pending} className="app-btn inline-flex h-11 items-center gap-1.5 rounded-[14px] px-5 text-base font-semibold disabled:opacity-60">
                 {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                Create objective
+                {edit ? "Save" : "Create objective"}
               </button>
             </div>
           </form>
@@ -238,6 +282,22 @@ export function ObjectiveProgress({ objectiveId, name, value, unit }: { objectiv
         <button type="submit" disabled={pending} className="app-btn inline-flex h-9 items-center gap-1.5 rounded-[12px] px-3 text-sm font-medium disabled:opacity-60">
           {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
           Update
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          aria-label={`Add 1 ${unit} to ${name}`}
+          onClick={() =>
+            startTransition(async () => {
+              const result = await setObjectiveProgressAction({ objectiveId, currentValue: value + 1 });
+              if (!result.ok) return setError(result.error);
+              setError(null);
+              notify(result.data.completed ? `“${name}” reached its target.` : `${name}: ${value + 1} ${unit}.`);
+            })
+          }
+          className="app-btn mi-press h-9 rounded-[12px] px-3 font-mono text-sm font-semibold text-accent disabled:opacity-60"
+        >
+          +1
         </button>
       </div>
       {error && (
