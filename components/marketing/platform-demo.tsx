@@ -10,7 +10,8 @@ import { CountUp } from "@/components/app/count-up";
 /**
  * The hero picture: State's real app shell in its white theme, drawn at 1280 × 800 and
  * scaled to fit. A scripted cursor uses it on a loop: it captures a task, finishes it,
- * opens Metrics and the board, and the camera zooms in on each click and while typing.
+ * opens Metrics and drags a card on the board; the camera zooms in while typing and on
+ * each task action.
  * It is a picture: hidden from assistive tech, described by the caption, not interactive.
  * It runs only while on screen; reduced motion shows the still Today screen.
  */
@@ -231,19 +232,12 @@ export function PlatformDemo({ caption }: { caption: string }) {
         look({ x: 0, y: 0 }, 1, 1000);
         await wait(1100);
 
-        // 3. Metrics
+        // 3. Metrics: open the page and let the cards and numbers land
         point(at("nav-metrics"), 1100);
         await wait(1200);
         await click();
         setScreen("metrics");
-        await wait(1300);
-        point(at("metric-0", 60, 20), 1000);
-        look(at("metric-0"), 1.6, 1000);
-        await wait(1100);
-        await click();
-        await wait(1800);
-        look({ x: 0, y: 0 }, 1, 1000);
-        await wait(1100);
+        await wait(3200);
 
         // 4. Board: drag the top Active card into Done
         point(at("nav-board"), 1100);
@@ -540,7 +534,6 @@ function MetricsScreen() {
         {METRICS.map(([name, value, change, formula], i) => (
           <div
             key={name}
-            data-target={`metric-${i}`}
             className={cn("animate-row-in rounded-[20px] p-4", i === 0 ? "bg-accent text-white" : panel)}
             style={{ animationDelay: `${i * 60}ms` }}
           >
