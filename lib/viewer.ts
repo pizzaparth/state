@@ -5,6 +5,9 @@ import { db } from "@/db";
 import { boards, projects, users, workspaces } from "@/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { getTicker } from "@/db/queries";
+import { headers } from "next/headers";
+import { DEFAULT_LOCALE, setRequestLocale } from "@/lib/locale";
+import { localeFromHeader, parsePreferences, type Preferences } from "@/lib/preferences";
 
 export interface Viewer {
   id: string;
@@ -19,6 +22,9 @@ export interface Viewer {
   personalBoardId: string | null;
   /** Every workspace this user may read. All product queries are scoped to these. */
   workspaceIds: string[];
+  preferences: Preferences;
+  /** Dates and numbers: the saved language, else the browser's, else en-GB. */
+  locale: string;
 }
 
 /** The signed-in user and the workspaces they can access, once per request. */
@@ -36,6 +42,9 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     .limit(1);
   if (!row) redirect("/login");
   const { user, personalWorkspaceId, personalBoardId } = row;
+  const preferences = parsePreferences(user.preferences);
+  const locale = preferences.locale ?? localeFromHeader((await headers()).get("accept-language")) ?? DEFAULT_LOCALE;
+  setRequestLocale(locale);
 
   return {
     id: user.id,
@@ -47,6 +56,8 @@ export const getViewer = cache(async (): Promise<Viewer> => {
     personalWorkspaceId: personalWorkspaceId ?? null,
     personalBoardId: personalBoardId ?? null,
     workspaceIds: personalWorkspaceId ? [personalWorkspaceId] : [],
+    preferences,
+    locale,
   };
 });
 

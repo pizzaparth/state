@@ -89,17 +89,18 @@ export function drawdown(values: (number | null)[]): (number | null)[] {
 }
 
 /** Monday of the week containing a YYYY-MM-DD key. */
-export function weekStart(key: string): string {
+export function weekStart(key: string, startsOn: "monday" | "sunday" = "monday"): string {
   const d = new Date(`${key}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  const offset = startsOn === "monday" ? (d.getUTCDay() + 6) % 7 : d.getUTCDay();
+  d.setUTCDate(d.getUTCDate() - offset);
   return d.toISOString().slice(0, 10);
 }
 
-/** Groups day rows into Monday-start weeks, oldest first, keeping each week's days. */
-export function byWeek<T extends { day: string }>(rows: T[]): { week: string; days: T[] }[] {
+/** Groups day rows into weeks (Monday or Sunday start), oldest first, keeping each week's days. */
+export function byWeek<T extends { day: string }>(rows: T[], startsOn: "monday" | "sunday" = "monday"): { week: string; days: T[] }[] {
   const out: { week: string; days: T[] }[] = [];
   for (const row of rows) {
-    const week = weekStart(row.day);
+    const week = weekStart(row.day, startsOn);
     if (out.at(-1)?.week !== week) out.push({ week, days: [] });
     out.at(-1)!.days.push(row);
   }

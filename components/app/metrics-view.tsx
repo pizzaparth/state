@@ -14,6 +14,7 @@ import { RestoreButton } from "./record-actions";
 import Link from "next/link";
 import type { Route } from "next";
 import { Punchcard, SeriesChart } from "./series-chart";
+import { currentLocale } from "@/lib/locale";
 
 export const PERIODS = { "7d": 7, "30d": 30, "90d": 90, "180d": 180, "1y": 365 } as const;
 export type PeriodKey = keyof typeof PERIODS;
@@ -55,7 +56,7 @@ export function toRange(params: Record<string, string | undefined>, today: strin
 
 const dayText = (key: string, opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }) => {
   const [y, m, d] = key.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", ...opts }).format(new Date(Date.UTC(y, m - 1, d)));
+  return new Intl.DateTimeFormat(currentLocale(), { timeZone: "UTC", ...opts }).format(new Date(Date.UTC(y, m - 1, d)));
 };
 const longDay = (key: string) => dayText(key, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 
@@ -86,7 +87,8 @@ const HISTOGRAM = [
   { label: "9–16", test: (v: number) => v >= 9 && v <= 16 },
   { label: "17+", test: (v: number) => v >= 17 },
 ];
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAYS_MON = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAYS_SUN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 /** Metrics surface. Every value shows its formula. */
 export async function MetricsView({
@@ -98,7 +100,9 @@ export async function MetricsView({
   objectiveWorkspaceIds,
   objectiveControls = null,
   collapsed = [],
+  weekStartsOn = "monday",
 }: {
+  weekStartsOn?: "monday" | "sunday";
   objectiveHref?: (id: string) => string;
   scope: Scope;
   tz: string;
@@ -129,6 +133,7 @@ export async function MetricsView({
       metricHref={metricHref}
       objectiveHref={objectiveHref}
       collapsed={collapsed}
+      weekStartsOn={weekStartsOn}
     />
   );
 }
@@ -155,7 +160,9 @@ export function MetricsReport({
   metricHref,
   objectiveHref,
   collapsed = [],
+  weekStartsOn = "monday",
 }: {
+  weekStartsOn?: "monday" | "sunday";
   objectiveHref?: (id: string) => string;
   metrics: MetricsData;
   series: MetricSeries;
@@ -232,9 +239,11 @@ export function MetricsReport({
 
   // ---------------------------------------------------------------- distributions
   const histogram = HISTOGRAM.map((b) => exec.filter(b.test).length);
+  const WEEKDAYS = weekStartsOn === "sunday" ? WEEKDAYS_SUN : WEEKDAYS_MON;
   const weekdayTotals = WEEKDAYS.map(() => ({ execution: 0, n: 0 }));
   for (const d of cur) {
-    const wd = (new Date(`${d.day}T00:00:00Z`).getUTCDay() + 6) % 7;
+    const dow = new Date(`${d.day}T00:00:00Z`).getUTCDay();
+    const wd = weekStartsOn === "sunday" ? dow : (dow + 6) % 7;
     weekdayTotals[wd].execution += d.execution;
     weekdayTotals[wd].n++;
   }
@@ -253,7 +262,7 @@ export function MetricsReport({
   ];
 
   // ---------------------------------------------------------------- weekly buckets
-  const weeks = byWeek(cur).map((w) => {
+  const weeks = byWeek(cur, weekStartsOn).map((w) => {
     const execution = sum(w.days.map((d) => d.execution));
     return {
       week: w.week,
@@ -268,7 +277,7 @@ export function MetricsReport({
   const flowDaily = days <= 30;
   const flowRows = flowDaily
     ? s.flow.map((f) => ({ label: longDay(f.day), tick: dayText(f.day), created: f.created, completed: f.completed }))
-    : byWeek(s.flow).map((w) => ({
+    : byWeek(s.flow, weekStartsOn).map((w) => ({
         label: `Week of ${longDay(w.week)}`,
         tick: dayText(w.week),
         created: sum(w.days.map((d) => d.created)),
@@ -276,7 +285,7 @@ export function MetricsReport({
       }));
   const created = sum(s.flow.map((f) => f.created));
   const completed = sum(s.flow.map((f) => f.completed));
-  const cycleWeeks = byWeek(s.cycles.filter((c) => c.day >= curStart));
+  const cycleWeeks = byWeek(s.cycles.filter((c) => c.day >= curStart), weekStartsOn);
   const cycleByWeek = new Map(cycleWeeks.map((w) => [w.week, w.days.map((d) => d.ms)]));
   const cycleTrend = weeks.map((w) => {
     const ms = cycleByWeek.get(w.week) ?? [];
@@ -429,7 +438,7 @@ export function MetricsReport({
 
           {days >= 30 && (
             <Panel title="Calendar" aside={`${m.activeDays}/${m.eligibleDays} active`}>
-              <ExecutionGraph days={cur} />
+              <ExecutionGraph days={cur} weekStart={weekStartsOn} />
             </Panel>
           )}
 

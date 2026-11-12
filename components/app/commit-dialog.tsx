@@ -51,7 +51,9 @@ export function CommitDialog({
   recentMessages,
   tagNames,
   initialMessage,
+  defaultWeight = 2,
 }: {
+  defaultWeight?: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projects: { id: string; name: string }[];
@@ -73,11 +75,11 @@ export function CommitDialog({
     if (!open) return;
     const saved = read<Draft>("session", DRAFT_KEY);
     const last = read<{ projectId: string; weight: number }>("local", LAST_KEY);
-    const base = saved ?? { message: "", projectId: last?.projectId ?? "", weight: last?.weight ?? 2, tags: "" };
+    const base = saved ?? { message: "", projectId: last?.projectId ?? "", weight: last?.weight ?? defaultWeight, tags: "" };
     const projectOk = !base.projectId || projects.some((p) => p.id === base.projectId);
     setDraft({ ...base, projectId: projectOk ? base.projectId : "", message: initialMessage ?? base.message });
     setError(null);
-  }, [open, initialMessage, projects]);
+  }, [open, initialMessage, projects, defaultWeight]);
 
   const update = (patch: Partial<Draft>) =>
     setDraft((d) => {

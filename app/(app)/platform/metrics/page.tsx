@@ -41,6 +41,7 @@ export default async function MetricsPage({ searchParams }: { searchParams: Page
         objectiveWorkspaceIds={viewer.personalWorkspaceId ? [viewer.personalWorkspaceId] : []}
         objectiveControls={viewer.personalWorkspaceId ? { projects, tz: viewer.tz } : null}
         collapsed={collapsed}
+        weekStartsOn={viewer.preferences.weekStart}
       />
       {params.metric && <MetricDrawer metric={params.metric} scope={scope} tz={viewer.tz} range={range} commitHref={href("commit")} />}
       {params.objective && /^[A-Za-z0-9_-]{1,64}$/.test(params.objective) && (

@@ -24,7 +24,7 @@ export default async function BoardPage({ searchParams }: { searchParams: PageSe
         label="Work"
         title="Board"
       />
-      <BoardView boardId={viewer.personalBoardId} viewer={viewer} params={params} basePath="/platform/board" sort={sort} filter={filter} />
+      <BoardView boardId={viewer.personalBoardId} viewer={viewer} params={params} basePath="/platform/board" sort={sort} filter={filter} doneWindowDays={viewer.preferences.doneWindow} />
       <Drawers params={params} viewer={viewer} siblings={params.task && viewer.personalBoardId ? await getBoardTaskIds(viewer.personalBoardId, viewer.workspaceIds) : undefined} />
     </>
   );

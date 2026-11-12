@@ -43,6 +43,9 @@ export default async function AppLayout({
         demoUserId: viewer.isDemo ? viewer.id : null,
         tz: viewer.tz,
         sidebarCollapsed: jar.get("sidebar")?.value === "collapsed",
+        locale: viewer.locale,
+        motion: viewer.preferences.motion,
+        defaultWeight: viewer.preferences.defaultWeight,
         recentMessages,
         tagNames,
       }}

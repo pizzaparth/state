@@ -11,7 +11,7 @@ import { AuthField } from "./auth-field";
 /** Where to go after sign-in: a safe ?next= product path, else Today. */
 function redirectTarget(): string {
   const next = new URLSearchParams(window.location.search).get("next");
-  return isSafeRedirectPath(next) && next.startsWith("/platform") ? next : "/platform/today";
+  return isSafeRedirectPath(next) && next.startsWith("/platform") ? next : "/platform";
 }
 
 /** One field: the owner's access code. The session lasts until the browser closes. */

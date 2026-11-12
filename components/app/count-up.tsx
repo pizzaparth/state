@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { currentLocale } from "@/lib/locale";
 
 // Server HTML is already painted when hydration runs, so counting from zero there would
 // flash the real value first. Only numbers mounted after hydration (client navigation)
@@ -41,7 +42,7 @@ export function CountUp({ value, duration = 600 }: { value: string; duration?: n
       return;
     }
     const { before, after, value: end, digits, grouped } = target;
-    const format = new Intl.NumberFormat("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: grouped });
+    const format = new Intl.NumberFormat(currentLocale(), { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: grouped });
     const t0 = performance.now();
     let frame = 0;
     const tick = (now: number) => {

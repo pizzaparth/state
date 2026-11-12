@@ -92,3 +92,4 @@ export const renameTagAction = guard(server.renameTagAction);
 export const mergeTagsAction = guard(server.mergeTagsAction);
 export const deleteTagAction = guard(server.deleteTagAction);
 export const setProjectNotesAction = guard(server.setProjectNotesAction);
+export const setPreferencesAction = guard(server.setPreferencesAction);

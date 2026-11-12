@@ -17,9 +17,10 @@ import { db } from "../db";
 import * as s from "../db/schema";
 import { getBoard, getCommitDetail, getEligibleDays, getDeletedTasks, getCommitTotals, getTaskHistory, getTagsWithCounts, getDoneTasks, getBoardTaskIds, getTasksInWindow, getToday, getCommits, getInbox, getObjectives, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
-import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone, completeTask, addColumn, bulkRestoreTasks, bulkUpdateTasks, deleteColumn, moveColumn, renameColumn, setColumnLimit, withdrawCommit, restoreCommit, setTaskDescription, setTaskDefer, setTaskPlanned, setTaskStage, skipRecurrence, duplicateTask, renameTag, mergeTags, deleteTag, setProjectNotes, setTaskTags, updateObjective } from "../lib/mutations";
+import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone, completeTask, addColumn, bulkRestoreTasks, bulkUpdateTasks, deleteColumn, moveColumn, renameColumn, setColumnLimit, withdrawCommit, restoreCommit, setTaskDescription, setTaskDefer, setTaskPlanned, setTaskStage, skipRecurrence, duplicateTask, renameTag, mergeTags, deleteTag, setProjectNotes, setTaskTags, updateObjective, setPreferences } from "../lib/mutations";
 import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, importSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, bulkUpdateSchema } from "../lib/validation";
 import { buildExport } from "../lib/data/export";
+import { setPreferencesSchema } from "../lib/preferences";
 import { parseImport } from "../lib/data/import";
 import { parseCsv, toCsv } from "../lib/data/csv";
 import { deleteAccount } from "../lib/accounts/delete";
@@ -728,6 +729,19 @@ async function main() {
   const copy = await duplicateTask(A, { taskId: deep.id });
   await db.delete(s.tasks).where(inArray(s.tasks.id, [deep.id, copy.id]));
   await db.delete(s.tags).where(inArray(s.tags.id, [tagRow.id, tagRow2.id, bTag.id]));
+
+  // ------------------------------------------------------------ preferences
+  const prefParse = [
+    setPreferencesSchema.safeParse({ weekStart: "sunday" }).success,
+    setPreferencesSchema.safeParse({ userId: aaravId, weekStart: "sunday" }).success,
+    setPreferencesSchema.safeParse({ defaultWeight: 3 }).success,
+    setPreferencesSchema.safeParse({ locale: "not a locale!!" }).success,
+  ];
+  record("PF1", "Preferences: known fields only, valid values only", JSON.stringify(prefParse) === "[true,false,false,false]", JSON.stringify(prefParse));
+  await setPreferences(B, { weekStart: "sunday", defaultWeight: 8 });
+  const prefsA = (await one(db.select({ p: s.users.preferences }).from(s.users).where(eq(s.users.id, parthId)))).p as Record<string, unknown>;
+  const prefsB = (await one(db.select({ p: s.users.preferences }).from(s.users).where(eq(s.users.id, aaravId)))).p as Record<string, unknown>;
+  record("PF2", "Preferences change only the actor's own row", prefsB.weekStart === "sunday" && prefsA.weekStart !== "sunday", JSON.stringify({ prefsA, prefsB }));
 
   // ------------------------------------------------------------ time zone
   const tzParse = [

@@ -1,6 +1,9 @@
+import { currentLocale } from "./locale";
+
 /**
  * Display formatting. Timestamps are stored in UTC and converted to the viewer's
- * timezone only here. All functions run on the server so markup is hydration-safe.
+ * timezone only here, in the viewer's locale (lib/locale.ts). The browser uses the same
+ * locale, so markup is hydration-safe.
  */
 
 const DAY_MS = 86_400_000;
@@ -11,11 +14,11 @@ export function dayKey(date: Date, tz: string): string {
 }
 
 export function formatTime(date: Date, tz: string): string {
-  return new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
+  return new Intl.DateTimeFormat(currentLocale(), { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
 }
 
 export function formatDate(date: Date, tz: string, opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }): string {
-  return new Intl.DateTimeFormat("en-GB", { timeZone: tz, ...opts }).format(date);
+  return new Intl.DateTimeFormat(currentLocale(), { timeZone: tz, ...opts }).format(date);
 }
 
 export function formatDateTime(date: Date, tz: string): string {
@@ -33,13 +36,13 @@ export function dayLabel(key: string, todayKey: string): string {
   if (key === todayKey) return "Today";
   if (key === shiftDayKey(todayKey, -1)) return "Yesterday";
   const [y, m, d] = key.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" }).format(
+  return new Intl.DateTimeFormat(currentLocale(), { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" }).format(
     new Date(Date.UTC(y, m - 1, d))
   );
 }
 
 export function formatNumber(value: number, digits = 0): string {
-  return new Intl.NumberFormat("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+  return new Intl.NumberFormat(currentLocale(), { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
 }
 
 /** Compact duration: hours under two days, otherwise days. */

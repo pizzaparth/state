@@ -43,7 +43,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pag
       />
 
       <Panel title="Execution graph" aside={`${RANGES[range]} days`}>
-        <ExecutionGraph days={days} />
+        <ExecutionGraph days={days} weekStart={viewer.preferences.weekStart} />
       </Panel>
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">

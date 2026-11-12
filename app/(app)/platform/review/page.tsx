@@ -12,6 +12,7 @@ import { MixBar } from "@/components/app/charts";
 import { withParam } from "@/components/app/task-row";
 import { CopyTextButton } from "@/components/app/copy-text-button";
 import { Drawers, type PageSearchParams } from "@/components/app/drawers";
+import { currentLocale } from "@/lib/locale";
 
 export const metadata = { title: "Week review" };
 
@@ -48,7 +49,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: PageS
     projects.set(key, p);
   }
   const projectParts = [...projects].sort((a, b) => b[1].execution - a[1].execution).map(([name, p]) => ({ name, value: p.execution, detail: `${p.commits}×` }));
-  const weekday = (d: string) => new Intl.DateTimeFormat("en-GB", { weekday: "short", timeZone: "UTC" }).format(new Date(`${d}T00:00:00Z`));
+  const weekday = (d: string) => new Intl.DateTimeFormat(currentLocale(), { weekday: "short", timeZone: "UTC" }).format(new Date(`${d}T00:00:00Z`));
   const range = `${dayLabel(start, today)} – ${dayLabel(end, today)}`;
 
   const text = [

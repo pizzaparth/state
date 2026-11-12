@@ -7,6 +7,7 @@ import { CAPTURE_MANY_MAX, parseQuickCapture, slugify } from "@/lib/validation";
 import { dayKey } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useNotice } from "./notice";
+import { currentLocale } from "@/lib/locale";
 
 type Project = { slug: string; name: string };
 
@@ -229,7 +230,7 @@ export function QuickCapture({
       {!unknownSlug && parsed.repeat && `, repeats ${parsed.repeat}`}
       {!unknownSlug &&
         parsed.dueDate &&
-        `, due ${new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${parsed.dueDate}T00:00:00Z`))}`}
+        `, due ${new Intl.DateTimeFormat(currentLocale(), { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${parsed.dueDate}T00:00:00Z`))}`}
     </>
   );
 

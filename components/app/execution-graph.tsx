@@ -6,6 +6,7 @@ import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import type { DailyExecution } from "@/db/queries";
 import { cn } from "@/lib/utils";
+import { currentLocale } from "@/lib/locale";
 
 // Lightness ramp from the card layer to the accent: readable without colour vision
 const FILL = ["#EBEBEB", "#F5C6D9", "#EC94B8", "#E25F96", "#D92B74"] as const;
@@ -20,7 +21,7 @@ function level(execution: number): 0 | 1 | 2 | 3 | 4 {
 
 const label = (key: string, opts: Intl.DateTimeFormatOptions) => {
   const [y, m, d] = key.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", ...opts }).format(new Date(Date.UTC(y, m - 1, d)));
+  return new Intl.DateTimeFormat(currentLocale(), { timeZone: "UTC", ...opts }).format(new Date(Date.UTC(y, m - 1, d)));
 };
 
 /**
@@ -29,12 +30,13 @@ const label = (key: string, opts: Intl.DateTimeFormatOptions) => {
  * Each day opens its commits in History (click, or Enter on the focused day). Today has
  * a black ring. Without `linkDays` (landing page) cells are plain.
  */
-export function ExecutionGraph({ days, linkDays = true }: { days: DailyExecution[]; linkDays?: boolean }) {
+export function ExecutionGraph({ days, linkDays = true, weekStart = "monday" }: { days: DailyExecution[]; linkDays?: boolean; weekStart?: "monday" | "sunday" }) {
   const router = useRouter();
   const today = days.at(-1)?.day;
   const dayHref = (day: string) => `/platform/history?day=${day}` as Route;
-  // Pad so the first column starts on Monday
-  const firstWeekday = (new Date(`${days[0].day}T00:00:00Z`).getUTCDay() + 6) % 7;
+  // Pad so the first column starts on the week's first day
+  const dow = new Date(`${days[0].day}T00:00:00Z`).getUTCDay();
+  const firstWeekday = weekStart === "sunday" ? dow : (dow + 6) % 7;
   const cells: (DailyExecution | null)[] = [...Array(firstWeekday).fill(null), ...days];
   const weeks = Math.ceil(cells.length / 7);
   const [active, setActive] = React.useState<number | null>(null);
@@ -92,7 +94,7 @@ export function ExecutionGraph({ days, linkDays = true }: { days: DailyExecution
 
           <div className="flex gap-2">
             <div aria-hidden="true" className="-ml-8 grid w-6 py-2 text-[12px] leading-none text-[#52525B]" style={{ gridTemplateRows: "repeat(7, 1fr)", rowGap: gap }}>
-              {["Mon", "", "Wed", "", "Fri", "", ""].map((d, i) => (
+              {(weekStart === "sunday" ? ["", "Mon", "", "Wed", "", "Fri", ""] : ["Mon", "", "Wed", "", "Fri", "", ""]).map((d, i) => (
                 <span key={i} className="flex items-center">
                   {d}
                 </span>

@@ -31,6 +31,7 @@ import { ACTION_KEYS, JUMPS, shortcutFor } from "@/lib/shortcuts";
 import { watchPanelLinks } from "@/lib/panel-history";
 import { CHANNEL, saveStore } from "@/lib/save-state";
 import { nextMidnight } from "@/lib/tz";
+import { setShellLocale } from "@/lib/locale";
 import { CountUp } from "./count-up";
 import { DemoGuard } from "./demo-guard";
 import { ParallaxBackdrop } from "@/components/motion/parallax";
@@ -53,6 +54,12 @@ export interface ShellData {
   tz: string;
   /** Sidebar shown as an icon rail (cookie, so the server renders it right). */
   sidebarCollapsed: boolean;
+  /** Dates and numbers in client components (lib/locale.ts). */
+  locale: string;
+  /** Background parallax on or off (Preferences). */
+  motion: boolean;
+  /** Log work's weight when nothing is remembered. */
+  defaultWeight: number;
   /** Last manual commit messages, for Log work suggestions. */
   recentMessages: string[];
   tagNames: string[];
@@ -101,6 +108,8 @@ const ShellContext = React.createContext<{ openPalette: () => void; openCommit: 
 export const useShell = () => React.useContext(ShellContext);
 
 export function AppShell({ data, children }: { data: ShellData; children: React.ReactNode }) {
+  // Before any child renders, so client components format like the server did
+  setShellLocale(data.locale);
   const [paletteOpen, setPaletteOpen] = React.useState(false);
   const [commitOpen, setCommitOpen] = React.useState(false);
   const [commitPrefill, setCommitPrefill] = React.useState<string | null>(null);
@@ -208,7 +217,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
         <ShellContext.Provider value={{ openPalette: () => setPaletteOpen(true), openCommit: () => openCommit(), openCapture: () => setCaptureOpen(true) }}>
           {data.demoUserId && <DemoGuard userId={data.demoUserId} />}
           <TimezoneCheck tz={data.tz} demo={Boolean(data.demoUserId)} />
-          <ParallaxBackdrop scroller="#content" tone="light" />
+          {data.motion && <ParallaxBackdrop scroller="#content" tone="light" />}
           <div className="relative z-10 flex h-[100dvh] w-full overflow-hidden text-[#0A0A0A]">
             <aside className={cn("hidden shrink-0 p-3 lg:block", collapsed ? "w-[5.25rem]" : "w-64")}>
               <div className="app-panel flex h-full flex-col rounded-[28px]">
@@ -320,7 +329,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
 
           <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} commands={commands} projects={data.projects} onLogWork={(m) => openCommit(m)} />
           <ShortcutSheet open={sheetOpen} onOpenChange={setSheetOpen} />
-          <CommitDialog open={commitOpen} onOpenChange={setCommitOpen} projects={data.projects} recentMessages={data.recentMessages} tagNames={data.tagNames} initialMessage={commitPrefill} />
+          <CommitDialog open={commitOpen} onOpenChange={setCommitOpen} projects={data.projects} recentMessages={data.recentMessages} tagNames={data.tagNames} initialMessage={commitPrefill} defaultWeight={data.defaultWeight} />
           <CaptureDialog open={captureOpen} onOpenChange={setCaptureOpen} projects={data.projects} tz={data.tz} />
         </ShellContext.Provider>
       </NoticeProvider>

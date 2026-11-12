@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { setProjectNotesAction } from "@/app/(app)/client-actions";
+import { currentLocale } from "@/lib/locale";
 
 /** Free-text project notes (up to 10 000 characters); saves on blur or ⌘/Ctrl+Enter. */
 export function ProjectNotes({ projectId, notes, editable }: { projectId: string; notes: string | null; editable: boolean }) {
@@ -54,7 +55,7 @@ export function ProjectNotes({ projectId, notes, editable }: { projectId: string
         className="app-input w-full resize-none rounded-[14px] px-3 py-2.5 text-[15px] leading-relaxed"
       />
       <p aria-live="polite" className="mt-1 font-mono text-[12px] text-[#71717A]">
-        {error ? <span className="text-danger">{error}</span> : state === "saving" ? "saving…" : state === "saved" ? "saved" : `${text.length.toLocaleString()} / 10,000`}
+        {error ? <span className="text-danger">{error}</span> : state === "saving" ? "saving…" : state === "saved" ? "saved" : `${text.length.toLocaleString(currentLocale())} / 10,000`}
       </p>
     </div>
   );

@@ -6,6 +6,7 @@ import { keyBetween } from "@/lib/position";
 import { nextDueDay, step as recurrenceStep } from "@/lib/recurrence";
 import { dayKey } from "@/lib/format";
 import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
+import { parsePreferences, type Preferences, type setPreferencesSchema } from "@/lib/preferences";
 import type { z } from "zod";
 import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema, captureManySchema, setTaskTagsSchema, commitRefSchema, updateObjectiveSchema, mergeTagsSchema, renameTagSchema, setProjectNotesSchema, setTaskDeferSchema, setTaskDescriptionSchema, setTaskPlannedSchema, setTaskStageSchema, tagRefSchema } from "@/lib/validation";
 
@@ -290,14 +291,16 @@ export async function captureMany(actor: Actor, input: z.infer<typeof captureMan
 interface CaptureContext {
   workspaceId: string;
   tz: string;
+  weight: 1 | 2 | 4 | 8;
   /** Target column when capturing straight to Queued; null = Inbox. */
   column: { id: string; boardId: string; top: string | null } | null;
 }
 
 async function captureContext(tx: Tx, actor: Actor, queued: boolean): Promise<CaptureContext> {
   const workspaceId = actor.personalWorkspaceId!;
-  const [{ tz }] = await tx.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
-  if (!queued) return { workspaceId, tz, column: null };
+  const [{ tz, preferences }] = await tx.select({ tz: users.timezone, preferences: users.preferences }).from(users).where(eq(users.id, actor.id)).limit(1);
+  const weight = parsePreferences(preferences).defaultWeight;
+  if (!queued) return { workspaceId, tz, weight, column: null };
   const [column] = await tx
     .select({ id: columns.id, boardId: boards.id })
     .from(columns)
@@ -312,7 +315,7 @@ async function captureContext(tx: Tx, actor: Actor, queued: boolean): Promise<Ca
     .where(and(eq(tasks.boardId, column.boardId), eq(tasks.columnId, column.id), isNull(tasks.deletedAt)))
     .orderBy(asc(byPosition))
     .limit(1);
-  return { workspaceId, tz, column: { ...column, top: first?.position ?? null } };
+  return { workspaceId, tz, weight, column: { ...column, top: first?.position ?? null } };
 }
 
 async function captureOne(tx: Tx, actor: Actor, ctx: CaptureContext, text: string): Promise<CaptureResult> {
@@ -343,7 +346,7 @@ async function captureOne(tx: Tx, actor: Actor, ctx: CaptureContext, text: strin
       ...(position ? { position } : {}),
       title,
       priority: parsed.priority ?? "none",
-      weight: parsed.weight ?? 2,
+      weight: parsed.weight ?? ctx.weight,
       recurrenceRule: parsed.repeat ?? null,
       dueAt: parsed.dueDate ? sql<Date>`((${parsed.dueDate})::date + time '23:59') at time zone ${ctx.tz}` : null,
     })
@@ -404,7 +407,7 @@ export async function addBoardTask(actor: Actor, input: z.infer<typeof addBoardT
     .where(and(eq(tasks.boardId, column.boardId), eq(tasks.columnId, column.id), isNull(tasks.deletedAt)))
     .orderBy(asc(byPosition))
     .limit(1);
-  const weight = parsed.weight ?? input.weight ?? 2;
+  const weight = parsed.weight ?? input.weight ?? (await defaultWeightOf(db, actor));
   const [row] = await db
     .insert(tasks)
     .values({
@@ -1705,4 +1708,23 @@ export async function setProjectNotes(actor: Actor, input: z.infer<typeof setPro
   assertWritable(actor, project.workspaceId);
   await db.update(projects).set({ notes: input.notes }).where(eq(projects.id, project.id));
   return { notes: input.notes };
+}
+
+// ------------------------------------------------------------------ preferences (C44)
+
+/** Merges the given fields into the actor's preferences. */
+export async function setPreferences(actor: Actor, input: z.infer<typeof setPreferencesSchema>): Promise<Preferences> {
+  return db.transaction(async (tx) => {
+    const [row] = await tx.select({ preferences: users.preferences }).from(users).where(eq(users.id, actor.id)).limit(1).for("update");
+    if (!row) throw new MutationError("not_found", "That account no longer exists.");
+    const next = parsePreferences({ ...parsePreferences(row.preferences), ...Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined)) });
+    await tx.update(users).set({ preferences: next, updatedAt: new Date() }).where(eq(users.id, actor.id));
+    return next;
+  });
+}
+
+/** The actor's default weight for new tasks without a +N token. */
+async function defaultWeightOf(q: Tx | typeof db, actor: Actor): Promise<1 | 2 | 4 | 8> {
+  const [row] = await q.select({ preferences: users.preferences }).from(users).where(eq(users.id, actor.id)).limit(1);
+  return parsePreferences(row?.preferences).defaultWeight;
 }

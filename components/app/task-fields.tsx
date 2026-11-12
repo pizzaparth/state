@@ -9,6 +9,7 @@ import { checklistCount, checklistItems, toggleChecklistLine } from "@/lib/check
 import { PRIORITIES, type Priority } from "@/lib/validation";
 import { WEIGHT_LEVELS, weightHint, weightLabel, type Weight } from "@/lib/weights";
 import { useNotice } from "./notice";
+import { currentLocale } from "@/lib/locale";
 
 /** Select in the task panel that saves on change and rolls back if the save fails. */
 function InlineSelect<T extends string | number>({
@@ -268,7 +269,7 @@ export function TaskDue({ taskId, due }: { taskId: string; due: string | null })
         setError(result.error);
         return;
       }
-      notify(next === null ? "Due date cleared." : `Due ${new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${next}T00:00:00Z`))}.`);
+      notify(next === null ? "Due date cleared." : `Due ${new Intl.DateTimeFormat(currentLocale(), { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${next}T00:00:00Z`))}.`);
     });
   };
   return (
