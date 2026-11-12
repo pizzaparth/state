@@ -3,21 +3,10 @@ import { getViewer } from "@/lib/viewer";
 import { PageHeader, Panel } from "@/components/app/primitives";
 import { Row, SettingsNav } from "@/components/app/settings-nav";
 import { WEIGHT_LEVELS } from "@/lib/weights";
+import { ShortcutList } from "@/components/app/shortcut-sheet";
 
 export const metadata = { title: "Preferences" };
 
-const SHORTCUTS = [
-  ["⌘ K", "Commands"],
-  ["/", "Search"],
-  ["C", "Log work"],
-  ["N", "Add task"],
-  ["G T", "Today"],
-  ["G I", "Inbox"],
-  ["G A", "Activity"],
-  ["G H", "History"],
-  ["G M", "Metrics"],
-  ["G P", "Board"],
-] as const;
 
 export default async function PreferencesSettingsPage() {
   // Signed-in only: redirects to /login otherwise
@@ -42,16 +31,7 @@ export default async function PreferencesSettingsPage() {
           </dl>
         </Panel>
         <Panel title="Shortcuts">
-          <dl className="grid grid-cols-[5rem_minmax(0,1fr)] gap-y-2 text-base">
-            {SHORTCUTS.map(([keys, action]) => (
-              <React.Fragment key={keys}>
-                <dt>
-                  <kbd className="app-btn inline-block rounded-[8px] px-2 py-0.5 font-mono text-sm">{keys.replace(" ", " ")}</kbd>
-                </dt>
-                <dd className="font-medium text-[#27272A]">{action}</dd>
-              </React.Fragment>
-            ))}
-          </dl>
+          <ShortcutList columns={1} />
         </Panel>
       </div>
     </>

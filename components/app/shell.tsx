@@ -31,6 +31,8 @@ import { ParallaxBackdrop } from "@/components/motion/parallax";
 import { SignOutButton } from "./sign-out-button";
 import { NoticeProvider, useNotice } from "./notice";
 import { TimezoneCheck } from "./timezone-check";
+import { ShortcutSheet } from "./shortcut-sheet";
+import { ACTION_KEYS, JUMPS, shortcutFor } from "@/lib/shortcuts";
 
 export interface ShellData {
   inboxCount: number;
@@ -43,28 +45,28 @@ export interface ShellData {
   tz: string;
 }
 
-type NavItem = { name: string; href: string; icon: React.ComponentType<{ className?: string }>; badge?: number; shortcut?: string };
+type NavItem = { name: string; href: string; icon: React.ComponentType<{ className?: string }>; badge?: number };
 
 function navSections(data: ShellData): { title?: string; items: NavItem[] }[] {
   return [
     {
       items: [
-        { name: "Today", href: "/platform/today", icon: Calendar, shortcut: "G T" },
-        { name: "Inbox", href: "/platform/inbox", icon: Inbox, badge: data.inboxCount, shortcut: "G I" },
+        { name: "Today", href: "/platform/today", icon: Calendar },
+        { name: "Inbox", href: "/platform/inbox", icon: Inbox, badge: data.inboxCount },
       ],
     },
     {
       title: "Execution",
       items: [
-        { name: "Metrics", href: "/platform/metrics", icon: BarChart3, shortcut: "G M" },
-        { name: "Activity", href: "/platform/activity", icon: Activity, shortcut: "G A" },
-        { name: "History", href: "/platform/history", icon: History, shortcut: "G H" },
+        { name: "Metrics", href: "/platform/metrics", icon: BarChart3 },
+        { name: "Activity", href: "/platform/activity", icon: Activity },
+        { name: "History", href: "/platform/history", icon: History },
       ],
     },
     {
       title: "Work",
       items: [
-        { name: "Board", href: "/platform/board", icon: LayoutGrid, shortcut: "G B" },
+        { name: "Board", href: "/platform/board", icon: LayoutGrid },
         { name: "Projects", href: "/platform/projects", icon: FolderKanban },
       ],
     },
@@ -84,22 +86,15 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
   const [paletteOpen, setPaletteOpen] = React.useState(false);
   const [commitOpen, setCommitOpen] = React.useState(false);
   const [navOpen, setNavOpen] = React.useState(false);
+  const [sheetOpen, setSheetOpen] = React.useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
   React.useEffect(() => setNavOpen(false), [pathname]);
 
-  // Keyboard-first: ⌘K / Ctrl+K palette, "/" search, C commit, N capture, G then a letter to jump
+  // Keyboard-first, from lib/shortcuts.ts: ⌘K / Ctrl+K palette, single-key actions, G then a letter to jump
   React.useEffect(() => {
     let pendingG = 0;
-    const jumps: Record<string, string> = {
-      t: "/platform/today",
-      i: "/platform/inbox",
-      a: "/platform/activity",
-      h: "/platform/history",
-      m: "/platform/metrics",
-      b: "/platform/board",
-    };
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -109,23 +104,20 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
       const target = e.target as HTMLElement;
       if (e.metaKey || e.ctrlKey || e.altKey || target.closest("input, textarea, select, [contenteditable=true], [role=dialog]")) return;
       const key = e.key.toLowerCase();
-      if (pendingG && Date.now() - pendingG < 1200 && jumps[key]) {
+      if (pendingG && Date.now() - pendingG < 1200 && JUMPS[key]) {
         e.preventDefault();
         pendingG = 0;
-        router.push(jumps[key] as Route);
+        router.push(JUMPS[key] as Route);
         return;
       }
       pendingG = key === "g" ? Date.now() : 0;
-      if (key === "/") {
-        e.preventDefault();
-        setPaletteOpen(true);
-      } else if (key === "c") {
-        e.preventDefault();
-        setCommitOpen(true);
-      } else if (key === "n") {
-        e.preventDefault();
-        router.push("/platform/inbox?capture=1" as Route);
-      }
+      const action = ACTION_KEYS[key];
+      if (!action || action === "palette" && key !== "/") return;
+      e.preventDefault();
+      if (action === "palette") setPaletteOpen(true);
+      else if (action === "commit") setCommitOpen(true);
+      else if (action === "shortcuts") setSheetOpen(true);
+      else if (action === "capture") router.push("/platform/inbox?capture=1" as Route);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -222,7 +214,8 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
           </Dialog.Portal>
         </Dialog.Root>
 
-        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} data={data} onCommit={() => setCommitOpen(true)} />
+        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} data={data} onCommit={() => setCommitOpen(true)} onShortcuts={() => setSheetOpen(true)} />
+        <ShortcutSheet open={sheetOpen} onOpenChange={setSheetOpen} />
         <CommitDialog open={commitOpen} onOpenChange={setCommitOpen} projects={data.projects} />
       </ShellContext.Provider>
     </NoticeProvider>
@@ -402,11 +395,13 @@ function CommandPalette({
   onOpenChange,
   data,
   onCommit,
+  onShortcuts,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   data: ShellData;
   onCommit: () => void;
+  onShortcuts: () => void;
 }) {
   const router = useRouter();
   const [query, setQuery] = React.useState("");
@@ -416,8 +411,9 @@ function CommandPalette({
   const commands: Command[] = [
     { id: "commit", label: "Create commit", group: "Actions", hint: "C", run: onCommit },
     { id: "capture", label: "Capture task", group: "Actions", hint: "N", run: go("/platform/inbox?capture=1") },
-    ...navSections(data).flatMap((s) => s.items.map((i) => ({ id: i.href, label: `Open ${i.name}`, group: "Go to", hint: i.shortcut, run: go(i.href) }))),
-    { id: "/platform/settings", label: "Open settings", group: "Go to", run: go("/platform/settings") },
+    ...navSections(data).flatMap((s) => s.items.map((i) => ({ id: i.href, label: `Open ${i.name}`, group: "Go to", hint: shortcutFor(i.href), run: go(i.href) }))),
+    { id: "/platform/settings", label: "Open settings", group: "Go to", hint: shortcutFor("/platform/settings"), run: go("/platform/settings") },
+    { id: "shortcuts", label: "Keyboard shortcuts", group: "Actions", hint: "?", run: onShortcuts },
     ...data.projects.map((p) => ({ id: p.href, label: p.name, group: "Projects", run: go(p.href) })),
   ];
   const q = query.trim().toLowerCase();
