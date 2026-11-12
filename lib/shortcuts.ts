@@ -22,7 +22,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { keys: "/", label: "Search", scope: "Anywhere", action: "palette" },
   { keys: "C", label: "Log work", scope: "Anywhere", action: "commit" },
   { keys: "N", label: "Add task", scope: "Anywhere", action: "capture" },
+  { keys: "Z", label: "Undo last", scope: "Anywhere", action: "undo" },
   { keys: "?", label: "Shortcuts", scope: "Anywhere", action: "shortcuts" },
+  { keys: "[", label: "Toggle sidebar", scope: "Anywhere" },
   { keys: "G T", label: "Today", scope: "Go to", href: "/platform/today" },
   { keys: "G I", label: "Inbox", scope: "Go to", href: "/platform/inbox" },
   { keys: "G B", label: "Board", scope: "Go to", href: "/platform/board" },
@@ -30,7 +32,12 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { keys: "G M", label: "Metrics", scope: "Go to", href: "/platform/metrics" },
   { keys: "G A", label: "Activity", scope: "Go to", href: "/platform/activity" },
   { keys: "G H", label: "History", scope: "Go to", href: "/platform/history" },
+  { keys: "G R", label: "Week review", scope: "Go to", href: "/platform/review" },
   { keys: "G S", label: "Settings", scope: "Go to", href: "/platform/settings" },
+  { keys: "A", label: "Add to first column", scope: "Board" },
+  { keys: "F", label: "Filter", scope: "Board" },
+  { keys: "X", label: "Select card", scope: "Board" },
+  { keys: "⇧ Click", label: "Select card", scope: "Board" },
   { keys: "Esc", label: "Close", scope: "Task panel" },
 ];
 

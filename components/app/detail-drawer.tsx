@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { TICK } from "@/lib/type";
 import { useNotice } from "./notice";
 import { PANEL_PARAMS, clearPanelMark, panelCameFromApp, retargetPanel } from "@/lib/panel-history";
+import { recordRecent } from "@/lib/recent";
 
 /** Current URL with `remove` dropped and, when given, `set` added. */
 function useSwapHref() {
@@ -61,9 +62,12 @@ export function DetailDrawer({
   param,
   title,
   crumbs = [],
+  recent,
   children,
 }: {
   param: string;
+  /** Remembered for the palette's recent list ("task" / "commit" panels). */
+  recent?: { kind: "task" | "commit"; id: string; title: string };
   /** The object's kind ("Task", "Commit"); names the dialog. */
   title: string;
   /** Where the object lives, outermost first (project, board, column). */
@@ -72,6 +76,13 @@ export function DetailDrawer({
 }) {
   const closePanel = useClosePanel();
   const [open, setOpen] = React.useState(true);
+  const recentKey = recent ? `${recent.kind}:${recent.id}:${recent.title}` : null;
+  React.useEffect(() => {
+    if (!recent) return;
+    const href = `${window.location.pathname}?${recent.kind}=${encodeURIComponent(recent.id)}`;
+    recordRecent({ ...recent, href });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recentKey]);
   const [scrolled, setScrolled] = React.useState(false);
   const contentRef = React.useRef<HTMLDivElement>(null);
 

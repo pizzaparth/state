@@ -35,6 +35,7 @@ export async function Drawers({ params, viewer }: { params: Record<string, strin
         <DetailDrawer
           param="task"
           title="Task"
+          recent={{ kind: "task", id: task.id, title: task.title }}
           crumbs={[task.projectName, task.boardName ?? "Inbox", task.completedAt ? "Done" : task.columnName].filter((c): c is string => Boolean(c))}
         >
           <TaskDetail task={task} tz={viewer.tz} now={new Date()} editable={writable} projects={projects} statusColumns={statusColumns} />
@@ -53,7 +54,7 @@ export async function Drawers({ params, viewer }: { params: Record<string, strin
     if (commit) {
       const projects = canEditCommit(viewer, commit) ? await getProjectOptions(commit.workspaceId, viewer.workspaceIds) : undefined;
       return (
-        <DetailDrawer param="commit" title="Commit" crumbs={commit.projectName ? [commit.projectName] : []}>
+        <DetailDrawer param="commit" title="Commit" crumbs={commit.projectName ? [commit.projectName] : []} recent={{ kind: "commit", id: commit.id, title: commit.message }}>
           <CommitDetail commit={commit} tz={viewer.tz} projects={projects} />
         </DetailDrawer>
       );

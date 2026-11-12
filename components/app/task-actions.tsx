@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ArrowRight, Loader2, Trash2 } from "lucide-react";
-import { deleteTaskAction, placeTaskAction, restoreTaskAction } from "@/app/(app)/actions";
+import { deleteTaskAction, placeTaskAction, restoreTaskAction } from "@/app/(app)/client-actions";
 import type { BoardTarget } from "@/db/queries";
 import { cn } from "@/lib/utils";
 import { useNotice } from "./notice";

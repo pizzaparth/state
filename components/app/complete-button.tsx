@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { completeTaskAction, moveTaskAction } from "@/app/(app)/actions";
+import { completeTaskAction, moveTaskAction } from "@/app/(app)/client-actions";
 import { cn } from "@/lib/utils";
 import { useNotice } from "./notice";
 

@@ -3,7 +3,7 @@
 import * as React from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Archive, Loader2, Plus } from "lucide-react";
-import { createObjectiveAction, setObjectiveArchivedAction, setObjectiveProgressAction } from "@/app/(app)/actions";
+import { createObjectiveAction, setObjectiveArchivedAction, setObjectiveProgressAction } from "@/app/(app)/client-actions";
 import { createObjectiveSchema, OBJECTIVE_MEASURES } from "@/lib/validation";
 import { useNotice } from "./notice";
 

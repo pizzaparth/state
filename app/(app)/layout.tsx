@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { getViewer, getViewerTicker } from "@/lib/viewer";
-import { getInboxCount, getProjects } from "@/db/queries";
+import { cookies } from "next/headers";
+import { getInboxCount, getRecentManualMessages, getShellProjects, getTagNames } from "@/db/queries";
 import { formatDate } from "@/lib/format";
 import { AppShell } from "@/components/app/shell";
 
@@ -23,21 +24,27 @@ export default async function AppLayout({
   if (!session) redirect("/login");
 
   const viewer = await getViewer();
-  const [inboxCount, projects, ticker] = await Promise.all([
+  const [inboxCount, projects, ticker, recentMessages, tagNames, jar] = await Promise.all([
     getInboxCount(viewer.personalWorkspaceId),
-    getProjects(viewer.workspaceIds),
+    getShellProjects(viewer.workspaceIds),
     getViewerTicker(viewer),
+    getRecentManualMessages(viewer.id, viewer.workspaceIds),
+    getTagNames(viewer.workspaceIds),
+    cookies(),
   ]);
 
   return (
     <AppShell
       data={{
         inboxCount,
-        projects: projects.map((p) => ({ id: p.id, name: p.name, href: `/platform/projects/${p.slug}` })),
+        projects: projects.map((p) => ({ id: p.id, name: p.name, slug: p.slug, href: `/platform/projects/${p.slug}` })),
         dateLabel: formatDate(new Date(), viewer.tz, { weekday: "short", day: "numeric", month: "short" }),
         ticker,
         demoUserId: viewer.isDemo ? viewer.id : null,
         tz: viewer.tz,
+        sidebarCollapsed: jar.get("sidebar")?.value === "collapsed",
+        recentMessages,
+        tagNames,
       }}
     >
       {children}

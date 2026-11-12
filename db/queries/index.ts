@@ -120,16 +120,45 @@ export interface CommitRow {
   projectSlug: string | null;
   authorId: string;
   authorName: string;
+  tags: string[];
 }
 
-export async function getCommits(
-  scope: Scope,
-  opts: { limit?: number; sinceDays?: number; tz?: string } = {}
-): Promise<CommitRow[]> {
-  if (empty(scope)) return [];
+/** Start of a local calendar day (YYYY-MM-DD) in `tz`, as a timestamptz expression. */
+const dayStartAt = (tz: string, day: string) => sql`((${day})::date)::timestamp at time zone ${tz}`;
+
+export interface CommitFilters {
+  limit?: number;
+  sinceDays?: number;
+  tz?: string;
+  /** First and last local day, inclusive (needs tz). */
+  from?: string;
+  to?: string;
+  source?: "task_completion" | "manual" | "imported";
+  tag?: string;
+  weight?: number;
+  /** Message contains (case-insensitive). */
+  q?: string;
+  /** Only commits strictly older than this (cursor pagination). */
+  before?: Date;
+}
+
+const commitFilterWhere = (scope: Scope, opts: CommitFilters): SQL[] => {
   const where = commitWhere(scope);
   if (opts.sinceDays !== undefined && opts.tz) where.push(gte(commits.createdAt, localDayStart(opts.tz, opts.sinceDays - 1)));
-  return db
+  if (opts.from && opts.tz) where.push(gte(commits.createdAt, dayStartAt(opts.tz, opts.from)));
+  if (opts.to && opts.tz) where.push(lt(commits.createdAt, sql`${dayStartAt(opts.tz, opts.to)} + interval '1 day'`));
+  if (opts.source) where.push(eq(commits.source, opts.source));
+  if (opts.weight) where.push(eq(commits.executionValue, opts.weight));
+  if (opts.q) where.push(sql`${commits.message} ilike ${likePattern(opts.q)}`);
+  if (opts.before) where.push(lt(commits.createdAt, opts.before));
+  if (opts.tag)
+    where.push(sql`exists (select 1 from ${commitTags} join ${tags} on ${tags.id} = ${commitTags.tagId} where ${commitTags.commitId} = ${commits.id} and ${tags.name} = ${opts.tag})`);
+  return where;
+};
+
+export async function getCommits(scope: Scope, opts: CommitFilters = {}): Promise<CommitRow[]> {
+  if (empty(scope)) return [];
+  const rows = await db
     .select({
       id: commits.id,
       message: commits.message,
@@ -146,9 +175,48 @@ export async function getCommits(
     .from(commits)
     .leftJoin(projects, eq(projects.id, commits.projectId))
     .innerJoin(users, eq(users.id, commits.userId))
-    .where(and(...where))
-    .orderBy(desc(commits.createdAt))
+    .where(and(...commitFilterWhere(scope, opts)))
+    .orderBy(desc(commits.createdAt), desc(commits.id))
     .limit(opts.limit ?? 200);
+  return withCommitTags(rows);
+}
+
+/** Count and Σ execution of every commit matching the filters (History's header line). */
+export async function getCommitTotals(scope: Scope, opts: CommitFilters = {}): Promise<{ count: number; execution: number }> {
+  if (empty(scope)) return { count: 0, execution: 0 };
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int`, execution: sql<number>`coalesce(sum(${commits.executionValue}), 0)::int` })
+    .from(commits)
+    .where(and(...commitFilterWhere(scope, { ...opts, before: undefined })));
+  return row ?? { count: 0, execution: 0 };
+}
+
+async function withCommitTags<T extends { id: string }>(rows: T[]): Promise<(T & { tags: string[] })[]> {
+  if (rows.length === 0) return [];
+  const tagRows = await db
+    .select({ commitId: commitTags.commitId, name: tags.name })
+    .from(commitTags)
+    .innerJoin(tags, eq(tags.id, commitTags.tagId))
+    .where(inArray(commitTags.commitId, rows.map((r) => r.id)))
+    .limit(rows.length * 10);
+  const by = new Map<string, string[]>();
+  for (const t of tagRows) by.set(t.commitId, [...(by.get(t.commitId) ?? []), t.name]);
+  return rows.map((r) => ({ ...r, tags: by.get(r.id) ?? [] }));
+}
+
+/** Tasks created and completed between two local days, inclusive (week review). */
+export async function getTaskFlow(scope: Scope, tz: string, from: string, to: string): Promise<{ created: number; completed: number }> {
+  if (empty(scope)) return { created: 0, completed: 0 };
+  const start = dayStartAt(tz, from);
+  const end = sql`${dayStartAt(tz, to)} + interval '1 day'`;
+  const [row] = await db
+    .select({
+      created: sql<number>`count(*) filter (where ${tasks.createdAt} >= ${start} and ${tasks.createdAt} < ${end})::int`,
+      completed: sql<number>`count(*) filter (where ${tasks.completedAt} >= ${start} and ${tasks.completedAt} < ${end})::int`,
+    })
+    .from(tasks)
+    .where(and(...taskWhere(scope), sql`(${tasks.createdAt} >= ${start} or ${tasks.completedAt} >= ${start})`));
+  return row ?? { created: 0, completed: 0 };
 }
 
 export async function getCommitDetail(commitId: string, workspaceIds: string[]) {
@@ -183,7 +251,8 @@ export async function getCommitDetail(commitId: string, workspaceIds: string[]) 
     .select({ name: tags.name })
     .from(commitTags)
     .innerJoin(tags, eq(tags.id, commitTags.tagId))
-    .where(eq(commitTags.commitId, commitId));
+    .where(eq(commitTags.commitId, commitId))
+    .limit(50);
   return { ...row, tags: tagRows.map((t) => t.name) };
 }
 
@@ -687,6 +756,30 @@ export async function getProjects(workspaceIds: string[]): Promise<ProjectSummar
   return rows.map((r) => ({ ...r, lastCommitAt: r.lastCommitAt ? new Date(r.lastCommitAt) : null }));
 }
 
+/** Live projects for the shell (sidebar, palette, Log work): names only, no aggregates. */
+export async function getShellProjects(workspaceIds: string[]): Promise<{ id: string; name: string; slug: string }[]> {
+  if (workspaceIds.length === 0) return [];
+  return db
+    .select({ id: projects.id, name: projects.name, slug: projects.slug })
+    .from(projects)
+    .where(and(inArray(projects.workspaceId, workspaceIds), isNull(projects.archivedAt)))
+    .orderBy(sql`case ${projects.status} when 'active' then 0 when 'planned' then 1 when 'paused' then 2 else 3 end`, asc(projects.name))
+    .limit(200);
+}
+
+/** The person's last distinct manual commit messages, newest first (Log work suggestions). */
+export async function getRecentManualMessages(userId: string, workspaceIds: string[], limit = 20): Promise<string[]> {
+  if (workspaceIds.length === 0) return [];
+  const rows = await db
+    .select({ message: commits.message, at: sql<Date>`max(${commits.createdAt})` })
+    .from(commits)
+    .where(and(inArray(commits.workspaceId, workspaceIds), eq(commits.userId, userId), eq(commits.source, "manual"), isNull(commits.deletedAt)))
+    .groupBy(commits.message)
+    .orderBy(sql`2 desc`)
+    .limit(limit);
+  return rows.map((r) => r.message);
+}
+
 /** Archived projects in the given workspaces, most recently archived first. */
 export async function getArchivedProjects(workspaceIds: string[], limit = 100) {
   if (workspaceIds.length === 0) return [];
@@ -804,7 +897,8 @@ export interface SearchHit {
 const likePattern = (q: string) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 /**
- * Tasks by title and commits by message across the viewer's workspaces, newest first.
+ * Tasks (title, description, tags, project name) and commits (message, tags, project
+ * name) across the viewer's workspaces, newest first.
  * Deleted tasks and retired commits are left out; archived ones are found.
  */
 export async function searchWork(q: string, workspaceIds: string[]): Promise<SearchHit[]> {
@@ -822,7 +916,13 @@ export async function searchWork(q: string, workspaceIds: string[]): Promise<Sea
       })
       .from(tasks)
       .leftJoin(projects, eq(projects.id, tasks.projectId))
-      .where(and(inArray(tasks.workspaceId, workspaceIds), isNull(tasks.deletedAt), sql`${tasks.title} ilike ${pattern}`))
+      .where(
+        and(
+          inArray(tasks.workspaceId, workspaceIds),
+          isNull(tasks.deletedAt),
+          sql`(${tasks.title} ilike ${pattern} or ${tasks.description} ilike ${pattern} or ${projects.name} ilike ${pattern} or exists (select 1 from ${taskTags} join ${tags} on ${tags.id} = ${taskTags.tagId} where ${taskTags.taskId} = ${tasks.id} and ${tags.name} ilike ${pattern}))`
+        )
+      )
       .orderBy(desc(tasks.createdAt))
       .limit(SEARCH_LIMIT),
     db
@@ -834,7 +934,13 @@ export async function searchWork(q: string, workspaceIds: string[]): Promise<Sea
       })
       .from(commits)
       .leftJoin(projects, eq(projects.id, commits.projectId))
-      .where(and(inArray(commits.workspaceId, workspaceIds), isNull(commits.deletedAt), sql`${commits.message} ilike ${pattern}`))
+      .where(
+        and(
+          inArray(commits.workspaceId, workspaceIds),
+          isNull(commits.deletedAt),
+          sql`(${commits.message} ilike ${pattern} or ${projects.name} ilike ${pattern} or exists (select 1 from ${commitTags} join ${tags} on ${tags.id} = ${commitTags.tagId} where ${commitTags.commitId} = ${commits.id} and ${tags.name} ilike ${pattern}))`
+        )
+      )
       .orderBy(desc(commits.createdAt))
       .limit(SEARCH_LIMIT),
   ]);

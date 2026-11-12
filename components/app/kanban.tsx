@@ -41,7 +41,7 @@ import {
   setTaskPriorityAction,
   setTaskWeightAction,
   type ActionResult,
-} from "@/app/(app)/actions";
+} from "@/app/(app)/client-actions";
 import type { MoveResult } from "@/lib/mutations";
 import { PRIORITIES } from "@/lib/validation";
 import { markPanelOpen } from "@/lib/panel-history";

@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
-import { and, eq, lt } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { accounts, users } from "@/db/schema";
+import { accounts, sessions, users } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { provisionAccount } from "@/lib/accounts/provision";
 import { seedDemoData } from "./seed";
@@ -12,19 +12,25 @@ import { seedDemoData } from "./seed";
  *
  *   sign out          the account and everything it owns are deleted at once
  *   tab closed        the next visit finds no tab marker and ends the demo (DemoGuard)
- *   abandoned         accounts older than DEMO_TTL_MS are deleted on every new demo
+ *   abandoned         accounts idle for DEMO_TTL_MS are deleted on every new demo
  *
  * Deleting the user row cascades through its workspace, tasks, commits and sessions.
  */
 export const DEMO_TTL_MS = 6 * 60 * 60 * 1000;
 const DEMO_DOMAIN = "demo.state.invalid";
 
-/** Deletes demo accounts past their lifetime. Bounded per call; runs before each new demo. */
+/**
+ * Deletes demo accounts idle past their lifetime: no session activity (or, with no
+ * session, no account activity) for DEMO_TTL_MS. A visitor still working is never cut
+ * off mid-session. Bounded per call; runs before each new demo.
+ */
 export async function pruneDemos(now = Date.now()): Promise<number> {
+  const cutoff = new Date(now - DEMO_TTL_MS);
+  const lastActive = sql`coalesce((select max(${sessions.updatedAt}) from ${sessions} where ${sessions.userId} = ${users.id}), ${users.createdAt})`;
   const stale = await db
     .select({ id: users.id })
     .from(users)
-    .where(and(eq(users.isDemo, true), lt(users.createdAt, new Date(now - DEMO_TTL_MS))))
+    .where(and(eq(users.isDemo, true), lt(users.createdAt, cutoff), sql`${lastActive} < ${cutoff}`))
     .limit(100);
   for (const { id } of stale) await db.delete(users).where(eq(users.id, id));
   return stale.length;

@@ -4,7 +4,7 @@ import * as React from "react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { addBoardTaskAction, finishOnboardingAction, moveTaskAction } from "@/app/(app)/actions";
+import { addBoardTaskAction, finishOnboardingAction, moveTaskAction } from "@/app/(app)/client-actions";
 import { addBoardTaskSchema } from "@/lib/validation";
 import { WEIGHT_LEVELS, type Weight } from "@/lib/weights";
 import { cn } from "@/lib/utils";

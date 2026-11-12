@@ -179,29 +179,48 @@ export const taskRefSchema = z.strictObject({
 
 export const captureTaskSchema = z.strictObject({
   text: z.string().trim().min(1, "Type a task first.").max(500),
+  /** Straight to the board's first queued column instead of the Inbox. */
+  queued: z.boolean().optional(),
 });
+
+/** Several captures at once (a pasted list): one per line, same rules as a single capture. */
+export const CAPTURE_MANY_MAX = 50;
+export const captureManySchema = z.strictObject({
+  lines: z
+    .array(z.string().trim().max(500, "Keep each line under 500 characters."))
+    .transform((lines) => lines.filter(Boolean))
+    .pipe(z.array(z.string()).min(1, "Paste at least one line.").max(CAPTURE_MANY_MAX, `Up to ${CAPTURE_MANY_MAX} lines at once.`)),
+  queued: z.boolean().optional(),
+});
+
+/** Tag names: lower case, no commas or leading #, de-duplicated. */
+export const COMMIT_TAGS_MAX = 10;
+const tagList = (max: number) =>
+  z
+    .array(z.string().trim().toLowerCase().min(1).max(50, "Keep tags under 50 characters.").regex(/^[^,#\s][^,]*$/, "Separate tags with commas."))
+    .max(max, `Up to ${max} tags.`)
+    .transform((list) => [...new Set(list)]);
 
 export const manualCommitSchema = z.strictObject({
   message: z.string().trim().min(1, "Describe what you did.").max(500),
   projectId: objectId.nullable(),
   weight: z.union([z.literal(1), z.literal(2), z.literal(4), z.literal(8)]),
+  tags: tagList(COMMIT_TAGS_MAX).optional(),
 });
 
 /**
  * Commit correction: message, project and tags only. Time, execution value, author,
  * source and the linked task never change, so they are not accepted here.
  */
-export const COMMIT_TAGS_MAX = 10;
-
 export const editCommitSchema = z.strictObject({
   commitId: objectId,
   message: z.string().trim().min(1, "Describe what you did.").max(500, "Keep the message under 500 characters."),
   projectId: objectId.nullable(),
-  tags: z
-    .array(z.string().trim().toLowerCase().min(1).max(50, "Keep tags under 50 characters.").regex(/^[^,#\s][^,]*$/, "Separate tags with commas."))
-    .max(COMMIT_TAGS_MAX, `Up to ${COMMIT_TAGS_MAX} tags.`)
-    .transform((list) => [...new Set(list)]),
+  tags: tagList(COMMIT_TAGS_MAX),
 });
+
+/** Task tags (C16): same rules as commit tags. */
+export const setTaskTagsSchema = z.strictObject({ taskId: objectId, tags: tagList(COMMIT_TAGS_MAX) });
 
 /**
  * Objectives (docs/state_desc.md §24): a measurable position with a target. "manual"

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Loader2, Pencil } from "lucide-react";
-import { renameTaskAction } from "@/app/(app)/actions";
+import { renameTaskAction } from "@/app/(app)/client-actions";
 import { useNotice } from "./notice";
 
 // Display face without caps: task titles are user text and can run long

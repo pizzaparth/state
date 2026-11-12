@@ -5,7 +5,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { Archive, ArchiveRestore, Loader2, Pencil, Plus } from "lucide-react";
-import { createProjectAction, setProjectArchivedAction, updateProjectAction, type ActionResult } from "@/app/(app)/actions";
+import { createProjectAction, setProjectArchivedAction, updateProjectAction, type ActionResult } from "@/app/(app)/client-actions";
 import { createProjectSchema, PROJECT_DESCRIPTION_MAX, PROJECT_STATUSES, slugify, updateProjectSchema } from "@/lib/validation";
 import { useNotice } from "./notice";
 

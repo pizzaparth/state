@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
-import { moveTaskAction, setTaskDueAction, setTaskPriorityAction, setTaskProjectAction, setTaskRecurrenceAction, setTaskWeightAction, type ActionResult } from "@/app/(app)/actions";
+import { moveTaskAction, setTaskDueAction, setTaskPriorityAction, setTaskProjectAction, setTaskRecurrenceAction, setTaskWeightAction, type ActionResult } from "@/app/(app)/client-actions";
 import { cn } from "@/lib/utils";
 import { RECURRENCE_OPTIONS, recurrenceLabel } from "@/lib/recurrence";
 import { PRIORITIES, type Priority } from "@/lib/validation";

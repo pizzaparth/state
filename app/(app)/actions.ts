@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import type { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { loadActor, MutationError, type Actor } from "@/lib/authz";
-import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone, completeTask, addColumn, bulkRestoreTasks, bulkUpdateTasks, deleteColumn, moveColumn, renameColumn, setColumnLimit } from "@/lib/mutations";
+import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone, completeTask, addColumn, bulkRestoreTasks, bulkUpdateTasks, deleteColumn, moveColumn, renameColumn, setColumnLimit, captureMany, setTaskTags } from "@/lib/mutations";
 import { consumeThrottle } from "@/lib/security/throttle";
-import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkRestoreSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema } from "@/lib/validation";
+import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkRestoreSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema, captureManySchema, setTaskTagsSchema } from "@/lib/validation";
 
 /**
  * Server Actions for the product. Each one re-verifies everything itself: Server Actions
@@ -14,7 +14,8 @@ import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setO
  * run for them. Next.js rejects cross-site calls by comparing Origin with Host.
  */
 
-export type ActionResult<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
+export type ActionErrorCode = MutationError["code"] | "server" | "network";
+export type ActionResult<T = undefined> = { ok: true; data: T } | { ok: false; error: string; code?: ActionErrorCode };
 
 // Per-user write budget, shared across instances (Postgres-backed)
 const WRITES_PER_MINUTE = 60;
@@ -33,9 +34,9 @@ async function run<S extends z.ZodType, T>(schema: S, input: unknown, fn: (actor
     revalidatePath("/", "layout");
     return { ok: true, data };
   } catch (error) {
-    if (error instanceof MutationError) return { ok: false, error: error.message };
+    if (error instanceof MutationError) return { ok: false, error: error.message, code: error.code };
     console.error("[action]", error);
-    return { ok: false, error: "Something went wrong. Your change was not saved." };
+    return { ok: false, error: "Something went wrong. Your change was not saved.", code: "server" };
   }
 }
 
@@ -157,4 +158,12 @@ export async function bulkUpdateTasksAction(input: unknown) {
 
 export async function bulkRestoreTasksAction(input: unknown) {
   return run(bulkRestoreSchema, input, bulkRestoreTasks);
+}
+
+export async function captureManyAction(input: unknown) {
+  return run(captureManySchema, input, captureMany);
+}
+
+export async function setTaskTagsAction(input: unknown) {
+  return run(setTaskTagsSchema, input, setTaskTags);
 }

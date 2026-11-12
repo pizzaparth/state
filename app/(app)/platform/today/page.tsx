@@ -66,7 +66,7 @@ export default async function TodayPage({ searchParams }: { searchParams: PageSe
         </section>
 
         <Panel title="Capture">
-          <QuickCapture projects={projects} tz={viewer.tz} />
+          <QuickCapture projects={projects} tz={viewer.tz} draftKey="state:draft:today" />
           <p className="mt-1 px-2 font-mono text-sm text-[#71717A]">
             <kbd>C</kbd> commit · <kbd>⌘&nbsp;K</kbd> everything
           </p>

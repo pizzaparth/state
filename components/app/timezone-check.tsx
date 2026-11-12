@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { setTimezoneAction } from "@/app/(app)/actions";
+import { setTimezoneAction } from "@/app/(app)/client-actions";
 import { useNotice } from "./notice";
 
 const DISMISSED_KEY = "state:tz-offered";

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Loader2 } from "lucide-react";
-import { setTimezoneAction } from "@/app/(app)/actions";
+import { setTimezoneAction } from "@/app/(app)/client-actions";
 import { useNotice } from "./notice";
 
 /** The browser's own zone, read after mount (the server cannot know it). */

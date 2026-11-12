@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Loader2, Pencil } from "lucide-react";
-import { editCommitAction } from "@/app/(app)/actions";
+import { editCommitAction } from "@/app/(app)/client-actions";
 import { editCommitSchema } from "@/lib/validation";
 import { useNotice } from "./notice";
 

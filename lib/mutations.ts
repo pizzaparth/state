@@ -6,7 +6,7 @@ import { keyBetween } from "@/lib/position";
 import { dayIn, nextDueDay } from "@/lib/recurrence";
 import { IMPORT_LIMITS, parseQuickCapture, type ImportData } from "@/lib/validation";
 import type { z } from "zod";
-import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema } from "@/lib/validation";
+import type { addBoardTaskSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema, captureManySchema, setTaskTagsSchema } from "@/lib/validation";
 
 /**
  * Product writes. Each function takes an Actor built from the server session and input
@@ -124,6 +124,11 @@ async function moveInTx(tx: Tx, actor: Actor, input: z.infer<typeof moveTaskSche
         .onConflictDoNothing()
         .returning({ id: commits.id });
       committed = inserted.length > 0 ? task.weight : 0;
+      // The commit carries the task's tags, so History can filter on them
+      if (inserted.length > 0) {
+        const labels = await tx.select({ tagId: taskTags.tagId }).from(taskTags).where(eq(taskTags.taskId, task.id)).limit(50);
+        if (labels.length > 0) await tx.insert(commitTags).values(labels.map((l) => ({ commitId: inserted[0].id, tagId: l.tagId }))).onConflictDoNothing();
+      }
     }
 
     let recurred = false;
@@ -252,6 +257,8 @@ export interface CaptureResult {
   title: string;
   projectName: string | null;
   dueAt: Date | null;
+  /** Went straight to the board's Queued column. */
+  queued: boolean;
 }
 
 /**
@@ -261,36 +268,85 @@ export interface CaptureResult {
  */
 export async function captureTask(actor: Actor, input: z.infer<typeof captureTaskSchema>): Promise<CaptureResult> {
   assertWritable(actor, actor.personalWorkspaceId);
-  const workspaceId = actor.personalWorkspaceId;
-  const [{ tz }] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
-  const parsed = parseQuickCapture(input.text, dayIn(new Date(), tz));
+  return db.transaction(async (tx) => {
+    const ctx = await captureContext(tx, actor, input.queued ?? false);
+    return captureOne(tx, actor, ctx, input.text);
+  });
+}
+
+/** A pasted list: one capture per line, all or nothing, one write. */
+export async function captureMany(actor: Actor, input: z.infer<typeof captureManySchema>): Promise<{ count: number; queued: boolean }> {
+  assertWritable(actor, actor.personalWorkspaceId);
+  return db.transaction(async (tx) => {
+    const ctx = await captureContext(tx, actor, input.queued ?? false);
+    // Each lands on top of the column, so go bottom-up to keep the pasted order
+    for (const line of [...input.lines].reverse()) await captureOne(tx, actor, ctx, line);
+    return { count: input.lines.length, queued: ctx.column !== null };
+  });
+}
+
+interface CaptureContext {
+  workspaceId: string;
+  tz: string;
+  /** Target column when capturing straight to Queued; null = Inbox. */
+  column: { id: string; boardId: string; top: string | null } | null;
+}
+
+async function captureContext(tx: Tx, actor: Actor, queued: boolean): Promise<CaptureContext> {
+  const workspaceId = actor.personalWorkspaceId!;
+  const [{ tz }] = await tx.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
+  if (!queued) return { workspaceId, tz, column: null };
+  const [column] = await tx
+    .select({ id: columns.id, boardId: boards.id })
+    .from(columns)
+    .innerJoin(boards, eq(boards.id, columns.boardId))
+    .where(and(eq(boards.workspaceId, workspaceId), eq(boards.type, "personal"), eq(columns.stateType, "backlog")))
+    .orderBy(asc(columns.position))
+    .limit(1);
+  if (!column) throw new MutationError("not_found", "Your board is still being set up. Try again in a moment.");
+  const [first] = await tx
+    .select({ position: tasks.position })
+    .from(tasks)
+    .where(and(eq(tasks.boardId, column.boardId), eq(tasks.columnId, column.id), isNull(tasks.deletedAt)))
+    .orderBy(asc(byPosition))
+    .limit(1);
+  return { workspaceId, tz, column: { ...column, top: first?.position ?? null } };
+}
+
+async function captureOne(tx: Tx, actor: Actor, ctx: CaptureContext, text: string): Promise<CaptureResult> {
+  const parsed = parseQuickCapture(text, dayIn(new Date(), ctx.tz));
   const title = parsed.title.trim();
   if (!title) throw new MutationError("invalid", "Add a title as well as the #project, !priority or date.");
 
   let project: { id: string; name: string } | undefined;
   if (parsed.projectSlug) {
-    [project] = await db
+    [project] = await tx
       .select({ id: projects.id, name: projects.name })
       .from(projects)
-      .where(and(eq(projects.workspaceId, workspaceId), eq(projects.slug, parsed.projectSlug.toLowerCase()), isNull(projects.archivedAt)))
+      .where(and(eq(projects.workspaceId, ctx.workspaceId), eq(projects.slug, parsed.projectSlug.toLowerCase()), isNull(projects.archivedAt)))
       .limit(1);
   }
+  const position = ctx.column ? keyBetween(null, ctx.column.top) : undefined;
+  if (ctx.column && position) ctx.column.top = position;
 
-  const [row] = await db
+  const [row] = await tx
     .insert(tasks)
     .values({
-      workspaceId,
+      workspaceId: ctx.workspaceId,
       creatorId: actor.id,
       assigneeId: actor.id,
       projectId: project?.id ?? null,
+      boardId: ctx.column?.boardId ?? null,
+      columnId: ctx.column?.id ?? null,
+      ...(position ? { position } : {}),
       title,
       priority: parsed.priority ?? "none",
       weight: parsed.weight ?? 2,
       recurrenceRule: parsed.repeat ?? null,
-      dueAt: parsed.dueDate ? sql<Date>`((${parsed.dueDate})::date + time '23:59') at time zone ${tz}` : null,
+      dueAt: parsed.dueDate ? sql<Date>`((${parsed.dueDate})::date + time '23:59') at time zone ${ctx.tz}` : null,
     })
     .returning({ id: tasks.id, dueAt: tasks.dueAt });
-  return { id: row.id, title, projectName: project?.name ?? null, dueAt: row.dueAt };
+  return { id: row.id, title, projectName: project?.name ?? null, dueAt: row.dueAt, queued: ctx.column !== null };
 }
 
 export interface AddedCard {
@@ -726,18 +782,22 @@ export async function createManualCommit(actor: Actor, input: z.infer<typeof man
   }
   assertWritable(actor, workspaceId);
 
-  const [row] = await db
-    .insert(commits)
-    .values({
-      workspaceId,
-      projectId: input.projectId,
-      userId: actor.id,
-      message: input.message,
-      executionValue: input.weight,
-      source: "manual",
-    })
-    .returning({ id: commits.id });
-  return row;
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(commits)
+      .values({
+        workspaceId,
+        projectId: input.projectId,
+        userId: actor.id,
+        message: input.message,
+        executionValue: input.weight,
+        source: "manual",
+      })
+      .returning({ id: commits.id });
+    const ids = await tagIds(tx, workspaceId, input.tags ?? []);
+    if (ids.length) await tx.insert(commitTags).values(ids.map((tagId) => ({ commitId: row.id, tagId })));
+    return row;
+  });
 }
 
 /**
@@ -1295,4 +1355,38 @@ export async function bulkRestoreTasks(actor: Actor, input: { taskIds: string[] 
     .where(and(inArray(tasks.id, input.taskIds), eq(tasks.workspaceId, actor.personalWorkspaceId), isNotNull(tasks.deletedAt), gte(tasks.deletedAt, sql`now() - interval '10 minutes'`)))
     .returning({ id: tasks.id });
   return { restored: rows.length };
+}
+
+// ------------------------------------------------------------------ tags
+
+/** Ids of the named tags in a workspace, creating the missing ones. */
+async function tagIds(tx: Tx, workspaceId: string, names: string[]): Promise<string[]> {
+  if (names.length === 0) return [];
+  await tx.insert(tags).values(names.map((name) => ({ workspaceId, name }))).onConflictDoNothing({ target: [tags.workspaceId, tags.name] });
+  const rows = await tx.select({ id: tags.id }).from(tags).where(and(eq(tags.workspaceId, workspaceId), inArray(tags.name, names))).limit(names.length);
+  return rows.map((r) => r.id);
+}
+
+/** Replaces a task's tags (max 10; created by name in the task's workspace). */
+export async function setTaskTags(actor: Actor, input: z.infer<typeof setTaskTagsSchema>): Promise<{ tags: string[] }> {
+  return db.transaction(async (tx) => {
+    const [task] = await tx
+      .select({ id: tasks.id, workspaceId: tasks.workspaceId })
+      .from(tasks)
+      .where(and(eq(tasks.id, input.taskId), isNull(tasks.deletedAt)))
+      .limit(1)
+      .for("update");
+    if (!task) throw new MutationError("not_found", "That task no longer exists.");
+    assertWritable(actor, task.workspaceId);
+    await tx.delete(taskTags).where(eq(taskTags.taskId, task.id));
+    const ids = await tagIds(tx, task.workspaceId, input.tags);
+    if (ids.length) await tx.insert(taskTags).values(ids.map((tagId) => ({ taskId: task.id, tagId })));
+    await auditTask(tx, actor, task.workspaceId, task.id, "task.tagged", { tags: input.tags });
+    return { tags: input.tags };
+  });
+}
+
+/** One audit row per task change (C21): shown as the task's history in its panel. */
+async function auditTask(tx: Tx | typeof db, actor: Actor, workspaceId: string, taskId: string, action: string, metadata?: Record<string, unknown>) {
+  await tx.insert(auditEvents).values({ workspaceId, actorId: actor.id, action, targetType: "task", targetId: taskId, metadata: metadata ?? null });
 }

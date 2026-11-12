@@ -747,6 +747,12 @@ async function main() {
   const left = (await db.select({ id: s.users.id }).from(s.users).where(inArray(s.users.id, [oldDemo, freshDemo, aaravId]))).map((u) => u.id).sort();
   const oldWorkspaces = await db.select({ id: s.workspaces.id }).from(s.workspaces).where(eq(s.workspaces.ownerId, oldDemo));
   record("SE3", "Expired demos are deleted with their workspace; fresh demos and the owner stay", JSON.stringify(left) === JSON.stringify([aaravId, freshDemo].sort()) && oldWorkspaces.length === 0, JSON.stringify(left));
+  const [activeDemo] = [`demo-active-${stamp}`];
+  await db.insert(s.users).values({ id: activeDemo, name: "Demo visitor", email: `${activeDemo}@example.test`, isDemo: true, createdAt: new Date(Date.now() - DEMO_TTL_MS - 60_000) });
+  await db.insert(s.sessions).values({ id: `sess-${stamp}`, userId: activeDemo, token: `tok-${stamp}`, expiresAt: new Date(Date.now() + 3_600_000), updatedAt: new Date() });
+  await pruneDemos();
+  record("SE5", "An old demo still in use (recent session activity) is not pruned", Boolean(await one(db.select({ id: s.users.id }).from(s.users).where(eq(s.users.id, activeDemo)))));
+  await endDemo(activeDemo);
   await endDemo(freshDemo);
   record("SE4", "Ending a demo deletes it", !(await one(db.select({ id: s.users.id }).from(s.users).where(eq(s.users.id, freshDemo)))));
   await db.delete(s.users).where(inArray(s.users.id, [parthId, aaravId]));
