@@ -232,12 +232,17 @@ export function PlatformDemo({ caption }: { caption: string }) {
         look({ x: 0, y: 0 }, 1, 1000);
         await wait(1100);
 
-        // 3. Metrics: open the page and let the cards and numbers land
+        // 3. Metrics: open the page, then glide over every card (no clicks)
         point(at("nav-metrics"), 1100);
         await wait(1200);
         await click();
         setScreen("metrics");
-        await wait(3200);
+        await wait(1100);
+        for (let i = 0; i < METRICS.length && alive; i++) {
+          point(at(`metric-${i}`, 30, 18), i === 0 ? 600 : 260);
+          await wait(i === 0 ? 650 : 300);
+        }
+        await wait(500);
 
         // 4. Board: drag the top Active card into Done
         point(at("nav-board"), 1100);
@@ -534,6 +539,7 @@ function MetricsScreen() {
         {METRICS.map(([name, value, change, formula], i) => (
           <div
             key={name}
+            data-target={`metric-${i}`}
             className={cn("animate-row-in rounded-[20px] p-4", i === 0 ? "bg-accent text-white" : panel)}
             style={{ animationDelay: `${i * 60}ms` }}
           >
