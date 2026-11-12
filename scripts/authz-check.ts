@@ -15,7 +15,7 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../db";
 import * as s from "../db/schema";
-import { getBoard, getCommitDetail, getCommits, getInbox, getObjectives, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
+import { getBoard, getCommitDetail, getEligibleDays, getCommits, getInbox, getObjectives, getProjects, getTaskDetail, getTicker, searchWork } from "../db/queries";
 import { loadActor, MutationError, type Actor } from "../lib/authz";
 import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, importData, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone } from "../lib/mutations";
 import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveProgressSchema, parseQuickCapture, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, importSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema } from "../lib/validation";
@@ -135,6 +135,8 @@ async function main() {
   // Ticker: scoped by workspace and user, so another user's id inside a foreign scope sums nothing
   const xTicker = await getTicker({ workspaceIds: readable(X), userId: parthId }, "UTC");
   record("R10", "Top-bar ticker sums no foreign commits", xTicker.last7 + xTicker.prev7 + xTicker.today === 0, JSON.stringify(xTicker));
+  const eligible = [await getEligibleDays({ workspaceIds: readable(X), userId: outsiderId }, "UTC", 30), await getEligibleDays({ workspaceIds: readable(A), userId: parthId }, "UTC", 30)];
+  record("Q1", "Consistency counts only days since the account began (new: 1, seeded history: 30)", JSON.stringify(eligible) === "[1,30]", JSON.stringify(eligible));
 
   // ------------------------------------------------------------ writes (IDOR)
   let before = await snapshot(parth.task.id);

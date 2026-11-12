@@ -211,6 +211,7 @@ export function demoMetrics(w: DemoWorkspace, days: number): MetricsData {
     commits: daily.reduce((s, d) => s + d.commits, 0),
     tasksCompleted: done.length,
     activeDays: daily.filter((d) => d.commits > 0).length,
+    eligibleDays: days,
     plannedTasks: planned.length,
     plannedCompleted: planned.filter((t) => t.completedAt !== null).length,
     cycleTimesMs: done.filter((t) => t.startedAt !== null).map((t) => t.completedAt! - t.startedAt!),

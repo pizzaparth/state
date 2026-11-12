@@ -13,6 +13,7 @@ import {
   taskTags,
   tasks,
   users,
+  workspaces,
 } from "../schema";
 
 /**
@@ -85,6 +86,25 @@ export async function getDailyExecution(scope: Scope, tz: string, days: number):
     out.push(byDay.get(key) ?? { day: key, commits: 0, execution: 0, tasks: 0, projects: 0 });
   }
   return out;
+}
+
+/**
+ * Eligible days for Consistency: the last `days` local days, but none before the scope
+ * existed (the earlier of its workspace's creation and its first commit). Today counts.
+ * A new account therefore starts at 1 eligible day, not the whole period.
+ */
+export async function getEligibleDays(scope: Scope, tz: string, days: number): Promise<number> {
+  if (empty(scope)) return days;
+  const firstCommit = db
+    .select({ at: sql`min(${commits.createdAt})` })
+    .from(commits)
+    .where(and(...commitWhere(scope)));
+  const created = db.select({ at: sql`min(${workspaces.createdAt})` }).from(workspaces).where(inArray(workspaces.id, scope.workspaceIds));
+  const [row] = await db.execute<{ n: number | null }>(
+    sql`select ((now() at time zone ${tz})::date - (least((${created}), (${firstCommit})) at time zone ${tz})::date + 1)::int as n`
+  ).then((r) => ("rows" in r ? (r.rows as { n: number | null }[]) : (r as unknown as { n: number | null }[])));
+  const n = row?.n;
+  return n === null || n === undefined ? days : Math.max(1, Math.min(days, n));
 }
 
 // ------------------------------------------------------------------ commits
@@ -173,14 +193,17 @@ export interface Ticker {
   last7: number;
   prev7: number;
   activeDays7: number;
+  /** Days of the last 7 the account existed (Consistency denominator). */
+  eligible7: number;
 }
 
 /** The shell's stat strip: one pass over the viewer's last 14 local days of commits. */
 export async function getTicker(scope: Scope & { userId: string }, tz: string): Promise<Ticker> {
-  if (empty(scope)) return { today: 0, last7: 0, prev7: 0, activeDays7: 0 };
+  if (empty(scope)) return { today: 0, last7: 0, prev7: 0, activeDays7: 0, eligible7: 7 };
   const day0 = localDayStart(tz, 0);
   const day6 = localDayStart(tz, 6);
-  const [row] = await db
+  const [[row], eligible7] = await Promise.all([
+    db
     .select({
       today: sql<number>`coalesce(sum(${commits.executionValue}) filter (where ${commits.createdAt} >= ${day0}), 0)::int`,
       last7: sql<number>`coalesce(sum(${commits.executionValue}) filter (where ${commits.createdAt} >= ${day6}), 0)::int`,
@@ -188,8 +211,10 @@ export async function getTicker(scope: Scope & { userId: string }, tz: string): 
       activeDays7: sql<number>`count(distinct (${commits.createdAt} at time zone ${tz})::date) filter (where ${commits.createdAt} >= ${day6})::int`,
     })
     .from(commits)
-    .where(and(...commitWhere(scope), gte(commits.createdAt, localDayStart(tz, 13))));
-  return row ?? { today: 0, last7: 0, prev7: 0, activeDays7: 0 };
+    .where(and(...commitWhere(scope), gte(commits.createdAt, localDayStart(tz, 13)))),
+    getEligibleDays(scope, tz, 7),
+  ]);
+  return { ...(row ?? { today: 0, last7: 0, prev7: 0, activeDays7: 0 }), eligible7 };
 }
 
 // ------------------------------------------------------------------ tasks
@@ -420,6 +445,8 @@ export interface MetricsData {
   commits: number;
   tasksCompleted: number;
   activeDays: number;
+  /** Days of the period the account existed, today included (Consistency denominator). */
+  eligibleDays: number;
   plannedTasks: number;
   plannedCompleted: number;
   cycleTimesMs: number[];
@@ -430,12 +457,12 @@ export interface MetricsData {
 export async function getMetrics(scope: Scope, tz: string, days: number): Promise<MetricsData> {
   const daily = await getDailyExecution(scope, tz, days);
   if (empty(scope)) {
-    return { days, execution: 0, previousExecution: 0, commits: 0, tasksCompleted: 0, activeDays: 0, plannedTasks: 0, plannedCompleted: 0, cycleTimesMs: [], daily, byProject: [] };
+    return { days, execution: 0, previousExecution: 0, commits: 0, tasksCompleted: 0, activeDays: 0, eligibleDays: days, plannedTasks: 0, plannedCompleted: 0, cycleTimesMs: [], daily, byProject: [] };
   }
   const start = localDayStart(tz, days - 1);
   const previousStart = localDayStart(tz, 2 * days - 1);
 
-  const [[previous], cycle, [planned], byProject] = await Promise.all([
+  const [[previous], cycle, [planned], byProject, eligibleDays] = await Promise.all([
     db
       .select({ execution: sql<number>`coalesce(sum(${commits.executionValue}), 0)::int` })
       .from(commits)
@@ -457,11 +484,14 @@ export async function getMetrics(scope: Scope, tz: string, days: number): Promis
       .leftJoin(projects, eq(projects.id, commits.projectId))
       .where(and(...commitWhere(scope), gte(commits.createdAt, start)))
       .groupBy(sql`1`)
-      .orderBy(sql`2 desc`),
+      .orderBy(sql`2 desc`)
+      .limit(50),
+    getEligibleDays(scope, tz, days),
   ]);
 
   return {
     days,
+    eligibleDays,
     execution: daily.reduce((s, d) => s + d.execution, 0),
     previousExecution: previous.execution,
     commits: daily.reduce((s, d) => s + d.commits, 0),

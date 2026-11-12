@@ -1,5 +1,5 @@
 import * as React from "react";
-import { getCommits, getDailyExecution } from "@/db/queries";
+import { getCommits, getDailyExecution, getEligibleDays } from "@/db/queries";
 import { getViewer } from "@/lib/viewer";
 import { formatDate, formatNumber } from "@/lib/format";
 import { EmptyState, Measure, PageHeader, Panel, SegmentedLinks } from "@/components/app/primitives";
@@ -18,7 +18,11 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pag
   const range: RangeKey = params.range && params.range in RANGES ? (params.range as RangeKey) : "90d";
   const viewer = await getViewer();
   const scope = { workspaceIds: viewer.workspaceIds, userId: viewer.id };
-  const [days, recent] = await Promise.all([getDailyExecution(scope, viewer.tz, RANGES[range]), getCommits(scope, { sinceDays: 7, tz: viewer.tz })]);
+  const [days, recent, eligible] = await Promise.all([
+    getDailyExecution(scope, viewer.tz, RANGES[range]),
+    getCommits(scope, { sinceDays: 7, tz: viewer.tz }),
+    getEligibleDays(scope, viewer.tz, RANGES[range]),
+  ]);
 
   const execution = days.reduce((s, d) => s + d.execution, 0);
   const commits = days.reduce((s, d) => s + d.commits, 0);
@@ -45,7 +49,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pag
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <Measure label="Execution" value={formatNumber(execution)} formula="Σ commits" />
         <Measure label="Commits" value={formatNumber(commits)} formula="tasks + manual" />
-        <Measure label="Active days" value={`${active}/${days.length}`} formula="days with ≥1 commit" />
+        <Measure label="Active days" value={`${active}/${eligible}`} formula="days with ≥1 commit ÷ eligible days" />
         <Measure label="Highest day" value={formatNumber(best?.execution ?? 0)} formula={best?.execution ? `on ${formatDate(new Date(`${best.day}T12:00:00Z`), "UTC", { weekday: "short", day: "numeric", month: "short" })}` : "No execution in range"} />
       </div>
 

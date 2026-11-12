@@ -130,7 +130,7 @@ export function MetricsReport({
   const velocity = m.execution / days;
   const throughput = m.tasksCompleted / days;
   const completion = calculateCompletionRate(m.plannedCompleted, m.plannedTasks);
-  const consistency = calculateConsistency(m.activeDays, days);
+  const consistency = calculateConsistency(m.activeDays, m.eligibleDays);
   const prevActive = prev.filter((d) => d.commits > 0).length;
   const curStart = cur[0]?.day ?? "";
   const cycleCur = s.cycles.filter((c) => c.day >= curStart).map((c) => c.ms);
@@ -153,7 +153,7 @@ export function MetricsReport({
     { label: "CV", value: sd === null || avgDay === 0 ? "—" : `${formatNumber((sd / avgDay) * 100)}%`, formula: "σ ÷ mean; lower = steadier" },
     { label: "P90 day", value: formatNumber(percentile(exec, 90) ?? 0), formula: "90th percentile day" },
     { label: "Peak day", value: exec[maxIndex] ? `+${exec[maxIndex]}` : "—", formula: exec[maxIndex] ? dayText(cur[maxIndex].day, { day: "numeric", month: "short", year: "numeric" }) : "max daily execution" },
-    { label: "Zero days", value: formatNumber(exec.filter((v) => v === 0).length), formula: `of ${days} days` },
+    { label: "Zero days", value: formatNumber(exec.slice(-m.eligibleDays).filter((v) => v === 0).length), formula: `of ${m.eligibleDays} eligible days` },
     { label: "Streak", value: `${current}d`, formula: `current · longest ${longest}d` },
     { label: "Trend", value: trend ? `${signed(trend.slope, 2)}/d` : "—", formula: "OLS slope, execution per day" },
     { label: "Trend R²", value: trend ? formatNumber(trend.r2, 2) : "—", formula: "share of variance the trend explains" },
@@ -266,7 +266,7 @@ export function MetricsReport({
         <Measure
           label="Consistency"
           value={`${formatNumber(consistency)}%`}
-          formula={`${m.activeDays} ÷ ${days} days active`}
+          formula={`${m.activeDays} ÷ ${m.eligibleDays} eligible days`}
           spark={spark(activeSeries)}
           delta={<Delta pct={change(m.activeDays, prevActive)} days={days} />}
         />
@@ -359,7 +359,7 @@ export function MetricsReport({
           </div>
 
           {days >= 30 && (
-            <Panel title="Calendar" aside={`${m.activeDays}/${days} active`}>
+            <Panel title="Calendar" aside={`${m.activeDays}/${m.eligibleDays} active`}>
               <ExecutionGraph days={cur} />
             </Panel>
           )}
@@ -530,7 +530,7 @@ export function MetricsReport({
                           </td>
                           <td className="px-2 py-2.5 text-right">{p.commits}</td>
                           <td className="px-2 py-2.5 text-right text-[#52525B]">
-                            {p.activeDays}/{days}
+                            {p.activeDays}/{m.eligibleDays}
                           </td>
                         </tr>
                       );

@@ -36,7 +36,7 @@ export interface ShellData {
   inboxCount: number;
   projects: { id: string; name: string; href: string }[];
   dateLabel: string;
-  ticker: { today: number; last7: number; prev7: number; activeDays7: number };
+  ticker: { today: number; last7: number; prev7: number; activeDays7: number; eligible7: number };
   /** Set for a throwaway demo session (the user id); null for the owner. */
   demoUserId: string | null;
   /** The viewer's saved time zone. */
@@ -258,7 +258,7 @@ function TickerStrip({ ticker, dateLabel }: { ticker: ShellData["ticker"]; dateL
       className: "hidden sm:flex",
     },
     { label: "Vel", value: <CountUp value={`${(ticker.last7 / 7).toFixed(1)}/d`} />, title: "Velocity: last 7 days' execution ÷ 7", className: "hidden md:flex" },
-    { label: "Active", value: <CountUp value={`${ticker.activeDays7}/7`} />, title: "Days with at least one commit, last 7 days", className: "hidden xl:flex" },
+    { label: "Active", value: <CountUp value={`${ticker.activeDays7}/${ticker.eligible7}`} />, title: `Days with at least one commit, of the last ${ticker.eligible7} eligible days`, className: "hidden xl:flex" },
   ];
   return (
     <dl aria-label="Your execution, last 7 days" className="flex min-w-0 items-center gap-x-5 overflow-hidden font-mono text-[13px] uppercase tabular-nums">
