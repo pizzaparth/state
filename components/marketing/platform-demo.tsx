@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Activity, BarChart3, Calendar, Check, FolderKanban, History, Inbox, Plus, Search, Settings, User } from "lucide-react";
+import { Activity, BarChart3, Calendar, FolderKanban, History, Inbox, Plus, Search, Settings, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AUTHOR } from "@/lib/site";
 import { Sparkline } from "@/components/app/charts";
@@ -9,9 +9,9 @@ import { CountUp } from "@/components/app/count-up";
 
 /**
  * The hero picture: State's real app shell in its white theme, drawn at 1280 × 800 and
- * scaled to fit. A scripted cursor uses it on a loop: it captures a task, finishes it,
- * opens Metrics and drags a card on the board; the camera zooms in while typing and on
- * each task action.
+ * scaled to fit. A scripted cursor uses it on a loop: it captures a task, opens Metrics
+ * while the camera tours each card, and drags a card on the board. The camera zooms in
+ * while typing and on each action.
  * It is a picture: hidden from assistive tech, described by the caption, not interactive.
  * It runs only while on screen; reduced motion shows the still Today screen.
  */
@@ -126,8 +126,6 @@ export function PlatformDemo({ caption }: { caption: string }) {
   const [camera, setCamera] = React.useState({ s: 1, x: 0, y: 0, ms: 900 });
   const [typed, setTyped] = React.useState("");
   const [active, setActive] = React.useState<Task[]>(ACTIVE);
-  const [done, setDone] = React.useState<Task[]>([]);
-  const [execution, setExecution] = React.useState(20);
   const [moved, setMoved] = React.useState(false);
   const [drag, setDrag] = React.useState<{ x: number; y: number; ms: number } | null>(null);
   const [date, setDate] = React.useState("");
@@ -182,8 +180,6 @@ export function PlatformDemo({ caption }: { caption: string }) {
         // The morning's Today screen
         setScreen("today");
         setActive(ACTIVE);
-        setDone([]);
-        setExecution(20);
         setTyped("");
         setMoved(false);
         setDrag(null);
@@ -212,39 +208,20 @@ export function PlatformDemo({ caption }: { caption: string }) {
         look({ x: 0, y: 0 }, 1, 1000);
         await wait(1200);
 
-        // 2. Finish it: tick the new task; its weight lands on today's execution
-        point(at("check-n"), 1000);
-        look(at("active-panel"), 1.45, 1000);
-        await wait(1150);
-        await click();
-        setActive(ACTIVE);
-        setDone([NEW_TASK]);
-        await wait(700);
-        look(at("execution"), 1.5, 1000);
-        point(at("execution", 90, 40), 1000);
-        await wait(1000);
-        // Count the weight in, one point at a time
-        for (let v = 21; v <= 24 && alive; v++) {
-          setExecution(v);
-          await wait(160);
-        }
-        await wait(1300);
-        look({ x: 0, y: 0 }, 1, 1000);
-        await wait(1100);
-
-        // 3. Metrics: open the page, then glide over every card (no clicks)
+        // 2. Metrics: the camera tours every card, then pulls back
         point(at("nav-metrics"), 1100);
         await wait(1200);
         await click();
         setScreen("metrics");
-        await wait(1100);
+        await wait(1200);
         for (let i = 0; i < METRICS.length && alive; i++) {
-          point(at(`metric-${i}`, 30, 18), i === 0 ? 600 : 260);
-          await wait(i === 0 ? 650 : 300);
+          look(at(`metric-${i}`), 1.9, i === 0 ? 1000 : 600);
+          await wait(i === 0 ? 1200 : 750);
         }
-        await wait(500);
+        look({ x: 0, y: 0 }, 1, 1000);
+        await wait(1200);
 
-        // 4. Board: drag the top Active card into Done
+        // 3. Board: drag the top Active card into Done
         point(at("nav-board"), 1100);
         await wait(1200);
         await click();
@@ -345,7 +322,7 @@ export function PlatformDemo({ caption }: { caption: string }) {
                 <div className="flex h-12 items-center justify-between">
                   <div className={cn(tick, "flex items-center gap-5 text-[#52525B]")}>
                     <span>
-                      Today <b className="text-[#0A0A0A]">+{execution}</b>
+                      Today <b className="text-[#0A0A0A]">+20</b>
                     </span>
                     <span>
                       7D <b className="text-[#0A0A0A]">39 ▲26%</b>
@@ -372,7 +349,7 @@ export function PlatformDemo({ caption }: { caption: string }) {
 
                 <div key={screen} className="animate-page-in mt-4 min-h-0 flex-1 [animation-duration:500ms]">
                   {screen === "today" && (
-                    <TodayScreen date={date} typed={typed} active={active} done={done} execution={execution} />
+                    <TodayScreen date={date} typed={typed} active={active} />
                   )}
                   {screen === "metrics" && <MetricsScreen />}
                   {screen === "board" && <BoardScreen cols={boardCols} moved={moved} drag={drag} ease={ease} />}
@@ -404,7 +381,7 @@ export function PlatformDemo({ caption }: { caption: string }) {
   );
 }
 
-function TodayScreen({ date, typed, active, done, execution }: { date: string; typed: string; active: Task[]; done: Task[]; execution: number }) {
+function TodayScreen({ date, typed, active }: { date: string; typed: string; active: Task[] }) {
   return (
     <>
       <p className={cn(tick, "text-accent")} suppressHydrationWarning>
@@ -412,15 +389,13 @@ function TodayScreen({ date, typed, active, done, execution }: { date: string; t
       </p>
       <p className="text-[56px] font-semibold leading-[1] tracking-[-0.045em]">Today</p>
       <div className="mt-5 grid grid-cols-[300px_minmax(0,1fr)] gap-4">
-        <div data-target="execution" className="rounded-[24px] bg-accent p-5 text-white">
+        <div className="rounded-[24px] bg-accent p-5 text-white">
           <p className={tick}>Execution today</p>
-          <p key={execution} className={cn("mt-3 text-[88px] font-semibold leading-[0.85] tracking-[-0.05em] tabular-nums", execution > 20 && "tick-pop")}>
-            +{execution}
-          </p>
+          <p className="mt-3 text-[88px] font-semibold leading-[0.85] tracking-[-0.05em] tabular-nums">+20</p>
           <div className="mt-5 grid grid-cols-3 gap-2 border-t border-white/30 pt-3 font-mono">
             {[
-              ["Commits", String(3 + done.length)],
-              ["Done", String(1 + done.length)],
+              ["Commits", "3"],
+              ["Done", "1"],
               ["7D avg", "5.6"],
             ].map(([k, v]) => (
               <div key={k}>
@@ -463,14 +438,14 @@ function TodayScreen({ date, typed, active, done, execution }: { date: string; t
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-4">
-        <div data-target="active-panel" className={cn(panel, "p-5")}>
+        <div className={cn(panel, "p-5")}>
           <p className={cn(tick, "flex justify-between text-[#27272A]")}>
             Active <span className="text-[#71717A]">{active.length}</span>
           </p>
           <ul className="mt-2">
             {active.map((t) => (
               <li key={t.id} className={cn("flex items-center gap-3 py-2 text-[14px]", t.id === "n" && "animate-row-in")}>
-                <span data-target={`check-${t.id}`} className="size-3 rounded-full border border-black/20 bg-white" />
+                <span className="size-3 rounded-full border border-black/20 bg-white" />
                 <span className="flex-1">
                   <span className="block font-medium">{t.title}</span>
                   <span className="text-[12px] text-[#71717A]">{t.project}</span>
@@ -484,14 +459,14 @@ function TodayScreen({ date, typed, active, done, execution }: { date: string; t
         </div>
         <div className={cn(panel, "p-5")}>
           <p className={cn(tick, "flex justify-between text-[#27272A]")}>
-            Today’s commits <span className="text-[#71717A]">+{execution}</span>
+            Today’s commits <span className="text-[#71717A]">+20</span>
           </p>
           <ul className="mt-2">
-            {[...done.map((t) => ({ time: "Now", title: t.title, project: t.project, weight: t.weight, fresh: true })), ...COMMITS.map((c) => ({ ...c, fresh: false }))].map((c) => (
-              <li key={c.title} className={cn("flex items-center gap-3 py-[7px] text-[14px]", c.fresh && "animate-row-in")}>
+            {COMMITS.map((c) => (
+              <li key={c.title} className="flex items-center gap-3 py-[7px] text-[14px]">
                 <span className="w-11 font-mono text-[12px] text-[#71717A]">{c.time}</span>
-                <span className={cn("grid size-4 place-items-center rounded-full", c.fresh ? "mi-pop bg-accent text-white" : "")}>
-                  {c.fresh ? <Check className="size-2.5" /> : <span className="size-2 rounded-full bg-accent" />}
+                <span className="grid size-4 place-items-center">
+                  <span className="size-2 rounded-full bg-accent" />
                 </span>
                 <span className="flex-1">
                   <span className="block font-medium">{c.title}</span>

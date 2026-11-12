@@ -535,10 +535,3 @@ textarea {
   50% { transform: scale(1.06); }
 }
 .live-breathe { animation: live-breathe 3s ease-in-out infinite; transform-origin: left center; }
-
-/* A number that just changed settles back from slightly larger */
-@keyframes tick-pop {
-  from { transform: scale(1.12); }
-  to { transform: scale(1); }
-}
-.tick-pop { animation: tick-pop 220ms var(--ease-restrained) both; transform-origin: left bottom; }
