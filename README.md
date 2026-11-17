@@ -74,7 +74,7 @@ git clone https://github.com/pizzaparth/state.git
 cd state
 npm install
 cp .env.example .env      # set DATABASE_URL, BETTER_AUTH_SECRET and OWNER_CODE
-npm run db:migrate
+npm run db:migrate         # seed dummy data with your login info or code.
 npm run dev
 ```
 
