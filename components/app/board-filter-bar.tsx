@@ -4,12 +4,10 @@ import * as React from "react";
 import { Search, X } from "lucide-react";
 import { DUE_FILTERS, isFiltered, type BoardFilter, type DueFilter } from "@/lib/board-filter";
 import { PRIORITIES } from "@/lib/validation";
-import { cn } from "@/lib/utils";
-import { TICK } from "@/lib/type";
 
 const PRIORITY_LABEL: Record<string, string> = { none: "No priority", low: "Low", medium: "Medium", high: "High", critical: "Critical" };
 
-/** Project, priority, tag, due and text filters for the board. `F` focuses the text field. */
+/** Project, priority, tag, due and text filters for the board, inside its toolbar (kanban.tsx). `F` focuses the text field. */
 export function BoardFilterBar({
   filter,
   onChange,
@@ -24,11 +22,11 @@ export function BoardFilterBar({
   textRef: React.RefObject<HTMLInputElement | null>;
 }) {
   const set = <K extends keyof BoardFilter>(key: K, value: BoardFilter[K] | "") => onChange({ ...filter, [key]: value || undefined });
-  const select = "app-select h-10 w-auto min-w-0 max-w-[11rem] rounded-full pl-3 text-[15px]";
+  // Phones: search, then selects two by two; tablets: four in a row; wide: one line with sort
+  const select = "app-select h-10 w-full min-w-0 rounded-full pl-3 text-[15px] xl:w-auto xl:max-w-[11rem]";
   return (
-    <div role="search" aria-label="Filter the board" className="app-panel mb-5 flex flex-wrap items-center gap-2 rounded-[20px] p-2">
-      <span className={cn(TICK, "px-2 text-[11px] text-[#71717A]")}>Filter</span>
-      <label className="app-field flex h-10 min-w-0 flex-1 basis-40 items-center gap-2 rounded-full px-3">
+    <div role="search" aria-label="Filter the board" className="grid min-w-0 flex-[1_1_46rem] grid-cols-2 gap-2 md:grid-cols-4 xl:flex xl:items-center">
+      <label className="app-field col-span-full flex h-10 min-w-0 items-center gap-2 rounded-full px-3 xl:flex-[1_1_12rem]">
         <Search aria-hidden="true" className="size-4 shrink-0 text-[#71717A]" />
         <span className="sr-only">Text</span>
         <input
@@ -88,7 +86,7 @@ export function BoardFilterBar({
         ))}
       </select>
       {isFiltered(filter) && (
-        <button type="button" onClick={() => onChange({})} className="mi-press inline-flex h-10 items-center gap-1 rounded-full px-3 text-[15px] text-[#52525B] hover:bg-black/[0.05] hover:text-[#0A0A0A]">
+        <button type="button" onClick={() => onChange({})} className="mi-press inline-flex h-10 items-center justify-center gap-1 rounded-full px-3 text-[15px] text-[#52525B] hover:bg-black/[0.05] hover:text-[#0A0A0A]">
           <X aria-hidden="true" className="size-4" />
           Clear
         </button>

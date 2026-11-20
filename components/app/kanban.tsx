@@ -497,9 +497,10 @@ export function Kanban({
       }}
     >
       {initialSort && (
-        <div className="md:flex md:flex-wrap md:items-start md:gap-x-3 [&>*]:md:flex-1">
-          <BoardSortBar sort={sort} onChange={changeSort} />
+        // One toolbar: filters fill the row, sort sits at its end
+        <div className="app-panel mb-5 flex flex-wrap items-center gap-2 rounded-[20px] p-2">
           <BoardFilterBar filter={filter} onChange={changeFilter} projects={projects} tags={tags} textRef={filterRef} />
+          <BoardSortBar sort={sort} onChange={changeSort} />
         </div>
       )}
 

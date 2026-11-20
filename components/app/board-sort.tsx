@@ -13,6 +13,7 @@ const iconBtn =
 /**
  * Sort keys for the board, in priority order: each key flips direction, moves earlier or
  * is removed; "Sort by" adds one of the unused fields. Empty means manual (drag) order.
+ * Sits at the end of the board's toolbar (kanban.tsx), after a hairline.
  */
 export function BoardSortBar({ sort, onChange }: { sort: SortKey[]; onChange: (next: SortKey[]) => void }) {
   const unused = SORT_FIELD_NAMES.filter((f) => !sort.some((k) => k.field === f));
@@ -22,9 +23,9 @@ export function BoardSortBar({ sort, onChange }: { sort: SortKey[]; onChange: (n
   const earlier = (i: number) => onChange(sort.map((k, j) => (j === i - 1 ? sort[i] : j === i ? sort[i - 1] : k)));
 
   return (
-    <div className="app-panel mb-5 rounded-[20px] p-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className={cn(TICK, "px-2 text-[11px] text-[#71717A]")}>Sort</span>
+    <>
+      <div className="flex w-full min-w-0 flex-wrap items-center gap-2 xl:ml-auto xl:w-auto xl:justify-end xl:pl-2">
+        <span className={cn(TICK, "px-1 text-[11px] text-[#71717A]")}>Sort</span>
         {sort.length === 0 && <span className="px-1 text-[15px] text-[#52525B]">Manual</span>}
         <ol className="contents">
           {sort.map((key, i) => {
@@ -89,16 +90,16 @@ export function BoardSortBar({ sort, onChange }: { sort: SortKey[]; onChange: (n
           <button
             type="button"
             onClick={() => onChange([])}
-            className="mi-press ml-auto inline-flex h-10 items-center rounded-full px-4 text-[15px] font-medium text-[#52525B] transition-colors duration-150 hover:bg-black/[0.05] hover:text-[#0A0A0A] focus-visible:outline-2"
+            className="mi-press inline-flex h-10 items-center rounded-full px-3 text-[15px] font-medium text-[#52525B] transition-colors duration-150 hover:bg-black/[0.05] hover:text-[#0A0A0A] focus-visible:outline-2"
           >
             Manual order
           </button>
         )}
       </div>
-      {sort.length > 0 && <p className="mt-1.5 px-2 font-mono text-[12px] text-[#71717A]">drag moves across columns · order follows sort</p>}
+      {sort.length > 0 && <p className="basis-full px-2 font-mono text-[12px] text-[#71717A] xl:text-right">drag moves across columns · order follows sort</p>}
       <p aria-live="polite" className="sr-only">
         {describeBoardSort(sort)}
       </p>
-    </div>
+    </>
   );
 }
