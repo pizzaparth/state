@@ -19,7 +19,7 @@ mutations. CI (`.github/workflows/ci.yml`) runs them on every push.
 createdb state_security_test
 export DATABASE_URL=postgresql://$USER@localhost:5432/state_security_test
 npm run db:migrate
-npx tsx scripts/seed.ts            # demo tenants; refuses non-local databases
+export OWNER_CODE=local-only-owner-code   # the suite signs in as the owner
 
 npm run authz:check                # BOLA/IDOR suite against the real query and mutation code
 

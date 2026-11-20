@@ -52,7 +52,6 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run db:migrate
-      - run: npx tsx scripts/seed.ts
       - run: npm run authz:check
       - run: npm run build
       - name: Black-box security suite
