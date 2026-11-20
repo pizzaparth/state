@@ -18,13 +18,16 @@ It is not a product for sale. There are no payments, no pricing, no sign-up, no 
 | Who | How | What is kept |
 | :--- | :--- | :--- |
 | **Owner** (Parth) | `/login` with the access code in `OWNER_CODE` | Everything, permanently. The session ends when the browser closes. |
-| **Anyone else** (recruiters, visitors) | **Take a demo** (`/demo`) | Nothing. A throwaway workspace with 60 days of sample data. It survives a refresh and is deleted on sign-out, on tab close, or after 6 hours. |
+| **Anyone else** (recruiters, visitors) | **Take a demo** (`/demo`) | Nothing on the server. A throwaway workspace with 60 days of sample data, kept in the visitor's browser. It survives a refresh and is deleted on sign-out or tab close. |
 
-How the demo is cleaned up (`lib/demo/session.ts`, `lib/demo/tab.ts`):
+The demo never touches the database. It runs the product's own schema, queries and mutations on [PGlite](https://pglite.dev) (Postgres compiled to WebAssembly) in a Web Worker, stored in IndexedDB:
 
-- **Sign-out / End demo:** the demo account is deleted at once; its workspace, tasks, commits and sessions cascade.
-- **Tab closed:** the tab keeps a `sessionStorage` marker. A later visit without the marker asks other open tabs over a `BroadcastChannel`; if none holds the demo, it is deleted.
-- **Abandoned:** demo accounts older than 6 hours are pruned whenever a new demo starts.
+- **How:** `#db` (package.json `imports`) resolves to Neon on the server and to PGlite in the browser (`db/browser.ts`). Each page is a `load` + `View` pair (`components/app/pages/`): the owner's run on the server (`lib/pages/render.tsx`), a demo's in the browser (`components/app/demo/`). Writes share one table of schemas and mutations (`lib/actions/table.ts`).
+- **Start:** `/demo` sets a `state_demo` cookie and a tab marker; the first page builds the database from `db/migrations` and seeds it (`lib/demo/setup.ts`). The cookie only tells the server to send the page shell.
+- **Refresh:** the database is reopened from IndexedDB. Writes wait until they are stored, so a refresh never loses one.
+- **Several tabs:** they share one Postgres (PGliteWorker elects one tab to run it).
+- **Sign-out / End demo:** the cookie, marker and database are deleted (`lib/demo/local.ts`).
+- **Tab closed:** a later visit without the marker asks other open tabs over a `BroadcastChannel` (`lib/demo/tab.ts`); if none holds the demo, it is deleted. Databases of earlier demos go when the next demo starts.
 
 ---
 
@@ -58,7 +61,7 @@ app/
 └── api/              export, import, search, health
 lib/
 ├── auth/             better-auth (sessions only) and the owner account
-├── demo/             demo sessions, tab marker, sample data, landing-page demo data
+├── demo/             in-browser demo (PGlite), its lifetime, tab marker, sample data, landing-page demo data
 ├── mutations.ts      every product write (re-checks workspace ownership)
 └── validation/       strict Zod schemas and the quick-capture parser
 db/                   Drizzle schema, migrations and queries

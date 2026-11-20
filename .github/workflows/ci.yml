@@ -31,6 +31,8 @@ jobs:
       # Disposable CI database and throwaway secret; no production credentials in CI
       DATABASE_URL: postgresql://state:state@localhost:5432/state_ci_test
       BETTER_AUTH_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
+      # Throwaway owner code: the security suite signs in as the owner (demos have no server session)
+      OWNER_CODE: ci-only-owner-code-not-used-anywhere-else
       BETTER_AUTH_URL: http://localhost:3123
       NEXT_PUBLIC_APP_URL: http://localhost:3123
       # Emails land here as JSON so the suite can follow verification and reset links

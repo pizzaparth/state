@@ -6,25 +6,47 @@ import { Download, Loader2, Upload } from "lucide-react";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { TICK } from "@/lib/type";
+import { demoRuntime } from "@/lib/demo/runtime";
 
 const EXPORTS = [
-  { href: "/api/export?format=json", label: "All · JSON" },
-  { href: "/api/export?format=csv&dataset=tasks", label: "Tasks · CSV" },
-  { href: "/api/export?format=csv&dataset=commits", label: "Commits · CSV" },
-  { href: "/api/export?format=csv&dataset=projects", label: "Projects · CSV" },
+  { href: "/api/export?format=json", label: "All · JSON", query: { format: "json" } },
+  { href: "/api/export?format=csv&dataset=tasks", label: "Tasks · CSV", query: { format: "csv", dataset: "tasks" } },
+  { href: "/api/export?format=csv&dataset=commits", label: "Commits · CSV", query: { format: "csv", dataset: "commits" } },
+  { href: "/api/export?format=csv&dataset=projects", label: "Projects · CSV", query: { format: "csv", dataset: "projects" } },
 ] as const;
+
+/** A demo's data is in this browser: build the file here and save it. */
+async function downloadDemoExport(query: (typeof EXPORTS)[number]["query"]) {
+  const { demoExport } = await import("@/lib/demo/api");
+  const file = await demoExport(query);
+  const url = URL.createObjectURL(new Blob([file.body], { type: file.type }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = file.name;
+  a.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
 
 const MAX_BYTES = 4 * 1024 * 1024;
 
 const button = "app-btn inline-flex h-10 items-center gap-2 rounded-[12px] px-4 text-base font-medium disabled:opacity-70";
 
-/** Export downloads (plain links: the server sets the file name). */
+/** Export downloads (plain links: the server sets the file name; a demo builds the file in the browser). */
 export function ExportLinks() {
   return (
     <ul className="flex flex-wrap gap-2">
       {EXPORTS.map((e) => (
         <li key={e.href}>
-          <a href={e.href} download className={button}>
+          <a
+            href={e.href}
+            download
+            className={button}
+            onClick={(event) => {
+              if (!demoRuntime()) return;
+              event.preventDefault();
+              void downloadDemoExport(e.query);
+            }}
+          >
             <Download className="size-4" aria-hidden="true" />
             {e.label}
           </a>
@@ -66,6 +88,10 @@ export function ImportForm() {
   const [pending, setPending] = React.useState<"preview" | "import" | null>(null);
 
   const send = async (f: File, dry: boolean) => {
+    if (demoRuntime()) {
+      const { demoImport } = await import("@/lib/demo/api");
+      return demoImport(await f.text(), contentType(f.name), dry);
+    }
     const response = await fetch(`/api/import${dry ? "?dry=1" : ""}`, { method: "POST", headers: { "content-type": contentType(f.name) }, body: await f.text() });
     return { ok: response.ok, body: (await response.json().catch(() => ({}))) as { error?: string; errors?: string[]; result?: ImportResult; kind?: string } };
   };

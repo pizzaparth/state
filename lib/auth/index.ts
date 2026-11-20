@@ -5,10 +5,11 @@ import { db } from "@/db";
 import * as schema from "@/db/schema";
 
 /**
- * Sessions only. Nobody signs up: the owner account and demo accounts are created on the
- * server (lib/auth/owner.ts, lib/demo/session.ts), which then signs them in through
- * signInEmail with rememberMe: false. That gives a browser-session cookie (gone when the
- * browser closes) and a server session that expires after one day.
+ * Sessions only, for the owner. Nobody signs up: the owner account is created on the
+ * server (lib/auth/owner.ts), which then signs it in through signInEmail with
+ * rememberMe: false. That gives a browser-session cookie (gone when the browser closes)
+ * and a server session that expires after one day. Demos have no session: they run in
+ * the visitor's browser (lib/demo/local.ts).
  *
  * No email, password reset, verification or social sign-in exists.
  */
@@ -36,7 +37,7 @@ export const auth = betterAuth({
     updateAge: 60 * 60,
     // Signed copy of the session in a cookie, so page renders skip the session lookup.
     // The session token cookie is still required, sign-out clears both, and getViewer()
-    // still loads the user row, so a deleted demo account is caught on its next request.
+    // still loads the user row, so a deleted account is caught on its next request.
     cookieCache: { enabled: true, maxAge: 60 * 60 },
   },
   // Per-IP limits, stored in Postgres so they hold across serverless instances. The IP

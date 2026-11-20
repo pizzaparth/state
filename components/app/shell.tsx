@@ -33,7 +33,6 @@ import { CHANNEL, saveStore } from "@/lib/save-state";
 import { nextMidnight } from "@/lib/tz";
 import { setShellLocale } from "@/lib/locale";
 import { CountUp } from "./count-up";
-import { DemoGuard } from "./demo-guard";
 import { ParallaxBackdrop } from "@/components/motion/parallax";
 import { SignOutButton } from "./sign-out-button";
 import { NoticeProvider } from "./notice";
@@ -48,8 +47,8 @@ export interface ShellData {
   projects: { id: string; name: string; slug: string; href: string }[];
   dateLabel: string;
   ticker: { today: number; last7: number; prev7: number; activeDays7: number; eligible7: number; prior7: number };
-  /** Set for a throwaway demo session (the user id); null for the owner. */
-  demoUserId: string | null;
+  /** Set for a throwaway demo (its id, lib/demo/local.ts); null for the owner. */
+  demoId: string | null;
   /** The viewer's saved time zone. */
   tz: string;
   /** Sidebar shown as an icon rail (cookie, so the server renders it right). */
@@ -215,8 +214,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
     <MotionConfig reducedMotion="user">
       <NoticeProvider>
         <ShellContext.Provider value={{ openPalette: () => setPaletteOpen(true), openCommit: () => openCommit(), openCapture: () => setCaptureOpen(true) }}>
-          {data.demoUserId && <DemoGuard userId={data.demoUserId} />}
-          <TimezoneCheck tz={data.tz} demo={Boolean(data.demoUserId)} />
+          <TimezoneCheck tz={data.tz} demo={Boolean(data.demoId)} />
           {data.motion && <ParallaxBackdrop scroller="#content" tone="light" />}
           <div className="relative z-10 flex h-[100dvh] w-full overflow-hidden text-[#0A0A0A]">
             <aside className={cn("hidden shrink-0 p-3 lg:block", collapsed ? "w-[5.25rem]" : "w-64")}>
@@ -269,12 +267,12 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
 
               <main id="content" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pb-16">
                 <div className="mx-auto max-w-6xl">
-                  {data.demoUserId && (
+                  {data.demoId && (
                     <div role="status" className="app-accent-panel mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-[16px] px-4 py-3">
                       <span className="min-w-0">
                         <span className="mi-live mr-2.5 align-middle" aria-hidden="true" />
                         <span className="font-mono text-sm font-semibold uppercase tracking-[0.14em]">Demo</span>
-                        <span className="ml-3 text-base">Sample data. Deleted on sign-out, tab close or after 6 hours idle.</span>
+                        <span className="ml-3 text-base">Sample data, kept in this browser. Deleted on sign-out or tab close.</span>
                       </span>
                       <SignOutButton demo className="app-btn inline-flex h-9 items-center gap-2 rounded-[12px] px-3 text-sm font-medium disabled:opacity-70" />
                     </div>

@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 /**
  * capture → move to board → Done → commit on Today, History and the graph → reopen →
- * commit gone. Runs in a throwaway demo session (deleted when the context closes).
+ * commit gone. Runs in a throwaway demo, which lives in the browser context's IndexedDB.
  */
 
 async function startDemo(page: Page) {

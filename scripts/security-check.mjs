@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 /**
  * Black-box security regression suite for the deployed surfaces: marketing pages, owner
- * sign-in, demo sessions and the product's Server Actions. Run against a production
- * build backed by a disposable database:
+ * sign-in, the demo (which runs in the browser and must get nothing from the server) and
+ * the product's Server Actions (as the owner). Run against a production build backed by
+ * a disposable database:
  *
  *   OWNER_CODE=… npm run build && OWNER_CODE=… PORT=3123 npm start
  *   BASE_URL=http://localhost:3123 DATABASE_URL=postgresql://me@localhost/state_security_test \
  *     node scripts/security-check.mjs
  *
- * Exits non-zero if any check fails. Never point it at production: it starts demos and
- * deliberately triggers rate limits.
+ * Exits non-zero if any check fails. Never point it at production: it signs in as the
+ * owner, changes the owner's data and deliberately triggers rate limits. Tenant
+ * isolation (IDOR) is covered at the database layer by scripts/authz-check.ts.
  */
 import { readFileSync } from "node:fs";
 import pg from "pg";
@@ -67,18 +69,35 @@ async function callAction(id, args, { cookie, origin = ORIGIN, path = "/platform
   if (cookie) headers.cookie = cookie;
   if (origin) headers.origin = origin;
   const res = await req(path, { method: "POST", body: JSON.stringify(args), raw: true, headers });
-  const ok = /"ok":true/.test(res.text);
-  const error = res.text.match(/"error":"([^"]*)"/)?.[1] ?? null;
+  // The response is an RSC stream: row 0 points at the action's result row ("a":"$@<row>").
+  // It may also carry the page tree, whose props include unrelated "error" keys.
+  const row = res.text.match(/"a":"\$@([0-9a-f]+)"/)?.[1];
+  let result = null;
+  try {
+    const line = row ? res.text.split("\n").find((l) => l.startsWith(`${row}:`)) : null;
+    result = line ? JSON.parse(line.slice(row.length + 1)) : null;
+  } catch {
+    result = null;
+  }
+  const ok = result ? result.ok === true : /"ok":true/.test(res.text);
+  const error = result ? (result.error ?? null) : (res.text.match(/"error":"([^"]*)"/)?.[1] ?? null);
   return { status: res.status, ok, error, text: res.text, headers: res.headers };
 }
 
-let startDemoId = null;
-/** Starts a demo from a fresh IP and returns its session cookie. */
-async function startDemo() {
-  startDemoId ??= await actionIdOn("/demo", "startDemoAction");
-  if (!startDemoId) return { cookie: "", res: null };
-  const res = await callAction(startDemoId, [], { path: "/demo" });
-  return { cookie: sessionCookie(res), res };
+/** A demo's only server-visible trace: its marker cookie (lib/demo/cookie.ts). */
+const DEMO_COOKIE = `state_demo=${crypto.randomUUID()}`;
+
+let ownerSession = null;
+/** Signs in as the owner (OWNER_CODE) from a fresh IP and returns the session cookie. */
+async function signInOwner() {
+  if (ownerSession !== null) return ownerSession;
+  ownerSession = "";
+  if (!process.env.OWNER_CODE) return ownerSession;
+  const id = await actionIdOn("/login", "signInOwnerAction");
+  if (!id) return ownerSession;
+  const res = await callAction(id, [{ code: process.env.OWNER_CODE }], { path: "/login" });
+  ownerSession = sessionCookie(res);
+  return ownerSession;
 }
 
 // ---------------------------------------------------------------- headers
@@ -177,51 +196,66 @@ async function checkOwnerCode() {
   record("OC4", "Cross-site owner sign-in is refused (CSRF)", !csrf.ok, `${csrf.status}`);
 }
 
-// ---------------------------------------------------------------- demo sessions and product actions
+// ---------------------------------------------------------------- demo
+// A demo lives in the visitor's browser (PGlite in IndexedDB). The server only sees its
+// marker cookie, which must open the page shell and nothing else.
 async function checkDemo() {
-  const a = await startDemo();
-  const b = await startDemo();
-  record("DM0", "Demo starts and sets a session cookie", Boolean(a.cookie) && Boolean(b.cookie), a.res ? `${a.res.status} ${a.res.error ?? ""}` : "action id not found");
-  if (!a.cookie || !b.cookie) return;
+  const page = await req("/demo");
+  record("DM0", "Starting a demo sets no server cookie", page.status === 200 && (page.headers.getSetCookie?.() ?? []).length === 0, `${page.status}`);
 
-  const raw = (a.res.headers.getSetCookie?.() ?? []).find((c) => c.includes("session_token")) ?? "";
-  const flags = [!/httponly/i.test(raw) && "HttpOnly", !/samesite=(lax|strict)/i.test(raw) && "SameSite", /max-age|expires/i.test(raw) && "browser-session (no Max-Age/Expires)"].filter(Boolean);
-  record("DM1", "Demo session cookie is HttpOnly, SameSite and ends with the browser", flags.length === 0, flags.join(", "));
-
-  const today = await req("/platform/today", { headers: { cookie: a.cookie } });
+  const today = await req("/platform/today", { headers: { cookie: DEMO_COOKIE } });
   const cc = today.headers.get("cache-control") || "";
-  record("DM2", "Demo opens the product, private and no-store", today.status === 200 && /no-store/.test(cc) && !/public/.test(cc), `${today.status} ${cc}`);
-  const orgPage = await req("/platform/org", { headers: { cookie: a.cookie } });
-  record("DM3", "Organisation pages do not exist", orgPage.status === 404, `${orgPage.status}`);
+  record("DM1", "A demo cookie opens the product shell, private and no-store", today.status === 200 && /no-store/.test(cc) && !/public/.test(cc), `${today.status} ${cc}`);
 
+  const usersBefore = db ? Number((await db.query("select count(*) from users")).rows[0].count) : 0;
+  // A demo page loads its shell lazily; the owner's page carries the action ids up front
+  const owner = await signInOwner();
+  const captureId = (owner && (await actionIdOn("/platform/inbox", "captureTaskAction", owner))) || (await actionIdOn("/platform/inbox", "captureTaskAction", DEMO_COOKIE));
+  const write = captureId ? await callAction(captureId, [{ text: "from a demo cookie" }], { cookie: DEMO_COOKIE, path: "/platform/inbox" }) : null;
+  const usersAfter = db ? Number((await db.query("select count(*) from users")).rows[0].count) : 0;
+  record("DM2", "A demo cookie alone cannot write through a Server Action", Boolean(write) && !write.ok && usersAfter === usersBefore, write ? write.error ?? `${write.status}` : "action id not found");
+
+  const leaks = [];
+  for (const path of ["/api/search?q=thesis", "/api/export?format=json"]) {
+    const res = await req(path, { headers: { cookie: DEMO_COOKIE } });
+    if (res.status !== 401) leaks.push(`${path} ${res.status}`);
+  }
+  const imp = await req("/api/import", { method: "POST", raw: true, body: "title\nx", headers: { cookie: DEMO_COOKIE, origin: ORIGIN, "content-type": "text/csv" } });
+  if (imp.status !== 401) leaks.push(`/api/import ${imp.status}`);
+  record("DM3", "A demo cookie alone reads and imports nothing from the API", leaks.length === 0, leaks.join("; "));
+
+  const bad = await req("/platform/today", { headers: { cookie: "state_demo=not-a-demo-id" } });
+  record("DM4", "A malformed demo cookie is sent to sign-in", [303, 307, 308].includes(bad.status) && /\/login/.test(bad.headers.get("location") || ""), `${bad.status}`);
+}
+
+// ---------------------------------------------------------------- product Server Actions (owner)
+async function checkActions() {
+  const owner = await signInOwner();
+  record("SA0", "Owner session for Server Action checks (needs OWNER_CODE)", Boolean(owner));
+  if (!owner) return;
+  const orgPage = await req("/platform/org", { headers: { cookie: owner } });
+  record("DM5", "Organisation pages do not exist", orgPage.status === 404, `${orgPage.status}`);
   if (!db) {
-    record("SA0", "Server Action data checks need DATABASE_URL (test database)", false);
+    record("SA0b", "Server Action data checks need DATABASE_URL (test database)", false);
     return;
   }
-  const userOf = async (cookie) => {
-    const token = decodeURIComponent(cookie.split("=")[1] ?? "").split(".")[0];
-    return (await db.query("select user_id from sessions where token = $1", [token])).rows[0]?.user_id ?? null;
-  };
-  const [userA, userB] = [await userOf(a.cookie), await userOf(b.cookie)];
-  const { rows: demoRows } = await db.query("select id, is_demo from users where id = any($1)", [[userA, userB]]);
-  record("DM4", "Each demo is its own throwaway account", Boolean(userA) && Boolean(userB) && userA !== userB && demoRows.length === 2 && demoRows.every((r) => r.is_demo), `${userA} ${userB}`);
 
-  const moveId = await actionIdOn("/platform/board", "moveTaskAction", a.cookie);
-  const captureId = await actionIdOn("/platform/inbox", "captureTaskAction", a.cookie);
-  const commitId = await actionIdOn("/platform/board", "createCommitAction", a.cookie);
-  record("SA0", "Product Server Action ids discovered", Boolean(moveId && captureId && commitId));
-  if (!moveId || !captureId || !commitId) return;
+  const moveId = await actionIdOn("/platform/board", "moveTaskAction", owner);
+  const addId = await actionIdOn("/platform/board", "addBoardTaskAction", owner);
+  const captureId = await actionIdOn("/platform/inbox", "captureTaskAction", owner);
+  const commitId = await actionIdOn("/platform/board", "createCommitAction", owner);
+  record("SA0c", "Product Server Action ids discovered", Boolean(moveId && addId && captureId && commitId));
+  if (!moveId || !addId || !captureId || !commitId) return;
 
-  const { rows: [victim] } = await db.query(
-    `select t.id from tasks t join workspaces w on w.id = t.workspace_id
-     where w.owner_id = $1 and t.board_id is not null and t.completed_at is null and t.deleted_at is null limit 1`,
-    [userA]
-  );
-  const { rows: [doneA] } = await db.query(`select c.id from columns c join boards b on b.id = c.board_id join workspaces w on w.id = b.workspace_id where w.owner_id = $1 and c.state_type = 'done'`, [userA]);
-  const { rows: [activeA] } = await db.query(`select c.id from columns c join boards b on b.id = c.board_id join workspaces w on w.id = b.workspace_id where w.owner_id = $1 and c.state_type = 'active'`, [userA]);
+  const added = await callAction(addId, [{ title: "Security check card", weight: 2 }], { cookie: owner });
+  const { rows: [victim] } = await db.query("select id, workspace_id from tasks where title = 'Security check card' and deleted_at is null order by created_at desc limit 1");
+  record("SA6", "The owner's own write succeeds and persists", added.ok && Boolean(victim), added.error ?? "");
+  if (!victim) return;
+  const { rows: [doneCol] } = await db.query(`select c.id from columns c join boards b on b.id = c.board_id where b.workspace_id = $1 and c.state_type = 'done'`, [victim.workspace_id]);
+  const { rows: [activeCol] } = await db.query(`select c.id from columns c join boards b on b.id = c.board_id where b.workspace_id = $1 and c.state_type = 'active'`, [victim.workspace_id]);
   const state = async () => JSON.stringify((await db.query("select column_id, position, completed_at from tasks where id = $1", [victim.id])).rows[0]);
   const commitCount = async () => Number((await db.query("select count(*) from commits")).rows[0].count);
-  const move = { taskId: victim.id, columnId: doneA.id, afterTaskId: null };
+  const move = { taskId: victim.id, columnId: doneCol.id, afterTaskId: null };
   const before = await state();
   const commitsBefore = await commitCount();
 
@@ -230,34 +264,30 @@ async function checkDemo() {
   record("SA1", "Anonymous Server Action call is refused", !anonPublic.ok && !anonProduct.ok && (await state()) === before, `${anonPublic.status} ${anonProduct.status}`);
   const forgedCookie = await callAction(moveId, [move], { cookie: "better-auth.session_token=forged.forged" });
   record("SA1b", "Forged session cookie on a Server Action is refused", !forgedCookie.ok && (await state()) === before, forgedCookie.error ?? `${forgedCookie.status}`);
-  const idor = await callAction(moveId, [move], { cookie: b.cookie });
-  record("SA2", "Demo B moves demo A's task through the raw action (IDOR)", !idor.ok && (await state()) === before, idor.error ?? `${idor.status}`);
-  const csrf = await callAction(moveId, [move], { cookie: a.cookie, origin: "https://evil.example" });
+  const csrf = await callAction(moveId, [move], { cookie: owner, origin: "https://evil.example" });
   record("SA3", "Cross-site Server Action call is refused (CSRF)", !csrf.ok && (await state()) === before, `${csrf.status}`);
-  const forgedCommit = await callAction(commitId, [{ message: "forged", projectId: null, weight: 2, userId: userA, source: "imported" }], { cookie: b.cookie });
+  const forgedCommit = await callAction(commitId, [{ message: "forged", projectId: null, weight: 2, userId: "someone-else", source: "imported" }], { cookie: owner });
   record("SA4", "Extra fields (userId, source) refused on commit", !forgedCommit.ok && (await commitCount()) === commitsBefore, forgedCommit.error ?? "");
-  const pricey = await callAction(commitId, [{ message: "inflate", projectId: null, weight: 1_000_000 }], { cookie: b.cookie });
+  const pricey = await callAction(commitId, [{ message: "inflate", projectId: null, weight: 1_000_000 }], { cookie: owner });
   record("SA5", "Inflated execution value refused", !pricey.ok && (await commitCount()) === commitsBefore, pricey.error ?? "");
-  const legit = await callAction(moveId, [{ taskId: victim.id, columnId: activeA.id, afterTaskId: null }], { cookie: a.cookie });
+  const legit = await callAction(moveId, [{ taskId: victim.id, columnId: activeCol.id, afterTaskId: null }], { cookie: owner });
   const { rows: [after] } = await db.query("select column_id from tasks where id = $1", [victim.id]);
-  record("SA7", "A demo's own move succeeds and persists", legit.ok && after.column_id === activeA.id, legit.error ?? "");
+  record("SA7", "A move persists", legit.ok && after.column_id === activeCol.id, legit.error ?? "");
 
   const payload = `<img src=x onerror=alert(1)><script>alert(2)</script>`;
-  const xss = await callAction(captureId, [{ text: payload }], { cookie: a.cookie, path: "/platform/inbox" });
-  const inboxHtml = (await req("/platform/inbox", { headers: { cookie: a.cookie } })).text;
+  const xss = await callAction(captureId, [{ text: payload }], { cookie: owner, path: "/platform/inbox" });
+  const inboxHtml = (await req("/platform/inbox", { headers: { cookie: owner } })).text;
   record("X2", "Stored XSS in a captured task title is escaped", xss.ok && !inboxHtml.includes("<img src=x onerror") && !inboxHtml.includes("<script>alert(2)"), xss.error ?? "");
 
-  const burst = await Promise.all(Array.from({ length: 70 }, () => callAction(moveId, [{}], { cookie: b.cookie })));
+  const burst = await Promise.all(Array.from({ length: 70 }, () => callAction(moveId, [{}], { cookie: owner })));
   const limited = burst.filter((r) => /Too many changes/.test(r.error ?? "")).length;
   record("SA8", "Write burst is rate limited per user", limited >= 10, `${limited} of 70 limited`);
 
-  // Sign-out deletes the demo, and its token stops working
-  const signOutId = await actionIdOn("/platform/settings/account", "signOutAction", a.cookie);
-  const out = signOutId ? await callAction(signOutId, [], { cookie: a.cookie, path: "/platform/settings/account" }) : null;
-  const reuse = await req("/platform/today", { headers: { cookie: a.cookie } });
-  const { rows: leftA } = await db.query("select 1 from users where id = $1 union all select 1 from workspaces where owner_id = $1", [userA]);
-  record("DM5", "Ending a demo deletes its account and data; the token is dead", Boolean(out?.ok) && [303, 307, 308].includes(reuse.status) && leftA.length === 0, `${out?.status} ${reuse.status} rows=${leftA.length}`);
-  if (signOutId) await callAction(signOutId, [], { cookie: b.cookie, path: "/platform/settings/account" });
+  // Sign-out ends the session: its token stops working
+  const signOutId = await actionIdOn("/platform/settings/account", "signOutAction", owner);
+  const out = signOutId ? await callAction(signOutId, [], { cookie: owner, path: "/platform/settings/account" }) : null;
+  const reuse = await req("/platform/today", { headers: { cookie: owner } });
+  record("SO1", "Signing out kills the session token", Boolean(out?.ok) && [303, 307, 308].includes(reuse.status), `${out?.status} ${reuse.status}`);
 }
 
 // ---------------------------------------------------------------- exposure surface
@@ -271,7 +301,7 @@ function readEnvFile() {
 }
 
 async function checkSurface() {
-  const { cookie } = await startDemo();
+  const cookie = DEMO_COOKIE;
   const chunks = new Set();
   for (const path of ["/", "/login", "/demo", "/platform/today", "/platform/board", "/platform/inbox", "/platform/settings/account"]) {
     const page = await req(path, { headers: cookie ? { cookie } : {} });
@@ -280,7 +310,8 @@ async function checkSurface() {
   const leaks = [];
   const patterns = [
     [/postgres(ql)?:\/\/[^"'\s]+/, "database URL"],
-    [/drizzle-orm|pg-pool|@neondatabase|better-auth\/adapters/, "server-only module"],
+    // The demo runs Drizzle on PGlite in the browser; the server's drivers never ship
+    [/pg-pool|@neondatabase|drizzle-orm\/neon|drizzle-orm\/node-postgres|better-auth\/adapters/, "server-only module"],
   ];
   // The real secret values this deployment was configured with, the owner code included
   const secretValues = Object.entries({ ...readEnvFile(), ...(process.env.OWNER_CODE ? { OWNER_CODE: process.env.OWNER_CODE } : {}) })
@@ -329,6 +360,7 @@ async function main() {
   await checkOwnerCode();
   await checkDemo();
   await checkSurface();
+  await checkActions();
   if (db) await db.end();
 
   const failed = results.filter((r) => !r.pass);

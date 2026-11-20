@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth/session";
-import { toCsv } from "@/lib/data/csv";
-import { buildExport, exportCommits, exportProjects, exportTasks, personalWorkspaceId } from "@/lib/data/export";
+import { buildExportFile } from "@/lib/data/export";
 import { consumeThrottle } from "@/lib/security/throttle";
 
 /**
@@ -17,12 +16,6 @@ const querySchema = z.discriminatedUnion("format", [
   z.strictObject({ format: z.literal("csv"), dataset: z.enum(["tasks", "commits", "projects"]) }),
 ]);
 
-const TASK_COLUMNS = ["id", "title", "description", "project", "status", "priority", "weight", "recurrenceRule", "dueAt", "startedAt", "completedAt", "createdAt", "archivedAt", "tags"] as const;
-const COMMIT_COLUMNS = ["id", "message", "project", "taskId", "executionValue", "source", "createdAt", "tags"] as const;
-const PROJECT_COLUMNS = ["name", "slug", "description", "status", "createdAt", "archivedAt"] as const;
-
-const joinTags = <T extends { tags: string[] }>(rows: T[]) => rows.map((r) => ({ ...r, tags: r.tags.join("; ") }));
-
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Sign in to export your data." }, { status: 401 });
@@ -35,23 +28,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Too many exports. Try again in an hour." }, { status: 429 });
   }
 
-  const day = new Date().toISOString().slice(0, 10);
-  const query = parsed.data;
-  let body: string;
-  let name: string;
-  let type: string;
-  if (query.format === "json") {
-    body = JSON.stringify(await buildExport(session.user.id), null, 2);
-    name = `state-export-${day}.json`;
-    type = "application/json; charset=utf-8";
-  } else {
-    const workspaceId = await personalWorkspaceId(session.user.id);
-    if (query.dataset === "tasks") body = toCsv(TASK_COLUMNS, joinTags(workspaceId ? await exportTasks(workspaceId) : []));
-    else if (query.dataset === "commits") body = toCsv(COMMIT_COLUMNS, joinTags(workspaceId ? await exportCommits(workspaceId) : []));
-    else body = toCsv(PROJECT_COLUMNS, workspaceId ? await exportProjects(workspaceId) : []);
-    name = `state-${query.dataset}-${day}.csv`;
-    type = "text/csv; charset=utf-8";
-  }
+  const { body, name, type } = await buildExportFile(session.user.id, parsed.data);
 
   return new NextResponse(body, {
     headers: {

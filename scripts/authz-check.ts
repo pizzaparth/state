@@ -24,7 +24,6 @@ import { setPreferencesSchema } from "../lib/preferences";
 import { parseImport } from "../lib/data/import";
 import { parseCsv, toCsv } from "../lib/data/csv";
 import { deleteAccount } from "../lib/accounts/delete";
-import { DEMO_TTL_MS, endDemo, pruneDemos } from "../lib/demo/session";
 import { isOwnerCode } from "../lib/auth/owner";
 import { nextDueDay } from "../lib/recurrence";
 import { provisionAccount } from "../lib/accounts/provision";
@@ -820,7 +819,7 @@ async function main() {
   const userGone = !(await one(db.select({ id: s.users.id }).from(s.users).where(eq(s.users.id, outsiderId))));
   record("D11", "Account deletion removes the user, workspace, tasks and commits", userGone && gone.tasks === 0 && gone.commits === 0, JSON.stringify(gone));
 
-  // ------------------------------------------------------------ owner code and demo lifetime
+  // ------------------------------------------------------------ owner code
   const savedCode = process.env.OWNER_CODE;
   delete process.env.OWNER_CODE;
   const unset = isOwnerCode("anything");
@@ -830,28 +829,8 @@ async function main() {
   else process.env.OWNER_CODE = savedCode;
   record("SE1", "Owner code: refused when OWNER_CODE is unset; only the exact code matches", !unset && JSON.stringify(codes) === JSON.stringify([true, false, false, false]), JSON.stringify(codes));
 
-  await endDemo(parthId);
-  record("SE2", "Ending a demo never deletes a non-demo account", Boolean(await one(db.select({ id: s.users.id }).from(s.users).where(eq(s.users.id, parthId)))));
-
-  const [oldDemo, freshDemo] = [`demo-old-${stamp}`, `demo-fresh-${stamp}`];
-  await db.insert(s.users).values([
-    { id: oldDemo, name: "Demo visitor", email: `${oldDemo}@example.test`, isDemo: true, createdAt: new Date(Date.now() - DEMO_TTL_MS - 60_000) },
-    { id: freshDemo, name: "Demo visitor", email: `${freshDemo}@example.test`, isDemo: true },
-  ]);
-  await provisionAccount(oldDemo);
-  await db.update(s.users).set({ createdAt: new Date(Date.now() - DEMO_TTL_MS - 60_000) }).where(eq(s.users.id, aaravId)); // old, but not a demo
-  await pruneDemos();
-  const left = (await db.select({ id: s.users.id }).from(s.users).where(inArray(s.users.id, [oldDemo, freshDemo, aaravId]))).map((u) => u.id).sort();
-  const oldWorkspaces = await db.select({ id: s.workspaces.id }).from(s.workspaces).where(eq(s.workspaces.ownerId, oldDemo));
-  record("SE3", "Expired demos are deleted with their workspace; fresh demos and the owner stay", JSON.stringify(left) === JSON.stringify([aaravId, freshDemo].sort()) && oldWorkspaces.length === 0, JSON.stringify(left));
-  const [activeDemo] = [`demo-active-${stamp}`];
-  await db.insert(s.users).values({ id: activeDemo, name: "Demo visitor", email: `${activeDemo}@example.test`, isDemo: true, createdAt: new Date(Date.now() - DEMO_TTL_MS - 60_000) });
-  await db.insert(s.sessions).values({ id: `sess-${stamp}`, userId: activeDemo, token: `tok-${stamp}`, expiresAt: new Date(Date.now() + 3_600_000), updatedAt: new Date() });
-  await pruneDemos();
-  record("SE5", "An old demo still in use (recent session activity) is not pruned", Boolean(await one(db.select({ id: s.users.id }).from(s.users).where(eq(s.users.id, activeDemo)))));
-  await endDemo(activeDemo);
-  await endDemo(freshDemo);
-  record("SE4", "Ending a demo deletes it", !(await one(db.select({ id: s.users.id }).from(s.users).where(eq(s.users.id, freshDemo)))));
+  // Demos have no server side any more: they run on PGlite in the visitor's browser
+  // (lib/demo/local.ts), so there are no demo accounts here to prune or end.
   await db.delete(s.users).where(inArray(s.users.id, [parthId, aaravId]));
 
   const failed = results.filter((r) => !r.pass);

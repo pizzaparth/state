@@ -5,8 +5,8 @@ import { DemoStarter } from "./demo-starter";
 export const metadata: Metadata = { title: "Demo", robots: { index: false, follow: false } };
 
 /**
- * "Take a demo": builds a throwaway workspace with sample data and opens Today. Starting
- * needs JavaScript (DemoStarter), so crawlers and link previews never create accounts.
+ * "Take a demo": opens Today on a throwaway workspace with sample data, built and kept in
+ * this browser (lib/demo/local.ts). Starting needs JavaScript (DemoStarter).
  */
 export default function DemoPage() {
   return (
@@ -15,6 +15,7 @@ export default function DemoPage() {
       <ul className="space-y-1 font-mono text-sm uppercase tracking-[0.12em] text-[#52525B]">
         <li>60 days of sample work</li>
         <li>Edit anything</li>
+        <li>Kept in this browser</li>
         <li>Deleted on sign-out or tab close</li>
       </ul>
       <DemoStarter />

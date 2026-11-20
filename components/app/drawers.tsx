@@ -1,7 +1,7 @@
 import * as React from "react";
 import { getBoardColumns, getBoardTargets, getCommitDetail, getProjectOptions, getTagNames, getTaskDetail, getTaskHistory } from "@/db/queries";
 import { recurrenceLabel } from "@/lib/recurrence";
-import type { Viewer } from "@/lib/viewer";
+import type { Viewer } from "@/lib/viewer-data";
 import { DetailDrawer, DrawerClose } from "./detail-drawer";
 import { EmptyState } from "./primitives";
 import { CommitDetail, TaskDetail } from "./details";
@@ -18,8 +18,28 @@ const canEditCommit = (viewer: Viewer, commit: { workspaceId: string; userId: st
 // Repeated (?task=a&task=b) or malformed ids never reach a query
 const objectIdParam = (value: unknown) => (typeof value === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(value) ? value : null);
 
-/** Renders the task or commit panel named in the URL, if the viewer may read it. */
-export async function Drawers({ params, viewer, siblings }: { params: Record<string, string | undefined>; viewer: Viewer; siblings?: string[] }) {
+type TaskDetailData = NonNullable<Awaited<ReturnType<typeof getTaskDetail>>>;
+type CommitDetailData = NonNullable<Awaited<ReturnType<typeof getCommitDetail>>>;
+
+/** What the URL's panel needs: loaded by the page (server, or the demo in the browser). */
+export type DrawersData =
+  | { kind: "none" }
+  | { kind: "missing"; param: "task" | "commit" }
+  | {
+      kind: "task";
+      task: TaskDetailData;
+      writable: boolean;
+      targets: Awaited<ReturnType<typeof getBoardTargets>>;
+      projects: Awaited<ReturnType<typeof getProjectOptions>> | undefined;
+      statusColumns: Awaited<ReturnType<typeof getBoardColumns>> | undefined;
+      tagNames: string[];
+      history: { at: Date; text: string }[];
+      nav?: { prevId: string | null; nextId: string | null };
+    }
+  | { kind: "commit"; commit: CommitDetailData; projects: Awaited<ReturnType<typeof getProjectOptions>> | undefined };
+
+/** Loads the task or commit panel named in the URL, if the viewer may read it. */
+export async function loadDrawers(params: Record<string, string | undefined>, viewer: Viewer, siblings?: string[]): Promise<DrawersData> {
   const taskId = objectIdParam(params.task);
   const commitId = objectIdParam(params.commit);
   if (taskId) {
@@ -36,48 +56,64 @@ export async function Drawers({ params, viewer, siblings }: { params: Record<str
       ]);
       const columnName = (id: unknown) => statusColumns?.find((c) => c.id === id)?.name ?? "a column";
       const history = events.map((e) => ({ at: e.createdAt, text: describeEvent(e.action, (e.metadata ?? {}) as Record<string, unknown>, columnName) }));
-      return (
-        <DetailDrawer
-          param="task"
-          title="Task"
-          recent={{ kind: "task", id: task.id, title: task.title }}
-          nav={siblings && siblings.includes(task.id) ? { prevId: siblings[siblings.indexOf(task.id) - 1] ?? null, nextId: siblings[siblings.indexOf(task.id) + 1] ?? null } : undefined}
-          crumbs={[task.projectName, task.boardName ?? "Inbox", task.completedAt ? "Done" : task.columnName].filter((c): c is string => Boolean(c))}
-        >
-          <TaskDetail
-            task={task}
-            tz={viewer.tz}
-            now={new Date()}
-            editable={writable}
-            projects={projects}
-            statusColumns={writable ? statusColumns : undefined}
-            tagSuggestions={tagNames}
-            history={history}
-          />
-          {writable && (
-            <TaskActions
-              task={{ id: task.id, title: task.title, completed: Boolean(task.completedAt), inInbox }}
-              targets={targets}
-            />
-          )}
-        </DetailDrawer>
-      );
+      const nav = siblings && siblings.includes(task.id) ? { prevId: siblings[siblings.indexOf(task.id) - 1] ?? null, nextId: siblings[siblings.indexOf(task.id) + 1] ?? null } : undefined;
+      return { kind: "task", task, writable, targets, projects, statusColumns, tagNames, history, nav };
     }
   }
   if (commitId) {
     const commit = await getCommitDetail(commitId, viewer.workspaceIds);
     if (commit) {
       const projects = canEditCommit(viewer, commit) ? await getProjectOptions(commit.workspaceId, viewer.workspaceIds) : undefined;
-      return (
-        <DetailDrawer param="commit" title="Commit" crumbs={commit.projectName ? [commit.projectName] : []} recent={{ kind: "commit", id: commit.id, title: commit.message }}>
-          <CommitDetail commit={commit} tz={viewer.tz} projects={projects} />
-        </DetailDrawer>
-      );
+      return { kind: "commit", commit, projects };
     }
   }
   // An id in the URL that is gone (deleted, or never readable): say so instead of nothing
-  if (taskId) return <MissingPanel param="task" title="Task" />;
-  if (commitId) return <MissingPanel param="commit" title="Commit" />;
+  if (taskId) return { kind: "missing", param: "task" };
+  if (commitId) return { kind: "missing", param: "commit" };
+  return { kind: "none" };
+}
+
+/** Renders the panel loaded by loadDrawers. */
+export function Drawers({ data, tz }: { data: DrawersData; tz: string }) {
+  if (data.kind === "task") {
+    const { task, writable } = data;
+    const inInbox = task.boardId === null;
+    return (
+      <DetailDrawer
+        param="task"
+        title="Task"
+        recent={{ kind: "task", id: task.id, title: task.title }}
+        nav={data.nav}
+        crumbs={[task.projectName, task.boardName ?? "Inbox", task.completedAt ? "Done" : task.columnName].filter((c): c is string => Boolean(c))}
+      >
+        <TaskDetail
+          task={task}
+          tz={tz}
+          now={new Date()}
+          editable={writable}
+          projects={data.projects}
+          statusColumns={writable ? data.statusColumns : undefined}
+          tagSuggestions={data.tagNames}
+          history={data.history}
+        />
+        {writable && (
+          <TaskActions
+            task={{ id: task.id, title: task.title, completed: Boolean(task.completedAt), inInbox }}
+            targets={data.targets}
+          />
+        )}
+      </DetailDrawer>
+    );
+  }
+  if (data.kind === "commit") {
+    const { commit } = data;
+    return (
+      <DetailDrawer param="commit" title="Commit" crumbs={commit.projectName ? [commit.projectName] : []} recent={{ kind: "commit", id: commit.id, title: commit.message }}>
+        <CommitDetail commit={commit} tz={tz} projects={data.projects} />
+      </DetailDrawer>
+    );
+  }
+  if (data.kind === "missing") return <MissingPanel param={data.param} title={data.param === "task" ? "Task" : "Commit"} />;
   return null;
 }
 

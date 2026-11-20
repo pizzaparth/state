@@ -4,9 +4,10 @@ import * as React from "react";
 import { Loader2, LogOut } from "lucide-react";
 import { signOutAction } from "@/app/(auth)/actions";
 import { clearDemoTab } from "@/lib/demo/tab";
+import { endDemo } from "@/lib/demo/local";
 import { useNotice } from "./notice";
 
-/** Signs out and returns to the landing page. A demo is deleted on the way. */
+/** Signs out and returns to the landing page. A demo's data is deleted from this browser. */
 export function SignOutButton({ demo = false, className }: { demo?: boolean; className?: string }) {
   const [signingOut, setSigningOut] = React.useState(false);
   const notify = useNotice();
@@ -16,6 +17,11 @@ export function SignOutButton({ demo = false, className }: { demo?: boolean; cla
       disabled={signingOut}
       onClick={async () => {
         setSigningOut(true);
+        if (demo) {
+          await endDemo();
+          window.location.replace("/?demo=ended");
+          return;
+        }
         const result = await signOutAction();
         if (!result.ok) {
           setSigningOut(false);

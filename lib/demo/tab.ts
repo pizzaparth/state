@@ -1,5 +1,5 @@
 /**
- * Tab marker for demo sessions. The demo's session cookie lives until the browser closes,
+ * Tab marker for demos. The demo cookie lives until the browser closes,
  * but a demo should end when its tab closes. sessionStorage survives a refresh and dies
  * with the tab, so it marks which demo this tab belongs to.
  *
@@ -10,9 +10,9 @@
 const KEY = "state.demo";
 const CHANNEL = "state.demo";
 
-export function markDemoTab(userId: string) {
+export function markDemoTab(demoId: string) {
   try {
-    sessionStorage.setItem(KEY, userId);
+    sessionStorage.setItem(KEY, demoId);
   } catch {}
 }
 
@@ -31,31 +31,31 @@ function readMarker(): string | null {
 }
 
 /** Answers "is demo X open?" from other tabs while this tab holds X. Returns a cleanup. */
-export function serveDemoTab(userId: string): () => void {
+export function serveDemoTab(demoId: string): () => void {
   if (typeof BroadcastChannel === "undefined") return () => {};
   const channel = new BroadcastChannel(CHANNEL);
-  channel.onmessage = (event: MessageEvent<{ type: string; userId: string }>) => {
-    if (event.data?.type === "ping" && event.data.userId === userId && readMarker() === userId) channel.postMessage({ type: "pong", userId });
+  channel.onmessage = (event: MessageEvent<{ type: string; demoId: string }>) => {
+    if (event.data?.type === "ping" && event.data.demoId === demoId && readMarker() === demoId) channel.postMessage({ type: "pong", demoId });
   };
   return () => channel.close();
 }
 
 /** True when this tab, or another open tab, holds the demo. Adopts the marker if so. */
-export async function demoTabAlive(userId: string, waitMs = 400): Promise<boolean> {
-  if (readMarker() === userId) return true;
+export async function demoTabAlive(demoId: string, waitMs = 400): Promise<boolean> {
+  if (readMarker() === demoId) return true;
   if (typeof BroadcastChannel === "undefined") return false;
   const channel = new BroadcastChannel(CHANNEL);
   const alive = await new Promise<boolean>((resolve) => {
     const timer = setTimeout(() => resolve(false), waitMs);
-    channel.onmessage = (event: MessageEvent<{ type: string; userId: string }>) => {
-      if (event.data?.type === "pong" && event.data.userId === userId) {
+    channel.onmessage = (event: MessageEvent<{ type: string; demoId: string }>) => {
+      if (event.data?.type === "pong" && event.data.demoId === demoId) {
         clearTimeout(timer);
         resolve(true);
       }
     };
-    channel.postMessage({ type: "ping", userId });
+    channel.postMessage({ type: "ping", demoId });
   });
   channel.close();
-  if (alive) markDemoTab(userId);
+  if (alive) markDemoTab(demoId);
   return alive;
 }

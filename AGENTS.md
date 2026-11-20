@@ -68,7 +68,7 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 
 ### Accounts (personal hobby project)
 - MUST: Exactly one permanent account, the owner, signed in with `OWNER_CODE` (env only, never committed). Owner sessions end when the browser closes.
-- MUST: Everyone else uses a throwaway demo (`lib/demo/session.ts`): seeded on start, deleted on sign-out, tab close (`DemoGuard`) or after `DEMO_TTL_MS`.
+- MUST: Everyone else uses a throwaway demo that lives only in their browser (`lib/demo/local.ts`): PGlite in IndexedDB, seeded on start, kept across refreshes, deleted on sign-out or tab close. The server never stores or reads demo data; the `state_demo` cookie only selects the demo's page shell.
 - NEVER: Add sign-up, payments, pricing, organisations, invitations, contact details or email flows.
 - MUST: Credit the project as "A personal hobby project by Parth Pancholi" (`BYLINE` in `lib/site.ts`) on marketing, auth and product surfaces.
 

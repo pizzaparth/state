@@ -90,52 +90,28 @@ const HISTOGRAM = [
 const WEEKDAYS_MON = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const WEEKDAYS_SUN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-/** Metrics surface. Every value shows its formula. */
-export async function MetricsView({
+/** Everything the metrics surface reads for one range. Every value shows its formula (MetricsReport). */
+export async function loadMetricsData({
   scope,
   tz,
   range,
-  metricHref,
-  objectiveHref,
   objectiveWorkspaceIds,
-  objectiveControls = null,
-  collapsed = [],
-  weekStartsOn = "monday",
+  archivedObjectives,
 }: {
-  weekStartsOn?: "monday" | "sunday";
-  objectiveHref?: (id: string) => string;
   scope: Scope;
   tz: string;
   range: MetricRange;
-  /** Link that opens a metric's explanation panel. */
-  metricHref?: (key: string) => string;
   objectiveWorkspaceIds: string[];
-  /** Set when the viewer can create and update objectives in that workspace. */
-  objectiveControls?: ObjectiveControls | null;
-  /** Sections the viewer collapsed (cookie). */
-  collapsed?: string[];
+  /** Also load archived objectives (when the viewer can manage them). */
+  archivedObjectives: boolean;
 }) {
-  const [m, s, objectives, archived] = await Promise.all([
+  const [metrics, series, objectives, archived] = await Promise.all([
     getMetrics(scope, tz, range.days, range.end),
     getMetricSeries(scope, tz, range.days, range.end),
     getObjectives(objectiveWorkspaceIds),
-    objectiveControls ? getObjectives(objectiveWorkspaceIds, { archived: true }) : [],
+    archivedObjectives ? getObjectives(objectiveWorkspaceIds, { archived: true }) : [],
   ]);
-  return (
-    <MetricsReport
-      metrics={m}
-      series={s}
-      objectives={objectives}
-      archivedObjectives={archived}
-      objectiveControls={objectiveControls}
-      tz={tz}
-      days={range.days}
-      metricHref={metricHref}
-      objectiveHref={objectiveHref}
-      collapsed={collapsed}
-      weekStartsOn={weekStartsOn}
-    />
-  );
+  return { metrics, series, objectives, archived };
 }
 
 type Objective = Awaited<ReturnType<typeof getObjectives>>[number];

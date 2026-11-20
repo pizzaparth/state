@@ -5,12 +5,12 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { getSession } from "@/lib/auth/session";
 import { isOwnerCode, signInOwner } from "@/lib/auth/owner";
-import { endDemo, startDemo } from "@/lib/demo/session";
+import { DEMO_COOKIE } from "@/lib/demo/cookie";
 import { consumeThrottle } from "@/lib/security/throttle";
-import { isTimeZone } from "@/lib/tz";
 
 /**
- * Session actions: owner sign-in by access code, starting a demo, and signing out.
+ * Session actions: owner sign-in by access code, and signing out. A demo has no server
+ * session: it runs in the visitor's browser (lib/demo/local.ts).
  * Server Actions are public POST endpoints; each one validates and throttles itself.
  * Next.js rejects cross-site calls by comparing Origin with Host.
  */
@@ -42,9 +42,8 @@ export async function signInOwnerAction(input: unknown): Promise<SessionResult> 
       return { ok: false, error: "Too many attempts. Try again in 15 minutes." };
     }
     if (!isOwnerCode(parsed.data.code)) return { ok: false, error: "That code is not valid." };
-    // Signing in from inside a demo ends that demo
-    const current = await getSession();
-    if (current) await endDemo(current.user.id);
+    // Signing in from inside a demo leaves it; its browser data goes with the next demo
+    (await cookies()).delete(DEMO_COOKIE);
     await clearAuthCookies();
     await signInOwner(parsed.data.code, await headers());
     return { ok: true };
@@ -54,37 +53,11 @@ export async function signInOwnerAction(input: unknown): Promise<SessionResult> 
   }
 }
 
-const demoSchema = z.strictObject({ timezone: z.string().max(64).refine(isTimeZone).optional() }).optional();
-
-/** Starts a demo. The browser's time zone is set silently at seed time (UTC if missing or unknown). */
-export async function startDemoAction(input?: unknown): Promise<SessionResult & { userId?: string }> {
-  const parsed = demoSchema.safeParse(input);
-  const timezone = (parsed.success && parsed.data?.timezone) || "UTC";
-  try {
-    const session = await getSession();
-    // Already inside a demo (or signed in as the owner): keep that session
-    if (session) return { ok: true, userId: session.user.id };
-    const ip = await clientIp();
-    if (!(await consumeThrottle(`demo:${ip}`, 10, 60 * 60)) || !(await consumeThrottle("demo", 300, 60 * 60))) {
-      return { ok: false, error: "Too many demos started from here. Try again in an hour." };
-    }
-    const { userId } = await startDemo(await headers(), timezone);
-    return { ok: true, userId };
-  } catch (error) {
-    console.error("[session] start demo", error);
-    return { ok: false, error: "Could not start the demo. Try again." };
-  }
-}
-
-/** Signs out. A demo account is deleted with everything it holds. */
+/** Signs the owner out. */
 export async function signOutAction(): Promise<SessionResult> {
   try {
     const session = await getSession();
-    if (session) {
-      await endDemo(session.user.id);
-      // The owner's session row; a demo's went with its account
-      await auth.api.signOut({ headers: await headers() }).catch(() => undefined);
-    }
+    if (session) await auth.api.signOut({ headers: await headers() }).catch(() => undefined);
     await clearAuthCookies();
     return { ok: true };
   } catch (error) {

@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
-import { db } from "@/db";
+import { db } from "#db";
 import { auditEvents, objectiveProjects, objectives, boards, columns, commitTags, commits, projects, tags, taskTags, tasks, users } from "@/db/schema";
 import { assertWritable, MutationError, type Actor } from "@/lib/authz";
 import { keyBetween } from "@/lib/position";

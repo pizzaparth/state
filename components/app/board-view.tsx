@@ -1,7 +1,7 @@
 import * as React from "react";
 import { getBoard, getProjectOptions, getTagNames } from "@/db/queries";
 import { dayKey, dueState } from "@/lib/format";
-import type { Viewer } from "@/lib/viewer";
+import type { Viewer } from "@/lib/viewer-data";
 import type { SortKey } from "@/lib/board-sort";
 import type { BoardFilter } from "@/lib/board-filter";
 import { checklistCount } from "@/lib/checklist";
@@ -11,8 +11,10 @@ import { withParam } from "./task-row";
 
 const DAY = 86_400_000;
 
-/** Loads a board on the server and hands plain, pre-formatted cards to the client board. */
-export async function BoardView({
+export type BoardViewData = Awaited<ReturnType<typeof loadBoardView>>;
+
+/** Loads a board and turns it into plain, pre-formatted cards for the client board. */
+export async function loadBoardView({
   boardId,
   viewer,
   params,
@@ -31,13 +33,7 @@ export async function BoardView({
   doneWindowDays?: number;
 }) {
   const board = boardId ? await getBoard(boardId, viewer.workspaceIds, doneWindowDays) : null;
-  if (!board) {
-    return (
-      <Panel>
-        <EmptyState title="No board yet" />
-      </Panel>
-    );
-  }
+  if (!board) return null;
   const [projects, tags] = await Promise.all([
     viewer.personalWorkspaceId ? getProjectOptions(viewer.personalWorkspaceId, viewer.workspaceIds) : [],
     getTagNames(viewer.workspaceIds),
@@ -68,18 +64,39 @@ export async function BoardView({
       deferLabel: t.deferUntil && t.deferUntil.getTime() > now.getTime() ? dueState(t.deferUntil, now, viewer.tz).label : null,
     }));
   const taskHref = Object.fromEntries(cards.map((c) => [c.id, withParam(basePath, params, "task", c.id)]));
+  return {
+    columns: board.columns,
+    cards,
+    taskHref,
+    doneWindowDays: board.doneWindowDays,
+    sort,
+    filter,
+    projects: projects.map((p) => ({ id: p.id, name: p.name, slug: p.slug })),
+    tags,
+    today,
+  };
+}
 
+/** The board loaded by loadBoardView, or an empty state when there is none. */
+export function BoardView({ data }: { data: BoardViewData }) {
+  if (!data) {
+    return (
+      <Panel>
+        <EmptyState title="No board yet" />
+      </Panel>
+    );
+  }
   return (
     <Kanban
-      columns={board.columns}
-      cards={cards}
-      taskHref={taskHref}
-      doneWindowDays={board.doneWindowDays}
-      initialSort={sort}
-      initialFilter={filter}
-      projects={projects.map((p) => ({ id: p.id, name: p.name, slug: p.slug }))}
-      tags={tags}
-      today={today}
+      columns={data.columns}
+      cards={data.cards}
+      taskHref={data.taskHref}
+      doneWindowDays={data.doneWindowDays}
+      initialSort={data.sort}
+      initialFilter={data.filter}
+      projects={data.projects}
+      tags={data.tags}
+      today={data.today}
       historyHref="/platform/history?source=task"
     />
   );

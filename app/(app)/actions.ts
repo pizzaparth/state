@@ -1,18 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { z } from "zod";
 import { getSession } from "@/lib/auth/session";
-import { loadActor, MutationError, type Actor } from "@/lib/authz";
-import { addBoardTask, finishOnboarding, createObjective, setObjectiveArchived, setObjectiveProgress, editCommit, setTaskRecurrence, captureTask, createManualCommit, createProject, setProjectArchived, updateProject, deleteTask, moveTask, placeTask, renameTask, restoreTask, setTaskDue, setTaskPriority, setTaskProject, setTaskWeight, setTimezone, completeTask, addColumn, bulkRestoreTasks, bulkUpdateTasks, deleteColumn, moveColumn, renameColumn, setColumnLimit, captureMany, setTaskTags, restoreCommit, withdrawCommit, updateObjective, setTaskDescription, setTaskDefer, setTaskPlanned, setTaskStage, skipRecurrence, duplicateTask, renameTag, mergeTags, deleteTag, setProjectNotes, setPreferences } from "@/lib/mutations";
+import { loadActor, MutationError } from "@/lib/authz";
 import { consumeThrottle } from "@/lib/security/throttle";
-import { setPreferencesSchema } from "@/lib/preferences";
-import { addBoardTaskSchema, finishOnboardingSchema, createObjectiveSchema, setObjectiveArchivedSchema, setObjectiveProgressSchema, editCommitSchema, setTaskRecurrenceSchema, captureTaskSchema, createProjectSchema, manualCommitSchema, setProjectArchivedSchema, updateProjectSchema, moveTaskSchema, placeTaskSchema, renameTaskSchema, setTaskDueSchema, setTaskPrioritySchema, setTaskProjectSchema, setTaskWeightSchema, setTimezoneSchema, taskRefSchema, addColumnSchema, bulkRestoreSchema, bulkUpdateSchema, columnRefSchema, moveColumnSchema, renameColumnSchema, setColumnLimitSchema, captureManySchema, setTaskTagsSchema, commitRefSchema, updateObjectiveSchema, mergeTagsSchema, renameTagSchema, setProjectNotesSchema, setTaskDeferSchema, setTaskDescriptionSchema, setTaskPlannedSchema, setTaskStageSchema, tagRefSchema } from "@/lib/validation";
+import type { z } from "zod";
+import { ACTIONS, type ActionData, type ActionDef, type ActionName } from "@/lib/actions/table";
 
 /**
  * Server Actions for the product. Each one re-verifies everything itself: Server Actions
  * are public POST endpoints, and the (app) layout's session check does not
  * run for them. Next.js rejects cross-site calls by comparing Origin with Host.
+ * Schemas and mutations live in lib/actions/table.ts, shared with the demo.
  */
 
 export type ActionErrorCode = MutationError["code"] | "server" | "network";
@@ -21,7 +20,8 @@ export type ActionResult<T = undefined> = { ok: true; data: T } | { ok: false; e
 // Per-user write budget, shared across instances (Postgres-backed)
 const WRITES_PER_MINUTE = 60;
 
-async function run<S extends z.ZodType, T>(schema: S, input: unknown, fn: (actor: Actor, data: z.infer<S>) => Promise<T>): Promise<ActionResult<T>> {
+async function run<N extends ActionName>(name: N, input: unknown): Promise<ActionResult<ActionData<N>>> {
+  const { schema, fn } = ACTIONS[name] as unknown as ActionDef<z.ZodType, ActionData<N>>;
   try {
     const session = await getSession();
     if (!session) throw new MutationError("unauthenticated", "Your session has ended. Sign in again.");
@@ -42,185 +42,185 @@ async function run<S extends z.ZodType, T>(schema: S, input: unknown, fn: (actor
 }
 
 export async function moveTaskAction(input: unknown) {
-  return run(moveTaskSchema, input, moveTask);
+  return run("moveTask", input);
 }
 
 export async function placeTaskAction(input: unknown) {
-  return run(placeTaskSchema, input, placeTask);
+  return run("placeTask", input);
 }
 
 export async function renameTaskAction(input: unknown) {
-  return run(renameTaskSchema, input, renameTask);
+  return run("renameTask", input);
 }
 
 export async function setTaskPriorityAction(input: unknown) {
-  return run(setTaskPrioritySchema, input, setTaskPriority);
+  return run("setTaskPriority", input);
 }
 
 export async function setTaskProjectAction(input: unknown) {
-  return run(setTaskProjectSchema, input, setTaskProject);
+  return run("setTaskProject", input);
 }
 
 export async function setTaskWeightAction(input: unknown) {
-  return run(setTaskWeightSchema, input, setTaskWeight);
+  return run("setTaskWeight", input);
 }
 
 export async function setTaskDueAction(input: unknown) {
-  return run(setTaskDueSchema, input, setTaskDue);
+  return run("setTaskDue", input);
 }
 
 export async function setTaskRecurrenceAction(input: unknown) {
-  return run(setTaskRecurrenceSchema, input, setTaskRecurrence);
+  return run("setTaskRecurrence", input);
 }
 
 export async function deleteTaskAction(input: unknown) {
-  return run(taskRefSchema, input, deleteTask);
+  return run("deleteTask", input);
 }
 
 export async function restoreTaskAction(input: unknown) {
-  return run(taskRefSchema, input, restoreTask);
+  return run("restoreTask", input);
 }
 
 export async function captureTaskAction(input: unknown) {
-  return run(captureTaskSchema, input, captureTask);
+  return run("captureTask", input);
 }
 
 export async function createProjectAction(input: unknown) {
-  return run(createProjectSchema, input, createProject);
+  return run("createProject", input);
 }
 
 export async function updateProjectAction(input: unknown) {
-  return run(updateProjectSchema, input, updateProject);
+  return run("updateProject", input);
 }
 
 export async function setProjectArchivedAction(input: unknown) {
-  return run(setProjectArchivedSchema, input, setProjectArchived);
+  return run("setProjectArchived", input);
 }
 
 export async function addBoardTaskAction(input: unknown) {
-  return run(addBoardTaskSchema, input, addBoardTask);
+  return run("addBoardTask", input);
 }
 
 export async function finishOnboardingAction(input: unknown) {
-  return run(finishOnboardingSchema, input, (actor) => finishOnboarding(actor));
+  return run("finishOnboarding", input);
 }
 
 export async function createObjectiveAction(input: unknown) {
-  return run(createObjectiveSchema, input, createObjective);
+  return run("createObjective", input);
 }
 
 export async function setObjectiveProgressAction(input: unknown) {
-  return run(setObjectiveProgressSchema, input, setObjectiveProgress);
+  return run("setObjectiveProgress", input);
 }
 
 export async function setObjectiveArchivedAction(input: unknown) {
-  return run(setObjectiveArchivedSchema, input, setObjectiveArchived);
+  return run("setObjectiveArchived", input);
 }
 
 export async function editCommitAction(input: unknown) {
-  return run(editCommitSchema, input, editCommit);
+  return run("editCommit", input);
 }
 
 export async function createCommitAction(input: unknown) {
-  return run(manualCommitSchema, input, createManualCommit);
+  return run("createCommit", input);
 }
 
 export async function setTimezoneAction(input: unknown) {
-  return run(setTimezoneSchema, input, setTimezone);
+  return run("setTimezone", input);
 }
 
 export async function completeTaskAction(input: unknown) {
-  return run(taskRefSchema, input, completeTask);
+  return run("completeTask", input);
 }
 
 export async function renameColumnAction(input: unknown) {
-  return run(renameColumnSchema, input, renameColumn);
+  return run("renameColumn", input);
 }
 
 export async function setColumnLimitAction(input: unknown) {
-  return run(setColumnLimitSchema, input, setColumnLimit);
+  return run("setColumnLimit", input);
 }
 
 export async function addColumnAction(input: unknown) {
-  return run(addColumnSchema, input, addColumn);
+  return run("addColumn", input);
 }
 
 export async function moveColumnAction(input: unknown) {
-  return run(moveColumnSchema, input, moveColumn);
+  return run("moveColumn", input);
 }
 
 export async function deleteColumnAction(input: unknown) {
-  return run(columnRefSchema, input, deleteColumn);
+  return run("deleteColumn", input);
 }
 
 export async function bulkUpdateTasksAction(input: unknown) {
-  return run(bulkUpdateSchema, input, bulkUpdateTasks);
+  return run("bulkUpdateTasks", input);
 }
 
 export async function bulkRestoreTasksAction(input: unknown) {
-  return run(bulkRestoreSchema, input, bulkRestoreTasks);
+  return run("bulkRestoreTasks", input);
 }
 
 export async function captureManyAction(input: unknown) {
-  return run(captureManySchema, input, captureMany);
+  return run("captureMany", input);
 }
 
 export async function setTaskTagsAction(input: unknown) {
-  return run(setTaskTagsSchema, input, setTaskTags);
+  return run("setTaskTags", input);
 }
 
 export async function withdrawCommitAction(input: unknown) {
-  return run(commitRefSchema, input, withdrawCommit);
+  return run("withdrawCommit", input);
 }
 
 export async function restoreCommitAction(input: unknown) {
-  return run(commitRefSchema, input, restoreCommit);
+  return run("restoreCommit", input);
 }
 
 export async function updateObjectiveAction(input: unknown) {
-  return run(updateObjectiveSchema, input, updateObjective);
+  return run("updateObjective", input);
 }
 
 export async function setTaskDescriptionAction(input: unknown) {
-  return run(setTaskDescriptionSchema, input, setTaskDescription);
+  return run("setTaskDescription", input);
 }
 
 export async function setTaskDeferAction(input: unknown) {
-  return run(setTaskDeferSchema, input, setTaskDefer);
+  return run("setTaskDefer", input);
 }
 
 export async function setTaskPlannedAction(input: unknown) {
-  return run(setTaskPlannedSchema, input, setTaskPlanned);
+  return run("setTaskPlanned", input);
 }
 
 export async function setTaskStageAction(input: unknown) {
-  return run(setTaskStageSchema, input, setTaskStage);
+  return run("setTaskStage", input);
 }
 
 export async function skipRecurrenceAction(input: unknown) {
-  return run(taskRefSchema, input, skipRecurrence);
+  return run("skipRecurrence", input);
 }
 
 export async function duplicateTaskAction(input: unknown) {
-  return run(taskRefSchema, input, duplicateTask);
+  return run("duplicateTask", input);
 }
 
 export async function renameTagAction(input: unknown) {
-  return run(renameTagSchema, input, renameTag);
+  return run("renameTag", input);
 }
 
 export async function mergeTagsAction(input: unknown) {
-  return run(mergeTagsSchema, input, mergeTags);
+  return run("mergeTags", input);
 }
 
 export async function deleteTagAction(input: unknown) {
-  return run(tagRefSchema, input, deleteTag);
+  return run("deleteTag", input);
 }
 
 export async function setProjectNotesAction(input: unknown) {
-  return run(setProjectNotesSchema, input, setProjectNotes);
+  return run("setProjectNotes", input);
 }
 
 export async function setPreferencesAction(input: unknown) {
-  return run(setPreferencesSchema, input, setPreferences);
+  return run("setPreferences", input);
 }

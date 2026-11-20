@@ -1,6 +1,8 @@
 import * as server from "./actions";
 import type { ActionResult } from "./actions";
 import { broadcastWrite, saveStore } from "@/lib/save-state";
+import { demoRuntime } from "@/lib/demo/runtime";
+import type { ActionName } from "@/lib/actions/table";
 
 export type { ActionResult, ActionErrorCode } from "./actions";
 
@@ -13,15 +15,24 @@ export type { ActionResult, ActionErrorCode } from "./actions";
  *                   writes that create something are not retried, to avoid duplicates
  *   saving state    the top bar's saving… / saved / offline label (C45)
  *   other tabs      told to refresh after a successful write (C43)
+ *   demo            the same write runs on the demo's database in this browser
+ *                   (lib/demo/actions.ts, loaded only in a demo)
  */
 
 const BACKOFF_MS = [800, 2000, 4500];
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function guard<T>(action: (input: unknown) => Promise<ActionResult<T>>, retry = true): (input?: unknown) => Promise<ActionResult<T>> {
+function guard<T>(name: ActionName, action: (input: unknown) => Promise<ActionResult<T>>, retry = true): (input?: unknown) => Promise<ActionResult<T>> {
   return async (input?: unknown) => {
     saveStore.start();
     let result: ActionResult<T> | undefined;
+    if (demoRuntime()) {
+      const { runDemoAction } = await import("@/lib/demo/actions");
+      result = (await runDemoAction(name, input)) as ActionResult<T>;
+      saveStore.finish(result.ok);
+      if (result.ok) broadcastWrite();
+      return result;
+    }
     for (let attempt = 0; ; attempt++) {
       try {
         result = await action(input);
@@ -47,49 +58,49 @@ function guard<T>(action: (input: unknown) => Promise<ActionResult<T>>, retry = 
   };
 }
 
-export const moveTaskAction = guard(server.moveTaskAction);
-export const placeTaskAction = guard(server.placeTaskAction);
-export const renameTaskAction = guard(server.renameTaskAction);
-export const setTaskPriorityAction = guard(server.setTaskPriorityAction);
-export const setTaskProjectAction = guard(server.setTaskProjectAction);
-export const setTaskWeightAction = guard(server.setTaskWeightAction);
-export const setTaskDueAction = guard(server.setTaskDueAction);
-export const setTaskRecurrenceAction = guard(server.setTaskRecurrenceAction);
-export const deleteTaskAction = guard(server.deleteTaskAction);
-export const restoreTaskAction = guard(server.restoreTaskAction);
-export const captureTaskAction = guard(server.captureTaskAction, false);
-export const createProjectAction = guard(server.createProjectAction, false);
-export const updateProjectAction = guard(server.updateProjectAction);
-export const setProjectArchivedAction = guard(server.setProjectArchivedAction);
-export const addBoardTaskAction = guard(server.addBoardTaskAction, false);
-export const finishOnboardingAction = guard(server.finishOnboardingAction);
-export const createObjectiveAction = guard(server.createObjectiveAction, false);
-export const setObjectiveProgressAction = guard(server.setObjectiveProgressAction);
-export const setObjectiveArchivedAction = guard(server.setObjectiveArchivedAction);
-export const editCommitAction = guard(server.editCommitAction);
-export const createCommitAction = guard(server.createCommitAction, false);
-export const setTimezoneAction = guard(server.setTimezoneAction);
-export const completeTaskAction = guard(server.completeTaskAction);
-export const renameColumnAction = guard(server.renameColumnAction);
-export const setColumnLimitAction = guard(server.setColumnLimitAction);
-export const addColumnAction = guard(server.addColumnAction, false);
-export const moveColumnAction = guard(server.moveColumnAction);
-export const deleteColumnAction = guard(server.deleteColumnAction);
-export const bulkUpdateTasksAction = guard(server.bulkUpdateTasksAction);
-export const bulkRestoreTasksAction = guard(server.bulkRestoreTasksAction);
-export const captureManyAction = guard(server.captureManyAction, false);
-export const setTaskTagsAction = guard(server.setTaskTagsAction);
-export const withdrawCommitAction = guard(server.withdrawCommitAction);
-export const restoreCommitAction = guard(server.restoreCommitAction);
-export const updateObjectiveAction = guard(server.updateObjectiveAction);
-export const setTaskDescriptionAction = guard(server.setTaskDescriptionAction);
-export const setTaskDeferAction = guard(server.setTaskDeferAction);
-export const setTaskPlannedAction = guard(server.setTaskPlannedAction);
-export const setTaskStageAction = guard(server.setTaskStageAction);
-export const skipRecurrenceAction = guard(server.skipRecurrenceAction);
-export const duplicateTaskAction = guard(server.duplicateTaskAction, false);
-export const renameTagAction = guard(server.renameTagAction);
-export const mergeTagsAction = guard(server.mergeTagsAction);
-export const deleteTagAction = guard(server.deleteTagAction);
-export const setProjectNotesAction = guard(server.setProjectNotesAction);
-export const setPreferencesAction = guard(server.setPreferencesAction);
+export const moveTaskAction = guard("moveTask", server.moveTaskAction);
+export const placeTaskAction = guard("placeTask", server.placeTaskAction);
+export const renameTaskAction = guard("renameTask", server.renameTaskAction);
+export const setTaskPriorityAction = guard("setTaskPriority", server.setTaskPriorityAction);
+export const setTaskProjectAction = guard("setTaskProject", server.setTaskProjectAction);
+export const setTaskWeightAction = guard("setTaskWeight", server.setTaskWeightAction);
+export const setTaskDueAction = guard("setTaskDue", server.setTaskDueAction);
+export const setTaskRecurrenceAction = guard("setTaskRecurrence", server.setTaskRecurrenceAction);
+export const deleteTaskAction = guard("deleteTask", server.deleteTaskAction);
+export const restoreTaskAction = guard("restoreTask", server.restoreTaskAction);
+export const captureTaskAction = guard("captureTask", server.captureTaskAction, false);
+export const createProjectAction = guard("createProject", server.createProjectAction, false);
+export const updateProjectAction = guard("updateProject", server.updateProjectAction);
+export const setProjectArchivedAction = guard("setProjectArchived", server.setProjectArchivedAction);
+export const addBoardTaskAction = guard("addBoardTask", server.addBoardTaskAction, false);
+export const finishOnboardingAction = guard("finishOnboarding", server.finishOnboardingAction);
+export const createObjectiveAction = guard("createObjective", server.createObjectiveAction, false);
+export const setObjectiveProgressAction = guard("setObjectiveProgress", server.setObjectiveProgressAction);
+export const setObjectiveArchivedAction = guard("setObjectiveArchived", server.setObjectiveArchivedAction);
+export const editCommitAction = guard("editCommit", server.editCommitAction);
+export const createCommitAction = guard("createCommit", server.createCommitAction, false);
+export const setTimezoneAction = guard("setTimezone", server.setTimezoneAction);
+export const completeTaskAction = guard("completeTask", server.completeTaskAction);
+export const renameColumnAction = guard("renameColumn", server.renameColumnAction);
+export const setColumnLimitAction = guard("setColumnLimit", server.setColumnLimitAction);
+export const addColumnAction = guard("addColumn", server.addColumnAction, false);
+export const moveColumnAction = guard("moveColumn", server.moveColumnAction);
+export const deleteColumnAction = guard("deleteColumn", server.deleteColumnAction);
+export const bulkUpdateTasksAction = guard("bulkUpdateTasks", server.bulkUpdateTasksAction);
+export const bulkRestoreTasksAction = guard("bulkRestoreTasks", server.bulkRestoreTasksAction);
+export const captureManyAction = guard("captureMany", server.captureManyAction, false);
+export const setTaskTagsAction = guard("setTaskTags", server.setTaskTagsAction);
+export const withdrawCommitAction = guard("withdrawCommit", server.withdrawCommitAction);
+export const restoreCommitAction = guard("restoreCommit", server.restoreCommitAction);
+export const updateObjectiveAction = guard("updateObjective", server.updateObjectiveAction);
+export const setTaskDescriptionAction = guard("setTaskDescription", server.setTaskDescriptionAction);
+export const setTaskDeferAction = guard("setTaskDefer", server.setTaskDeferAction);
+export const setTaskPlannedAction = guard("setTaskPlanned", server.setTaskPlannedAction);
+export const setTaskStageAction = guard("setTaskStage", server.setTaskStageAction);
+export const skipRecurrenceAction = guard("skipRecurrence", server.skipRecurrenceAction);
+export const duplicateTaskAction = guard("duplicateTask", server.duplicateTaskAction, false);
+export const renameTagAction = guard("renameTag", server.renameTagAction);
+export const mergeTagsAction = guard("mergeTags", server.mergeTagsAction);
+export const deleteTagAction = guard("deleteTag", server.deleteTagAction);
+export const setProjectNotesAction = guard("setProjectNotes", server.setProjectNotesAction);
+export const setPreferencesAction = guard("setPreferences", server.setPreferencesAction);

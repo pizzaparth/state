@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { demoRuntime } from "@/lib/demo/runtime";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
@@ -43,6 +44,12 @@ function useWorkSearch(query: string) {
     setLoading(true);
     const timer = window.setTimeout(async () => {
       try {
+        if (demoRuntime()) {
+          const { demoSearch } = await import("@/lib/demo/api");
+          const found = await demoSearch(q.slice(0, 100));
+          if (!controller.signal.aborted) setHits(found);
+          return;
+        }
         const res = await fetch(`/api/search?q=${encodeURIComponent(q.slice(0, 100))}`, { signal: controller.signal });
         const body = res.ok ? ((await res.json()) as { hits: SearchHit[] }) : { hits: [] };
         setHits(body.hits);

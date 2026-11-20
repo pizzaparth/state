@@ -45,18 +45,26 @@ function Equation({ lines }: { lines: [string, string][] }) {
  * ?metric=<key>: one number explained. The formula filled in with the period's real
  * values, then the commits or tasks that produced it.
  */
-export async function MetricDrawer({ metric, scope, tz, range, commitHref }: { metric: string; scope: Scope; tz: string; range: MetricRange; commitHref: (id: string) => string }) {
+export async function loadMetricDrawer(metric: string, scope: Scope, tz: string, range: MetricRange) {
   if (!METRIC_KEYS.includes(metric as MetricKey)) return null;
   const key = metric as MetricKey;
-  const m = await getMetrics(scope, tz, range.days, range.end);
-  const span = `${formatDate(new Date(`${range.from}T12:00:00Z`), "UTC", { day: "numeric", month: "short", year: "numeric" })} – ${formatDate(new Date(`${range.to}T12:00:00Z`), "UTC", { day: "numeric", month: "short", year: "numeric" })}`;
   const usesCommits = key === "execution" || key === "velocity" || key === "commits";
   const usesTasks = key === "throughput" || key === "tasks" || key === "cycle";
-  const [commits, done, planned] = await Promise.all([
+  const [m, commits, done, planned] = await Promise.all([
+    getMetrics(scope, tz, range.days, range.end),
     usesCommits ? getCommits(scope, { tz, from: range.from, to: range.to, limit: LIST_LIMIT }) : [],
     usesTasks ? getTasksInWindow(scope, tz, range.from, range.to, "completed", LIST_LIMIT) : [],
     key === "completion" ? getTasksInWindow(scope, tz, range.from, range.to, "planned", LIST_LIMIT) : [],
   ]);
+  return { key, m, commits, done, planned };
+}
+
+export function MetricDrawer({ data, tz, range, commitHref }: { data: Awaited<ReturnType<typeof loadMetricDrawer>>; tz: string; range: MetricRange; commitHref: (id: string) => string }) {
+  if (!data) return null;
+  const { key, m, commits, done, planned } = data;
+  const span = `${formatDate(new Date(`${range.from}T12:00:00Z`), "UTC", { day: "numeric", month: "short", year: "numeric" })} – ${formatDate(new Date(`${range.to}T12:00:00Z`), "UTC", { day: "numeric", month: "short", year: "numeric" })}`;
+  const usesCommits = key === "execution" || key === "velocity" || key === "commits";
+  const usesTasks = key === "throughput" || key === "tasks" || key === "cycle";
 
   const lines: [string, string][] =
     key === "execution"
@@ -125,7 +133,7 @@ export async function MetricDrawer({ metric, scope, tz, range, commitHref }: { m
  * ?objective=<id>: burn-up (actual against the straight line from start to deadline),
  * required velocity and projected finish, all from objectivePosition.
  */
-export async function ObjectiveDrawer({ objectiveId, workspaceIds, tz }: { objectiveId: string; workspaceIds: string[]; tz: string }) {
+export async function loadObjectiveDrawer(objectiveId: string, workspaceIds: string[], tz: string) {
   const [live, archived] = await Promise.all([getObjectives(workspaceIds), getObjectives(workspaceIds, { archived: true })]);
   const o = [...live, ...archived].find((x) => x.id === objectiveId);
   if (!o) return null;
@@ -150,7 +158,12 @@ export async function ObjectiveDrawer({ objectiveId, workspaceIds, tz }: { objec
   const dayAt = (i: number) => new Date(Date.parse(`${start}T00:00:00Z`) + i * 86_400_000).toISOString().slice(0, 10);
   const labels = Array.from({ length: totalDays }, (_, i) => dayAt(i));
   const every = Math.max(1, Math.ceil(totalDays / 6));
+  return { o, pos, deadline, totalDays, actual, ideal, labels, every };
+}
 
+export function ObjectiveDrawer({ data, tz }: { data: Awaited<ReturnType<typeof loadObjectiveDrawer>>; tz: string }) {
+  if (!data) return null;
+  const { o, pos, deadline, totalDays, actual, ideal, labels, every } = data;
   return (
     <DetailDrawer param="objective" title="Objective" crumbs={[o.projectName ?? "Workspace"]}>
       <div className="app-stagger space-y-8">

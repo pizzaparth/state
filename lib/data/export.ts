@@ -1,6 +1,7 @@
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
-import { db } from "@/db";
+import { db } from "#db";
 import { columns, commits, objectives, projects, tags, tasks, users, workspaces } from "@/db/schema";
+import { toCsv } from "./csv";
 
 /**
  * Data export (docs/state_desc.md §41). Covers the person's personal workspace in full
@@ -170,3 +171,25 @@ export async function buildExport(userId: string) {
   };
 }
 
+
+const TASK_COLUMNS = ["id", "title", "description", "project", "status", "priority", "weight", "recurrenceRule", "dueAt", "startedAt", "completedAt", "createdAt", "archivedAt", "tags"] as const;
+const COMMIT_COLUMNS = ["id", "message", "project", "taskId", "executionValue", "source", "createdAt", "tags"] as const;
+const PROJECT_COLUMNS = ["name", "slug", "description", "status", "createdAt", "archivedAt"] as const;
+
+const joinTags = <T extends { tags: string[] }>(rows: T[]) => rows.map((r) => ({ ...r, tags: r.tags.join("; ") }));
+
+export type ExportQuery = { format: "json" } | { format: "csv"; dataset: "tasks" | "commits" | "projects" };
+
+/** The download for /api/export (owner) and the demo's export (in the browser). */
+export async function buildExportFile(userId: string, query: ExportQuery): Promise<{ body: string; name: string; type: string }> {
+  const day = new Date().toISOString().slice(0, 10);
+  if (query.format === "json") {
+    return { body: JSON.stringify(await buildExport(userId), null, 2), name: `state-export-${day}.json`, type: "application/json; charset=utf-8" };
+  }
+  const workspaceId = await personalWorkspaceId(userId);
+  let body: string;
+  if (query.dataset === "tasks") body = toCsv(TASK_COLUMNS, joinTags(workspaceId ? await exportTasks(workspaceId) : []));
+  else if (query.dataset === "commits") body = toCsv(COMMIT_COLUMNS, joinTags(workspaceId ? await exportCommits(workspaceId) : []));
+  else body = toCsv(PROJECT_COLUMNS, workspaceId ? await exportProjects(workspaceId) : []);
+  return { body, name: `state-${query.dataset}-${day}.csv`, type: "text/csv; charset=utf-8" };
+}

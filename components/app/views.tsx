@@ -10,10 +10,21 @@ import { ExecutionGraph } from "./execution-graph";
 import { Chip, EmptyState, Measure, Panel } from "./primitives";
 import { TaskRow } from "./task-row";
 
+/** The project page's records: 91 days of execution, recent commits, open work, a Done page. */
+export async function loadProjectView(projectScope: Scope, tz: string, tab: "open" | "done", page: number) {
+  const [daily, recent, open, done] = await Promise.all([
+    getDailyExecution(projectScope, tz, 91),
+    getCommits(projectScope, { limit: 12 }),
+    getOpenTasks(projectScope),
+    tab === "done" ? getDoneTasks(projectScope, page) : Promise.resolve({ rows: [], more: false }),
+  ]);
+  return { daily, recent, open, done };
+}
+
 /** Project page: numbers, graph, capture into it, open work by column, Done pages, notes. */
-export async function ProjectView({
+export function ProjectView({
   project,
-  scope,
+  data,
   tz,
   taskHref,
   commitHref,
@@ -23,7 +34,7 @@ export async function ProjectView({
   capture,
 }: {
   project: { id: string; name: string; slug: string; status: string; description: string | null; notes: string | null; archived: boolean };
-  scope: Scope;
+  data: Awaited<ReturnType<typeof loadProjectView>>;
   tz: string;
   taskHref: (id: string) => string;
   commitHref: (id: string) => string;
@@ -33,13 +44,7 @@ export async function ProjectView({
   /** Capture projects (live), when the viewer can add tasks here. */
   capture: { projects: { slug: string; name: string }[] } | null;
 }) {
-  const projectScope = { ...scope, projectId: project.id };
-  const [daily, recent, open, done] = await Promise.all([
-    getDailyExecution(projectScope, tz, 91),
-    getCommits(projectScope, { limit: 12 }),
-    getOpenTasks(projectScope),
-    tab === "done" ? getDoneTasks(projectScope, page) : Promise.resolve({ rows: [], more: false }),
-  ]);
+  const { daily, recent, open, done } = data;
   const now = new Date();
   const last30 = daily.slice(-30);
   const exec30 = last30.reduce((s, d) => s + d.execution, 0);

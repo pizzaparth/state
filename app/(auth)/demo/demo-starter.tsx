@@ -2,10 +2,14 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { startDemoAction } from "../actions";
-import { markDemoTab } from "@/lib/demo/tab";
+import { readDemoId, startDemo } from "@/lib/demo/local";
+import { demoTabAlive } from "@/lib/demo/tab";
 
-/** Starts the demo as soon as the page loads; the button retries after an error. */
+/**
+ * Starts the demo as soon as the page loads; the button retries after an error. The demo
+ * lives in this browser (lib/demo/local.ts): no account or data is created on the server.
+ * A demo still open in another tab is joined instead of replaced.
+ */
 export function DemoStarter() {
   const [error, setError] = React.useState<string | null>(null);
   const [pending, startTransition] = React.useTransition();
@@ -14,20 +18,14 @@ export function DemoStarter() {
   const start = React.useCallback(() => {
     setError(null);
     startTransition(async () => {
-      let timezone: string | undefined;
       try {
-        timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+        const current = readDemoId();
+        if (!current || !(await demoTabAlive(current))) await startDemo();
+        // Full load so the product starts from a fresh page
+        window.location.replace("/platform/today");
       } catch {
-        timezone = undefined;
+        setError("Could not start the demo. Try again.");
       }
-      const result = await startDemoAction(timezone ? { timezone } : undefined);
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      if (result.userId) markDemoTab(result.userId);
-      // Full load so the product starts from a fresh session
-      window.location.replace("/platform/today");
     });
   }, []);
 

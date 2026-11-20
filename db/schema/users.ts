@@ -10,7 +10,7 @@ export const users = pgTable(
     emailVerified: boolean("email_verified").default(false).notNull(),
     image: text("image"),
     timezone: text("timezone").default("UTC").notNull(),
-    // Throwaway demo visitor: deleted on sign-out, on tab close, or after DEMO_TTL (lib/demo/session.ts)
+    // Throwaway demo visitor. Demo rows exist only in the visitor's in-browser database (lib/demo/setup.ts)
     isDemo: boolean("is_demo").default(false).notNull(),
     defaultWorkspaceId: text("default_workspace_id"),
     // Personal settings (lib/preferences.ts parses them with defaults)

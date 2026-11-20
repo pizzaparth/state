@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lt, sql, type SQL } from "drizzle-orm";
-import { db } from "../index";
+import { db } from "#db";
 import {
   boards,
   columns,

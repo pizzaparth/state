@@ -1,12 +1,13 @@
 import { and, asc, eq } from "drizzle-orm";
-import { db } from "@/db";
+import { db } from "#db";
 import * as s from "@/db/schema";
 import { zoneOffsetMs } from "@/lib/tz";
 
 /**
  * Sample data for a demo visitor's workspace: about 60 days of finished work across
  * study, build, train and design, a few open cards, Inbox captures and two objectives.
- * Runs once, right after the demo account and its empty personal workspace are created.
+ * Runs once, right after the demo account and its empty personal workspace are created
+ * (lib/demo/setup.ts, in the visitor's browser).
  *
  * Timestamps are relative to `now` and laid out on the visitor's local days, so Today always
  * has recent work. Ids are random: many demo workspaces exist side by side.

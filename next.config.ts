@@ -39,6 +39,11 @@ const staticCsp = [
   ...(process.env.VERCEL ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
+// Build output. A script's CSP only matters when it runs as a worker, which takes the CSP
+// of its own response: the demo's database worker (lib/demo/db/worker.ts) compiles
+// Postgres from WebAssembly, so it needs 'wasm-unsafe-eval' (and nothing else).
+const assetCsp = ["default-src 'self'", "script-src 'self' 'wasm-unsafe-eval'", "connect-src 'self'", "object-src 'none'", "base-uri 'self'", "frame-ancestors 'none'"].join("; ");
+
 const nextConfig: NextConfig = {
   // Optional separate output dir so a production build or test run can coexist with
   // a running `next dev` (both otherwise write to .next)
@@ -47,8 +52,11 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
-      // Everything except /platform, which middleware.ts covers with a nonce CSP
-      { source: "/:path((?!platform(?:/|$)).*)", headers: [{ key: "Content-Security-Policy", value: staticCsp }] },
+      // The demo's Postgres files (scripts/copy-pglite.mjs): the path carries the version
+      { source: "/pglite/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+      // Everything except /platform, which middleware.ts covers with a nonce CSP, and build output
+      { source: "/:path((?!platform(?:/|$)|_next/static/).*)", headers: [{ key: "Content-Security-Policy", value: staticCsp }] },
+      { source: "/_next/static/:path*", headers: [{ key: "Content-Security-Policy", value: assetCsp }] },
     ];
   },
   async redirects() {
@@ -74,6 +82,17 @@ const nextConfig: NextConfig = {
     return { beforeFiles: [{ source: "/", destination: "/home" }] };
   },
   poweredByHeader: false,
+  // The demo bundles PGlite (lib/demo/db/worker.ts) for the browser. Its Node-only code
+  // paths import node:* modules it never runs there: strip the scheme and stub them out.
+  webpack(config, { isServer, webpack }) {
+    if (!isServer) {
+      config.plugins.push(new webpack.NormalModuleReplacementPlugin(/^node:/, (resource: { request: string }) => {
+        resource.request = resource.request.replace(/^node:/, "");
+      }));
+      config.resolve.fallback = { ...config.resolve.fallback, crypto: false, fs: false, module: false, path: false, stream: false, url: false, zlib: false };
+    }
+    return config;
+  },
   typedRoutes: true,
   experimental: {
     optimizePackageImports: ["lucide-react", "date-fns", "recharts", "motion"],
