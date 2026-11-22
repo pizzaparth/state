@@ -14,7 +14,6 @@ const isLocale = (value: string) => {
 };
 
 export const START_PAGES = { today: "Today", inbox: "Inbox", board: "Board", metrics: "Metrics" } as const;
-export const DONE_WINDOWS = [7, 14, 30] as const;
 
 export const preferencesSchema = z.object({
   /** BCP 47 tag for dates and numbers; null = from the browser (Accept-Language). */
@@ -22,7 +21,6 @@ export const preferencesSchema = z.object({
   weekStart: z.enum(["monday", "sunday"]).catch("monday").default("monday"),
   defaultWeight: z.union([z.literal(1), z.literal(2), z.literal(4), z.literal(8)]).catch(2).default(2),
   startPage: z.enum(["today", "inbox", "board", "metrics"]).catch("today").default("today"),
-  doneWindow: z.union([z.literal(7), z.literal(14), z.literal(30)]).catch(14).default(14),
   motion: z.boolean().catch(true).default(true),
 });
 
@@ -36,7 +34,6 @@ export const setPreferencesSchema = z.strictObject({
   weekStart: z.enum(["monday", "sunday"]).optional(),
   defaultWeight: z.union([z.literal(1), z.literal(2), z.literal(4), z.literal(8)]).optional(),
   startPage: z.enum(["today", "inbox", "board", "metrics"]).optional(),
-  doneWindow: z.union([z.literal(7), z.literal(14), z.literal(30)]).optional(),
   motion: z.boolean().optional(),
 });
 

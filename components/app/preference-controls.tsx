@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Loader2 } from "lucide-react";
 import { setPreferencesAction } from "@/app/(app)/client-actions";
-import { DONE_WINDOWS, LOCALE_OPTIONS, START_PAGES, type Preferences } from "@/lib/preferences";
+import { LOCALE_OPTIONS, START_PAGES, type Preferences } from "@/lib/preferences";
 import { WEIGHT_LEVELS } from "@/lib/weights";
 import { useNotice } from "./notice";
 
@@ -100,15 +100,6 @@ export function PreferenceField({ name, prefs, detected }: { name: Key; prefs: P
         value={prefs.startPage}
         options={(Object.keys(START_PAGES) as (keyof typeof START_PAGES)[]).map((k) => ({ value: k, label: START_PAGES[k] }))}
         message={(v) => `Signing in opens ${START_PAGES[v]}.`}
-      />
-    ),
-    doneWindow: (
-      <PreferenceSelect
-        name="doneWindow"
-        label="Done window on the board"
-        value={prefs.doneWindow}
-        options={DONE_WINDOWS.map((d) => ({ value: d, label: `${d} days` }))}
-        message={(v) => `The board shows Done from the last ${v} days.`}
       />
     ),
     motion: (

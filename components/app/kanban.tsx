@@ -98,7 +98,6 @@ export function Kanban({
   columns,
   cards: initial,
   taskHref,
-  doneWindowDays,
   initialSort,
   initialFilter,
   projects = [],
@@ -110,7 +109,6 @@ export function Kanban({
   columns: BoardColumn[];
   cards: BoardCard[];
   taskHref?: Record<string, string>;
-  doneWindowDays: number;
   /** Shows the sort and filter bars, starting from these keys (empty = manual). */
   initialSort?: SortKey[];
   initialFilter?: BoardFilter;
@@ -118,7 +116,7 @@ export function Kanban({
   tags?: string[];
   /** YYYY-MM-DD in the viewer's zone. */
   today: string;
-  /** Where Done cards older than the window are listed. */
+  /** Where tasks done before today are listed. */
   historyHref?: string;
   move?: MoveTask;
 }) {
@@ -545,7 +543,7 @@ export function Kanban({
                     className="font-mono text-[13px] tabular-nums text-[#52525B]"
                     title={
                       isDone
-                        ? `${list.length} done in ${doneWindowDays} days, ${sumWeight(list)} execution`
+                        ? `${list.length} done today, ${sumWeight(list)} execution`
                         : `${list.length} tasks, ${sumWeight(list)} execution queued${column.wipLimit ? `; limit ${column.wipLimit}` : ""}`
                     }
                   >
@@ -558,7 +556,7 @@ export function Kanban({
                     ) : (
                       list.length
                     )}
-                    {isDone && <span className="text-[#71717A]">/{doneWindowDays}d</span>}
+                    {isDone && <span className="text-[#71717A]"> today</span>}
                     <span className="ml-2 font-semibold text-[#0A0A0A]">
                       {isDone ? "+" : "Σ"}
                       {sumWeight(list)}

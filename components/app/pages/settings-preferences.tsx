@@ -38,9 +38,6 @@ function View({ viewer, detected }: Props) {
           <Row label="Start page" hint="after signing in">
             {field("startPage")}
           </Row>
-          <Row label="Done window" hint="board, Done column">
-            {field("doneWindow")}
-          </Row>
           <Row label="Background motion" hint="parallax layers">
             {field("motion")}
           </Row>

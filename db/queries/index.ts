@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lt, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 import { db } from "#db";
 import {
   boards,
@@ -378,14 +378,13 @@ export interface BoardData {
   name: string;
   columns: { id: string; name: string; stateType: string; wipLimit: number | null }[];
   tasks: (TaskCard & { description: string | null })[];
-  doneWindowDays: number;
 }
 
 /** Upper bound on cards sent to one board view; keeps payloads bounded on huge boards. */
 const BOARD_CARD_LIMIT = 1000;
 
-/** Board with open tasks and Done tasks from the last `doneWindowDays` days. */
-export async function getBoard(boardId: string, workspaceIds: string[], doneWindowDays = 14): Promise<BoardData | null> {
+/** Board with open tasks and the tasks done today (the viewer's local day); older ones are in History. */
+export async function getBoard(boardId: string, workspaceIds: string[], tz: string): Promise<BoardData | null> {
   if (workspaceIds.length === 0) return null;
   const [board] = await db
     .select({ id: boards.id, name: boards.name })
@@ -410,14 +409,14 @@ export async function getBoard(boardId: string, workspaceIds: string[], doneWind
         eq(tasks.boardId, boardId),
         isNull(tasks.deletedAt),
         isNull(tasks.archivedAt),
-        sql`(${tasks.completedAt} is null or ${tasks.completedAt} >= now() - make_interval(days => ${doneWindowDays}))`
+        or(isNull(tasks.completedAt), gte(tasks.completedAt, localDayStart(tz, 0)))
       )
     )
     // Bytewise order matches the fractional keys written by lib/position.ts
     .orderBy(sql`${tasks.position} collate "C"`, asc(tasks.id))
     .limit(BOARD_CARD_LIMIT);
 
-  return { ...board, columns: cols, tasks: await withTags(rows), doneWindowDays };
+  return { ...board, columns: cols, tasks: await withTags(rows) };
 }
 
 /** Card ids of a board in on-screen order (columns left to right, then position): panel J/K. */

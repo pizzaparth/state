@@ -18,6 +18,7 @@ const m = await import("@/lib/mutations");
 const { loadActor } = await import("@/lib/authz");
 const { buildExport } = await import("@/lib/data/export");
 const { loadViewerData } = await import("@/lib/viewer-data");
+const { dayKey } = await import("@/lib/format");
 const { DEMO_MIGRATIONS } = await import("@/lib/demo/db/migrations.generated");
 const { PGLITE_VERSION } = await import("@/lib/demo/db/assets");
 const { demoMigrations } = await import("../scripts/gen-demo-migrations.mjs");
@@ -50,8 +51,11 @@ describe("demo database", () => {
     const series = await q.getMetricSeries(scope, TZ, 30);
     expect(series.history.length).toBeGreaterThan(0);
     expect(await q.getEligibleDays(scope, TZ, 30)).toBeGreaterThan(0);
-    const board = await q.getBoard(viewer.personalBoardId!, viewer.workspaceIds);
+    const board = await q.getBoard(viewer.personalBoardId!, viewer.workspaceIds, TZ);
     expect(board?.columns.length).toBe(3);
+    // Every open task, and only the tasks done today
+    expect(board!.tasks.filter((t) => !t.completedAt).length).toBe(7);
+    expect(board!.tasks.filter((t) => t.completedAt).map((t) => t.id).sort()).toEqual(today.completed.map((t) => t.id).sort());
     expect((await q.getInbox(viewer.personalWorkspaceId)).length).toBe(3);
     expect((await q.getProjects(viewer.workspaceIds, TZ)).length).toBe(4);
     expect((await q.searchWork("thesis", viewer.workspaceIds)).length).toBeGreaterThan(0);
@@ -67,6 +71,20 @@ describe("demo database", () => {
     const card = await m.addBoardTask(actor, { columnId: (await q.getBoardColumns(viewer.personalBoardId!, viewer.workspaceIds))[0].id, title: "Write the abstract", weight: 4 });
     const done = await m.completeTask(actor, { taskId: card.id });
     expect(done.committed).toBe(4);
+    // Done today: on the board. Done yesterday: only in History
+    const onBoard = async () => (await q.getBoard(viewer.personalBoardId!, viewer.workspaceIds, TZ))!.tasks.some((t) => t.id === card.id);
+    expect(await onBoard()).toBe(true);
+    const dayBefore = new Date(Date.now() - 24 * 3_600_000);
+    const { db } = await import("#db");
+    const { tasks, commits } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const [{ completedAt }] = await db.update(tasks).set({ completedAt: dayBefore }).where(eq(tasks.id, card.id)).returning({ completedAt: tasks.completedAt });
+    await db.update(commits).set({ createdAt: dayBefore }).where(eq(commits.taskId, card.id));
+    expect(await onBoard()).toBe(false);
+    const day = dayKey(completedAt!, TZ);
+    expect((await q.getCommits({ workspaceIds: viewer.workspaceIds, userId }, { tz: TZ, from: day, to: day, source: "task_completion" })).some((c) => c.taskId === card.id)).toBe(true);
+    await db.update(tasks).set({ completedAt: new Date() }).where(eq(tasks.id, card.id));
+    await db.update(commits).set({ createdAt: new Date() }).where(eq(commits.taskId, card.id));
     const commit = await m.createManualCommit(actor, { message: "Reviewed notes", projectId: null, weight: 2 });
     expect((await q.getTicker({ workspaceIds: viewer.workspaceIds, userId }, TZ)).today).toBe(before + 6);
     await m.withdrawCommit(actor, { commitId: commit.id });

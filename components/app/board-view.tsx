@@ -21,7 +21,6 @@ export async function loadBoardView({
   basePath,
   sort,
   filter,
-  doneWindowDays = 14,
 }: {
   boardId: string | null;
   viewer: Viewer;
@@ -30,9 +29,8 @@ export async function loadBoardView({
   /** Starting sort; passing it shows the sort and filter bars. */
   sort?: SortKey[];
   filter?: BoardFilter;
-  doneWindowDays?: number;
 }) {
-  const board = boardId ? await getBoard(boardId, viewer.workspaceIds, doneWindowDays) : null;
+  const board = boardId ? await getBoard(boardId, viewer.workspaceIds, viewer.tz) : null;
   if (!board) return null;
   const [projects, tags] = await Promise.all([
     viewer.personalWorkspaceId ? getProjectOptions(viewer.personalWorkspaceId, viewer.workspaceIds) : [],
@@ -68,7 +66,6 @@ export async function loadBoardView({
     columns: board.columns,
     cards,
     taskHref,
-    doneWindowDays: board.doneWindowDays,
     sort,
     filter,
     projects: projects.map((p) => ({ id: p.id, name: p.name, slug: p.slug })),
@@ -91,7 +88,6 @@ export function BoardView({ data }: { data: BoardViewData }) {
       columns={data.columns}
       cards={data.cards}
       taskHref={data.taskHref}
-      doneWindowDays={data.doneWindowDays}
       initialSort={data.sort}
       initialFilter={data.filter}
       projects={data.projects}

@@ -126,7 +126,7 @@ async function main() {
   // ------------------------------------------------------------ reads (BOLA)
   record("R1", "Read another user's personal task by id", (await getTaskDetail(parth.task.id, readable(B))) === null);
   record("R2", "Read another user's commit by id", (await getCommitDetail(parth.commit.id, readable(B))) === null);
-  record("R3", "Read another user's personal board by id", (await getBoard(parth.board.id, readable(B))) === null);
+  record("R3", "Read another user's personal board by id", (await getBoard(parth.board.id, readable(B), "UTC")) === null);
   const xProjects = await getProjects(readable(X), "UTC");
   record("R6", "Project list leaks no foreign projects", xProjects.length === 0, `${xProjects.length} rows`);
   const xCommits = await getCommits({ workspaceIds: readable(X) });
