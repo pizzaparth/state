@@ -20,13 +20,14 @@ function age(createdAt: Date, now: Date): string {
 
 async function load({ viewer, params }: PageContext) {
   const ws = viewer.personalWorkspaceId;
-  const [inbox, projects, options, targets] = await Promise.all([
-    getInbox(ws),
+  const loading = getInbox(ws);
+  const [inbox, projects, options, targets, drawers] = await Promise.all([
+    loading,
     getCaptureProjects(viewer),
     ws ? getProjectOptions(ws, viewer.workspaceIds) : [],
     ws ? getBoardTargets(ws, viewer.workspaceIds) : [],
+    loadDrawers(params, viewer, loading.then((rows) => rows.map((t) => t.id))),
   ]);
-  const drawers = await loadDrawers(params, viewer, inbox.map((t) => t.id));
   return { props: { viewer, params, inbox, projects, options, targets, drawers } };
 }
 

@@ -450,7 +450,7 @@ export async function getInboxCount(personalWorkspaceId: string | null): Promise
 
 export async function getTaskDetail(taskId: string, workspaceIds: string[]) {
   if (workspaceIds.length === 0) return null;
-  const [row] = await db
+  const detail = db
     .select({
       ...taskCardFields,
       workspaceId: tasks.workspaceId,
@@ -467,14 +467,15 @@ export async function getTaskDetail(taskId: string, workspaceIds: string[]) {
     .leftJoin(columns, eq(columns.id, tasks.columnId))
     .where(and(eq(tasks.id, taskId), inArray(tasks.workspaceId, workspaceIds), isNull(tasks.deletedAt)))
     .limit(1);
-  if (!row) return null;
-  const [withTag] = await withTags([row]);
-  const [commit] = await db
+  const commit = db
     .select({ id: commits.id, message: commits.message, executionValue: commits.executionValue, createdAt: commits.createdAt })
     .from(commits)
-    .where(and(eq(commits.taskId, taskId), isNull(commits.deletedAt)))
+    .where(and(eq(commits.taskId, taskId), inArray(commits.workspaceId, workspaceIds), isNull(commits.deletedAt)))
     .limit(1);
-  return { ...withTag, commit: commit ?? null };
+  // Together: the panel waits for all three, and nothing is returned for a task out of scope
+  const [[row], [tagged], [done]] = await Promise.all([detail, withTags([{ id: taskId }]), commit]);
+  if (!row) return null;
+  return { ...row, tags: tagged.tags, commit: done ?? null };
 }
 
 /** All columns of a board, in order, if the viewer can read it (the task panel's status control). */

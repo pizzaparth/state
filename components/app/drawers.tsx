@@ -38,8 +38,13 @@ export type DrawersData =
     }
   | { kind: "commit"; commit: CommitDetailData; projects: Awaited<ReturnType<typeof getProjectOptions>> | undefined };
 
-/** Loads the task or commit panel named in the URL, if the viewer may read it. */
-export async function loadDrawers(params: Record<string, string | undefined>, viewer: Viewer, siblings?: string[]): Promise<DrawersData> {
+/**
+ * Loads the task or commit panel named in the URL, if the viewer may read it. `siblings`
+ * (the page's list, for J/K) may still be loading, so pages load the panel alongside it.
+ */
+export async function loadDrawers(params: Record<string, string | undefined>, viewer: Viewer, siblings?: string[] | Promise<string[]>): Promise<DrawersData> {
+  // Not always awaited below; the page's own await reports a failed list
+  void Promise.resolve(siblings).catch(() => {});
   const taskId = objectIdParam(params.task);
   const commitId = objectIdParam(params.commit);
   if (taskId) {
@@ -47,16 +52,17 @@ export async function loadDrawers(params: Record<string, string | undefined>, vi
     if (task) {
       const writable = canWrite(viewer, task.workspaceId);
       const inInbox = task.boardId === null;
-      const [targets, projects, statusColumns, tagNames, events] = await Promise.all([
+      const [targets, projects, statusColumns, tagNames, events, order] = await Promise.all([
         writable && inInbox && !task.completedAt ? getBoardTargets(task.workspaceId, viewer.workspaceIds) : [],
         writable ? getProjectOptions(task.workspaceId, viewer.workspaceIds) : undefined,
         task.boardId ? getBoardColumns(task.boardId, viewer.workspaceIds) : undefined,
         writable ? getTagNames(viewer.workspaceIds) : [],
         getTaskHistory(task.id, viewer.workspaceIds),
+        siblings,
       ]);
       const columnName = (id: unknown) => statusColumns?.find((c) => c.id === id)?.name ?? "a column";
       const history = events.map((e) => ({ at: e.createdAt, text: describeEvent(e.action, (e.metadata ?? {}) as Record<string, unknown>, columnName) }));
-      const nav = siblings && siblings.includes(task.id) ? { prevId: siblings[siblings.indexOf(task.id) - 1] ?? null, nextId: siblings[siblings.indexOf(task.id) + 1] ?? null } : undefined;
+      const nav = order && order.includes(task.id) ? { prevId: order[order.indexOf(task.id) - 1] ?? null, nextId: order[order.indexOf(task.id) + 1] ?? null } : undefined;
       return { kind: "task", task, writable, targets, projects, statusColumns, tagNames, history, nav };
     }
   }

@@ -30,12 +30,12 @@ export async function loadBoardView({
   sort?: SortKey[];
   filter?: BoardFilter;
 }) {
-  const board = boardId ? await getBoard(boardId, viewer.workspaceIds, viewer.tz) : null;
-  if (!board) return null;
-  const [projects, tags] = await Promise.all([
+  const [board, projects, tags] = await Promise.all([
+    boardId ? getBoard(boardId, viewer.workspaceIds, viewer.tz) : null,
     viewer.personalWorkspaceId ? getProjectOptions(viewer.personalWorkspaceId, viewer.workspaceIds) : [],
     getTagNames(viewer.workspaceIds),
   ]);
+  if (!board) return null;
   const now = new Date();
   const today = dayKey(now, viewer.tz);
   const cards: BoardCard[] = board.tasks

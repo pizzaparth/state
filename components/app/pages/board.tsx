@@ -12,11 +12,11 @@ async function load({ viewer, params, cookies }: PageContext) {
   const sort = parseBoardSort(params.sort ?? cookies[BOARD_SORT_COOKIE]);
   // Filter: from the URL when it names any filter, else the last one used here
   const filter = parseBoardFilter(BOARD_FILTER_KEYS.some((k) => params[k] !== undefined) ? params : decodeURIComponent(cookies[BOARD_FILTER_COOKIE] ?? ""));
-  const [board, siblings] = await Promise.all([
+  const siblings = params.task && viewer.personalBoardId ? getBoardTaskIds(viewer.personalBoardId, viewer.workspaceIds) : undefined;
+  const [board, drawers] = await Promise.all([
     loadBoardView({ boardId: viewer.personalBoardId, viewer, params, basePath: "/platform/board", sort, filter }),
-    params.task && viewer.personalBoardId ? getBoardTaskIds(viewer.personalBoardId, viewer.workspaceIds) : undefined,
+    loadDrawers(params, viewer, siblings),
   ]);
-  const drawers = await loadDrawers(params, viewer, siblings);
   return { props: { board, drawers, tz: viewer.tz } };
 }
 

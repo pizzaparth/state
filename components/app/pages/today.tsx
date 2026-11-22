@@ -29,14 +29,15 @@ async function load({ viewer, params }: PageContext) {
   // A new account with nothing recorded yet starts with first-run setup
   if (!viewer.onboardedAt && !(await hasCommits(viewer.id))) return { redirect: "/platform/start" };
   const scope = { workspaceIds: viewer.workspaceIds, userId: viewer.id };
-  const [data, projects, ticker, objectives] = await Promise.all([
-    getToday(scope, viewer.tz),
+  const loading = getToday(scope, viewer.tz);
+  const siblings = loading.then((d) => [...new Set([...d.planned, ...d.carried, ...d.overdue, ...d.active, ...d.queued, ...d.completed].map((t) => t.id))]);
+  const [data, projects, ticker, objectives, drawers] = await Promise.all([
+    loading,
     getCaptureProjects(viewer),
     loadViewerTicker(viewer),
     viewer.personalWorkspaceId ? getObjectives([viewer.personalWorkspaceId]) : [],
+    loadDrawers(params, viewer, siblings),
   ]);
-  const siblings = [...new Set([...data.planned, ...data.carried, ...data.overdue, ...data.active, ...data.queued, ...data.completed].map((t) => t.id))];
-  const drawers = await loadDrawers(params, viewer, siblings);
   return { props: { viewer, params, data, projects, ticker, objectives, drawers } };
 }
 

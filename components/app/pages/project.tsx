@@ -13,11 +13,12 @@ async function load({ viewer, params, route }: PageContext) {
   if (!project) return { notFound: true as const };
   const tab: "open" | "done" = params.tab === "done" ? "done" : "open";
   const page = Math.max(0, Math.min(1000, Number(params.page) || 0));
-  const [view, capture] = await Promise.all([
-    loadProjectView({ workspaceIds: [project.workspaceId], projectId: project.id }, viewer.tz, tab, page),
+  const loading = loadProjectView({ workspaceIds: [project.workspaceId], projectId: project.id }, viewer.tz, tab, page);
+  const [view, capture, drawers] = await Promise.all([
+    loading,
     getCaptureProjects(viewer),
+    loadDrawers(params, viewer, loading.then((v) => v.open.map((t) => t.id))),
   ]);
-  const drawers = await loadDrawers(params, viewer, view.open.map((t) => t.id));
   return { props: { viewer, params, slug: route.projectSlug ?? "", project, tab, page, view, capture, drawers } };
 }
 

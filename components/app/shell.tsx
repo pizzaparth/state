@@ -41,6 +41,7 @@ import { ShortcutSheet } from "./shortcut-sheet";
 import { CommandPalette, type PaletteCommand } from "./command-palette";
 import { CommitDialog } from "./commit-dialog";
 import { CaptureDialog } from "./capture-dialog";
+import { NavigationWake } from "./navigation-wake";
 
 export interface ShellData {
   inboxCount: number;
@@ -215,6 +216,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
       <NoticeProvider>
         <ShellContext.Provider value={{ openPalette: () => setPaletteOpen(true), openCommit: () => openCommit(), openCapture: () => setCaptureOpen(true) }}>
           <TimezoneCheck tz={data.tz} demo={Boolean(data.demoId)} />
+          <NavigationWake />
           {data.motion && <ParallaxBackdrop scroller="#content" tone="light" />}
           <div className="relative z-10 flex h-[100dvh] w-full overflow-hidden text-[#0A0A0A]">
             <aside className={cn("hidden shrink-0 p-3 lg:block", collapsed ? "w-[5.25rem]" : "w-64")}>
