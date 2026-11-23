@@ -205,7 +205,7 @@ function ObjectiveDialog({ projects, edit }: { projects: { id: string; name: str
 
             {projects.length > 0 && (
               <div className="space-y-1.5">
-                {label("projectId", "Project", true)}
+                {label("projectId", "Work", true)}
                 <select {...props("projectId")} value={values.projectId} onChange={(e) => set("projectId", e.target.value)} className="app-select">
                   <option value="">Whole workspace</option>
                   {projects.map((p) => (

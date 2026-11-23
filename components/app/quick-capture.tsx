@@ -64,7 +64,7 @@ export function QuickCapture({
   tz,
   autoFocus = false,
   showRecent = true,
-  placeholder = "Add a task… #project !high fri",
+  placeholder = "Add a task… #work !high fri",
   draftKey,
   onCaptured,
   inputRef: externalRef,
@@ -224,7 +224,7 @@ export function QuickCapture({
     <>
       {unknownSlug ? "" : "Task "}
       {!unknownSlug && <span className="font-medium text-[#0A0A0A]">“{parsed.title}”</span>}
-      {!unknownSlug && project && `, project ${project.name}`}
+      {!unknownSlug && project && `, work ${project.name}`}
       {!unknownSlug && parsed.priority && `, ${parsed.priority} priority`}
       {!unknownSlug && parsed.weight && `, +${parsed.weight}`}
       {!unknownSlug && parsed.repeat && `, repeats ${parsed.repeat}`}
@@ -333,7 +333,7 @@ export function QuickCapture({
           Capture
         </button>
         {listOpen && (
-          <ul id={listId} role="listbox" aria-label={token?.kind === "#" ? "Projects" : "Priorities"} className="app-overlay absolute left-2 top-[calc(100%+6px)] z-30 min-w-56 rounded-[16px] p-1.5">
+          <ul id={listId} role="listbox" aria-label={token?.kind === "#" ? "Work" : "Priorities"} className="app-overlay absolute left-2 top-[calc(100%+6px)] z-30 min-w-56 rounded-[16px] p-1.5">
             {options.map((o, i) => (
               <li
                 key={o.value}

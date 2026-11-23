@@ -7,7 +7,7 @@ import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TICK } from "@/lib/type";
 
-export const HISTORY_FILTERS = ["project", "source", "tag", "weight", "from", "to", "day", "q"] as const;
+export const HISTORY_FILTERS = ["work", "source", "tag", "weight", "from", "to", "day", "q"] as const;
 
 /**
  * History filters, all in the URL (deep links, Back restores them). Each change replaces
@@ -61,8 +61,8 @@ export function HistoryFilters({
         <span className="sr-only">Message</span>
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find in messages…" autoComplete="off" className="h-full min-w-0 flex-1 bg-transparent text-base placeholder:text-[#4F5565] focus:outline-none" />
       </label>
-      <select aria-label="Project" value={value("project")} onChange={(e) => set({ project: e.target.value })} className={select}>
-        <option value="">All projects</option>
+      <select aria-label="Work" value={value("work")} onChange={(e) => set({ work: e.target.value })} className={select}>
+        <option value="">All work</option>
         {projects.map((p) => (
           <option key={p.slug} value={p.slug}>
             {p.name}

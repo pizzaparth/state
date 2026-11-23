@@ -36,7 +36,7 @@ export function CommitEditor({
   const editRef = React.useRef<HTMLButtonElement>(null);
   const dirty = editing && JSON.stringify(values) !== JSON.stringify(initial);
   // An archived project stays selectable while it is still the commit's project
-  const options = commit.projectId && !projects.some((p) => p.id === commit.projectId) ? [{ id: commit.projectId, name: commit.projectName ?? "Archived project" }, ...projects] : projects;
+  const options = commit.projectId && !projects.some((p) => p.id === commit.projectId) ? [{ id: commit.projectId, name: commit.projectName ?? "Archived work" }, ...projects] : projects;
 
   React.useEffect(() => {
     if (!dirty) return;
@@ -133,7 +133,7 @@ export function CommitEditor({
 
       <div className="space-y-1.5">
         <label htmlFor="commit-project" className="text-sm font-medium text-[#3A3F4B]">
-          Project
+          Work
         </label>
         <select
           id="commit-project"
@@ -144,7 +144,7 @@ export function CommitEditor({
           aria-describedby={errors.projectId ? "commit-projectId-error" : undefined}
           className="app-select"
         >
-          <option value="">No project</option>
+          <option value="">No work</option>
           {options.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}

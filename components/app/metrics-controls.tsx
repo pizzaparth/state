@@ -7,7 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 /**
- * Period (7D … 1Y, All, or a from–to range) and project, all in the URL. Changing one
+ * Period (7D … 1Y, All, or a from–to range) and work, all in the URL. Changing one
  * keeps the others.
  */
 export function MetricsControls({
@@ -80,12 +80,12 @@ export function MetricsControls({
       </form>
       {projects.length > 0 && (
         <select
-          aria-label="Project"
+          aria-label="Work"
           value={project ?? ""}
-          onChange={(e) => router.push(href({ project: e.target.value || null }), { scroll: false })}
+          onChange={(e) => router.push(href({ work: e.target.value || null, project: null }), { scroll: false })}
           className="app-select h-10 w-auto max-w-[14rem] rounded-full pl-3 text-[15px]"
         >
-          <option value="">All projects</option>
+          <option value="">All work</option>
           {projects.map((p) => (
             <option key={p.slug} value={p.slug}>
               {p.name}

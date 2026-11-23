@@ -12,7 +12,7 @@ const EXPORTS = [
   { href: "/api/export?format=json", label: "All · JSON", query: { format: "json" } },
   { href: "/api/export?format=csv&dataset=tasks", label: "Tasks · CSV", query: { format: "csv", dataset: "tasks" } },
   { href: "/api/export?format=csv&dataset=commits", label: "Commits · CSV", query: { format: "csv", dataset: "commits" } },
-  { href: "/api/export?format=csv&dataset=projects", label: "Projects · CSV", query: { format: "csv", dataset: "projects" } },
+  { href: "/api/export?format=csv&dataset=projects", label: "Work · CSV", query: { format: "csv", dataset: "projects" } },
 ] as const;
 
 /** A demo's data is in this browser: build the file here and save it. */
@@ -67,7 +67,7 @@ const summary = (r: ImportResult) =>
   [
     `${formatNumber(r.tasks)} tasks`,
     `${formatNumber(r.commits)} commits`,
-    `${formatNumber(r.projects)} projects`,
+    `${formatNumber(r.projects)} work`,
     r.skipped > 0 && `${formatNumber(r.skipped)} already here`,
   ]
     .filter(Boolean)

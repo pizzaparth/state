@@ -124,13 +124,13 @@ export function InboxTriage({
       <PromptDialog
         open={dialog?.kind === "project"}
         onOpenChange={(o) => !o && setDialog(null)}
-        title={`Project for “${dialog?.title ?? ""}”`}
-        label={`Project slug (${projects.map((p) => p.slug).join(", ") || "none yet"}); empty unfiles`}
+        title={`Work for “${dialog?.title ?? ""}”`}
+        label={`Work slug (${projects.map((p) => p.slug).join(", ") || "none yet"}); empty unfiles`}
         initial=""
         placeholder="thesis…"
         onSubmit={async (v) => {
           const project = v ? projects.find((p) => p.slug === v.replace(/^#/, "").toLowerCase()) : null;
-          if (v && !project) return "No project with that slug.";
+          if (v && !project) return "No work with that slug.";
           const r = await setTaskProjectAction({ taskId: dialog!.taskId, projectId: project?.id ?? null });
           if (r.ok) notify(project ? `Filed under ${project.name}.` : "Unfiled.");
           return r.ok ? null : r.error;

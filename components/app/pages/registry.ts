@@ -7,8 +7,7 @@ import activity from "./activity";
 import history from "./history";
 import review from "./review";
 import metrics from "./metrics";
-import projects from "./projects";
-import project from "./project";
+import work from "./work";
 import start from "./start";
 import settingsAccount from "./settings-account";
 import settingsPreferences from "./settings-preferences";
@@ -25,8 +24,7 @@ export const PAGES: Record<PageName, PageDef<any>> = {
   history,
   review,
   metrics,
-  projects,
-  project,
+  work,
   start,
   "settings-account": settingsAccount,
   "settings-preferences": settingsPreferences,

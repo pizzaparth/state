@@ -170,7 +170,7 @@ export function TaskDetail({
 
       <PanelSection title="Properties">
         <dl>
-          <Prop icon={Folder} label="Project">
+          <Prop icon={Folder} label="Work">
             {editable && projects ? (
               <TaskProject taskId={task.id} projectId={task.projectId} projectName={task.projectName} projects={projects} />
             ) : (
@@ -297,7 +297,7 @@ export function CommitDetail({ commit, tz, projects }: { commit: Commit; tz: str
 
       <PanelSection title="Properties">
         <dl>
-          <Prop icon={Folder} label="Project">
+          <Prop icon={Folder} label="Work">
             {commit.projectName ?? <None />}
           </Prop>
         </dl>

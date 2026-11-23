@@ -10,7 +10,7 @@ export const METRIC_SECTIONS = [
   { id: "series", label: "Series" },
   { id: "flow", label: "Flow" },
   { id: "cycle", label: "Cycle" },
-  { id: "projects", label: "Projects" },
+  { id: "projects", label: "Work" },
   { id: "objectives", label: "Objectives" },
 ] as const;
 export type MetricSectionId = (typeof METRIC_SECTIONS)[number]["id"];

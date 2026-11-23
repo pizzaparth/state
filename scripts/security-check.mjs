@@ -138,7 +138,7 @@ async function checkReflectedXss() {
 // ---------------------------------------------------------------- open redirect
 function checkOpenRedirect() {
   const evil = ["//evil.example", "/\\evil.example", "\\\\evil.example", "https://evil.example", "javascript:alert(1)", "/%2F%2Fevil.example", "/\t/evil.example", " //evil.example", "data:text/html,hi"];
-  const good = ["/platform/today", "/platform/projects/thesis?tab=metrics"];
+  const good = ["/platform/today", "/platform/work/thesis?tab=metrics"];
   const leaked = evil.filter((p) => isSafeRedirectPath(p));
   const blocked = good.filter((p) => !isSafeRedirectPath(p));
   record("R1", "Login ?next= rejects off-site targets", leaked.length === 0, leaked.join(" | "));

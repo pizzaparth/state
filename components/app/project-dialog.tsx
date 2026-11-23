@@ -17,7 +17,7 @@ const STATUS_LABEL: Record<Status, string> = { planned: "Planned", active: "Acti
 
 
 /**
- * Project form in a dialog, shared by create and edit. Validates with the server's Zod
+ * Work form in a dialog, shared by create and edit. Validates with the server's Zod
  * schema before sending; a slug conflict from the server lands on the slug field.
  */
 function ProjectDialog({
@@ -34,7 +34,7 @@ function ProjectDialog({
   title: string;
   description: React.ReactNode;
   initial: Values;
-  /** Edit only: new projects start Active. */
+  /** Edit only: new work starts Active. */
   showStatus: boolean;
   submitLabel: string;
   validate: (values: Values) => { success: true } | { success: false; issues: { path: PropertyKey[]; message: string }[] };
@@ -43,7 +43,7 @@ function ProjectDialog({
 }) {
   const [open, setOpen] = React.useState(false);
   const [values, setValues] = React.useState(initial);
-  // A new project's slug follows its name until edited; an existing slug never does
+  // New work's slug follows its name until edited; an existing slug never does
   const [slugEdited, setSlugEdited] = React.useState(showStatus);
   const [errors, setErrors] = React.useState<Partial<Record<FieldName | "form", string>>>({});
   const [pending, startTransition] = React.useTransition();
@@ -188,7 +188,7 @@ function ProjectDialog({
               ) : (
                 <p className="text-sm text-[#4F5565]">
                   {showStatus && values.slug.trim().toLowerCase() !== initial.slug
-                    ? `Captures will use #${values.slug.trim().toLowerCase() || "…"} and the project's link changes.`
+                    ? `Captures will use #${values.slug.trim().toLowerCase() || "…"} and the work's link changes.`
                     : "Lowercase letters, numbers and hyphens."}
                 </p>
               )}
@@ -258,8 +258,8 @@ const issuesOf = (result: { success: boolean; error?: { issues: { path: Property
 
 const errorOf = (result: ActionResult<unknown>) => (result.ok ? null : result.error);
 
-/** "New project…" in the personal workspace. Opens the project once created. */
-export function NewProject() {
+/** "New work…" in the personal workspace (the sidebar's Work +). Opens the work once created. */
+export function NewProject({ trigger }: { trigger?: React.ReactNode } = {}) {
   const router = useRouter();
   const notify = useNotice();
   const toInput = (v: Values) => ({ name: v.name, slug: v.slug, description: v.description.trim() || null });
@@ -267,12 +267,14 @@ export function NewProject() {
   return (
     <ProjectDialog
       trigger={
-        <button type="button" className="app-btn inline-flex h-9 items-center gap-1.5 rounded-[12px] px-3 text-sm font-medium text-[#0A0A0A]">
-          <Plus className="size-4" aria-hidden="true" />
-          New project…
-        </button>
+        trigger ?? (
+          <button type="button" className="app-btn inline-flex h-9 items-center gap-1.5 rounded-[12px] px-3 text-sm font-medium text-[#0A0A0A]">
+            <Plus className="size-4" aria-hidden="true" />
+            New work…
+          </button>
+        )
       }
-      title="New project"
+      title="New work"
       description={
         <>
           Tasks join it with <span className="font-mono">#slug</span> when you capture them.
@@ -280,7 +282,7 @@ export function NewProject() {
       }
       initial={{ name: "", slug: "", description: "", status: "active" }}
       showStatus={false}
-      submitLabel="Create project"
+      submitLabel="Create work"
       validate={(v) => issuesOf(createProjectSchema.safeParse(toInput(v)))}
       submit={async (v) => {
         const result = await createProjectAction(toInput(v));
@@ -295,8 +297,8 @@ export function NewProject() {
 }
 
 /**
- * Edit… and Archive / Unarchive for a project page. Archiving offers Undo; a slug change
- * moves to the project's new URL.
+ * Edit… and Archive / Unarchive for a work page. Archiving offers Undo; a slug change
+ * moves to the work's new URL.
  */
 export function ProjectActions({
   project,
@@ -336,7 +338,7 @@ export function ProjectActions({
               Edit…
             </button>
           }
-          title="Edit project"
+          title="Edit work"
           description="Name, #slug, status and description. History and commits stay as they are."
           initial={{ name: project.name, slug: project.slug, description: project.description ?? "", status }}
           showStatus
@@ -345,7 +347,7 @@ export function ProjectActions({
           submit={async (v) => {
             const result = await updateProjectAction(toInput(v));
             if (result.ok) {
-              notify("Project saved.");
+              notify("Work saved.");
               if (result.data.slug !== project.slug) router.replace(result.data.href as Route);
             }
             return errorOf(result);

@@ -552,8 +552,8 @@ export function MetricsReport({
 
       </MetricSection>
 
-      <MetricSection id="projects" title="Projects" collapsed={collapsed.includes("projects")}>
-          <Panel title="Projects" aside="Share of execution">
+      <MetricSection id="projects" title="Work" collapsed={collapsed.includes("projects")}>
+          <Panel title="Work" aside="Share of execution">
             {s.projects.length === 0 ? (
               <p className="font-mono text-sm text-[#4F5565]">No execution</p>
             ) : (
@@ -561,7 +561,7 @@ export function MetricsReport({
                 <table className="w-full min-w-[40rem] border-collapse text-base tabular-nums">
                   <thead>
                     <tr className={cn(TICK, "text-left text-[#3A3F4B]")}>
-                      <th scope="col" className="px-2 pb-2 font-medium">Project</th>
+                      <th scope="col" className="px-2 pb-2 font-medium">Work</th>
                       <th scope="col" className="px-2 pb-2 text-right font-medium">Σ</th>
                       <th scope="col" className="w-[22%] px-2 pb-2 font-medium">Share</th>
                       <th scope="col" className="px-2 pb-2 text-right font-medium">Prior</th>

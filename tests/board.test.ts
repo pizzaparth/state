@@ -39,7 +39,7 @@ describe("board filter", () => {
   const titles = (f: Parameters<typeof filterCards>[1]) => filterCards(cards, f, today).map((c) => c.title);
 
   it("filters by each field", () => {
-    expect(titles({ project: "relay" })).toEqual(["Fix WAL bug"]);
+    expect(titles({ work: "relay" })).toEqual(["Fix WAL bug"]);
     expect(titles({ priority: "low" })).toEqual(["Read paper"]);
     expect(titles({ tag: "study" })).toEqual(["Plan week"]);
     expect(titles({ due: "overdue" })).toEqual(["Fix WAL bug"]);
@@ -50,7 +50,8 @@ describe("board filter", () => {
   });
 
   it("reads only valid values from the URL", () => {
-    expect(parseBoardFilter("project=Relay&priority=urgent&due=today&q=%20x%20")).toEqual({ project: "relay", due: "today", q: "x" });
-    expect(formatBoardFilter({ project: "relay", q: "a b" })).toBe("project=relay&q=a+b");
+    expect(parseBoardFilter("work=Relay&priority=urgent&due=today&q=%20x%20")).toEqual({ work: "relay", due: "today", q: "x" });
+    expect(parseBoardFilter("project=relay")).toEqual({ work: "relay" });
+    expect(formatBoardFilter({ work: "relay", q: "a b" })).toBe("work=relay&q=a+b");
   });
 });

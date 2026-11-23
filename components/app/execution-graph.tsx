@@ -156,7 +156,7 @@ export function ExecutionGraph({ days, linkDays = true, weekStart = "monday" }: 
           {shown ? (
             <>
               <span className="font-semibold text-[#0A0A0A]">{label(shown.day, { weekday: "long", day: "numeric", month: "long" })}</span>
-              {`: ${shown.commits} ${shown.commits === 1 ? "commit" : "commits"}, ${shown.tasks} done, ${shown.execution} execution, ${shown.projects} ${shown.projects === 1 ? "project" : "projects"}`}
+              {`: ${shown.commits} ${shown.commits === 1 ? "commit" : "commits"}, ${shown.tasks} done, ${shown.execution} execution, ${shown.projects} work`}
             </>
           ) : (
             "Hover a day · or ← → keys"

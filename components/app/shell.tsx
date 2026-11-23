@@ -11,7 +11,6 @@ import {
   BarChart3,
   Calendar,
   CalendarRange,
-  FolderKanban,
   History,
   Inbox,
   LayoutGrid,
@@ -42,10 +41,14 @@ import { CommandPalette, type PaletteCommand } from "./command-palette";
 import { CommitDialog } from "./commit-dialog";
 import { CaptureDialog } from "./capture-dialog";
 import { NavigationWake } from "./navigation-wake";
+import { NewProject } from "./project-dialog";
 
 export interface ShellData {
   inboxCount: number;
+  /** Live work (projects), linked from the sidebar's Work list. */
   projects: { id: string; name: string; slug: string; href: string }[];
+  /** Archived work, folded away under the Work list. */
+  archivedWork: { id: string; name: string; slug: string; href: string }[];
   dateLabel: string;
   ticker: { today: number; last7: number; prev7: number; activeDays7: number; eligible7: number; prior7: number };
   /** Set for a throwaway demo (its id, lib/demo/local.ts); null for the owner. */
@@ -67,7 +70,6 @@ export interface ShellData {
 
 type NavItem = { name: string; href: string; icon: React.ComponentType<{ className?: string }>; badge?: number };
 
-const SIDEBAR_PROJECTS = 8;
 const SIDEBAR_COOKIE = "sidebar";
 
 function navSections(data: ShellData): { title?: string; items: NavItem[] }[] {
@@ -76,6 +78,7 @@ function navSections(data: ShellData): { title?: string; items: NavItem[] }[] {
       items: [
         { name: "Today", href: "/platform/today", icon: Calendar },
         { name: "Inbox", href: "/platform/inbox", icon: Inbox, badge: data.inboxCount },
+        { name: "Board", href: "/platform/board", icon: LayoutGrid },
       ],
     },
     {
@@ -85,13 +88,6 @@ function navSections(data: ShellData): { title?: string; items: NavItem[] }[] {
         { name: "Activity", href: "/platform/activity", icon: Activity },
         { name: "History", href: "/platform/history", icon: History },
         { name: "Review", href: "/platform/review", icon: CalendarRange },
-      ],
-    },
-    {
-      title: "Work",
-      items: [
-        { name: "Board", href: "/platform/board", icon: LayoutGrid },
-        { name: "Projects", href: "/platform/projects", icon: FolderKanban },
       ],
     },
   ];
@@ -421,7 +417,6 @@ function SidebarContent({
   collapsed: boolean;
   onToggle?: () => void;
 }) {
-  const projects = data.projects.slice(0, SIDEBAR_PROJECTS);
   return (
     <LayoutGroup id={`nav-${scope}`}>
       <div className={cn("flex items-start justify-between gap-2 pb-4 pt-5", collapsed ? "px-3" : "px-5")}>
@@ -462,33 +457,9 @@ function SidebarContent({
                 );
               })}
             </ul>
-            {section.title === "Work" && !collapsed && projects.length > 0 && (
-              <ul aria-label="Projects" className="mt-1 space-y-0.5 border-l border-black/[0.06] pl-2 ml-5">
-                {projects.map((p) => (
-                  <li key={p.id}>
-                    <Link
-                      href={p.href as Route}
-                      aria-current={isActive(pathname, p.href) ? "page" : undefined}
-                      className={cn(
-                        "mi-nudge block truncate rounded-[10px] px-3 py-1.5 text-[14px] transition-colors",
-                        isActive(pathname, p.href) ? "bg-black/[0.05] font-semibold text-[#0A0A0A]" : "text-[#3A3F4B] hover:bg-black/[0.03] hover:text-[#0A0A0A]"
-                      )}
-                    >
-                      {p.name}
-                    </Link>
-                  </li>
-                ))}
-                {data.projects.length > SIDEBAR_PROJECTS && (
-                  <li>
-                    <Link href="/platform/projects" className="block rounded-[10px] px-3 py-1.5 font-mono text-[12px] text-[#4F5565] hover:text-[#0A0A0A]">
-                      All projects · {data.projects.length}
-                    </Link>
-                  </li>
-                )}
-              </ul>
-            )}
           </div>
         ))}
+        {!collapsed && <WorkSection data={data} pathname={pathname} />}
       </nav>
       <div className="space-y-2 border-t border-black/[0.05] p-3">
         <NavLink href="/platform/settings" active={isActive(pathname, "/platform/settings")} label={collapsed ? "Settings" : undefined}>
@@ -504,6 +475,61 @@ function SidebarContent({
         )}
       </div>
     </LayoutGroup>
+  );
+}
+
+/** The sidebar's Work list: every live work (project), a + to make one, archived folded away. */
+function WorkSection({ data, pathname }: { data: ShellData; pathname: string }) {
+  const archivedOpen = data.archivedWork.some((w) => isActive(pathname, w.href));
+  const item = (w: ShellData["projects"][number], archived = false) => {
+    const active = isActive(pathname, w.href);
+    return (
+      <li key={w.id}>
+        <Link
+          href={w.href as Route}
+          aria-current={active ? "page" : undefined}
+          className={cn(
+            "mi-nudge block truncate rounded-[10px] px-3 py-1.5 text-[14px] transition-colors",
+            active ? "bg-black/[0.05] font-semibold text-[#0A0A0A]" : cn("hover:bg-black/[0.03] hover:text-[#0A0A0A]", archived ? "text-[#4F5565]" : "text-[#3A3F4B]")
+          )}
+        >
+          {w.name}
+        </Link>
+      </li>
+    );
+  };
+  return (
+    <section aria-labelledby="nav-work">
+      <div className="flex items-center justify-between gap-2 pb-1 pl-3 pr-1">
+        <h2 id="nav-work" className="font-mono text-[12px] uppercase tracking-[0.18em] text-[#4F5565]">
+          Work
+        </h2>
+        <NewProject
+          trigger={
+            <button type="button" aria-label="New work" title="New work" className="mi-press grid size-7 place-items-center rounded-full text-[#4F5565] hover:bg-black/[0.05] hover:text-[#0A0A0A]">
+              <Plus aria-hidden="true" className="size-4" />
+            </button>
+          }
+        />
+      </div>
+      {data.projects.length === 0 ? (
+        <p className="px-3 py-1.5 font-mono text-[12px] text-[#4F5565]">No work yet</p>
+      ) : (
+        <ul aria-label="Work" className="space-y-0.5">
+          {data.projects.map((w) => item(w))}
+        </ul>
+      )}
+      {data.archivedWork.length > 0 && (
+        <details open={archivedOpen} className="group mt-1">
+          <summary className="flex cursor-pointer list-none items-center rounded-[10px] px-3 py-1.5 font-mono text-[12px] text-[#4F5565] hover:text-[#0A0A0A] [&::-webkit-details-marker]:hidden">
+            Archived · {data.archivedWork.length}
+          </summary>
+          <ul aria-label="Archived work" className="space-y-0.5">
+            {data.archivedWork.map((w) => item(w, true))}
+          </ul>
+        </details>
+      )}
+    </section>
   );
 }
 

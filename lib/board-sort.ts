@@ -12,7 +12,7 @@ export const SORT_FIELDS = {
   due: { label: "Due", defaultDir: "asc", asc: "Soonest first", desc: "Latest first" },
   weight: { label: "Weight", defaultDir: "desc", asc: "Lightest first", desc: "Heaviest first" },
   title: { label: "Title", defaultDir: "asc", asc: "A–Z", desc: "Z–A" },
-  project: { label: "Project", defaultDir: "asc", asc: "A–Z", desc: "Z–A" },
+  project: { label: "Work", defaultDir: "asc", asc: "A–Z", desc: "Z–A" },
   created: { label: "Created", defaultDir: "desc", asc: "Oldest first", desc: "Newest first" },
 } as const satisfies Record<string, { label: string; defaultDir: SortDir; asc: string; desc: string }>;
 

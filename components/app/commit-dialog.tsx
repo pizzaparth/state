@@ -197,7 +197,7 @@ export function CommitDialog({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label htmlFor="commit-project" className="text-sm font-medium text-[#3A3F4B]">
-                  Project
+                  Work
                 </label>
                 <select id="commit-project" name="project" className="app-select" value={draft.projectId} onChange={(e) => update({ projectId: e.target.value })}>
                   <option value="">None</option>

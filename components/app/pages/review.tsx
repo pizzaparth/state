@@ -48,7 +48,7 @@ function View({ viewer, params, start, commits, flow, drawers }: Props) {
   const maxDay = Math.max(1, ...byDay.map((d) => d.execution));
   const projects = new Map<string, { execution: number; commits: number }>();
   for (const c of commits) {
-    const key = c.projectName ?? "No project";
+    const key = c.projectName ?? "No work";
     const p = projects.get(key) ?? { execution: 0, commits: 0 };
     p.execution += c.executionValue;
     p.commits++;
@@ -65,7 +65,7 @@ function View({ viewer, params, start, commits, flow, drawers }: Props) {
     "By day",
     ...byDay.map((d) => `  ${weekday(d.day)} ${d.day}  +${d.execution}  (${d.commits})`),
     "",
-    "By project",
+    "By work",
     ...projectParts.map((p) => `  ${p.name}  +${p.value}  (${p.detail})`),
     "",
     "Commits",
@@ -122,8 +122,8 @@ function View({ viewer, params, start, commits, flow, drawers }: Props) {
             ))}
           </ol>
         </Panel>
-        <Panel title="By project">
-          {projectParts.length === 0 ? <EmptyState title="No commits" /> : <MixBar label="Execution by project" parts={projectParts} />}
+        <Panel title="By work">
+          {projectParts.length === 0 ? <EmptyState title="No commits" /> : <MixBar label="Execution by work" parts={projectParts} />}
         </Panel>
       </div>
 

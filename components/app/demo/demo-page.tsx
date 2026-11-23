@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { PAGE_MODULES } from "@/components/app/pages/client-registry";
 import { PAGE_COOKIES, type PageDef, type PageName } from "@/lib/pages/types";
 import { Fallback, ParentLink, fallbackPrimary } from "@/components/app/fallback";
-import { ActivitySkeleton, BoardSkeleton, HistorySkeleton, InboxSkeleton, MetricsSkeleton, PageSkeleton, ProjectsSkeleton, TodaySkeleton } from "@/components/app/skeletons";
+import { ActivitySkeleton, BoardSkeleton, HistorySkeleton, InboxSkeleton, MetricsSkeleton, PageSkeleton, TodaySkeleton } from "@/components/app/skeletons";
 import { browserLocale, useDemoViewer } from "./demo-root";
 
 /**
@@ -24,7 +24,6 @@ const SKELETONS: Partial<Record<PageName, () => React.ReactNode>> = {
   review: () => <ActivitySkeleton />,
   history: () => <HistorySkeleton />,
   metrics: () => <MetricsSkeleton />,
-  projects: () => <ProjectsSkeleton />,
 };
 
 function pageCookies(): Record<string, string | undefined> {

@@ -22,7 +22,7 @@ export function Fallback({ label, title, children }: { label: string; title: str
 export const fallbackPrimary = "app-inverse mi-press inline-flex h-11 items-center gap-2 rounded-[12px] px-4 text-base font-semibold";
 export const fallbackSecondary = "app-btn mi-press inline-flex h-11 items-center gap-2 rounded-[12px] px-4 text-base font-medium";
 
-/** Link to the list one level up (/platform/projects/x → /platform/projects). */
+/** Link to the list one level up (/platform/history/x → /platform/history). */
 export function ParentLink() {
   const pathname = usePathname() ?? "/platform/today";
   const parts = pathname.split("/").filter(Boolean);

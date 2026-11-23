@@ -197,22 +197,3 @@ export function ActivitySkeleton() {
   );
 }
 
-/** Projects: the table. */
-export function ProjectsSkeleton() {
-  return (
-    <Loading label="Loading Projects">
-      <div className="app-panel space-y-4 p-5">
-        <Bar className="h-3 w-24" />
-        {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} className="grid grid-cols-[2fr_1fr_repeat(5,minmax(0,1fr))] items-center gap-3">
-            <Bar className="h-3.5 w-3/4" />
-            <Bar className="h-5 w-16 rounded-full" />
-            {Array.from({ length: 5 }, (_, j) => (
-              <Bar key={j} className="ml-auto h-3 w-8" />
-            ))}
-          </div>
-        ))}
-      </div>
-    </Loading>
-  );
-}

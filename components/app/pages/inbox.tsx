@@ -45,7 +45,7 @@ function View({ viewer, params, inbox, projects, options, targets, drawers }: Pr
       <Panel title="Capture">
         <QuickCapture projects={projects} tz={viewer.tz} autoFocus showRecent={false} draftKey="state:draft:inbox" />
         <p className="mt-2 px-2 font-mono text-sm text-[#4F5565]">
-          <span className="text-[#0A0A0A]">#project</span> · <span className="text-[#0A0A0A]">!high</span> · <span className="text-[#0A0A0A]">+4</span> ·{" "}
+          <span className="text-[#0A0A0A]">#work</span> · <span className="text-[#0A0A0A]">!high</span> · <span className="text-[#0A0A0A]">+4</span> ·{" "}
           <span className="text-[#0A0A0A]">fri</span> · <span className="text-[#0A0A0A]">~weekly</span> · <span className="text-[#0A0A0A]">\#</span> to keep
         </p>
       </Panel>

@@ -12,7 +12,8 @@ import { Drawers, loadDrawers } from "@/components/app/drawers";
 
 async function load({ viewer, params, cookies }: PageContext) {
   const projects = viewer.personalWorkspaceId ? await getProjectOptions(viewer.personalWorkspaceId, viewer.workspaceIds) : [];
-  const project = params.project ? projects.find((p) => p.slug === params.project) : undefined;
+  const workSlug = params.work ?? params.project;
+  const project = workSlug ? projects.find((p) => p.slug === workSlug) : undefined;
   const scope = { workspaceIds: viewer.workspaceIds, userId: viewer.id, projectId: project?.id };
   const today = dayKey(new Date(), viewer.tz);
   const allDays = await getEligibleDays({ workspaceIds: viewer.workspaceIds, userId: viewer.id }, viewer.tz, 1826);

@@ -18,7 +18,7 @@ export interface PageContext {
   viewer: Viewer;
   /** Search params (one value each). */
   params: Record<string, string | undefined>;
-  /** Dynamic route segments, e.g. { projectSlug }. */
+  /** Dynamic route segments, e.g. { workSlug }. */
   route: Record<string, string>;
   /** The page's preference cookies (PAGE_COOKIES). */
   cookies: Record<string, string | undefined>;
@@ -46,8 +46,7 @@ export const PAGE_NAMES = [
   "history",
   "review",
   "metrics",
-  "projects",
-  "project",
+  "work",
   "start",
   "settings-account",
   "settings-preferences",

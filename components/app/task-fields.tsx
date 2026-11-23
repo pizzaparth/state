@@ -169,19 +169,19 @@ export function TaskProject({
 }) {
   const current = projectId ?? "";
   const options = [
-    { value: "", label: "No project" },
+    { value: "", label: "No work" },
     ...projects.map((p) => ({ value: p.id, label: p.name })),
-    ...(projectId && !projects.some((p) => p.id === projectId) ? [{ value: projectId, label: projectName ?? "Archived project" }] : []),
+    ...(projectId && !projects.some((p) => p.id === projectId) ? [{ value: projectId, label: projectName ?? "Archived work" }] : []),
   ];
-  const nameOf = (id: string) => options.find((o) => o.value === id)?.label ?? "project";
+  const nameOf = (id: string) => options.find((o) => o.value === id)?.label ?? "work";
   return (
     <InlineSelect
       name="project"
-      label="Project"
+      label="Work"
       value={current}
       options={options}
       save={(next) => setTaskProjectAction({ taskId, projectId: next || null })}
-      savedMessage={(next) => (next ? `Filed under ${nameOf(next)}.` : "Removed from its project.")}
+      savedMessage={(next) => (next ? `Filed under ${nameOf(next)}.` : "Removed from its work.")}
     />
   );
 }

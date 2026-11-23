@@ -336,7 +336,7 @@ async function captureContext(tx: Tx, actor: Actor, queued: boolean): Promise<Ca
 async function captureOne(tx: Tx, actor: Actor, ctx: CaptureContext, text: string): Promise<CaptureResult> {
   const parsed = parseQuickCapture(text, dayKey(new Date(), ctx.tz));
   const title = parsed.title.trim();
-  if (!title) throw new MutationError("invalid", "Add a title as well as the #project, !priority or date.");
+  if (!title) throw new MutationError("invalid", "Add a title as well as the #work, !priority or date.");
 
   let project: { id: string; name: string } | undefined;
   if (parsed.projectSlug) {
@@ -406,7 +406,7 @@ export async function addBoardTask(actor: Actor, input: z.infer<typeof addBoardT
   const [{ tz }] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
   const parsed = parseQuickCapture(input.title, dayKey(new Date(), tz));
   const title = parsed.title.trim();
-  if (!title) throw new MutationError("invalid", "Add a title as well as the #project, !priority or date.");
+  if (!title) throw new MutationError("invalid", "Add a title as well as the #work, !priority or date.");
   let project: { id: string; name: string } | undefined;
   if (parsed.projectSlug) {
     [project] = await db
@@ -576,7 +576,7 @@ export async function setTaskProject(actor: Actor, input: z.infer<typeof setTask
         .from(projects)
         .where(and(eq(projects.id, input.projectId), eq(projects.workspaceId, task.workspaceId), isNull(projects.archivedAt)))
         .limit(1);
-      if (!project) throw new MutationError("not_found", "That project no longer exists.");
+      if (!project) throw new MutationError("not_found", "That work no longer exists.");
       projectName = project.name;
     }
     if (input.projectId === task.projectId) return { projectName };
@@ -728,11 +728,11 @@ export async function createProject(actor: Actor, input: z.infer<typeof createPr
     .onConflictDoNothing({ target: [projects.workspaceId, projects.slug] })
     .returning({ id: projects.id, slug: projects.slug });
   if (!row) throw new MutationError("conflict", `#${input.slug} is already used here. Choose another slug.`);
-  return { ...row, href: `/platform/projects/${row.slug}` };
+  return { ...row, href: `/platform/work/${row.slug}` };
 }
 
 /** Where a project lives in the app. */
-const projectHref = (slug: string) => `/platform/projects/${slug}`;
+const projectHref = (slug: string) => `/platform/work/${slug}`;
 
 const isUniqueViolation = (error: unknown): boolean =>
   typeof error === "object" && error !== null && ((error as { code?: string }).code === "23505" || isUniqueViolation((error as { cause?: unknown }).cause));
@@ -743,7 +743,7 @@ const isUniqueViolation = (error: unknown): boolean =>
  */
 export async function updateProject(actor: Actor, input: z.infer<typeof updateProjectSchema>): Promise<{ slug: string; href: string }> {
   const [project] = await db.select({ id: projects.id, workspaceId: projects.workspaceId }).from(projects).where(eq(projects.id, input.projectId)).limit(1);
-  if (!project) throw new MutationError("not_found", "That project no longer exists.");
+  if (!project) throw new MutationError("not_found", "That work no longer exists.");
   assertWritable(actor, project.workspaceId);
 
   const taken = new MutationError("conflict", `#${input.slug} is already used here. Choose another slug.`);
@@ -776,7 +776,7 @@ export async function setProjectArchived(actor: Actor, input: z.infer<typeof set
     .from(projects)
     .where(eq(projects.id, input.projectId))
     .limit(1);
-  if (!project) throw new MutationError("not_found", "That project no longer exists.");
+  if (!project) throw new MutationError("not_found", "That work no longer exists.");
   assertWritable(actor, project.workspaceId);
 
   await db.transaction(async (tx) => {
@@ -804,7 +804,7 @@ export async function createManualCommit(actor: Actor, input: z.infer<typeof man
       .from(projects)
       .where(and(eq(projects.id, input.projectId), isNull(projects.archivedAt)))
       .limit(1);
-    if (!project) throw new MutationError("not_found", "That project no longer exists.");
+    if (!project) throw new MutationError("not_found", "That work no longer exists.");
     workspaceId = project.workspaceId;
   }
   assertWritable(actor, workspaceId);
@@ -850,7 +850,7 @@ export async function editCommit(actor: Actor, input: z.infer<typeof editCommitS
         .from(projects)
         .where(and(eq(projects.id, input.projectId), eq(projects.workspaceId, commit.workspaceId), isNull(projects.archivedAt)))
         .limit(1);
-      if (!project) throw new MutationError("not_found", "That project no longer exists.");
+      if (!project) throw new MutationError("not_found", "That work no longer exists.");
     }
 
     const before = await tx
@@ -905,7 +905,7 @@ export async function createObjective(actor: Actor, input: z.infer<typeof create
       .from(projects)
       .where(and(eq(projects.id, input.projectId), eq(projects.workspaceId, workspaceId), isNull(projects.archivedAt)))
       .limit(1);
-    if (!project) throw new MutationError("not_found", "That project no longer exists.");
+    if (!project) throw new MutationError("not_found", "That work no longer exists.");
   }
   const [{ tz }] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id)).limit(1);
   if (input.deadline && input.deadline < dayKey(new Date(), tz)) throw new MutationError("invalid", "Pick a deadline from today on.");
@@ -961,7 +961,7 @@ export async function updateObjective(actor: Actor, input: z.infer<typeof update
       .from(projects)
       .where(and(eq(projects.id, input.projectId), eq(projects.workspaceId, objective.workspaceId), isNull(projects.archivedAt)))
       .limit(1);
-    if (!project) throw new MutationError("not_found", "That project no longer exists.");
+    if (!project) throw new MutationError("not_found", "That work no longer exists.");
   }
   await db.transaction(async (tx) => {
     await tx
@@ -1416,7 +1416,7 @@ export async function bulkUpdateTasks(actor: Actor, input: z.infer<typeof bulkUp
           .from(projects)
           .where(and(eq(projects.id, change.projectId), eq(projects.workspaceId, workspaceId), isNull(projects.archivedAt)))
           .limit(1);
-        if (!project) throw new MutationError("not_found", "That project no longer exists.");
+        if (!project) throw new MutationError("not_found", "That work no longer exists.");
       }
       const ids = rows.map((r) => r.id);
       if (ids.length) {
@@ -1742,7 +1742,7 @@ export async function deleteTag(actor: Actor, input: z.infer<typeof tagRefSchema
 
 export async function setProjectNotes(actor: Actor, input: z.infer<typeof setProjectNotesSchema>): Promise<{ notes: string | null }> {
   const [project] = await db.select({ id: projects.id, workspaceId: projects.workspaceId }).from(projects).where(eq(projects.id, input.projectId)).limit(1);
-  if (!project) throw new MutationError("not_found", "That project no longer exists.");
+  if (!project) throw new MutationError("not_found", "That work no longer exists.");
   assertWritable(actor, project.workspaceId);
   await db.update(projects).set({ notes: input.notes }).where(eq(projects.id, project.id));
   return { notes: input.notes };

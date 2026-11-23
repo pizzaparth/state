@@ -223,7 +223,7 @@ async function main() {
 
   const mine = await createProject(A, { name: "Authz probe", slug: "authz-probe", description: null });
   const mineRow = await one(db.select().from(s.projects).where(eq(s.projects.id, mine.id)));
-  record("W37", "Personal project lands in the actor's own workspace", mineRow.workspaceId === parth.ws.id && mine.href === "/platform/projects/authz-probe");
+  record("W37", "Personal project lands in the actor's own workspace", mineRow.workspaceId === parth.ws.id && mine.href === "/platform/work/authz-probe");
   const theirs = await createProject(B, { name: "Authz probe", slug: "authz-probe", description: null });
   record("W38", "Same slug in another user's workspace is independent", theirs.id !== mine.id && (await projectCount(aarav.ws.id, "authz-probe")) === 1);
   [ok, detail] = await expectError(() => createProject(A, { name: "Again", slug: "authz-probe", description: null }), "conflict");
@@ -242,7 +242,7 @@ async function main() {
   record(
     "W47",
     "Owner edits own project; #capture follows the new slug",
-    edited.href === "/platform/projects/authz-probe-2" && editedRow.name === "Authz probe 2" && editedRow.status === "paused" && recaptured.projectName === "Authz probe 2"
+    edited.href === "/platform/work/authz-probe-2" && editedRow.name === "Authz probe 2" && editedRow.status === "paused" && recaptured.projectName === "Authz probe 2"
   );
   await setProjectArchived(A, { projectId: mine.id, archived: true });
   const archivedCapture = await captureTask(A, { text: "After archive #authz-probe-2" });

@@ -267,7 +267,7 @@ export const PROJECT_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const PROJECT_DESCRIPTION_MAX = 128;
 
 const projectFields = {
-  name: z.string().trim().min(1, "Give the project a name.").max(100, "Keep the name under 100 characters."),
+  name: z.string().trim().min(1, "Give the work a name.").max(100, "Keep the name under 100 characters."),
   slug: z
     .string()
     .trim()

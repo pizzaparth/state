@@ -50,8 +50,8 @@ export function BoardFilterBar({
         </kbd>
       </label>
       {projects.length > 0 && (
-        <select aria-label="Project" value={filter.project ?? ""} onChange={(e) => set("project", e.target.value)} className={select}>
-          <option value="">All projects</option>
+        <select aria-label="Work" value={filter.work ?? ""} onChange={(e) => set("work", e.target.value)} className={select}>
+          <option value="">All work</option>
           {projects.map((p) => (
             <option key={p.slug} value={p.slug}>
               {p.name}

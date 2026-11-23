@@ -11,7 +11,7 @@ async function load({ viewer, params, cookies }: PageContext) {
   // The URL wins (deep links); otherwise the sort last picked in this browser
   const sort = parseBoardSort(params.sort ?? cookies[BOARD_SORT_COOKIE]);
   // Filter: from the URL when it names any filter, else the last one used here
-  const filter = parseBoardFilter(BOARD_FILTER_KEYS.some((k) => params[k] !== undefined) ? params : decodeURIComponent(cookies[BOARD_FILTER_COOKIE] ?? ""));
+  const filter = parseBoardFilter([...BOARD_FILTER_KEYS, "project"].some((k) => params[k] !== undefined) ? params : decodeURIComponent(cookies[BOARD_FILTER_COOKIE] ?? ""));
   const siblings = params.task && viewer.personalBoardId ? getBoardTaskIds(viewer.personalBoardId, viewer.workspaceIds) : undefined;
   const [board, drawers] = await Promise.all([
     loadBoardView({ boardId: viewer.personalBoardId, viewer, params, basePath: "/platform/board", sort, filter }),

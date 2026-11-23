@@ -21,14 +21,15 @@ async function load({ viewer, params }: PageContext) {
   const [live, archivedAll, tags] = await Promise.all([getShellProjects(workspaceIds), getArchivedProjects(workspaceIds), getTagNames(workspaceIds)]);
   const all = [...live, ...archivedAll];
 
-  // Old links used the project id; send them to the slug form
-  const byId = params.project ? all.find((p) => p.id === params.project) : undefined;
-  if (byId) {
+  // Old links used `project` (an id, later a slug); send them to `work` and the slug
+  if (params.project) {
+    const old = all.find((p) => p.id === params.project || p.slug === params.project);
     const next = new URLSearchParams(Object.entries(params).filter((e): e is [string, string] => typeof e[1] === "string"));
-    next.set("project", byId.slug);
-    return { redirect: `/platform/history?${next}` };
+    next.delete("project");
+    if (old) next.set("work", old.slug);
+    return { redirect: `/platform/history${next.size ? `?${next}` : ""}` };
   }
-  const project = params.project ? all.find((p) => p.slug === params.project) : undefined;
+  const project = params.work ? all.find((p) => p.slug === params.work) : undefined;
 
   const day = params.day && DAY_RE.test(params.day) ? params.day : undefined;
   const from = day ?? (params.from && DAY_RE.test(params.from) ? params.from : undefined);

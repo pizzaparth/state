@@ -748,7 +748,7 @@ function AddCard({
           autoComplete="off"
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
-          placeholder="Add a task… #project !high fri"
+          placeholder="Add a task… #work !high fri"
           className="h-9 min-w-0 flex-1 bg-transparent text-base text-[#0A0A0A] placeholder:text-[#4F5565] focus:outline-none"
         />
         {busy && <Loader2 aria-label="Saving…" className="size-4 animate-spin text-[#4F5565]" />}
@@ -939,14 +939,14 @@ export function BulkBar({
         ))}
       </select>
       <select
-        aria-label="Project of selected"
+        aria-label="Work of selected"
         disabled={pending}
         value=""
         onChange={(e) => e.target.value && apply({ type: "project", projectId: e.target.value === "none" ? null : e.target.value }, "Filed")}
         className={select}
       >
-        <option value="">Project…</option>
-        <option value="none">No project</option>
+        <option value="">Work…</option>
+        <option value="none">No work</option>
         {projects.map((p) => (
           <option key={p.id} value={p.id}>
             {p.name}

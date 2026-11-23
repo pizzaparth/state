@@ -110,7 +110,7 @@ export function CommandPalette({
     void completeTaskAction({ taskId: c.taskId }).then((r) => notify(r.ok ? `Done. +${r.data.committed}.` : r.error));
   };
 
-  const projectCommands: PaletteCommand[] = projects.map((p) => ({ id: p.href, label: p.name, group: "Projects", run: go(p.href) }));
+  const projectCommands: PaletteCommand[] = projects.map((p) => ({ id: p.href, label: p.name, group: "Work", run: go(p.href) }));
   const found: PaletteCommand[] = search.hits.map((h) => ({
     id: `${h.kind}-${h.id}`,
     label: h.title,
@@ -227,7 +227,7 @@ export function CommandPalette({
               aria-expanded={results.length > 0}
               aria-controls="palette-results"
               aria-activedescendant={results[index] ? `cmd-${index}` : undefined}
-              placeholder="Search, or > commands, # projects…"
+              placeholder="Search, or > commands, # work…"
               className="h-14 flex-1 bg-transparent text-base text-[#0A0A0A] placeholder:text-[#4F5565] focus:outline-none"
             />
             {search.loading && <Loader2 className="size-4 animate-spin text-[#4F5565]" aria-hidden="true" />}

@@ -2302,8 +2302,7 @@ Routes (product pages under `/platform`; the old unprefixed URLs redirect):
 /platform/activity
 /platform/history
 /platform/metrics
-/platform/projects
-/platform/projects/:projectSlug
+/platform/work/:workSlug
 /platform/personal
 /platform/org/:orgSlug
 /platform/org/:orgSlug/board

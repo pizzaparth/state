@@ -63,13 +63,19 @@ const nextConfig: NextConfig = {
     // The landing page is served at / (see rewrites) so the root URL carries its search
     // ranking; /home links from before keep working. Product pages live under /platform
     // and old product URLs (bookmarks, emailed links) keep working.
-    const moved = ["today", "inbox", "activity", "history", "metrics", "projects", "org", "settings"];
+    const moved = ["today", "inbox", "activity", "history", "metrics", "org", "settings"];
     return [
       { source: "/home", destination: "/", permanent: true },
       ...moved.flatMap((page) => [
         { source: `/${page}`, destination: `/platform/${page}`, permanent: true },
         { source: `/${page}/:path*`, destination: `/platform/${page}/:path*`, permanent: true },
       ]),
+      // Projects were renamed Work and lost their list page (the sidebar lists them)
+      ...["/projects", "/platform/projects"].flatMap((old) => [
+        { source: old, destination: "/platform/board", permanent: true },
+        { source: `${old}/:slug`, destination: "/platform/work/:slug", permanent: true },
+      ]),
+      { source: "/platform/work", destination: "/platform/board", permanent: false },
       // The personal board page was renamed Board
       ...["/personal", "/platform/personal"].flatMap((old) => [
         { source: old, destination: "/platform/board", permanent: true },

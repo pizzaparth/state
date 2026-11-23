@@ -1,6 +1,6 @@
 /**
  * Board filter: deterministic and client-side, like the sort. Kept in the URL
- * (`project`, `priority`, `tag`, `due`, `q`) and mirrored in the `board_filter` cookie as
+ * (`work`, `priority`, `tag`, `due`, `q`) and mirrored in the `board_filter` cookie as
  * a query string, so the board opens the same way next time.
  */
 
@@ -13,7 +13,8 @@ export const DUE_FILTERS = {
 export type DueFilter = keyof typeof DUE_FILTERS;
 
 export interface BoardFilter {
-  project?: string;
+  /** Work slug. */
+  work?: string;
   priority?: string;
   tag?: string;
   due?: DueFilter;
@@ -21,7 +22,7 @@ export interface BoardFilter {
 }
 
 export const BOARD_FILTER_COOKIE = "board_filter";
-export const BOARD_FILTER_KEYS = ["project", "priority", "tag", "due", "q"] as const;
+export const BOARD_FILTER_KEYS = ["work", "priority", "tag", "due", "q"] as const;
 
 const PRIORITY_VALUES = new Set(["none", "low", "medium", "high", "critical"]);
 
@@ -34,8 +35,9 @@ export function parseBoardFilter(input: URLSearchParams | Record<string, string 
         ? new URLSearchParams(input.slice(0, 1000))
         : new URLSearchParams(Object.entries(input ?? {}).filter((e): e is [string, string] => typeof e[1] === "string"));
   const out: BoardFilter = {};
-  const project = params.get("project")?.trim().toLowerCase();
-  if (project && /^[a-z0-9-]{1,100}$/.test(project)) out.project = project;
+  // `project` is the key from before work was renamed (old links and cookies)
+  const work = (params.get("work") ?? params.get("project"))?.trim().toLowerCase();
+  if (work && /^[a-z0-9-]{1,100}$/.test(work)) out.work = work;
   const priority = params.get("priority");
   if (priority && PRIORITY_VALUES.has(priority)) out.priority = priority;
   const tag = params.get("tag")?.trim().toLowerCase();
@@ -78,7 +80,7 @@ export function filterCards<T extends FilterableCard>(cards: T[], filter: BoardF
   const q = filter.q?.toLowerCase();
   const weekEnd = shift(today, daysToWeekEnd(today));
   return cards.filter((c) => {
-    if (filter.project && c.projectSlug !== filter.project) return false;
+    if (filter.work && c.projectSlug !== filter.work) return false;
     if (filter.priority && c.priority !== filter.priority) return false;
     if (filter.tag && !c.tags.includes(filter.tag)) return false;
     if (filter.due) {
