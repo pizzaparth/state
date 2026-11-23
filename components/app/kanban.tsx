@@ -60,14 +60,19 @@ import {
   filterCards,
   formatBoardFilter,
   formatColumnFilters,
+  COLUMN_SORT_FIELDS,
   isColumnFiltered,
+  isColumnSorted,
   isFiltered,
   matchesColumnFilter,
   parseBoardFilter,
+  sortColumn,
   type BoardFilter,
   type ColumnFilter,
   type ColumnFilters,
+  type ColumnSortField,
   type DueFilter,
+  type SortDir,
 } from "@/lib/board-filter";
 import { WEIGHT_LEVELS } from "@/lib/weights";
 
@@ -109,7 +114,9 @@ const setCookie = (name: string, value: string) => {
  * moves never flicker back and forth.
  *
  * Filters are computed here: the find field for the whole board (URL and cookie) and a
- * weight, priority and due filter per column (cookie). Done is always newest first.
+ * weight, priority and due filter plus a sort per column (cookie). A sorted column, like
+ * Done (newest first unless sorted), takes cards but not a position: a card dropped there
+ * lands at the end of its manual order.
  */
 export function Kanban({
   columns,
@@ -181,7 +188,7 @@ export function Kanban({
   const changeColumnFilter = (columnId: string, next: ColumnFilter) => {
     setColumnFilters((prev) => {
       const all = { ...prev };
-      if (isColumnFiltered(next)) all[columnId] = next;
+      if (isColumnFiltered(next) || isColumnSorted(next)) all[columnId] = next;
       else delete all[columnId];
       setCookie(COLUMN_FILTER_COOKIE, formatColumnFilters(all));
       return all;
@@ -194,6 +201,7 @@ export function Kanban({
   const columnCards = (columnId: string) => {
     const f = columnFilters[columnId];
     const list = shown.filter((c) => c.columnId === columnId && (c.id === draggingId.current || matchesColumnFilter(c, f, today)));
+    if (isColumnSorted(f)) return sortColumn(list, f);
     if (columnId === doneId) return [...list].sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0));
     // Deferred cards wait at the bottom until their day
     return [...list.filter((c) => !c.deferred), ...list.filter((c) => c.deferred)];
@@ -340,15 +348,16 @@ export function Kanban({
       return;
     }
     const inDone = card.columnId === doneId;
+    const fixedOrder = inDone || isColumnSorted(columnFilters[card.columnId]);
     let next = cards;
-    if (!inDone && active.id !== over.id && cards.some((c) => c.id === over.id)) {
+    if (!fixedOrder && active.id !== over.id && cards.some((c) => c.id === over.id)) {
       next = arrayMove(cards, cards.findIndex((c) => c.id === active.id), cards.findIndex((c) => c.id === over.id));
       setCards(next);
     }
-    if (inDone) {
-      // Done is newest first: only the column can change
+    if (fixedOrder) {
+      // Done and sorted columns set their own order: only the column can change
       if (startColumn.current === card.columnId) return setCards(beforeDrag.current);
-      next = placeAfter(cards, card.id, card.columnId, null);
+      next = inDone && !isColumnSorted(columnFilters[card.columnId]) ? placeAfter(cards, card.id, card.columnId, null) : [...cards.filter((c) => c.id !== card.id), card];
       setCards(next);
       void persist(card, startColumn.current, card.columnId, next);
       return;
@@ -645,7 +654,7 @@ export function Kanban({
               {isColumnFiltered(columnFilter) && (
                 <ColumnFilterChips filter={columnFilter} onChange={(next) => changeColumnFilter(column.id, next)} />
               )}
-              <SortableContext items={list.map((c) => c.id)} strategy={isDone ? noReorder : verticalListSortingStrategy}>
+              <SortableContext items={list.map((c) => c.id)} strategy={isDone || isColumnSorted(columnFilter) ? noReorder : verticalListSortingStrategy}>
                 <ul className="flex min-h-24 flex-col gap-4">
                   {list.slice(0, limit).map((card) => (
                     <SortableCard
@@ -713,7 +722,7 @@ export function Kanban({
   );
 }
 
-// Done does not make room under the pointer: newest first decides where a card lands
+// Done and sorted columns do not make room under the pointer: their order decides where a card lands
 const noReorder = () => null;
 
 const sumWeight = (cards: { weight: number }[]) => cards.reduce((sum, c) => sum + c.weight, 0);
@@ -734,6 +743,8 @@ function Column({ column, highlighted, phoneHidden, children }: { column: BoardC
     </section>
   );
 }
+
+const MENU_LABEL = "px-3 pb-1 pt-2 font-mono text-[12px] uppercase tracking-[0.12em] text-[#4F5565]";
 
 const FILTER_PRIORITY_LABEL: Record<string, string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low", none: "No priority" };
 
@@ -765,12 +776,27 @@ function fieldLabel(filter: ColumnFilter, field: ColumnFilterField): string | nu
 
 /** Filter button beside a column's name: weight, priority and due, each in a submenu. */
 function ColumnFilterMenu({ column, filter = {}, onChange }: { column: BoardColumn; filter?: ColumnFilter; onChange: (next: ColumnFilter) => void }) {
-  const on = isColumnFiltered(filter);
+  const on = isColumnFiltered(filter) || isColumnSorted(filter);
+  const sortField = filter.sort;
+  const sortDir: SortDir = filter.dir ?? (sortField ? COLUMN_SORT_FIELDS[sortField].defaultDir : "asc");
+  const sortText = sortField ? `${COLUMN_SORT_FIELDS[sortField].label}, ${sortDir === "asc" ? "ascending" : "descending"}` : "Manual";
+  const state = [isColumnFiltered(filter) && "filtered", sortField && `sorted by ${sortText.toLowerCase()}`].filter(Boolean).join(", ");
+  const setSort = (field: string) => {
+    const next = { ...filter };
+    if (field === "manual") {
+      delete next.sort;
+      delete next.dir;
+    } else {
+      next.sort = field as ColumnSortField;
+      next.dir = filter.sort === field ? sortDir : COLUMN_SORT_FIELDS[field as ColumnSortField].defaultDir;
+    }
+    onChange(next);
+  };
   return (
     <Menu.Root>
       <Menu.Trigger
-        aria-label={`Filter ${column.name}${on ? ", filtered" : ""}`}
-        title="Filter this list"
+        aria-label={`Filter and sort ${column.name}${state ? `, ${state}` : ""}`}
+        title="Filter and sort this list"
         className={cn(
           "mi-press grid size-7 shrink-0 place-items-center rounded-full hover:bg-black/[0.05] data-[state=open]:bg-black/[0.05] [@media(pointer:coarse)]:size-11",
           on ? "bg-accent-soft text-accent" : "text-[#4F5565] hover:text-[#0A0A0A]"
@@ -808,10 +834,51 @@ function ColumnFilterMenu({ column, filter = {}, onChange }: { column: BoardColu
               </Menu.Sub>
             );
           })}
-          {on && (
+          <Menu.Separator className="my-1 h-px bg-black/[0.08]" />
+          {/* Sort lives only here: the trigger shows the column is sorted, nothing else does */}
+          <Menu.Sub>
+            <Menu.SubTrigger className={cn(menuItem, "justify-between data-[state=open]:bg-black/[0.05]")}>
+              Sort
+              <span className="ml-auto flex items-center gap-1 pl-4 text-sm text-[#4F5565]">
+                {sortText}
+                <ChevronRight aria-hidden="true" className="size-4" />
+              </span>
+            </Menu.SubTrigger>
+            <Menu.Portal>
+              <Menu.SubContent sideOffset={4} className={menuContent}>
+                <Menu.Label className={MENU_LABEL}>Sort by</Menu.Label>
+                <Menu.RadioGroup value={sortField ?? "manual"} onValueChange={setSort}>
+                  {[["manual", "Manual order"] as const, ...(Object.keys(COLUMN_SORT_FIELDS) as ColumnSortField[]).map((f) => [f, COLUMN_SORT_FIELDS[f].label] as const)].map(([value, label]) => (
+                    <Menu.RadioItem key={value} value={value} onSelect={(e) => e.preventDefault()} className={menuItem}>
+                      {label}
+                      <Menu.ItemIndicator className="ml-auto pl-4">
+                        <Check aria-hidden="true" className="size-4 text-accent" />
+                      </Menu.ItemIndicator>
+                    </Menu.RadioItem>
+                  ))}
+                </Menu.RadioGroup>
+                <Menu.Separator className="my-1 h-px bg-black/[0.08]" />
+                <Menu.Label className={MENU_LABEL}>Order</Menu.Label>
+                <Menu.RadioGroup value={sortField ? sortDir : ""} onValueChange={(dir) => sortField && onChange({ ...filter, dir: dir as SortDir })}>
+                  {(["asc", "desc"] as const).map((dir) => (
+                    <Menu.RadioItem key={dir} value={dir} disabled={!sortField} onSelect={(e) => e.preventDefault()} className={menuItem}>
+                      <span>
+                        {dir === "asc" ? "Ascending" : "Descending"}
+                        {sortField && <span className="block text-[13px] text-[#4F5565]">{COLUMN_SORT_FIELDS[sortField][dir]}</span>}
+                      </span>
+                      <Menu.ItemIndicator className="ml-auto pl-4">
+                        <Check aria-hidden="true" className="size-4 text-accent" />
+                      </Menu.ItemIndicator>
+                    </Menu.RadioItem>
+                  ))}
+                </Menu.RadioGroup>
+              </Menu.SubContent>
+            </Menu.Portal>
+          </Menu.Sub>
+          {isColumnFiltered(filter) && (
             <>
               <Menu.Separator className="my-1 h-px bg-black/[0.08]" />
-              <Menu.Item onSelect={() => onChange({})} className={menuItem}>
+              <Menu.Item onSelect={() => onChange({ sort: filter.sort, dir: filter.dir })} className={menuItem}>
                 Clear filters
               </Menu.Item>
             </>

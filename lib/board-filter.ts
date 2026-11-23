@@ -6,8 +6,9 @@ import { WEIGHT_LEVELS } from "@/lib/weights";
  * - Board-wide: the text field (`q`), kept in the URL and the `board_filter` cookie. Links
  *   from other pages may also name `work`, `priority`, `tag` or `due`; those apply from
  *   the URL only and are never saved, so the board does not reopen behind a hidden filter.
- * - Per column: weight, priority and due, saved in the `board_column_filter` cookie as
- *   JSON keyed by column id.
+ * - Per column: a weight, priority and due filter and a sort (weight, priority or due,
+ *   ascending or descending), saved in the `board_column_filter` cookie as JSON keyed by
+ *   column id.
  */
 
 export const DUE_FILTERS = {
@@ -105,10 +106,21 @@ export function filterCards<T extends FilterableCard>(cards: T[], filter: BoardF
 
 // ------------------------------------------------------------ per-column filters
 
+export const COLUMN_SORT_FIELDS = {
+  weight: { label: "Weight", defaultDir: "desc", asc: "Lightest first", desc: "Heaviest first" },
+  priority: { label: "Priority", defaultDir: "desc", asc: "Lowest first", desc: "Highest first" },
+  due: { label: "Due date", defaultDir: "asc", asc: "Soonest first", desc: "Latest first" },
+} as const;
+export type ColumnSortField = keyof typeof COLUMN_SORT_FIELDS;
+export type SortDir = "asc" | "desc";
+
 export interface ColumnFilter {
   weight?: number;
   priority?: string;
   due?: DueFilter;
+  /** Sort field; unset means the column's manual (drag) order. */
+  sort?: ColumnSortField;
+  dir?: SortDir;
 }
 /** Column id to that column's filter; columns without one are left out. */
 export type ColumnFilters = Record<string, ColumnFilter>;
@@ -118,6 +130,9 @@ export const COLUMN_FILTER_COOKIE = "board_column_filter";
 const WEIGHT_VALUES = new Set<number>(WEIGHT_LEVELS.map((w) => w.value));
 
 export const isColumnFiltered = (f: ColumnFilter | undefined): f is ColumnFilter => Boolean(f && (f.weight || f.priority || f.due));
+export const isColumnSorted = (f: ColumnFilter | undefined): f is ColumnFilter & { sort: ColumnSortField } => Boolean(f?.sort);
+/** Whether a column has anything worth saving. */
+const hasSettings = (f: ColumnFilter | undefined) => isColumnFiltered(f) || isColumnSorted(f);
 
 /** Reads the cookie's JSON. Unknown columns, keys and values are dropped. */
 export function parseColumnFilters(raw: string | null | undefined): ColumnFilters {
@@ -132,18 +147,22 @@ export function parseColumnFilters(raw: string | null | undefined): ColumnFilter
   const out: ColumnFilters = {};
   for (const [id, value] of Object.entries(data).slice(0, 50)) {
     if (!/^[\w-]{1,64}$/.test(id) || !value || typeof value !== "object") continue;
-    const { weight, priority, due } = value as Record<string, unknown>;
+    const { weight, priority, due, sort, dir } = value as Record<string, unknown>;
     const f: ColumnFilter = {};
     if (typeof weight === "number" && WEIGHT_VALUES.has(weight)) f.weight = weight;
     if (typeof priority === "string" && PRIORITY_VALUES.has(priority)) f.priority = priority;
     if (typeof due === "string" && Object.hasOwn(DUE_FILTERS, due)) f.due = due as DueFilter;
-    if (isColumnFiltered(f)) out[id] = f;
+    if (typeof sort === "string" && Object.hasOwn(COLUMN_SORT_FIELDS, sort)) {
+      f.sort = sort as ColumnSortField;
+      f.dir = dir === "asc" || dir === "desc" ? dir : COLUMN_SORT_FIELDS[f.sort].defaultDir;
+    }
+    if (hasSettings(f)) out[id] = f;
   }
   return out;
 }
 
 export function formatColumnFilters(filters: ColumnFilters): string {
-  return JSON.stringify(Object.fromEntries(Object.entries(filters).filter(([, f]) => isColumnFiltered(f))));
+  return JSON.stringify(Object.fromEntries(Object.entries(filters).filter(([, f]) => hasSettings(f))));
 }
 
 /** Whether one card passes a column's filter. */
@@ -153,4 +172,26 @@ export function matchesColumnFilter(card: FilterableCard & { weight: number }, f
   if (f.priority && card.priority !== f.priority) return false;
   if (f.due && !matchesDue(card.dueDay, f.due, today)) return false;
   return true;
+}
+
+const PRIORITY_RANK: Record<string, number> = { none: 0, low: 1, medium: 2, high: 3, critical: 4 };
+
+/**
+ * A column's cards in its sort order; unsorted columns keep their order. Stable: ties keep
+ * the manual order. Cards with no due date go last in either direction.
+ */
+export function sortColumn<T extends { priority: string; weight: number; dueDay: string | null }>(cards: T[], f: ColumnFilter | undefined): T[] {
+  if (!isColumnSorted(f)) return cards;
+  const field = f.sort;
+  const sign = (f.dir ?? COLUMN_SORT_FIELDS[field].defaultDir) === "asc" ? 1 : -1;
+  const value = (c: T): number | string | null => (field === "weight" ? c.weight : field === "priority" ? (PRIORITY_RANK[c.priority] ?? 0) : c.dueDay);
+  return cards
+    .map((card, index) => ({ card, index, v: value(card) }))
+    .sort((a, b) => {
+      if (a.v === b.v) return a.index - b.index;
+      if (a.v === null) return 1;
+      if (b.v === null) return -1;
+      return (a.v < b.v ? -1 : 1) * sign;
+    })
+    .map((e) => e.card);
 }

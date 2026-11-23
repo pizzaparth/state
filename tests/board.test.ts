@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterCards, formatBoardFilter, formatColumnFilters, matchesColumnFilter, parseBoardFilter, parseColumnFilters } from "@/lib/board-filter";
+import { filterCards, formatBoardFilter, formatColumnFilters, matchesColumnFilter, parseBoardFilter, parseColumnFilters, sortColumn } from "@/lib/board-filter";
 
 describe("board filter", () => {
   const cards = [
@@ -48,5 +48,25 @@ describe("column filter", () => {
     expect(parseColumnFilters('{"a":{"weight":3,"priority":"urgent","due":"soon"},"b c":{"weight":4}}')).toEqual({});
     expect(parseColumnFilters("not json")).toEqual({});
     expect(parseColumnFilters('["a"]')).toEqual({});
+  });
+});
+
+describe("column sort", () => {
+  const c = (title: string, weight: number, priority: string, dueDay: string | null) => ({ title, weight, priority, dueDay });
+  const cards = [c("a", 2, "low", "2026-11-20"), c("b", 8, "critical", null), c("c", 1, "high", "2026-11-14"), c("d", 2, "none", "2026-11-14")];
+  const titles = (f: Parameters<typeof sortColumn>[1]) => sortColumn(cards, f).map((x) => x.title);
+
+  it("sorts by one field either way, ties keep manual order, no due date last", () => {
+    expect(titles(undefined)).toEqual(["a", "b", "c", "d"]);
+    expect(titles({ sort: "weight", dir: "asc" })).toEqual(["c", "a", "d", "b"]);
+    expect(titles({ sort: "weight", dir: "desc" })).toEqual(["b", "a", "d", "c"]);
+    expect(titles({ sort: "priority", dir: "desc" })).toEqual(["b", "c", "a", "d"]);
+    expect(titles({ sort: "due", dir: "asc" })).toEqual(["c", "d", "a", "b"]);
+    expect(titles({ sort: "due", dir: "desc" })).toEqual(["a", "c", "d", "b"]);
+  });
+
+  it("saves a sort on its own and defaults a bad direction", () => {
+    expect(parseColumnFilters(formatColumnFilters({ a: { sort: "due", dir: "desc" } }))).toEqual({ a: { sort: "due", dir: "desc" } });
+    expect(parseColumnFilters('{"a":{"sort":"weight","dir":"up"},"b":{"sort":"title"}}')).toEqual({ a: { sort: "weight", dir: "desc" } });
   });
 });
