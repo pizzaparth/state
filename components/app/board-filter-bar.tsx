@@ -2,42 +2,46 @@
 
 import * as React from "react";
 import { Search, X } from "lucide-react";
-import { DUE_FILTERS, isFiltered, type BoardFilter, type DueFilter } from "@/lib/board-filter";
-import { PRIORITIES } from "@/lib/validation";
+import { DUE_FILTERS, type BoardFilter } from "@/lib/board-filter";
 
 const PRIORITY_LABEL: Record<string, string> = { none: "No priority", low: "Low", medium: "Medium", high: "High", critical: "Critical" };
 
-/** Project, priority, tag, due and text filters for the board, inside its toolbar (kanban.tsx). `F` focuses the text field. */
+/**
+ * The board's find field, inside its toolbar (kanban.tsx). `F` focuses it. Weight,
+ * priority and due filters live on each column. A link from another page can still
+ * narrow the whole board (work, priority, tag, due); that shows as one chip that clears it.
+ */
 export function BoardFilterBar({
   filter,
   onChange,
   projects,
-  tags,
   textRef,
 }: {
   filter: BoardFilter;
   onChange: (next: BoardFilter) => void;
   projects: { slug: string; name: string }[];
-  tags: string[];
   textRef: React.RefObject<HTMLInputElement | null>;
 }) {
-  const set = <K extends keyof BoardFilter>(key: K, value: BoardFilter[K] | "") => onChange({ ...filter, [key]: value || undefined });
-  // Phones: search, then selects two by two; tablets: four in a row; wide: one line with sort
-  const select = "app-select h-10 w-full min-w-0 rounded-full pl-3 text-[15px] xl:w-auto xl:max-w-[11rem]";
+  const linked = [
+    filter.work && (projects.find((p) => p.slug === filter.work)?.name ?? filter.work),
+    filter.priority && PRIORITY_LABEL[filter.priority],
+    filter.tag && `#${filter.tag}`,
+    filter.due && DUE_FILTERS[filter.due],
+  ].filter((v): v is string => Boolean(v));
   return (
-    <div role="search" aria-label="Filter the board" className="grid min-w-0 flex-[1_1_46rem] grid-cols-2 gap-2 md:grid-cols-4 xl:flex xl:items-center">
-      <label className="app-field col-span-full flex h-10 min-w-0 items-center gap-2 rounded-full px-3 xl:flex-[1_1_12rem]">
+    <div role="search" aria-label="Find on the board" className="flex min-w-0 flex-wrap items-center gap-2">
+      <label className="app-field flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full px-3">
         <Search aria-hidden="true" className="size-4 shrink-0 text-[#4F5565]" />
-        <span className="sr-only">Text</span>
+        <span className="sr-only">Find a card</span>
         <input
           ref={textRef}
           type="search"
           name="q"
           value={filter.q ?? ""}
-          onChange={(e) => set("q", e.target.value)}
+          onChange={(e) => onChange({ ...filter, q: e.target.value || undefined })}
           onKeyDown={(e) => {
             if (e.key === "Escape") {
-              set("q", "");
+              onChange({ ...filter, q: undefined });
               e.currentTarget.blur();
             }
           }}
@@ -49,46 +53,15 @@ export function BoardFilterBar({
           F
         </kbd>
       </label>
-      {projects.length > 0 && (
-        <select aria-label="Work" value={filter.work ?? ""} onChange={(e) => set("work", e.target.value)} className={select}>
-          <option value="">All work</option>
-          {projects.map((p) => (
-            <option key={p.slug} value={p.slug}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      )}
-      <select aria-label="Priority" value={filter.priority ?? ""} onChange={(e) => set("priority", e.target.value)} className={select}>
-        <option value="">Any priority</option>
-        {[...PRIORITIES].reverse().map((p) => (
-          <option key={p} value={p}>
-            {PRIORITY_LABEL[p]}
-          </option>
-        ))}
-      </select>
-      {tags.length > 0 && (
-        <select aria-label="Tag" value={filter.tag ?? ""} onChange={(e) => set("tag", e.target.value)} className={select}>
-          <option value="">Any tag</option>
-          {tags.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-      )}
-      <select aria-label="Due" value={filter.due ?? ""} onChange={(e) => set("due", e.target.value as DueFilter)} className={select}>
-        <option value="">Any due date</option>
-        {(Object.keys(DUE_FILTERS) as DueFilter[]).map((d) => (
-          <option key={d} value={d}>
-            {DUE_FILTERS[d]}
-          </option>
-        ))}
-      </select>
-      {isFiltered(filter) && (
-        <button type="button" onClick={() => onChange({})} className="mi-press inline-flex h-10 items-center justify-center gap-1 rounded-full px-3 text-[15px] text-[#3A3F4B] hover:bg-black/[0.05] hover:text-[#0A0A0A]">
-          <X aria-hidden="true" className="size-4" />
-          Clear
+      {linked.length > 0 && (
+        <button
+          type="button"
+          onClick={() => onChange({ q: filter.q })}
+          aria-label={`Clear filter from link: ${linked.join(", ")}`}
+          className="mi-press app-field inline-flex h-10 min-w-0 items-center gap-1.5 rounded-full px-3 text-[15px] font-medium text-[#0A0A0A] hover:text-accent"
+        >
+          <span className="truncate">{linked.join(" · ")}</span>
+          <X aria-hidden="true" className="size-4 shrink-0 text-[#4F5565]" />
         </button>
       )}
     </div>

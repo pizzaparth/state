@@ -1,7 +1,6 @@
 import type * as React from "react";
 import type { Viewer } from "@/lib/viewer-data";
-import { BOARD_SORT_COOKIE } from "@/lib/board-sort";
-import { BOARD_FILTER_COOKIE } from "@/lib/board-filter";
+import { BOARD_FILTER_COOKIE, COLUMN_FILTER_COOKIE } from "@/lib/board-filter";
 
 /**
  * A product page split in two, so it renders in either place:
@@ -55,8 +54,8 @@ export const PAGE_NAMES = [
 export type PageName = (typeof PAGE_NAMES)[number];
 
 /**
- * Preference cookies pages read (board sort and filter, collapsed metric sections). Never
+ * Preference cookies pages read (board filters, collapsed metric sections). Never
  * auth cookies. The last is METRICS_COLLAPSED_COOKIE, spelled out: it lives in a client
  * module, which server code cannot read a plain value from.
  */
-export const PAGE_COOKIES = [BOARD_SORT_COOKIE, BOARD_FILTER_COOKIE, "metrics_collapsed"] as const;
+export const PAGE_COOKIES = [BOARD_FILTER_COOKIE, COLUMN_FILTER_COOKIE, "metrics_collapsed"] as const;

@@ -1,32 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatBoardSort, parseBoardSort, sortCards } from "@/lib/board-sort";
-import { filterCards, formatBoardFilter, parseBoardFilter } from "@/lib/board-filter";
-
-const card = (title: string, extra: Partial<{ priority: string; weight: number; dueAt: number | null; projectName: string | null; createdAt: number }> = {}) => ({
-  title,
-  priority: "none",
-  weight: 2,
-  dueAt: null,
-  projectName: null,
-  createdAt: 0,
-  ...extra,
-});
-
-describe("board sort", () => {
-  it("round-trips and drops unknown keys", () => {
-    expect(parseBoardSort("priority.desc,bogus.asc,priority.asc,due")).toEqual([
-      { field: "priority", dir: "desc" },
-      { field: "due", dir: "asc" },
-    ]);
-    expect(formatBoardSort([])).toBe("manual");
-  });
-
-  it("sorts by keys in order, blanks last, ties keep manual order", () => {
-    const cards = [card("b", { priority: "low" }), card("a", { priority: "high", dueAt: 5 }), card("c", { priority: "high" }), card("d", { priority: "high", dueAt: 1 })];
-    expect(sortCards(cards, parseBoardSort("priority.desc,due.asc")).map((c) => c.title)).toEqual(["d", "a", "c", "b"]);
-    expect(sortCards(cards, parseBoardSort("due.desc")).map((c) => c.title)).toEqual(["a", "d", "b", "c"]);
-  });
-});
+import { filterCards, formatBoardFilter, formatColumnFilters, matchesColumnFilter, parseBoardFilter, parseColumnFilters } from "@/lib/board-filter";
 
 describe("board filter", () => {
   const cards = [
@@ -53,5 +26,27 @@ describe("board filter", () => {
     expect(parseBoardFilter("work=Relay&priority=urgent&due=today&q=%20x%20")).toEqual({ work: "relay", due: "today", q: "x" });
     expect(parseBoardFilter("project=relay")).toEqual({ work: "relay" });
     expect(formatBoardFilter({ work: "relay", q: "a b" })).toBe("work=relay&q=a+b");
+  });
+});
+
+describe("column filter", () => {
+  const today = "2026-11-12"; // Thursday; week ends Sunday 15th
+  const base = { title: "t", projectSlug: null, tags: [], priority: "high", weight: 4, dueDay: "2026-11-10" };
+
+  it("matches weight, priority and due together", () => {
+    expect(matchesColumnFilter(base, undefined, today)).toBe(true);
+    expect(matchesColumnFilter(base, { weight: 4, priority: "high", due: "overdue" }, today)).toBe(true);
+    expect(matchesColumnFilter(base, { weight: 2 }, today)).toBe(false);
+    expect(matchesColumnFilter(base, { priority: "low" }, today)).toBe(false);
+    expect(matchesColumnFilter(base, { due: "week" }, today)).toBe(false);
+    expect(matchesColumnFilter({ ...base, dueDay: null }, { due: "none" }, today)).toBe(true);
+  });
+
+  it("round-trips the cookie and drops bad values", () => {
+    const filters = { a: { weight: 4, due: "today" as const }, b: {} };
+    expect(parseColumnFilters(formatColumnFilters(filters))).toEqual({ a: { weight: 4, due: "today" } });
+    expect(parseColumnFilters('{"a":{"weight":3,"priority":"urgent","due":"soon"},"b c":{"weight":4}}')).toEqual({});
+    expect(parseColumnFilters("not json")).toEqual({});
+    expect(parseColumnFilters('["a"]')).toEqual({});
   });
 });

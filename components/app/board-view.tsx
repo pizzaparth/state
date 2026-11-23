@@ -1,9 +1,8 @@
 import * as React from "react";
-import { getBoard, getProjectOptions, getTagNames } from "@/db/queries";
+import { getBoard, getProjectOptions } from "@/db/queries";
 import { dayKey, dueState } from "@/lib/format";
 import type { Viewer } from "@/lib/viewer-data";
-import type { SortKey } from "@/lib/board-sort";
-import type { BoardFilter } from "@/lib/board-filter";
+import type { BoardFilter, ColumnFilters } from "@/lib/board-filter";
 import { checklistCount } from "@/lib/checklist";
 import { EmptyState, Panel } from "./primitives";
 import { Kanban, type BoardCard } from "./kanban";
@@ -19,21 +18,21 @@ export async function loadBoardView({
   viewer,
   params,
   basePath,
-  sort,
   filter,
+  columnFilters,
 }: {
   boardId: string | null;
   viewer: Viewer;
   params: Record<string, string | undefined>;
   basePath: string;
-  /** Starting sort; passing it shows the sort and filter bars. */
-  sort?: SortKey[];
+  /** Starting board-wide filter; passing it shows the find field. */
   filter?: BoardFilter;
+  /** Starting per-column filters. */
+  columnFilters?: ColumnFilters;
 }) {
-  const [board, projects, tags] = await Promise.all([
+  const [board, projects] = await Promise.all([
     boardId ? getBoard(boardId, viewer.workspaceIds, viewer.tz) : null,
     viewer.personalWorkspaceId ? getProjectOptions(viewer.personalWorkspaceId, viewer.workspaceIds) : [],
-    getTagNames(viewer.workspaceIds),
   ]);
   if (!board) return null;
   const now = new Date();
@@ -66,10 +65,9 @@ export async function loadBoardView({
     columns: board.columns,
     cards,
     taskHref,
-    sort,
     filter,
+    columnFilters,
     projects: projects.map((p) => ({ id: p.id, name: p.name, slug: p.slug })),
-    tags,
     today,
   };
 }
@@ -88,10 +86,9 @@ export function BoardView({ data }: { data: BoardViewData }) {
       columns={data.columns}
       cards={data.cards}
       taskHref={data.taskHref}
-      initialSort={data.sort}
       initialFilter={data.filter}
+      initialColumnFilters={data.columnFilters}
       projects={data.projects}
-      tags={data.tags}
       today={data.today}
       historyHref="/platform/history?source=task"
     />

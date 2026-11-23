@@ -25,7 +25,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ArrowRight, Loader2, MoreHorizontal, Plus, X } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, ListFilter, Loader2, MoreHorizontal, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DISPLAY } from "./primitives";
 import {
@@ -49,12 +49,27 @@ import type { MoveResult } from "@/lib/mutations";
 import { PRIORITIES } from "@/lib/validation";
 import { markPanelOpen } from "@/lib/panel-history";
 import { useNotice } from "./notice";
-import { BoardSortBar } from "./board-sort";
 import { BoardFilterBar } from "./board-filter-bar";
 import { PromptDialog } from "./prompt-dialog";
 import { CardFace, SortableCard, menuContent, menuItem, type BoardCard, type BoardColumn, type CardCommand } from "./kanban-card";
-import { BOARD_SORT_COOKIE, BOARD_SORT_PARAM, formatBoardSort, parseBoardSort, sortCards, type SortKey } from "@/lib/board-sort";
-import { BOARD_FILTER_COOKIE, BOARD_FILTER_KEYS, filterCards, formatBoardFilter, isFiltered, parseBoardFilter, type BoardFilter } from "@/lib/board-filter";
+import {
+  BOARD_FILTER_COOKIE,
+  BOARD_FILTER_KEYS,
+  COLUMN_FILTER_COOKIE,
+  DUE_FILTERS,
+  filterCards,
+  formatBoardFilter,
+  formatColumnFilters,
+  isColumnFiltered,
+  isFiltered,
+  matchesColumnFilter,
+  parseBoardFilter,
+  type BoardFilter,
+  type ColumnFilter,
+  type ColumnFilters,
+  type DueFilter,
+} from "@/lib/board-filter";
+import { WEIGHT_LEVELS } from "@/lib/weights";
 
 export type { BoardCard, BoardColumn } from "./kanban-card";
 
@@ -93,18 +108,16 @@ const setCookie = (name: string, value: string) => {
  * Moves still in flight are re-applied on top of every server refresh, so two quick
  * moves never flicker back and forth.
  *
- * Sort and filter are computed here (kept in the URL and cookies). While sorted, a drag
- * only changes the column; the card lands at the end of the column's manual order. Done
- * is always newest first.
+ * Filters are computed here: the find field for the whole board (URL and cookie) and a
+ * weight, priority and due filter per column (cookie). Done is always newest first.
  */
 export function Kanban({
   columns,
   cards: initial,
   taskHref,
-  initialSort,
   initialFilter,
+  initialColumnFilters,
   projects = [],
-  tags = [],
   today,
   historyHref,
   move = moveTaskAction,
@@ -112,11 +125,10 @@ export function Kanban({
   columns: BoardColumn[];
   cards: BoardCard[];
   taskHref?: Record<string, string>;
-  /** Shows the sort and filter bars, starting from these keys (empty = manual). */
-  initialSort?: SortKey[];
+  /** Shows the find field and the column filters, starting from this filter. */
   initialFilter?: BoardFilter;
+  initialColumnFilters?: ColumnFilters;
   projects?: { id: string; name: string; slug: string }[];
-  tags?: string[];
   /** YYYY-MM-DD in the viewer's zone. */
   today: string;
   /** Where tasks done before today are listed. */
@@ -141,29 +153,18 @@ export function Kanban({
     setCards(reconcile(initial));
   }, [initial, reconcile]);
 
-  // ------------------------------------------------------------ sort and filter
-  const [sort, setSort] = React.useState<SortKey[]>(initialSort ?? []);
-  const initialValue = initialSort ? formatBoardSort(initialSort) : null;
-  React.useEffect(() => {
-    if (initialValue !== null) setSort(parseBoardSort(initialValue));
-  }, [initialValue]);
+  // ------------------------------------------------------------ filters
+  const toolbar = initialFilter !== undefined;
   const [filter, setFilter] = React.useState<BoardFilter>(initialFilter ?? {});
   const initialFilterValue = initialFilter ? formatBoardFilter(initialFilter) : null;
   React.useEffect(() => {
     if (initialFilterValue !== null) setFilter(parseBoardFilter(initialFilterValue));
   }, [initialFilterValue]);
-  const sorted = sort.length > 0;
-  const sortValue = formatBoardSort(sort);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFilters>(initialColumnFilters ?? {});
   const replaceUrl = (edit: (url: URL) => void) => {
     const url = new URL(window.location.href);
     edit(url);
     window.history.replaceState(window.history.state, "", url);
-  };
-  const changeSort = (next: SortKey[]) => {
-    setSort(next);
-    const value = formatBoardSort(next);
-    replaceUrl((url) => (next.length > 0 ? url.searchParams.set(BOARD_SORT_PARAM, value) : url.searchParams.delete(BOARD_SORT_PARAM)));
-    setCookie(BOARD_SORT_COOKIE, value);
   };
   const changeFilter = (next: BoardFilter) => {
     setFilter(next);
@@ -174,26 +175,35 @@ export function Kanban({
         else url.searchParams.delete(key);
       }
     });
-    setCookie(BOARD_FILTER_COOKIE, formatBoardFilter(next));
+    // Only the text is saved: filters from a link apply to this visit alone
+    setCookie(BOARD_FILTER_COOKIE, formatBoardFilter({ q: next.q }));
   };
-  const filtered = React.useMemo(() => filterCards(cards, filter, today), [cards, filter, today]);
-  const shown = React.useMemo(() => sortCards(filtered, sort), [filtered, sort]);
-  const filterOn = isFiltered(filter);
+  const changeColumnFilter = (columnId: string, next: ColumnFilter) => {
+    setColumnFilters((prev) => {
+      const all = { ...prev };
+      if (isColumnFiltered(next)) all[columnId] = next;
+      else delete all[columnId];
+      setCookie(COLUMN_FILTER_COOKIE, formatColumnFilters(all));
+      return all;
+    });
+  };
+  const shown = React.useMemo(() => filterCards(cards, filter, today), [cards, filter, today]);
   const doneId = columns.find((c) => c.stateType === "done")?.id;
+  // The card being dragged stays visible in any column, so a filter never drops it mid-drag
+  const draggingId = React.useRef<string | null>(null);
   const columnCards = (columnId: string) => {
-    const list = shown.filter((c) => c.columnId === columnId);
+    const f = columnFilters[columnId];
+    const list = shown.filter((c) => c.columnId === columnId && (c.id === draggingId.current || matchesColumnFilter(c, f, today)));
     if (columnId === doneId) return [...list].sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0));
     // Deferred cards wait at the bottom until their day
     return [...list.filter((c) => !c.deferred), ...list.filter((c) => c.deferred)];
   };
 
-  // Task links carry the live sort and filter, so opening a task keeps the board as it is
+  // Task links carry the live filter, so opening a task keeps the board as it is
   const hrefFor = (id: string) => {
     const href = taskHref?.[id];
-    if (!href || !initialSort) return href;
+    if (!href || !toolbar) return href;
     const url = new URL(href, "http://board.local");
-    if (sorted) url.searchParams.set(BOARD_SORT_PARAM, sortValue);
-    else url.searchParams.delete(BOARD_SORT_PARAM);
     for (const key of BOARD_FILTER_KEYS) {
       const value = filter[key];
       if (value) url.searchParams.set(key, value);
@@ -271,7 +281,10 @@ export function Kanban({
         ? { label: "Undo", run: () => moveTo(card.id, back) }
         : undefined);
     } else if (result.data.reopened) notify(`Reopened “${card.title}”. Its commit was withdrawn.${result.data.removedNext ? " Next occurrence removed." : ""}`);
-    else if (toColumn !== fromColumn) notify(`“${card.title}” moved to ${columnName(toColumn)}.`);
+    else if (toColumn !== fromColumn) {
+      const hidden = !matchesColumnFilter(card, columnFiltersRef.current[toColumn], today);
+      notify(`“${card.title}” moved to ${columnName(toColumn)}.${hidden ? " Its filter hides it." : ""}`);
+    }
   };
 
   const withDone = (card: BoardCard, toColumn: string): BoardCard => ({
@@ -280,6 +293,8 @@ export function Kanban({
     completedAt: toColumn === doneId ? (card.completedAt ?? Date.now()) : null,
   });
 
+  const columnFiltersRef = React.useRef(columnFilters);
+  columnFiltersRef.current = columnFilters;
   const cardsRef = React.useRef(cards);
   cardsRef.current = cards;
   const moveTo = (cardId: string, toColumn: string) => {
@@ -298,6 +313,7 @@ export function Kanban({
   const onDragStart = ({ active }: DragStartEvent) => {
     const card = cards.find((c) => c.id === active.id) ?? null;
     beforeDrag.current = cards;
+    draggingId.current = card?.id ?? null;
     setDragging(card);
     startColumn.current = card?.columnId ?? null;
   };
@@ -315,6 +331,7 @@ export function Kanban({
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
+    draggingId.current = null;
     setDragging(null);
     setOverColumn(null);
     const card = cards.find((c) => c.id === active.id);
@@ -324,14 +341,14 @@ export function Kanban({
     }
     const inDone = card.columnId === doneId;
     let next = cards;
-    if (!sorted && !inDone && active.id !== over.id && cards.some((c) => c.id === over.id)) {
+    if (!inDone && active.id !== over.id && cards.some((c) => c.id === over.id)) {
       next = arrayMove(cards, cards.findIndex((c) => c.id === active.id), cards.findIndex((c) => c.id === over.id));
       setCards(next);
     }
-    if (sorted || inDone) {
-      // Sorted view or Done: only the column can change
+    if (inDone) {
+      // Done is newest first: only the column can change
       if (startColumn.current === card.columnId) return setCards(beforeDrag.current);
-      next = inDone ? placeAfter(cards, card.id, card.columnId, null) : [...cards.filter((c) => c.id !== card.id), card];
+      next = placeAfter(cards, card.id, card.columnId, null);
       setCards(next);
       void persist(card, startColumn.current, card.columnId, next);
       return;
@@ -492,14 +509,14 @@ export function Kanban({
         setPhoneColumn(firstOpenColumn.id);
         setAdding(firstOpenColumn.id);
         window.setTimeout(() => addInputs.current.get(firstOpenColumn.id)?.focus(), 0);
-      } else if (key === "f" && initialSort) {
+      } else if (key === "f" && toolbar) {
         e.preventDefault();
         filterRef.current?.focus();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selected.size, firstOpenColumn, initialSort]);
+  }, [selected.size, firstOpenColumn, toolbar]);
 
   return (
     <DndContext
@@ -512,16 +529,15 @@ export function Kanban({
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
       onDragCancel={() => {
+        draggingId.current = null;
         setDragging(null);
         setOverColumn(null);
         setCards(beforeDrag.current);
       }}
     >
-      {initialSort && (
-        // One toolbar: filters fill the row, sort sits at its end
-        <div className="app-panel flex flex-wrap items-center gap-2 rounded-[20px] p-2">
-          <BoardFilterBar filter={filter} onChange={changeFilter} projects={projects} tags={tags} textRef={filterRef} />
-          <BoardSortBar sort={sort} onChange={changeSort} />
+      {toolbar && (
+        <div className="app-panel rounded-[20px] p-2">
+          <BoardFilterBar filter={filter} onChange={changeFilter} projects={projects} textRef={filterRef} />
         </div>
       )}
 
@@ -558,6 +574,8 @@ export function Kanban({
           const total = cards.filter((c) => c.columnId === column.id).length;
           const limit = visible[column.id] ?? PAGE;
           const over = column.wipLimit !== null && total > column.wipLimit;
+          const columnFilter = columnFilters[column.id];
+          const filterOn = isFiltered(filter) || isColumnFiltered(columnFilter);
           return (
             <Column
               key={column.id}
@@ -567,7 +585,10 @@ export function Kanban({
             >
               {/* Count and Σ weight: what the column holds, in execution */}
               <div className="mb-3 flex items-center justify-between gap-2 px-1">
-                <h2 className={cn(DISPLAY, "min-w-0 truncate text-lg leading-none text-[#0A0A0A]")}>{column.name}</h2>
+                <span className="flex min-w-0 items-center gap-1">
+                  <h2 className={cn(DISPLAY, "min-w-0 truncate text-lg leading-none text-[#0A0A0A]")}>{column.name}</h2>
+                  {toolbar && <ColumnFilterMenu column={column} filter={columnFilter} onChange={(next) => changeColumnFilter(column.id, next)} />}
+                </span>
                 <span className="flex shrink-0 items-center gap-1">
                   <span
                     className="font-mono text-[13px] tabular-nums text-[#3A3F4B]"
@@ -621,7 +642,10 @@ export function Kanban({
                   onClose={() => setAdding(null)}
                 />
               )}
-              <SortableContext items={list.map((c) => c.id)} strategy={sorted || isDone ? noReorder : verticalListSortingStrategy}>
+              {isColumnFiltered(columnFilter) && (
+                <ColumnFilterChips filter={columnFilter} onChange={(next) => changeColumnFilter(column.id, next)} />
+              )}
+              <SortableContext items={list.map((c) => c.id)} strategy={isDone ? noReorder : verticalListSortingStrategy}>
                 <ul className="flex min-h-24 flex-col gap-4">
                   {list.slice(0, limit).map((card) => (
                     <SortableCard
@@ -689,7 +713,7 @@ export function Kanban({
   );
 }
 
-// Sorted columns and Done do not make room under the pointer: the order decides where a card lands
+// Done does not make room under the pointer: newest first decides where a card lands
 const noReorder = () => null;
 
 const sumWeight = (cards: { weight: number }[]) => cards.reduce((sum, c) => sum + c.weight, 0);
@@ -708,6 +732,118 @@ function Column({ column, highlighted, phoneHidden, children }: { column: BoardC
     >
       {children}
     </section>
+  );
+}
+
+const FILTER_PRIORITY_LABEL: Record<string, string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low", none: "No priority" };
+
+/** The options of each per-column filter, as [value, label]; "any" clears that field. */
+const COLUMN_FILTER_FIELDS = {
+  weight: { label: "Weight", options: WEIGHT_LEVELS.map((w) => [String(w.value), `${w.label} +${w.value}`] as const) },
+  priority: { label: "Priority", options: [...PRIORITIES].reverse().map((p) => [p, FILTER_PRIORITY_LABEL[p]] as const) },
+  due: { label: "Due date", options: (Object.keys(DUE_FILTERS) as DueFilter[]).map((d) => [d, DUE_FILTERS[d]] as const) },
+} as const;
+type ColumnFilterField = keyof typeof COLUMN_FILTER_FIELDS;
+const COLUMN_FILTER_NAMES = Object.keys(COLUMN_FILTER_FIELDS) as ColumnFilterField[];
+
+/** `filter` with one field set from its option value ("any" clears it). */
+function withField(filter: ColumnFilter, field: ColumnFilterField, value: string): ColumnFilter {
+  const next = { ...filter };
+  if (value === "any") delete next[field];
+  else if (field === "weight") next.weight = Number(value);
+  else if (field === "priority") next.priority = value;
+  else next.due = value as DueFilter;
+  return next;
+}
+
+/** The label of a field's current value, or null when the field is not set. */
+function fieldLabel(filter: ColumnFilter, field: ColumnFilterField): string | null {
+  const value = filter[field];
+  if (value === undefined) return null;
+  return COLUMN_FILTER_FIELDS[field].options.find(([v]) => v === String(value))?.[1] ?? null;
+}
+
+/** Filter button beside a column's name: weight, priority and due, each in a submenu. */
+function ColumnFilterMenu({ column, filter = {}, onChange }: { column: BoardColumn; filter?: ColumnFilter; onChange: (next: ColumnFilter) => void }) {
+  const on = isColumnFiltered(filter);
+  return (
+    <Menu.Root>
+      <Menu.Trigger
+        aria-label={`Filter ${column.name}${on ? ", filtered" : ""}`}
+        title="Filter this list"
+        className={cn(
+          "mi-press grid size-7 shrink-0 place-items-center rounded-full hover:bg-black/[0.05] data-[state=open]:bg-black/[0.05] [@media(pointer:coarse)]:size-11",
+          on ? "bg-accent-soft text-accent" : "text-[#4F5565] hover:text-[#0A0A0A]"
+        )}
+      >
+        <ListFilter aria-hidden="true" className="size-4" />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Content align="start" sideOffset={6} className={menuContent}>
+          {COLUMN_FILTER_NAMES.map((field) => {
+            const current = fieldLabel(filter, field);
+            return (
+              <Menu.Sub key={field}>
+                <Menu.SubTrigger className={cn(menuItem, "justify-between data-[state=open]:bg-black/[0.05]")}>
+                  {COLUMN_FILTER_FIELDS[field].label}
+                  <span className="ml-auto flex items-center gap-1 pl-4 text-sm text-[#4F5565]">
+                    {current ?? "Any"}
+                    <ChevronRight aria-hidden="true" className="size-4" />
+                  </span>
+                </Menu.SubTrigger>
+                <Menu.Portal>
+                  <Menu.SubContent sideOffset={4} className={menuContent}>
+                    <Menu.RadioGroup value={filter[field] === undefined ? "any" : String(filter[field])} onValueChange={(v) => onChange(withField(filter, field, v))}>
+                      {[["any", "Any"] as const, ...COLUMN_FILTER_FIELDS[field].options].map(([value, label]) => (
+                        <Menu.RadioItem key={value} value={value} className={menuItem}>
+                          {label}
+                          <Menu.ItemIndicator className="ml-auto pl-4">
+                            <Check aria-hidden="true" className="size-4 text-accent" />
+                          </Menu.ItemIndicator>
+                        </Menu.RadioItem>
+                      ))}
+                    </Menu.RadioGroup>
+                  </Menu.SubContent>
+                </Menu.Portal>
+              </Menu.Sub>
+            );
+          })}
+          {on && (
+            <>
+              <Menu.Separator className="my-1 h-px bg-black/[0.08]" />
+              <Menu.Item onSelect={() => onChange({})} className={menuItem}>
+                Clear filters
+              </Menu.Item>
+            </>
+          )}
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+
+/** The column's active filters under its header; each one removes itself. */
+function ColumnFilterChips({ filter, onChange }: { filter: ColumnFilter; onChange: (next: ColumnFilter) => void }) {
+  return (
+    <ul aria-label="Filters" className="mb-3 flex flex-wrap gap-1.5 px-1">
+      {COLUMN_FILTER_NAMES.map((field) => {
+        const label = fieldLabel(filter, field);
+        if (!label) return null;
+        return (
+          <li key={field}>
+            <button
+              type="button"
+              onClick={() => onChange(withField(filter, field, "any"))}
+              aria-label={`Remove ${COLUMN_FILTER_FIELDS[field].label.toLowerCase()} filter: ${label}`}
+              className="mi-press app-field inline-flex h-7 items-center gap-1 rounded-full pl-2.5 pr-1.5 text-[13px] font-medium text-[#0A0A0A] hover:text-accent [@media(pointer:coarse)]:h-9"
+            >
+              {label}
+              <X aria-hidden="true" className="size-3.5 text-[#4F5565]" />
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
