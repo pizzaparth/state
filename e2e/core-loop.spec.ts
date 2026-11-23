@@ -42,9 +42,9 @@ test("a task's commit comes and goes with Done", async ({ page }, info) => {
   await page.goto("/platform/activity?range=30d");
   await expect(page.locator('[aria-label^="Execution graph"]')).toBeVisible();
 
-  // Reopen from Today's Completed list: the commit is withdrawn
-  await page.goto("/platform/today");
-  await page.locator("section", { hasText: "Completed today" }).getByRole("link", { name: new RegExp(title) }).click();
+  // Reopen from the board's Done card: the commit is withdrawn
+  await page.goto("/platform/board");
+  await page.locator("[data-card-id]", { hasText: title }).getByRole("link", { name: new RegExp(title) }).click();
   const panel = page.getByRole("dialog");
   await panel.getByRole("radio", { name: "Queued" }).click();
   await expect(page.getByText(/Reopened\. Its commit was withdrawn\./)).toBeVisible();

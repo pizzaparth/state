@@ -30,7 +30,7 @@ async function load({ viewer, params }: PageContext) {
   if (!viewer.onboardedAt && !(await hasCommits(viewer.id))) return { redirect: "/platform/start" };
   const scope = { workspaceIds: viewer.workspaceIds, userId: viewer.id };
   const loading = getToday(scope, viewer.tz);
-  const siblings = loading.then((d) => [...new Set([...d.planned, ...d.carried, ...d.overdue, ...d.active, ...d.queued, ...d.completed].map((t) => t.id))]);
+  const siblings = loading.then((d) => [...new Set([...d.planned, ...d.carried, ...d.overdue, ...d.active, ...d.queued].map((t) => t.id))]);
   const [data, projects, ticker, objectives, drawers] = await Promise.all([
     loading,
     getCaptureProjects(viewer),
@@ -184,9 +184,6 @@ function View({ viewer, params, data, projects, ticker, objectives, drawers }: P
               </ul>
             </Panel>
           )}
-          <Panel title="Completed today" aside={<Count n={data.completed.length} href={`/platform/history?day=${today}&source=task`} />}>
-            {data.completed.length === 0 ? <EmptyState title="None yet" /> : rows(data.completed, [])}
-          </Panel>
           <Panel title="Today’s commits" aside={`+${done}`}>
             {data.commits.length === 0 ? (
               <EmptyState title="No commits yet" />
