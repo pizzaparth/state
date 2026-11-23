@@ -8,7 +8,12 @@
      screen. Text on the accent is white (4.6:1, WCAG AA). Accent as small text uses
      --accent-text (#C21F63), which passes on white and on the #F5F5F5 panels. */
   --accent: #D92B74;
+  /* Same accent as space-separated RGB, so Tailwind's bg-accent/20 style opacity works */
+  --accent-rgb: 217 43 116;
+  /* Accent fills (+ COMMIT, selected states, bars). A gradient in the product theme. */
+  --accent-fill: var(--accent);
   --accent-text: #C21F63;
+  --accent-text-hover: #A51A54;
   --accent-hover: #C4226A;
   --accent-ink: #FFFFFF;
   --accent-ink-muted: #FFFFFF;
@@ -73,4 +78,91 @@
   --duration-normal: 180ms;
   --duration-slow: 220ms;
   --ease-restrained: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Surface recipes used by styles/product.css. Flat on marketing and auth (the landing
+     page's mini app pictures); the product theme below makes them soft and raised. */
+  --app-panel-bg: #F5F5F5;
+  --app-panel-border: var(--app-line);
+  --app-panel-shadow: none;
+  --app-card-bg: var(--app-raised);
+  --app-card-border: var(--app-line-strong);
+  --app-card-shadow: none;
+  --app-card-shadow-hover: none;
+  --app-btn-shadow: none;
+  --app-btn-shadow-active: none;
+  --app-field-bg: var(--app-field);
+  --app-field-shadow: none;
+  --app-inverse-shadow: none;
+  --app-overlay-bg: var(--app-bg);
+  --app-overlay-shadow: none;
+  --app-scrim-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================================================
+   Product theme (app/(app)/layout.tsx renders the `.platform` marker).
+   Soft raised UI: a cool grey page, light tiles lifted by a paired shadow (dark below
+   right, white above left), fields pressed in, blue gradient for the accent.
+   Set on :root so dialogs and menus portalled to <body> pick it up too.
+   ========================================================================== */
+:root:has(.platform) {
+  --accent: #3D4FE6;
+  --accent-rgb: 61 79 230;
+  --accent-hover: #3343D6;
+  --accent-text: #2F3FD0;        /* 6.0:1 on the page, 7.6:1 on white */
+  --accent-text-hover: #2534B8;
+  --accent-soft: rgba(61, 79, 230, 0.12);
+  --accent-line: rgba(61, 79, 230, 0.45);
+  --accent-fill: linear-gradient(135deg, #5466F7 0%, #3D4FE6 48%, #2C3BC9 100%);
+
+  /* Page and ink. A solid white page; the tiles are cool grey so they stand out from it.
+     Greys are darker than marketing's so every label reads on the tiles: #0B0D12 17:1,
+     #3A3F4B 8.6:1, #4F5565 6.0:1 on #E9EDF3. */
+  --app-bg: #FFFFFF;
+  --app-panel: #EEF1F6;
+  --app-raised: #F3F5F9;
+  --app-raised-hover: #F7F9FC;
+  --app-field: #E2E7EE;
+  --app-line: rgba(255, 255, 255, 0.7);
+  --app-line-strong: rgba(255, 255, 255, 0.85);
+  --app-text-primary: #0B0D12;
+  --app-text-secondary: #3A3F4B;
+  --app-text-tertiary: #4F5565;
+
+  /* Paired shadows: grey falls below right, white lifts above left. Deep on wide screens,
+     shallower on phones where the page gutter is only 16px.
+     On the white page the white highlight has nothing to show against, so the lit side
+     gets its depth from the tile itself: a white bevel just inside the top-left edge, a
+     soft ambient shadow all round and a faint grey edge. Tiles are grey enough (never
+     near-white) that the bevel and the white highlight read wherever a tile sits on
+     another tile. */
+  --neu-dark: rgba(122, 138, 168, 0.55);
+  --neu-dark-soft: rgba(122, 138, 168, 0.42);
+  --neu-light: #FFFFFF;
+
+  --neu-edge: rgba(122, 138, 168, 0.16) rgba(122, 138, 168, 0.26) rgba(122, 138, 168, 0.26) rgba(122, 138, 168, 0.16);
+  --neu-bevel: inset 1.5px 1.5px 0 rgba(255, 255, 255, 0.95), inset -1px -1px 0 rgba(122, 138, 168, 0.12);
+  --neu-ambient: 0 1px 4px rgba(122, 138, 168, 0.22);
+  --app-panel-bg: linear-gradient(145deg, #F3F5F9 0%, #E7EBF1 100%);
+  --app-panel-border: var(--neu-edge);
+  --app-panel-shadow: var(--neu-bevel), var(--neu-ambient), 18px 18px 40px var(--neu-dark), -14px -14px 34px var(--neu-light);
+  --app-card-bg: linear-gradient(145deg, #F9FAFC 0%, #ECEFF4 100%);
+  --app-card-border: var(--neu-edge);
+  --app-card-shadow: var(--neu-bevel), var(--neu-ambient), 9px 9px 20px var(--neu-dark-soft), -7px -7px 16px var(--neu-light);
+  --app-card-shadow-hover: var(--neu-bevel), var(--neu-ambient), 14px 14px 30px var(--neu-dark), -9px -9px 22px var(--neu-light);
+  --app-btn-shadow: var(--neu-bevel), var(--neu-ambient), 6px 6px 14px var(--neu-dark-soft), -5px -5px 12px var(--neu-light);
+  --app-btn-shadow-active: inset 4px 4px 9px var(--neu-dark-soft), inset -4px -4px 9px var(--neu-light);
+  --app-field-bg: #E2E7EE;
+  --app-field-shadow: inset 5px 5px 10px var(--neu-dark-soft), inset -5px -5px 10px var(--neu-light);
+  --app-inverse-shadow: 9px 11px 24px rgba(61, 79, 230, 0.4), -7px -7px 16px var(--neu-light);
+  --app-overlay-bg: #F1F4F8;
+  --app-overlay-shadow: 24px 28px 64px rgba(90, 105, 135, 0.38), -12px -12px 36px rgba(255, 255, 255, 0.6);
+  --app-scrim-bg: rgba(38, 46, 64, 0.28);
+}
+
+@media (max-width: 640px) {
+  :root:has(.platform) {
+    --app-panel-shadow: var(--neu-bevel), var(--neu-ambient), 8px 8px 16px var(--neu-dark), -6px -6px 14px var(--neu-light);
+    --app-card-shadow: var(--neu-bevel), var(--neu-ambient), 6px 6px 14px var(--neu-dark-soft), -5px -5px 12px var(--neu-light);
+    --app-card-shadow-hover: var(--neu-bevel), var(--neu-ambient), 8px 8px 18px var(--neu-dark), -6px -6px 14px var(--neu-light);
+  }
 }

@@ -217,7 +217,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
         <ShellContext.Provider value={{ openPalette: () => setPaletteOpen(true), openCommit: () => openCommit(), openCapture: () => setCaptureOpen(true) }}>
           <TimezoneCheck tz={data.tz} demo={Boolean(data.demoId)} />
           <NavigationWake />
-          {data.motion && <ParallaxBackdrop scroller="#content" tone="light" />}
+          {data.motion && <ParallaxBackdrop scroller="#content" tone="platform" />}
           <div className="relative z-10 flex h-[100dvh] w-full overflow-hidden text-[#0A0A0A]">
             <aside className={cn("hidden shrink-0 p-3 lg:block", collapsed ? "w-[5.25rem]" : "w-64")}>
               <div className="app-panel flex h-full flex-col rounded-[28px]">
@@ -226,7 +226,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
             </aside>
 
             <div className="flex min-w-0 flex-1 flex-col">
-              <header className="flex h-16 shrink-0 items-center justify-between gap-3 px-4 pt-[env(safe-area-inset-top)] sm:px-6 lg:px-8">
+              <header className="flex h-16 shrink-0 items-center justify-between gap-3 px-4 pt-[env(safe-area-inset-top)] sm:px-6 lg:px-10">
                 <div className="flex min-w-0 items-center gap-3">
                   <button type="button" onClick={() => setNavOpen(true)} aria-label="Open navigation" className="app-btn grid size-11 place-items-center rounded-[12px] lg:hidden">
                     <MenuIcon className="size-4" aria-hidden="true" />
@@ -238,7 +238,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
                   <button
                     type="button"
                     onClick={() => setPaletteOpen(true)}
-                    className="app-field hidden h-10 items-center gap-2 rounded-[12px] px-3 text-sm text-[#52525B] transition-colors hover:text-[#0A0A0A] sm:flex"
+                    className="app-field hidden h-10 items-center gap-2 rounded-[12px] px-3 text-sm text-[#3A3F4B] transition-colors hover:text-[#0A0A0A] sm:flex"
                   >
                     <Search className="size-3.5" aria-hidden="true" />
                     <span className="w-28 text-left">Search…</span>
@@ -267,7 +267,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
                 </div>
               </header>
 
-              <main id="content" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pb-16">
+              <main id="content" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-28 pt-4 sm:px-6 lg:px-10 lg:pb-16">
                 <div className="mx-auto max-w-6xl">
                   {data.demoId && (
                     <div role="status" className="app-accent-panel mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-[16px] px-4 py-3">
@@ -293,7 +293,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
               <Dialog.Overlay className="app-scrim fixed inset-0 z-50 data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in lg:hidden" />
               <Dialog.Content
                 aria-describedby={undefined}
-                className="fixed inset-y-3 left-3 z-50 flex w-[17rem] flex-col overscroll-contain rounded-[28px] border border-black/[0.06] bg-white outline-none data-[state=closed]:animate-nav-out data-[state=open]:animate-nav-in lg:hidden"
+                className="app-overlay fixed inset-y-3 left-3 z-50 flex w-[17rem] flex-col overscroll-contain rounded-[28px] outline-none data-[state=closed]:animate-nav-out data-[state=open]:animate-nav-in lg:hidden"
               >
                 <Dialog.Title className="sr-only">Navigation</Dialog.Title>
                 <Dialog.Close aria-label="Close navigation" className="app-btn absolute right-3 top-3 grid size-11 place-items-center rounded-full">
@@ -312,7 +312,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
                 aria-describedby={undefined}
                 className="app-overlay fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50 rounded-[24px] p-3 outline-none data-[state=closed]:animate-overlay-out data-[state=open]:animate-toast-in"
               >
-                <Dialog.Title className="px-2 pb-2 pt-1 font-mono text-[11px] uppercase tracking-[0.16em] text-[#71717A]">Add</Dialog.Title>
+                <Dialog.Title className="px-2 pb-2 pt-1 font-mono text-[12px] uppercase tracking-[0.16em] text-[#4F5565]">Add</Dialog.Title>
                 <div className="grid grid-cols-2 gap-2">
                   <button type="button" onClick={() => (setAddSheetOpen(false), setCaptureOpen(true))} className="app-btn mi-press flex h-16 items-center justify-center gap-2 rounded-[16px] text-base font-semibold">
                     <ListPlus aria-hidden="true" className="size-5" />
@@ -350,7 +350,7 @@ function SaveIndicator() {
   }, [state.savedAt]);
   const label = state.waiting > 0 ? `offline · ${state.waiting} pending` : state.inFlight > 0 ? "saving…" : recent ? "saved" : "";
   return (
-    <span role="status" aria-live="polite" className={cn("hidden min-w-[4.5rem] text-right font-mono text-[12px] tabular-nums md:inline", state.waiting > 0 ? "text-[#0A0A0A]" : "text-[#71717A]")}>
+    <span role="status" aria-live="polite" className={cn("hidden min-w-[4.5rem] text-right font-mono text-[12px] tabular-nums md:inline", state.waiting > 0 ? "text-[#0A0A0A]" : "text-[#4F5565]")}>
       {label}
     </span>
   );
@@ -373,7 +373,7 @@ function TickerStrip({ ticker, dateLabel }: { ticker: ShellData["ticker"]; dateL
         <>
           <CountUp value={String(ticker.last7)} />
           {change !== null && (
-            <span className={cn("ml-1.5", up ? "text-[#0A0A0A]" : "text-[#52525B]")}>
+            <span className={cn("ml-1.5", up ? "text-[#0A0A0A]" : "text-[#3A3F4B]")}>
               {up ? "▲" : "▼"}
               {Math.abs(change)}%
             </span>
@@ -393,13 +393,13 @@ function TickerStrip({ ticker, dateLabel }: { ticker: ShellData["ticker"]; dateL
   ];
   return (
     <dl aria-label="Your execution, last 7 days" className="flex min-w-0 items-center gap-x-5 overflow-hidden font-mono text-[13px] uppercase tabular-nums">
-      <div className="hidden shrink-0 text-[#52525B] sm:block">
+      <div className="hidden shrink-0 text-[#3A3F4B] sm:block">
         <dt className="sr-only">Date</dt>
         <dd>{dateLabel}</dd>
       </div>
       {items.map((item) => (
         <div key={item.label} title={item.title} className={cn("flex shrink-0 items-baseline gap-2 border-l border-black/[0.08] pl-5 first:border-l-0 first:pl-0 sm:first:border-l sm:first:pl-5", item.className)}>
-          <dt className="text-[11px] tracking-[0.16em] text-[#71717A]">{item.label}</dt>
+          <dt className="text-[12px] tracking-[0.16em] text-[#4F5565]">{item.label}</dt>
           <dd className="font-semibold text-[#0A0A0A]">{item.value}</dd>
         </div>
       ))}
@@ -427,7 +427,7 @@ function SidebarContent({
       <div className={cn("flex items-start justify-between gap-2 pb-4 pt-5", collapsed ? "px-3" : "px-5")}>
         <Link href="/platform/today" className="block min-w-0 rounded-[8px]" aria-label={collapsed ? "State, Today" : undefined}>
           {!collapsed && (
-            <span className="block font-mono text-[11px] uppercase tracking-[0.18em] text-[#71717A]" translate="no">
+            <span className="block font-mono text-[12px] uppercase tracking-[0.18em] text-[#4F5565]" translate="no">
               {AUTHOR}
             </span>
           )}
@@ -436,7 +436,7 @@ function SidebarContent({
           </span>
         </Link>
         {onToggle && !collapsed && (
-          <button type="button" onClick={onToggle} aria-label="Collapse sidebar" title="Collapse sidebar ([)" className="mi-press -mr-2 -mt-1 grid size-9 shrink-0 place-items-center rounded-full text-[#71717A] hover:bg-black/[0.05] hover:text-[#0A0A0A]">
+          <button type="button" onClick={onToggle} aria-label="Collapse sidebar" title="Collapse sidebar ([)" className="mi-press -mr-2 -mt-1 grid size-9 shrink-0 place-items-center rounded-full text-[#4F5565] hover:bg-black/[0.05] hover:text-[#0A0A0A]">
             <PanelLeftClose aria-hidden="true" className="size-4" />
           </button>
         )}
@@ -444,7 +444,7 @@ function SidebarContent({
       <nav aria-label="Main" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3">
         {navSections(data).map((section, i) => (
           <div key={i}>
-            {section.title && !collapsed && <p className="px-3 pb-1 font-mono text-[11px] uppercase tracking-[0.18em] text-[#71717A]">{section.title}</p>}
+            {section.title && !collapsed && <p className="px-3 pb-1 font-mono text-[12px] uppercase tracking-[0.18em] text-[#4F5565]">{section.title}</p>}
             <ul className="space-y-0.5">
               {section.items.map((item) => {
                 const active = isActive(pathname, item.href);
@@ -455,7 +455,7 @@ function SidebarContent({
                       <Icon className="size-4 shrink-0" aria-hidden="true" />
                       {!collapsed && <span className="min-w-0 flex-1 truncate">{item.name}</span>}
                       {item.badge && !collapsed ? (
-                        <span className={cn("font-mono text-[13px] tabular-nums", active ? "text-accent-muted" : "text-[#52525B]")}>{item.badge}</span>
+                        <span className={cn("font-mono text-[13px] tabular-nums", active ? "text-accent-muted" : "text-[#3A3F4B]")}>{item.badge}</span>
                       ) : null}
                     </NavLink>
                   </li>
@@ -471,7 +471,7 @@ function SidebarContent({
                       aria-current={isActive(pathname, p.href) ? "page" : undefined}
                       className={cn(
                         "mi-nudge block truncate rounded-[10px] px-3 py-1.5 text-[14px] transition-colors",
-                        isActive(pathname, p.href) ? "bg-black/[0.05] font-semibold text-[#0A0A0A]" : "text-[#52525B] hover:bg-black/[0.03] hover:text-[#0A0A0A]"
+                        isActive(pathname, p.href) ? "bg-black/[0.05] font-semibold text-[#0A0A0A]" : "text-[#3A3F4B] hover:bg-black/[0.03] hover:text-[#0A0A0A]"
                       )}
                     >
                       {p.name}
@@ -480,7 +480,7 @@ function SidebarContent({
                 ))}
                 {data.projects.length > SIDEBAR_PROJECTS && (
                   <li>
-                    <Link href="/platform/projects" className="block rounded-[10px] px-3 py-1.5 font-mono text-[12px] text-[#71717A] hover:text-[#0A0A0A]">
+                    <Link href="/platform/projects" className="block rounded-[10px] px-3 py-1.5 font-mono text-[12px] text-[#4F5565] hover:text-[#0A0A0A]">
                       All projects · {data.projects.length}
                     </Link>
                   </li>
@@ -496,11 +496,11 @@ function SidebarContent({
           {!collapsed && "Settings"}
         </NavLink>
         {collapsed && onToggle ? (
-          <button type="button" onClick={onToggle} aria-label="Expand sidebar" title="Expand sidebar ([)" className="mi-press grid h-10 w-full place-items-center rounded-[12px] text-[#71717A] hover:bg-black/[0.05] hover:text-[#0A0A0A]">
+          <button type="button" onClick={onToggle} aria-label="Expand sidebar" title="Expand sidebar ([)" className="mi-press grid h-10 w-full place-items-center rounded-[12px] text-[#4F5565] hover:bg-black/[0.05] hover:text-[#0A0A0A]">
             <PanelLeftOpen aria-hidden="true" className="size-4" />
           </button>
         ) : (
-          <p className="px-3 font-mono text-[11px] leading-snug text-[#71717A]">{BYLINE}</p>
+          <p className="px-3 font-mono text-[12px] leading-snug text-[#4F5565]">{BYLINE}</p>
         )}
       </div>
     </LayoutGroup>
@@ -525,14 +525,14 @@ function NavLink({ href, active, label, children }: { href: string; active: bool
       className={cn(
         "mi-nudge mi-press relative flex items-center gap-3 rounded-[12px] px-3 py-2 text-[15px] font-semibold tracking-[-0.01em] transition-colors duration-150",
         label && "justify-center",
-        active ? "text-accent-ink" : "text-[#27272A] hover:bg-black/[0.03] hover:text-[#0A0A0A]"
+        active ? "platform-nav-active" : "text-[#1E2129] hover:bg-white/60 hover:text-[#0A0A0A]"
       )}
     >
       {active && (
         <motion.span
           layoutId="nav-active"
           aria-hidden="true"
-          className="absolute inset-0 rounded-[12px] bg-[#0A0A0A]"
+          className="app-nav-pill absolute inset-0 rounded-[14px]"
           transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.8 }}
         />
       )}
@@ -568,12 +568,12 @@ function BottomBar({ pathname, inboxCount, onAdd }: { pathname: string; inboxCou
         <Link
           href={i.href as Route}
           aria-current={active ? "page" : undefined}
-          className={cn("mi-press relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-[14px] text-[11px] font-semibold", active ? "text-[#0A0A0A]" : "text-[#71717A]")}
+          className={cn("mi-press relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-[14px] text-[12px] font-semibold", active ? "text-[#0A0A0A]" : "text-[#4F5565]")}
         >
           <Icon aria-hidden="true" className="size-5" />
           {i.name}
-          {i.name === "Inbox" && inboxCount > 0 && <span className="absolute right-[calc(50%-1.25rem)] top-1.5 font-mono text-[10px] tabular-nums text-accent">{inboxCount}</span>}
-          {active && <span aria-hidden="true" className="absolute bottom-1 h-1 w-1 rounded-full bg-[#0A0A0A]" />}
+          {i.name === "Inbox" && inboxCount > 0 && <span className="absolute right-[calc(50%-1.25rem)] top-1.5 font-mono text-[12px] tabular-nums text-accent">{inboxCount}</span>}
+          {active && <span aria-hidden="true" className="absolute bottom-1 h-1 w-4 rounded-full bg-accent" />}
         </Link>
       </li>
     );

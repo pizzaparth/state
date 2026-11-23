@@ -70,11 +70,11 @@ const signed = (v: number, digits = 1) => `${v >= 0 ? "+" : "−"}${formatNumber
 
 /** ▲/▼ with percent: arrow and sign carry direction, never colour alone. */
 function Delta({ pct, days, inverse }: { pct: number | null; days: number; inverse?: boolean }) {
-  if (pct === null) return <span className={inverse ? "text-accent-muted" : "text-[#71717A]"}>no prior {days}d</span>;
+  if (pct === null) return <span className={inverse ? "text-accent-muted" : "text-[#4F5565]"}>no prior {days}d</span>;
   return (
-    <span className={inverse ? "text-white" : "text-[#52525B]"}>
+    <span className={inverse ? "text-white" : "text-[#3A3F4B]"}>
       {pct >= 0 ? "▲" : "▼"}
-      {formatNumber(Math.abs(pct), 1)}% <span className={inverse ? "text-accent-muted" : "text-[#71717A]"}>vs prior {days}d</span>
+      {formatNumber(Math.abs(pct), 1)}% <span className={inverse ? "text-accent-muted" : "text-[#4F5565]"}>vs prior {days}d</span>
     </span>
   );
 }
@@ -399,7 +399,7 @@ export function MetricsReport({
                 digits={1}
                 series={[{ label: "From peak", kind: "area", tone: "mid", values: dd }]}
               />
-              <p className="mt-2 font-mono text-[12px] text-[#71717A]">(Σ7D − peak) ÷ peak</p>
+              <p className="mt-2 font-mono text-[12px] text-[#4F5565]">(Σ7D − peak) ÷ peak</p>
             </Panel>
             <Panel title="Day distribution" aside={`σ ${sd === null ? "—" : formatNumber(sd, 2)}`}>
               <SeriesChart
@@ -408,7 +408,7 @@ export function MetricsReport({
                 ticks={HISTOGRAM.map((b) => b.label)}
                 series={[{ label: "Days", kind: "bar", tone: "hi", values: histogram }]}
               />
-              <p className="mt-2 font-mono text-[12px] text-[#71717A]">days per execution band</p>
+              <p className="mt-2 font-mono text-[12px] text-[#4F5565]">days per execution band</p>
             </Panel>
           </div>
 
@@ -432,11 +432,11 @@ export function MetricsReport({
             <Panel title="Mix">
               <div className="space-y-6">
                 <div>
-                  <h3 className={cn(TICK, "mb-3 text-[#71717A]")}>By weight · Σ</h3>
+                  <h3 className={cn(TICK, "mb-3 text-[#4F5565]")}>By weight · Σ</h3>
                   <MixBar label="Execution by weight" parts={weightParts} />
                 </div>
                 <div>
-                  <h3 className={cn(TICK, "mb-3 text-[#71717A]")}>By source · commits</h3>
+                  <h3 className={cn(TICK, "mb-3 text-[#4F5565]")}>By source · commits</h3>
                   <MixBar label="Commits by source" parts={sourceParts} />
                 </div>
               </div>
@@ -447,7 +447,7 @@ export function MetricsReport({
             <div className="-mx-2 overflow-x-auto">
               <table className="w-full min-w-[40rem] border-collapse text-base tabular-nums">
                 <thead>
-                  <tr className={cn(TICK, "text-left text-[#52525B]")}>
+                  <tr className={cn(TICK, "text-left text-[#3A3F4B]")}>
                     <th scope="col" className="px-2 pb-2 font-medium">Week</th>
                     <th scope="col" className="px-2 pb-2 text-right font-medium">Σ</th>
                     <th scope="col" className="px-2 pb-2 text-right font-medium">WoW</th>
@@ -468,15 +468,15 @@ export function MetricsReport({
                       <tr key={w.week} className="border-t border-black/[0.05]">
                         <th scope="row" className="px-2 py-2.5 text-left font-medium">
                           {dayText(w.week, { day: "numeric", month: "short", year: "2-digit" })}
-                          {w.span < 7 && <span className="ml-1.5 font-mono text-[12px] font-normal text-[#71717A]">{w.span}d</span>}
+                          {w.span < 7 && <span className="ml-1.5 font-mono text-[12px] font-normal text-[#4F5565]">{w.span}d</span>}
                         </th>
                         <td className="px-2 py-2.5 text-right font-semibold">{w.execution}</td>
-                        <td className="px-2 py-2.5 text-right font-mono text-sm text-[#52525B]">
+                        <td className="px-2 py-2.5 text-right font-mono text-sm text-[#3A3F4B]">
                           {wow === null ? "—" : `${wow >= 0 ? "▲" : "▼"}${formatNumber(Math.abs(wow))}%`}
                         </td>
                         <td className="px-2 py-2.5 text-right">{w.commits}</td>
                         <td className="px-2 py-2.5 text-right">{w.tasks}</td>
-                        <td className="px-2 py-2.5 text-right text-[#52525B]">
+                        <td className="px-2 py-2.5 text-right text-[#3A3F4B]">
                           {w.active}/{w.span}
                         </td>
                         <td className="px-2 py-2.5 text-right">{formatNumber(w.velocity, 2)}</td>
@@ -491,7 +491,7 @@ export function MetricsReport({
                 </tbody>
               </table>
             </div>
-            <p className="mt-3 font-mono text-[12px] text-[#71717A]">WoW = change in Σ ÷ days; partial weeks marked</p>
+            <p className="mt-3 font-mono text-[12px] text-[#4F5565]">WoW = change in Σ ÷ days; partial weeks marked</p>
           </Panel>
 
           <Panel title="Commit hours" aside={`${allCommits} commits · local time`}>
@@ -527,7 +527,7 @@ export function MetricsReport({
                   ] as const
                 ).map(([label, v]) => (
                   <div key={label} className="app-field rounded-[14px] px-3 py-2.5">
-                    <dt className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#52525B]">{label}</dt>
+                    <dt className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#3A3F4B]">{label}</dt>
                     <dd className="mt-1 text-lg font-semibold tabular-nums">{formatDuration(v)}</dd>
                   </div>
                 ))}
@@ -555,12 +555,12 @@ export function MetricsReport({
       <MetricSection id="projects" title="Projects" collapsed={collapsed.includes("projects")}>
           <Panel title="Projects" aside="Share of execution">
             {s.projects.length === 0 ? (
-              <p className="font-mono text-sm text-[#71717A]">No execution</p>
+              <p className="font-mono text-sm text-[#4F5565]">No execution</p>
             ) : (
               <div className="-mx-2 overflow-x-auto">
                 <table className="w-full min-w-[40rem] border-collapse text-base tabular-nums">
                   <thead>
-                    <tr className={cn(TICK, "text-left text-[#52525B]")}>
+                    <tr className={cn(TICK, "text-left text-[#3A3F4B]")}>
                       <th scope="col" className="px-2 pb-2 font-medium">Project</th>
                       <th scope="col" className="px-2 pb-2 text-right font-medium">Σ</th>
                       <th scope="col" className="w-[22%] px-2 pb-2 font-medium">Share</th>
@@ -585,15 +585,15 @@ export function MetricsReport({
                               <span className="app-field block h-2 flex-1 overflow-hidden rounded-full" aria-hidden="true">
                                 <span className="block h-full origin-left rounded-full bg-accent" style={{ transform: `scaleX(${share})` }} />
                               </span>
-                              <span className="w-10 text-right font-mono text-sm text-[#52525B]">{formatNumber(share * 100)}%</span>
+                              <span className="w-10 text-right font-mono text-sm text-[#3A3F4B]">{formatNumber(share * 100)}%</span>
                             </span>
                           </td>
-                          <td className="px-2 py-2.5 text-right text-[#52525B]">{p.previous}</td>
-                          <td className="px-2 py-2.5 text-right font-mono text-sm text-[#52525B]">
+                          <td className="px-2 py-2.5 text-right text-[#3A3F4B]">{p.previous}</td>
+                          <td className="px-2 py-2.5 text-right font-mono text-sm text-[#3A3F4B]">
                             {delta === null ? (p.execution > 0 ? "new" : "—") : `${delta >= 0 ? "▲" : "▼"}${formatNumber(Math.abs(delta))}%`}
                           </td>
                           <td className="px-2 py-2.5 text-right">{p.commits}</td>
-                          <td className="px-2 py-2.5 text-right text-[#52525B]">
+                          <td className="px-2 py-2.5 text-right text-[#3A3F4B]">
                             {p.activeDays}/{m.eligibleDays}
                           </td>
                         </tr>
@@ -629,7 +629,7 @@ export function MetricsReport({
                           ) : (
                             <p className="truncate font-medium">{o.name}</p>
                           )}
-                          <p className="mt-0.5 text-sm text-[#71717A] tabular-nums">
+                          <p className="mt-0.5 text-sm text-[#4F5565] tabular-nums">
                             {formatNumber(o.currentValue)} / {formatNumber(o.targetValue)} {o.unit}
                             {o.projectName && ` · ${o.projectName}`}
                             {o.deadlineAt && `, due ${formatDate(o.deadlineAt, tz, { day: "numeric", month: "short", year: "numeric" })}`}
@@ -638,7 +638,7 @@ export function MetricsReport({
                             <ProgressRail value={o.currentValue} max={o.targetValue} label={`${o.name} progress`} />
                           </div>
                         </div>
-                        <p className="font-mono text-sm leading-relaxed tabular-nums text-[#52525B]">
+                        <p className="font-mono text-sm leading-relaxed tabular-nums text-[#3A3F4B]">
                           velocity {formatNumber(pos.velocity, 2)}/d
                           <br />
                           {pos.status === "open" ? "no deadline" : pos.status === "overdue" ? `${pos.daysOver}d past deadline` : `required ${pos.required === null ? "—" : pos.required === Infinity ? "past deadline" : `${formatNumber(pos.required, 2)}/d`}`}
@@ -654,7 +654,7 @@ export function MetricsReport({
                           <span
                             className={cn(
                               "rounded-full px-2.5 py-1 text-[12px] font-semibold uppercase tracking-[0.12em]",
-                              pos.status === "behind" || pos.status === "overdue" ? "app-inverse" : "app-field text-[#27272A]"
+                              pos.status === "behind" || pos.status === "overdue" ? "app-inverse" : "app-field text-[#1E2129]"
                             )}
                           >
                             {pos.status === "behind" || pos.status === "overdue" ? "▼ " : pos.status === "ahead" ? "▲ " : ""}
@@ -683,12 +683,12 @@ export function MetricsReport({
               )}
               {archivedObjectives.length > 0 && (
                 <details className="mt-5 border-t border-black/[0.05] pt-4">
-                  <summary className={cn(TICK, "cursor-pointer text-[#52525B]")}>Archived · {archivedObjectives.length}</summary>
+                  <summary className={cn(TICK, "cursor-pointer text-[#3A3F4B]")}>Archived · {archivedObjectives.length}</summary>
                   <ul className="mt-2">
                     {archivedObjectives.map((o) => (
                       <li key={o.id} className="flex min-w-0 items-center justify-between gap-3 py-1.5">
-                        <span className="min-w-0 truncate text-[#52525B]">
-                          {o.name} <span className="font-mono text-[12px] tabular-nums text-[#71717A]">{formatNumber(o.currentValue)}/{formatNumber(o.targetValue)}</span>
+                        <span className="min-w-0 truncate text-[#3A3F4B]">
+                          {o.name} <span className="font-mono text-[12px] tabular-nums text-[#4F5565]">{formatNumber(o.currentValue)}/{formatNumber(o.targetValue)}</span>
                         </span>
                         {objectiveControls && <RestoreButton kind="objective" id={o.id} name={o.name} />}
                       </li>

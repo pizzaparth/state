@@ -163,21 +163,21 @@ export function ImportForm() {
             onChange={(e) => void choose(e.target.files?.[0] ?? null)}
             className="absolute inset-0 cursor-pointer opacity-0"
           />
-          <span className={cn("truncate", file ? "text-[#0A0A0A]" : "text-[#71717A]")}>{file ? file.name : "Choose file…"}</span>
+          <span className={cn("truncate", file ? "text-[#0A0A0A]" : "text-[#4F5565]")}>{file ? file.name : "Choose file…"}</span>
         </label>
         <button type="submit" disabled={pending !== null || !preview} className={button}>
           {pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Upload className="size-4" aria-hidden="true" />}
           {pending === "preview" ? "Reading…" : "Import"}
         </button>
       </div>
-      <p id="import-hint" className={cn(TICK, "text-[#71717A]")}>
+      <p id="import-hint" className={cn(TICK, "text-[#4F5565]")}>
         JSON export · CSV of tasks, commits or projects · .txt list, one task per line · 4&nbsp;MB
       </p>
       <div id="import-status" aria-live="polite" className="text-sm">
         {preview && (
           <p className="font-mono tabular-nums text-[#0A0A0A]">
             {preview.kind}: {summary(preview.result)}
-            {preview.result.doneWithoutCommit > 0 && <span className="block text-[#71717A]">{formatNumber(preview.result.doneWithoutCommit)} done tasks without a commit</span>}
+            {preview.result.doneWithoutCommit > 0 && <span className="block text-[#4F5565]">{formatNumber(preview.result.doneWithoutCommit)} done tasks without a commit</span>}
           </p>
         )}
         {errors.length > 0 && (

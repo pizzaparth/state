@@ -49,7 +49,7 @@ export function MetricsControls({
             href={href({ period: key, from: null, to: null })}
             aria-current={key === active ? "page" : undefined}
             scroll={false}
-            className={cn("mi-press rounded-full px-3 py-1.5 font-mono text-[13px] font-semibold uppercase [@media(pointer:coarse)]:py-2.5", key === active ? "bg-[#0A0A0A] text-white" : "text-[#52525B] hover:text-[#0A0A0A]")}
+            className={cn("mi-press rounded-full px-3 py-1.5 font-mono text-[13px] font-semibold uppercase [@media(pointer:coarse)]:py-2.5", key === active ? "app-selected" : "text-[#3A3F4B] hover:text-[#0A0A0A]")}
           >
             {key}
           </Link>

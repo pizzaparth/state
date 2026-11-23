@@ -31,7 +31,7 @@ export function ProjectNotes({ projectId, notes, editable }: { projectId: string
     setState("saved");
     window.setTimeout(() => setState((s) => (s === "saved" ? "idle" : s)), 1800);
   };
-  if (!editable) return notes ? <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-[#52525B]">{notes}</p> : null;
+  if (!editable) return notes ? <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-[#3A3F4B]">{notes}</p> : null;
   return (
     <div>
       <label htmlFor="project-notes" className="sr-only">
@@ -54,7 +54,7 @@ export function ProjectNotes({ projectId, notes, editable }: { projectId: string
         placeholder="Notes, links, decisions…"
         className="app-input w-full resize-none rounded-[14px] px-3 py-2.5 text-[15px] leading-relaxed"
       />
-      <p aria-live="polite" className="mt-1 font-mono text-[12px] text-[#71717A]">
+      <p aria-live="polite" className="mt-1 font-mono text-[12px] text-[#4F5565]">
         {error ? <span className="text-danger">{error}</span> : state === "saving" ? "saving…" : state === "saved" ? "saved" : `${text.length.toLocaleString(currentLocale())} / 10,000`}
       </p>
     </div>

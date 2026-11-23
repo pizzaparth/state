@@ -44,14 +44,14 @@ function View({ viewer, account, deleted }: Props) {
           </Row>
           <Row label="Deleted tasks" hint="kept 30 days, then removed">
             {deleted.length === 0 ? (
-              <span className="font-normal text-[#71717A]">None</span>
+              <span className="font-normal text-[#4F5565]">None</span>
             ) : (
               <ul className="space-y-1.5">
                 {deleted.map((t) => (
                   <li key={t.id} className="flex min-w-0 items-center justify-between gap-3">
                     <span className="min-w-0">
                       <span className="block truncate">{t.title}</span>
-                      <span className="block font-mono text-[12px] font-normal text-[#71717A]">
+                      <span className="block font-mono text-[12px] font-normal text-[#4F5565]">
                         {[t.projectName, t.deletedAt ? `deleted ${formatDate(t.deletedAt, viewer.tz)}` : null].filter(Boolean).join(" · ")}
                       </span>
                     </span>

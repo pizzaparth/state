@@ -30,11 +30,11 @@ export function ShortcutList({ columns = 2 }: { columns?: 1 | 2 }) {
         if (items.length === 0) return null;
         return (
           <section key={scope} aria-label={scope}>
-            <h3 className={cn(TICK, "mb-2 text-[11px] text-[#71717A]")}>{scope}</h3>
+            <h3 className={cn(TICK, "mb-2 text-[12px] text-[#4F5565]")}>{scope}</h3>
             <dl className="space-y-1.5">
               {items.map((s) => (
                 <div key={`${scope}-${s.keys}`} className="flex items-center justify-between gap-4 text-[15px]">
-                  <dt className="font-medium text-[#27272A]">{s.label}</dt>
+                  <dt className="font-medium text-[#1E2129]">{s.label}</dt>
                   <dd>
                     <Keys keys={s.keys} />
                   </dd>
@@ -59,7 +59,7 @@ export function ShortcutSheet({ open, onOpenChange }: { open: boolean; onOpenCha
         >
           <div className="mb-5 flex items-center justify-between">
             <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">Shortcuts</Dialog.Title>
-            <Dialog.Close aria-label="Close shortcuts" className="mi-press grid size-9 place-items-center rounded-full text-[#52525B] hover:bg-black/[0.05] hover:text-[#0A0A0A]">
+            <Dialog.Close aria-label="Close shortcuts" className="mi-press grid size-9 place-items-center rounded-full text-[#3A3F4B] hover:bg-black/[0.05] hover:text-[#0A0A0A]">
               <X className="size-4" aria-hidden="true" />
             </Dialog.Close>
           </div>

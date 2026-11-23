@@ -65,8 +65,8 @@ export function CompleteButton({ taskId, title, done = false, className }: { tas
       <span
         aria-hidden="true"
         className={cn(
-          "size-3 rounded-full transition-[transform,background-color] duration-150",
-          shown ? "mi-pop bg-accent" : "app-field border border-black/[0.10] group-hover/done:scale-125 group-hover/done:border-accent"
+          "size-3.5 rounded-full transition-[transform,background-color] duration-150",
+          shown ? "mi-pop bg-accent" : "app-field border-[1.5px] border-[#4F5565]/60 group-hover/done:scale-125 group-hover/done:border-accent"
         )}
       />
     </button>

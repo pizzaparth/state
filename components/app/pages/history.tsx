@@ -85,7 +85,7 @@ function View({ viewer, params, live, archivedAll, tags, day, before, commits, t
         )}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           {before ? (
-            <Link href={newestHref(params)} className="text-sm font-medium text-[#52525B] hover:text-[#0A0A0A]">
+            <Link href={newestHref(params)} className="text-sm font-medium text-[#3A3F4B] hover:text-[#0A0A0A]">
               Newest
             </Link>
           ) : (

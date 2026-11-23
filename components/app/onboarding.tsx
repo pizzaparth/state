@@ -20,13 +20,13 @@ function Step({ n, title, state, children }: { n: number; title: string; state: 
         aria-hidden="true"
         className={cn(
           "grid size-10 place-items-center rounded-full font-mono text-sm tabular-nums",
-          state === "done" ? "app-inverse mi-pop" : state === "current" ? "app-card text-[#0A0A0A]" : "app-field text-[#71717A]"
+          state === "done" ? "app-inverse mi-pop" : state === "current" ? "app-card text-[#0A0A0A]" : "app-field text-[#4F5565]"
         )}
       >
         {state === "done" ? "✓" : n}
       </span>
       <div className="min-w-0">
-        <h2 className={cn("text-lg font-semibold", state === "next" ? "text-[#71717A]" : "text-[#0A0A0A]")}>
+        <h2 className={cn("text-lg font-semibold", state === "next" ? "text-[#4F5565]" : "text-[#0A0A0A]")}>
           {title}
           <span className="sr-only">{state === "done" ? " (done)" : state === "current" ? " (current step)" : ""}</span>
         </h2>
@@ -53,7 +53,7 @@ function useFinish() {
 export function SkipSetup() {
   const { finish, pending } = useFinish();
   return (
-    <button type="button" onClick={() => finish()} disabled={pending} className="inline-flex min-h-9 items-center gap-1.5 text-sm text-[#52525B] underline-offset-4 hover:text-[#0A0A0A] hover:underline disabled:opacity-60">
+    <button type="button" onClick={() => finish()} disabled={pending} className="inline-flex min-h-9 items-center gap-1.5 text-sm text-[#3A3F4B] underline-offset-4 hover:text-[#0A0A0A] hover:underline disabled:opacity-60">
       {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
       Skip setup
     </button>
@@ -95,12 +95,12 @@ export function Onboarding({
   return (
     <ol>
       <Step n={1} title="Workspace" state="done">
-        <p className="text-base text-[#52525B]">Personal</p>
+        <p className="text-base text-[#3A3F4B]">Personal</p>
       </Step>
 
       <Step n={2} title="Plan one task" state={taskState}>
         {task || commit ? (
-          <p className="text-base text-[#52525B]">
+          <p className="text-base text-[#3A3F4B]">
             <span className="text-[#0A0A0A]">{task?.title ?? commit?.message}</span> · +{task?.weight ?? commit?.executionValue} on done
           </p>
         ) : (
@@ -148,7 +148,7 @@ export function Onboarding({
                     key={w.value}
                     className={cn(
                       "flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-accent",
-                      weight === w.value ? "bg-[#0A0A0A] text-white" : "text-[#52525B] hover:text-[#0A0A0A]"
+                      weight === w.value ? "app-selected" : "text-[#3A3F4B] hover:text-[#0A0A0A]"
                     )}
                   >
                     <input type="radio" name="weight" value={w.value} checked={weight === w.value} onChange={() => setWeight(w.value as Weight)} className="sr-only" />
@@ -158,7 +158,7 @@ export function Onboarding({
               </div>
             </fieldset>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p id="first-task-hint" className="font-mono text-sm text-[#71717A]">
+              <p id="first-task-hint" className="font-mono text-sm text-[#4F5565]">
                 goes to your board · Queued
               </p>
               <button type="submit" disabled={pending} className="app-btn inline-flex h-11 items-center gap-1.5 rounded-[14px] px-5 text-base font-semibold disabled:opacity-60">
@@ -183,7 +183,7 @@ export function Onboarding({
               <span className={cn(TICK, "text-accent-muted")}>Execution</span>
               <span className={cn(DISPLAY, "text-5xl leading-none tabular-nums")}>+{commit.executionValue}</span>
             </div>
-            <p className="mt-2 font-mono text-sm text-[#71717A]">commit = finished work · weight = its size</p>
+            <p className="mt-2 font-mono text-sm text-[#4F5565]">commit = finished work · weight = its size</p>
             {graph && graph.length > 0 && (
               <div className="mt-5">
                 <ExecutionGraph days={graph} linkDays={false} />
@@ -201,7 +201,7 @@ export function Onboarding({
           </div>
         ) : task && doneColumnId ? (
           <>
-            <p className="font-mono text-sm text-[#71717A]">done → commit, automatically</p>
+            <p className="font-mono text-sm text-[#4F5565]">done → commit, automatically</p>
             <button
               type="button"
               disabled={pending}
@@ -219,7 +219,7 @@ export function Onboarding({
             </button>
           </>
         ) : (
-          <p className="font-mono text-sm text-[#71717A]">done → commit, automatically</p>
+          <p className="font-mono text-sm text-[#4F5565]">done → commit, automatically</p>
         )}
       </Step>
     </ol>

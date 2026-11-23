@@ -90,7 +90,7 @@ export function InboxTriage({
       }}
     >
       {children}
-      <p className="mt-3 hidden font-mono text-[12px] text-[#71717A] [@media(pointer:fine)]:block">
+      <p className="mt-3 hidden font-mono text-[12px] text-[#4F5565] [@media(pointer:fine)]:block">
         j k move · 1 queue · 2 start · d due · p project · e rename · ⌫ delete · x select
       </p>
       {selected.size > 0 && (

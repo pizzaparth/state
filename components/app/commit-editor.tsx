@@ -111,7 +111,7 @@ export function CommitEditor({
       }}
     >
       <div className="space-y-1.5">
-        <label htmlFor="commit-message" className="text-sm font-medium text-[#52525B]">
+        <label htmlFor="commit-message" className="text-sm font-medium text-[#3A3F4B]">
           Message
         </label>
         <textarea
@@ -132,7 +132,7 @@ export function CommitEditor({
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="commit-project" className="text-sm font-medium text-[#52525B]">
+        <label htmlFor="commit-project" className="text-sm font-medium text-[#3A3F4B]">
           Project
         </label>
         <select
@@ -155,8 +155,8 @@ export function CommitEditor({
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="commit-tags" className="text-sm font-medium text-[#52525B]">
-          Tags <span className="text-[#71717A]">(optional)</span>
+        <label htmlFor="commit-tags" className="text-sm font-medium text-[#3A3F4B]">
+          Tags <span className="text-[#4F5565]">(optional)</span>
         </label>
         <input
           id="commit-tags"
@@ -172,7 +172,7 @@ export function CommitEditor({
           className="app-input h-11 w-full rounded-[14px] px-3 text-base"
         />
         {errors.tags ? fieldError("tags") : (
-          <p id="commit-tags-hint" className="font-mono text-sm text-[#71717A]">
+          <p id="commit-tags-hint" className="font-mono text-sm text-[#4F5565]">
             comma-separated · up to 10
           </p>
         )}
@@ -183,7 +183,7 @@ export function CommitEditor({
       </p>
 
       <div className="flex justify-end gap-2">
-        <button type="button" onClick={stop} className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#52525B] hover:text-[#0A0A0A]">
+        <button type="button" onClick={stop} className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#3A3F4B] hover:text-[#0A0A0A]">
           Cancel
         </button>
         <button type="submit" disabled={pending} className="app-btn inline-flex h-11 items-center gap-1.5 rounded-[14px] px-5 text-base font-semibold disabled:opacity-60">

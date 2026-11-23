@@ -30,15 +30,27 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 
 ---
 
-## Visual Design: White, Black, 15% Accent
+## Visual Design
 
-### One Environment
-- MUST: Marketing, auth and product share one look: white-dominant black and white, after the Mobbin landing page style (centred hero, grey framed app picture, grey rounded tiles, dark footer).
+Two looks. Marketing and auth: white, black and pink. The product (`/platform`, everything under `app/(app)`): soft raised cool-grey tiles on a solid white page with a blue gradient accent. The product look is switched on by the `.platform` marker in `app/(app)/layout.tsx`, which makes `:root:has(.platform)` override the tokens in `styles/tokens.css`. Change the product look there, never per component.
+
+### Product (platform): soft UI, blue accent
+- MUST: Page solid white `#FFFFFF` with a light, still dot grid (1.3px, 34%); panels are cool grey (`#F3F5F9`→`#E7EBF1`), cards a step lighter (`#F9FAFC`→`#ECEFF4`), never near-white. Tiles lift by a paired soft shadow (grey below right, white above left); on the white page the lit side keeps its depth from a white bevel inside the top-left edge, a soft ambient shadow and a faint grey edge; fields, rails and segmented troughs are pressed in (inset pair). All of it comes from the `.app-*` classes and their tokens.
+- MUST: Accent blue `#3D4FE6`; fills use the gradient `--accent-fill` (`#5466F7`→`#3D4FE6`→`#2C3BC9`) via `bg-accent`, `.app-inverse` and `.app-selected`. Blue small text is `text-accent` (`#2F3FD0`). Text on blue fills is white.
+- MUST: Selected nav item is a raised tile with a blue icon (`.app-nav-pill`, `.platform-nav-active`); selected segmented controls, tabs and toggles use `.app-selected` (blue gradient, white text), never black.
+- MUST: Ink `#0B0D12`/`#0A0A0A`, secondary `#3A3F4B`, tertiary `#4F5565` (6:1 or better on the page and tiles). Never the lighter marketing greys (`#71717A`, `#52525B`) in the product.
+- MUST: No product text below 12px (`text-[12px]` minimum, SVG labels included); body copy is medium weight (500).
+- MUST: Charts (`components/app/series-chart.tsx`): the accent blue for the primary series, slate `#7C88AD` for the secondary, heatmaps ramp from `#D5DBE6` to `#3344DB` in pressed-in wells. Lines are monotone-smooth (never overshoot a value); the primary line carries a soft blue shadow and an end marker with its value chip; areas fade to transparent; bars are gradient fills ≤ 24px wide with a 4px rounded data end on soft column tracks; tooltips are white overlay cards with keyed rows; legends are inset pills.
+- MUST: A scroller holding raised tiles (overflow clips shadows) bleeds into the page gutter and pads back in, with at least 40px of room on wide screens (see the board columns and the Metrics section bar).
+- MAY: Soft shadows and gradients in the product only through the tokens above. Never glows on text, never colours other than blue, greys, white and `--danger`.
+
+### Marketing and auth
+- MUST: Marketing and auth share one look: white-dominant black and white, after the Mobbin landing page style (centred hero, grey framed app picture, grey rounded tiles, dark footer).
   - **Page:** `#FFFFFF`; type `#0A0A0A`; secondary `#52525B` / `#71717A`; panels and tiles `#F5F5F5`; hairlines `rgba(0,0,0,.06–.10)`.
   - **Primary CTA:** black pill (`Button variant="light-cta"`); secondary is a grey pill (`light-secondary`).
-- MUST: Accent `#D92B74` on about 15% of any screen: `+ COMMIT`, the Today execution instrument, the headline metric, toasts, data marks (bars, heatmap, `+N`), small labels, focus rings. Selected nav items and segmented controls are black, not pink.
+- MUST: Accent `#D92B74` (marketing and auth; the product uses blue, above) on about 15% of any screen: `+ COMMIT`, the Today execution instrument, the headline metric, toasts, data marks (bars, heatmap, `+N`), small labels, focus rings. Selected nav items and segmented controls are black, not pink.
 - MUST: Text on an accent fill is white `#FFFFFF` (4.6:1). Accent as small text uses Tailwind `text-accent` (`#C21F63`, AA on white and `#F5F5F5`); `#D92B74` is for fills, marks and large type.
-- NEVER: Neumorphism, gradients, or any colour other than the accent, black, white and greys, with one exception: `--danger` (`#B42318`, Tailwind `danger`) for errors, destructive actions and overdue only, always beside a glyph or word.
+- NEVER (marketing and auth): Neumorphism, gradients, or any colour other than the accent, black, white and greys, with one exception: `--danger` (`#B42318`, Tailwind `danger`) for errors, destructive actions and overdue only, always beside a glyph or word.
 - MUST: Landing page motion lives in `styles/motion.css` and `components/motion/`: `Reveal` for section entrances, `Marquee` for self-running strips (hover never pauses; a pause button wherever a strip carries content), `PlatformDemo` for the scripted hero cursor, `ScrollWords`, `ScrollProgress`. Transform/opacity only; reduced motion stops all of it.
 - MAY: Third-party brand logos (Simple Icons, own colours) only where a section names those tools, with the trademark line.
 
@@ -50,17 +62,17 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 - NEVER: Motivational slogans in the product; punchy is fine, cheerleading is not.
 
 ### Flat Surface Hierarchy
-- MUST: Multi-layer parallax on every page (`components/motion/parallax.tsx`): `ParallaxBackdrop` puts three tiled layers (far dots, mid outlines, near marks) behind the content, moving at different speeds with scroll and pointer; `data-depth` makes headings and hero type drift against the scroll. Transform only; off under reduced motion; only elements near the view are measured each frame. Panels are opaque with no `backdrop-filter` (a blur re-renders on every scroll frame).
+- MUST: Backdrop on every page (`components/motion/parallax.tsx`): on marketing, `ParallaxBackdrop` puts three tiled layers behind the content (far dots, mid outlines, near marks), moving at different speeds with scroll and pointer; in the product (`tone="platform"`) it is one faint dot grid that never moves with scroll or pointer; `data-depth` makes headings and hero type drift against the scroll. Transform only; off under reduced motion; only elements near the view are measured each frame. Panels are opaque with no `backdrop-filter` (a blur re-renders on every scroll frame).
 - NEVER: Nest cards inside cards to fake depth; depth comes from the parallax layers.
-- MUST: Use the classes in `styles/product.css`; never hand-roll surface styles:
+- MUST: Use the classes in `styles/product.css`; never hand-roll surface styles. Colours below are the marketing (flat) values; inside the product the same classes take the soft raised values from the `.platform` tokens:
   - **Page:** `#FFFFFF` body, tables, text rows, ledger rows, graph labels, separators. No surface.
   - **Panel (`.app-panel`):** Board columns, toolbars, metric panels (`#F5F5F5`, 1px `rgba(0,0,0,.06)` border).
   - **Card / Control (`.app-card`, `.app-btn`):** Task cards, buttons, toggles (`#FFFFFF`, 1px `rgba(0,0,0,.10)` border; hover `#FAFAFA`, accent edge).
   - **Field (`.app-field`, `.app-input`):** Inputs, selects, progress rails, segmented troughs (`#FFFFFF`, 1px `rgba(0,0,0,.10)` border; focus border accent).
   - **Overlay (`.app-overlay`):** Dialogs, drawers, command palette and every menu (`#FFFFFF` with a hairline over the `.app-scrim` layer, `rgba(0,0,0,.3)`, no blur).
-- MUST: Micro-interactions on every interactive element via `styles/motion.css` (`mi-press`, `mi-lift`, `mi-nudge`, `mi-spin`, `mi-arrow`, `mi-underline`, `mi-row`, `mi-pop`, `mi-live`): transform/opacity only, ≤ 260ms, no shadows, no endless loops in the product.
-- MUST: Product text uses `#0A0A0A` / `#52525B` / `#71717A` (all pass WCAG AA on white and `#F5F5F5`); on inverse (accent) surfaces use `#FFFFFF`.
-- NEVER: Add box-shadows, glows or inset shadows to separate surfaces; use a hairline.
+- MUST: Micro-interactions on every interactive element via `styles/motion.css` (`mi-press`, `mi-lift`, `mi-nudge`, `mi-spin`, `mi-arrow`, `mi-underline`, `mi-row`, `mi-pop`, `mi-live`): transform/opacity only (plus the product's token shadow swap on hover/press), ≤ 260ms, no endless loops in the product.
+- MUST: Marketing text uses `#0A0A0A` / `#52525B` / `#71717A` (all pass WCAG AA on white and `#F5F5F5`); product text uses the darker greys above; on inverse (accent) surfaces use `#FFFFFF`.
+- NEVER: Hand-written box-shadows, glows or inset shadows in components; on marketing separate surfaces with a hairline, in the product use the `.app-*` classes (their shadows come from the tokens).
 
 ---
 
@@ -240,7 +252,7 @@ Concise rules for building accessible, fast, delightful UIs and maintaining Stat
 
 ## Design
 
-- SHOULD: Product: crisp edges via semi-transparent hairline borders, no shadows (marketing may use layered shadows on material renders)
+- SHOULD: Product: soft raised/pressed surfaces from the `.platform` tokens only (marketing may use layered shadows on material renders)
 - SHOULD: Nested radii: child ≤ parent; concentric
 - SHOULD: Hue consistency: keep borders and text neutral against the monochrome background
 - MUST: Accessible charts (color-blind-friendly palettes)

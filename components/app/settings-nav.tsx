@@ -16,10 +16,10 @@ export function SettingsNav({ active }: { active: (typeof ITEMS)[number]["href"]
 export function Row({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <div className="grid gap-1 border-t border-black/[0.05] py-3.5 first:border-t-0 first:pt-0 sm:grid-cols-[12rem_minmax(0,1fr)] sm:gap-6">
-      <dt className={cn(TICK, "pt-1 text-[#52525B]")}>{label}</dt>
+      <dt className={cn(TICK, "pt-1 text-[#3A3F4B]")}>{label}</dt>
       <dd className="min-w-0 break-words text-base font-medium">
         {children}
-        {hint && <span className="mt-0.5 block font-mono text-[12px] font-normal text-[#71717A]">{hint}</span>}
+        {hint && <span className="mt-0.5 block font-mono text-[12px] font-normal text-[#4F5565]">{hint}</span>}
       </dd>
     </div>
   );

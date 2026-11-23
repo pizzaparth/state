@@ -36,7 +36,7 @@ export function WithdrawCommit({ commitId, hoursLeft }: { commitId: string; hour
         {pending ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : <Undo2 aria-hidden="true" className="size-4" />}
         Withdraw commit
       </button>
-      <p className="mt-1.5 font-mono text-[12px] text-[#71717A]">logged by mistake · {Math.max(1, Math.ceil(hoursLeft))}h left to withdraw</p>
+      <p className="mt-1.5 font-mono text-[12px] text-[#4F5565]">logged by mistake · {Math.max(1, Math.ceil(hoursLeft))}h left to withdraw</p>
     </div>
   );
 }

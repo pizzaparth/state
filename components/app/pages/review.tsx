@@ -111,12 +111,12 @@ function View({ viewer, params, start, commits, flow, drawers }: Props) {
           <ol className="space-y-2">
             {byDay.map((d) => (
               <li key={d.day} className="grid grid-cols-[3rem_minmax(0,1fr)_4rem] items-center gap-3 font-mono text-sm tabular-nums">
-                <span className={d.day === today ? "font-semibold text-[#0A0A0A]" : "text-[#52525B]"}>{weekday(d.day)}</span>
+                <span className={d.day === today ? "font-semibold text-[#0A0A0A]" : "text-[#3A3F4B]"}>{weekday(d.day)}</span>
                 <span className="app-field h-2.5 overflow-hidden rounded-full">
                   <span className="block h-full origin-left animate-grow-x rounded-full bg-accent" style={{ transform: `scaleX(${d.execution / maxDay})` }} />
                 </span>
                 <span className="text-right">
-                  <span className="font-semibold text-accent">+{d.execution}</span> <span className="text-[#71717A]">{d.commits}</span>
+                  <span className="font-semibold text-accent">+{d.execution}</span> <span className="text-[#4F5565]">{d.commits}</span>
                 </span>
               </li>
             ))}

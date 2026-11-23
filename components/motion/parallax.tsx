@@ -175,6 +175,12 @@ const NEAR_LIGHT = svg(
   520
 );
 
+// Platform tone: one faint cool-grey dot grid on the product's white page, still (no scroll or
+// pointer movement)
+const DOTS_PLATFORM = svg(`<circle cx='2' cy='2' r='1.3' fill='rgba(70,85,120,0.34)'/>`, 22);
+
+type Layer = { depth: number; tile: number; image: string; size?: string };
+
 const LAYERS = {
   dark: [
     { depth: 0.08, tile: 28, image: FAR },
@@ -186,25 +192,29 @@ const LAYERS = {
     { depth: 0.25, tile: 880, image: MID_LIGHT },
     { depth: 0.5, tile: 620, image: NEAR_LIGHT },
   ],
+  platform: [{ depth: 0, tile: 24, image: DOTS_PLATFORM }],
 } as const;
 
 /** Three fixed parallax layers behind a page, plus the controller for [data-depth]. */
-export function ParallaxBackdrop({ scroller = "window", tone = "dark" }: { scroller?: Scroller; tone?: "dark" | "light" }) {
+export function ParallaxBackdrop({ scroller = "window", tone = "dark" }: { scroller?: Scroller; tone?: "dark" | "light" | "platform" }) {
   const root = React.useRef<HTMLDivElement>(null);
   useParallax(scroller, root);
-  // The light tone's layers stay still behind the page; only [data-depth] content drifts
-  const still = tone === "light";
+  // The light and platform tones' layers stay still behind the page; only [data-depth] content drifts
+  const still = tone !== "dark";
   return (
     <div ref={root} aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      {LAYERS[tone].map((l) => (
-        <div
-          key={l.depth}
-          data-layer={still ? undefined : l.depth}
-          data-tile={l.tile}
-          className={still ? "absolute inset-0" : "absolute -inset-x-16 top-0 will-change-transform"}
-          style={still ? { backgroundImage: l.image, backgroundRepeat: "repeat" } : { height: `calc(100% + ${l.tile * 2}px)`, top: `-${l.tile}px`, backgroundImage: l.image, backgroundRepeat: "repeat" }}
-        />
-      ))}
+      {(LAYERS[tone] as readonly Layer[]).map((l) => {
+        const art = { backgroundImage: l.image, backgroundRepeat: "repeat", backgroundSize: l.size, backgroundPosition: "center top" };
+        return (
+          <div
+            key={l.depth}
+            data-layer={still ? undefined : l.depth}
+            data-tile={l.tile}
+            className={still ? "absolute inset-0" : "absolute -inset-x-16 top-0 will-change-transform"}
+            style={still ? art : { ...art, height: `calc(100% + ${l.tile * 2}px)`, top: `-${l.tile}px` }}
+          />
+        );
+      })}
     </div>
   );
 }

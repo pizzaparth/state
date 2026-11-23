@@ -60,7 +60,7 @@ export function RowActions({ taskId, title, actions, planned = false, today }: {
             data-row-action={a}
             title={label}
             aria-label={`${label} “${title}”`}
-            className={cn("mi-press grid size-8 place-items-center rounded-[10px] text-[#52525B] hover:bg-black/[0.06] hover:text-[#0A0A0A] [@media(pointer:coarse)]:size-11", a === "delete" && "hover:text-danger")}
+            className={cn("mi-press grid size-8 place-items-center rounded-[10px] text-[#3A3F4B] hover:bg-black/[0.06] hover:text-[#0A0A0A] [@media(pointer:coarse)]:size-11", a === "delete" && "hover:text-danger")}
           >
             {pending === a ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : <Icon aria-hidden="true" className="size-4" />}
           </button>
@@ -85,7 +85,7 @@ export function CarryPlan({ taskIds }: { taskIds: string[] }) {
       <button type="button" disabled={pending} onClick={() => all(true)} className="app-btn mi-press h-9 rounded-[10px] px-3 text-sm font-medium disabled:opacity-60">
         Move to today
       </button>
-      <button type="button" disabled={pending} onClick={() => all(false)} className="mi-press h-9 rounded-[10px] px-3 text-sm text-[#52525B] hover:bg-black/[0.05] disabled:opacity-60">
+      <button type="button" disabled={pending} onClick={() => all(false)} className="mi-press h-9 rounded-[10px] px-3 text-sm text-[#3A3F4B] hover:bg-black/[0.05] disabled:opacity-60">
         Clear
       </button>
     </span>

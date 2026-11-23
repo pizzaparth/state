@@ -86,19 +86,19 @@ function View({ viewer, params, data, projects, ticker, objectives, drawers }: P
           </p>
           <dl className="mt-6 grid grid-cols-3 gap-3 border-t border-black/[0.12] pt-4 font-mono text-sm tabular-nums">
             <div>
-              <dt className="text-[11px] uppercase tracking-[0.16em] text-accent-muted">Commits</dt>
+              <dt className="text-[12px] uppercase tracking-[0.16em] text-accent-muted">Commits</dt>
               <dd className="mt-1 text-lg font-semibold">
                 <CountUp value={String(data.commits.length)} />
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] uppercase tracking-[0.16em] text-accent-muted">Done</dt>
+              <dt className="text-[12px] uppercase tracking-[0.16em] text-accent-muted">Done</dt>
               <dd className="mt-1 text-lg font-semibold">
                 <CountUp value={String(data.completed.length)} />
               </dd>
             </div>
             <div title="Average daily execution over the seven complete days before today">
-              <dt className="text-[11px] uppercase tracking-[0.16em] text-accent-muted">Prev 7d</dt>
+              <dt className="text-[12px] uppercase tracking-[0.16em] text-accent-muted">Prev 7d</dt>
               <dd className="mt-1 text-lg font-semibold">
                 <CountUp value={avg.toFixed(1)} />
                 <span className="text-sm font-normal">/d</span>
@@ -109,7 +109,7 @@ function View({ viewer, params, data, projects, ticker, objectives, drawers }: P
 
         <Panel title="Capture">
           <QuickCapture projects={projects} tz={viewer.tz} draftKey="state:draft:today" />
-          <p className="mt-1 px-2 font-mono text-sm text-[#71717A]">
+          <p className="mt-1 px-2 font-mono text-sm text-[#4F5565]">
             <kbd>C</kbd> commit · <kbd>N</kbd> task · <kbd>⌘&nbsp;K</kbd> everything
           </p>
         </Panel>
@@ -134,7 +134,7 @@ function View({ viewer, params, data, projects, ticker, objectives, drawers }: P
           {data.carried.length > 0 && (
             <div className={cn(data.planned.length > 0 && "mt-4 border-t border-black/[0.05] pt-4")}>
               <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-                <h3 className={cn(TICK, "text-[11px] text-[#71717A]")}>Yesterday · not done</h3>
+                <h3 className={cn(TICK, "text-[12px] text-[#4F5565]")}>Yesterday · not done</h3>
                 <CarryPlan taskIds={data.carried.map((t) => t.id)} />
               </div>
               {rows(data.carried, ["start"])}
@@ -169,7 +169,7 @@ function View({ viewer, params, data, projects, ticker, objectives, drawers }: P
                       <Link href={`/platform/metrics?objective=${o.id}` as Route} className="mi-row -mx-2 block rounded-[12px] px-2 py-1.5">
                         <span className="flex items-baseline justify-between gap-3">
                           <span className="min-w-0 truncate text-[15px] font-medium">{o.name}</span>
-                          <span className="shrink-0 font-mono text-[12px] tabular-nums text-[#52525B]">
+                          <span className="shrink-0 font-mono text-[12px] tabular-nums text-[#3A3F4B]">
                             {formatNumber(o.currentValue)}/{formatNumber(o.targetValue)} · {pos.status === "behind" || pos.status === "overdue" ? "▼ " : pos.status === "ahead" ? "▲ " : ""}
                             {pos.status}
                           </span>

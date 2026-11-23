@@ -64,7 +64,7 @@ export function PromptDialog({
               });
             }}
           >
-            <label htmlFor={id} className="text-sm font-medium text-[#52525B]">
+            <label htmlFor={id} className="text-sm font-medium text-[#3A3F4B]">
               {label}
             </label>
             <input
@@ -82,7 +82,7 @@ export function PromptDialog({
               className="app-input h-11 w-full rounded-[14px] px-3 text-base"
             />
             {hint && !error && (
-              <p id={`${id}-hint`} className="font-mono text-[12px] text-[#71717A]">
+              <p id={`${id}-hint`} className="font-mono text-[12px] text-[#4F5565]">
                 {hint}
               </p>
             )}

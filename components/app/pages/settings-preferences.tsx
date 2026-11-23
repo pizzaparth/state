@@ -56,7 +56,7 @@ function View({ viewer, detected }: Props) {
                 {WEIGHT_LEVELS.map((w) => (
                   <li key={w.value}>
                     {w.label} <span className="font-mono font-semibold tabular-nums text-[#0A0A0A]">+{w.value}</span>
-                    <span className="block text-sm font-normal leading-relaxed text-[#52525B]">{w.hint}</span>
+                    <span className="block text-sm font-normal leading-relaxed text-[#3A3F4B]">{w.hint}</span>
                   </li>
                 ))}
               </ul>

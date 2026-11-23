@@ -496,14 +496,14 @@ export function Kanban({
     >
       {initialSort && (
         // One toolbar: filters fill the row, sort sits at its end
-        <div className="app-panel mb-5 flex flex-wrap items-center gap-2 rounded-[20px] p-2">
+        <div className="app-panel flex flex-wrap items-center gap-2 rounded-[20px] p-2">
           <BoardFilterBar filter={filter} onChange={changeFilter} projects={projects} tags={tags} textRef={filterRef} />
           <BoardSortBar sort={sort} onChange={changeSort} />
         </div>
       )}
 
       {/* Phones: one column at a time */}
-      <div role="tablist" aria-label="Column" className="app-field mb-4 flex gap-1 overflow-x-auto rounded-full p-1 md:hidden">
+      <div role="tablist" aria-label="Column" className="app-field mb-1 mt-4 flex gap-1 overflow-x-auto rounded-full p-1 md:hidden">
         {columns.map((c) => (
           <button
             key={c.id}
@@ -513,15 +513,22 @@ export function Kanban({
             onClick={() => setPhoneColumn(c.id)}
             className={cn(
               "mi-press h-11 shrink-0 flex-1 whitespace-nowrap rounded-full px-4 text-[15px] font-medium",
-              phoneColumn === c.id ? "bg-[#0A0A0A] text-white" : "text-[#52525B]"
+              phoneColumn === c.id ? "app-selected" : "text-[#3A3F4B]"
             )}
           >
-            {c.name} <span className="font-mono text-[13px] tabular-nums opacity-70">{columnCards(c.id).length}</span>
+            {c.name} <span className="font-mono text-[13px] tabular-nums opacity-90">{columnCards(c.id).length}</span>
           </button>
         ))}
       </div>
 
-      <div className={cn("grid gap-5 overflow-x-auto pb-4 md:grid-flow-col md:auto-cols-[minmax(15rem,1fr)]", dragging && "select-none")}>
+      {/* The scroller clips whatever leaves its box, so it bleeds into the page gutter and
+          pads back in: the columns' raised shadows get room on every side */}
+      <div
+        className={cn(
+          "-mx-4 grid gap-7 overflow-x-auto px-4 pb-12 pt-10 sm:-mx-6 sm:px-6 md:grid-flow-col md:auto-cols-[minmax(15rem,1fr)] lg:-mx-10 lg:px-10",
+          dragging && "select-none"
+        )}
+      >
         {columns.map((column, ci) => {
           const list = columnCards(column.id);
           const isDone = column.id === doneId;
@@ -540,7 +547,7 @@ export function Kanban({
                 <h2 className={cn(DISPLAY, "min-w-0 truncate text-lg leading-none text-[#0A0A0A]")}>{column.name}</h2>
                 <span className="flex shrink-0 items-center gap-1">
                   <span
-                    className="font-mono text-[13px] tabular-nums text-[#52525B]"
+                    className="font-mono text-[13px] tabular-nums text-[#3A3F4B]"
                     title={
                       isDone
                         ? `${list.length} done today, ${sumWeight(list)} execution`
@@ -556,12 +563,12 @@ export function Kanban({
                     ) : (
                       list.length
                     )}
-                    {isDone && <span className="text-[#71717A]"> today</span>}
+                    {isDone && <span className="text-[#4F5565]"> today</span>}
                     <span className="ml-2 font-semibold text-[#0A0A0A]">
                       {isDone ? "+" : "Σ"}
                       {sumWeight(list)}
                     </span>
-                    {filterOn && <span className="ml-1.5 text-[11px] uppercase text-[#71717A]">filtered</span>}
+                    {filterOn && <span className="ml-1.5 text-[12px] uppercase text-[#4F5565]">filtered</span>}
                   </span>
                   {!isDone && (
                     <button
@@ -572,7 +579,7 @@ export function Kanban({
                       }}
                       aria-label={`Add a task to ${column.name}`}
                       title={ci === 0 ? "Add task (A)" : "Add task"}
-                      className="mi-press grid size-8 place-items-center rounded-full text-[#52525B] hover:bg-black/[0.05] hover:text-[#0A0A0A] [@media(pointer:coarse)]:size-11"
+                      className="mi-press grid size-8 place-items-center rounded-full text-[#3A3F4B] hover:bg-black/[0.05] hover:text-[#0A0A0A] [@media(pointer:coarse)]:size-11"
                     >
                       <Plus aria-hidden="true" className="size-4" />
                     </button>
@@ -592,7 +599,7 @@ export function Kanban({
                 />
               )}
               <SortableContext items={list.map((c) => c.id)} strategy={sorted || isDone ? noReorder : verticalListSortingStrategy}>
-                <ul className="flex min-h-24 flex-col gap-3">
+                <ul className="flex min-h-24 flex-col gap-4">
                   {list.slice(0, limit).map((card) => (
                     <SortableCard
                       key={card.id}
@@ -609,7 +616,7 @@ export function Kanban({
                     />
                   ))}
                   {list.length === 0 && (
-                    <li className="rounded-[14px] border border-dashed border-black/[0.06] px-3 py-6 text-center text-sm text-[#52525B]">
+                    <li className="app-field rounded-[16px] px-3 py-6 text-center text-sm text-[#3A3F4B]">
                       {filterOn && total > 0 ? "none match" : "drop here"}
                     </li>
                   )}
@@ -621,11 +628,11 @@ export function Kanban({
                   onClick={() => setVisible((v) => ({ ...v, [column.id]: limit + PAGE }))}
                   className="app-btn mi-press mt-3 h-10 w-full rounded-[12px] text-sm font-medium"
                 >
-                  Show {Math.min(PAGE, list.length - limit)} more <span className="font-mono text-[#71717A]">· {list.length - limit} hidden</span>
+                  Show {Math.min(PAGE, list.length - limit)} more <span className="font-mono text-[#4F5565]">· {list.length - limit} hidden</span>
                 </button>
               )}
               {isDone && historyHref && (
-                <Link href={historyHref as Route} className="mi-arrow mt-3 flex items-center justify-between rounded-[12px] px-2 py-2 text-sm font-medium text-[#52525B] hover:text-[#0A0A0A]">
+                <Link href={historyHref as Route} className="mi-arrow mt-3 flex items-center justify-between rounded-[12px] px-2 py-2 text-sm font-medium text-[#3A3F4B] hover:text-[#0A0A0A]">
                   Older in History
                   <ArrowRight aria-hidden="true" className="size-4" />
                 </Link>
@@ -671,7 +678,7 @@ function Column({ column, highlighted, phoneHidden, children }: { column: BoardC
       ref={setNodeRef}
       aria-label={column.name}
       className={cn(
-        "rounded-[24px] p-3 transition-[background-color] duration-150",
+        "rounded-[24px] p-3.5 transition-[background-color,box-shadow] duration-150",
         highlighted ? "app-field bg-white" : "app-panel",
         phoneHidden && "max-md:hidden"
       )}
@@ -742,10 +749,10 @@ function AddCard({
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
           placeholder="Add a task… #project !high fri"
-          className="h-9 min-w-0 flex-1 bg-transparent text-base text-[#0A0A0A] placeholder:text-[#71717A] focus:outline-none"
+          className="h-9 min-w-0 flex-1 bg-transparent text-base text-[#0A0A0A] placeholder:text-[#4F5565] focus:outline-none"
         />
-        {busy && <Loader2 aria-label="Saving…" className="size-4 animate-spin text-[#71717A]" />}
-        <button type="button" onClick={onClose} aria-label="Close" className="grid size-9 place-items-center rounded-[10px] text-[#52525B] hover:bg-black/[0.05]">
+        {busy && <Loader2 aria-label="Saving…" className="size-4 animate-spin text-[#4F5565]" />}
+        <button type="button" onClick={onClose} aria-label="Close" className="grid size-9 place-items-center rounded-[10px] text-[#3A3F4B] hover:bg-black/[0.05]">
           <X aria-hidden="true" className="size-4" />
         </button>
       </div>
@@ -783,7 +790,7 @@ function ColumnMenu({
       <Menu.Root>
         <Menu.Trigger
           aria-label={`${column.name} column options`}
-          className="mi-press grid size-8 place-items-center rounded-full text-[#52525B] hover:bg-black/[0.05] hover:text-[#0A0A0A] data-[state=open]:bg-black/[0.05] [@media(pointer:coarse)]:size-11"
+          className="mi-press grid size-8 place-items-center rounded-full text-[#3A3F4B] hover:bg-black/[0.05] hover:text-[#0A0A0A] data-[state=open]:bg-black/[0.05] [@media(pointer:coarse)]:size-11"
         >
           <MoreHorizontal aria-hidden="true" className="size-4" />
         </Menu.Trigger>
@@ -950,10 +957,10 @@ export function BulkBar({
         Delete
       </button>
       <span className="flex-1" />
-      {pending && <Loader2 aria-label="Saving…" className="size-4 animate-spin text-[#71717A]" />}
-      <button type="button" onClick={onClear} className="mi-press inline-flex h-10 items-center gap-1 rounded-full px-3 text-[15px] text-[#52525B] hover:bg-black/[0.05]">
+      {pending && <Loader2 aria-label="Saving…" className="size-4 animate-spin text-[#4F5565]" />}
+      <button type="button" onClick={onClear} className="mi-press inline-flex h-10 items-center gap-1 rounded-full px-3 text-[15px] text-[#3A3F4B] hover:bg-black/[0.05]">
         <X aria-hidden="true" className="size-4" />
-        Clear <kbd className="ml-1 hidden font-mono text-[12px] text-[#71717A] [@media(pointer:fine)]:inline">Esc</kbd>
+        Clear <kbd className="ml-1 hidden font-mono text-[12px] text-[#4F5565] [@media(pointer:fine)]:inline">Esc</kbd>
       </button>
     </div>
   );

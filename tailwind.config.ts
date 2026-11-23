@@ -12,13 +12,14 @@ const config: Config = {
     extend: {
       colors: {
         // The one colour: about a quarter of every screen (styles/tokens.css)
+        // Read from styles/tokens.css: pink on marketing, blue inside the product (.platform)
         accent: {
-          DEFAULT: "#D92B74",
-          hover: "#C4226A",
+          DEFAULT: "rgb(var(--accent-rgb) / <alpha-value>)",
+          hover: "var(--accent-hover)",
           ink: "#FFFFFF",
           muted: "#FFFFFF",
-          soft: "rgba(217, 43, 116, 0.12)",
-          line: "rgba(217, 43, 116, 0.5)",
+          soft: "var(--accent-soft)",
+          line: "var(--accent-line)",
         },
         // Errors, destructive actions and overdue only (AGENTS.md); 6.6:1 on white
         danger: "#B42318",
@@ -67,8 +68,8 @@ const config: Config = {
       // text on a pink fill is white (4.6:1).
       textColor: {
         accent: {
-          DEFAULT: "#C21F63",
-          hover: "#A51A54",
+          DEFAULT: "var(--accent-text)",
+          hover: "var(--accent-text-hover)",
           // Accent as small text on the white marketing pages (5.7:1 on white, 5.2:1 on #F5F5F5)
           deep: "#C21F63",
           ink: "#FFFFFF",

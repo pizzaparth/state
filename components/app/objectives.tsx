@@ -71,8 +71,8 @@ function ObjectiveDialog({ projects, edit }: { projects: { id: string; name: str
       </p>
     );
   const label = (field: FieldName, text: string, optional = false) => (
-    <label htmlFor={`objective-${field}`} className="text-sm font-medium text-[#52525B]">
-      {text} {optional && <span className="text-[#71717A]">(optional)</span>}
+    <label htmlFor={`objective-${field}`} className="text-sm font-medium text-[#3A3F4B]">
+      {text} {optional && <span className="text-[#4F5565]">(optional)</span>}
     </label>
   );
 
@@ -103,10 +103,10 @@ function ObjectiveDialog({ projects, edit }: { projects: { id: string; name: str
           onOpenAutoFocus={(e) => {
             if (!window.matchMedia("(pointer: fine)").matches) e.preventDefault();
           }}
-          className="fixed left-1/2 top-[8vh] z-50 max-h-[88vh] w-[min(30rem,calc(100vw-2rem))] origin-top -translate-x-1/2 overflow-y-auto overscroll-contain rounded-[28px] border border-black/[0.06] bg-white p-6 outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in"
+          className="fixed left-1/2 top-[8vh] z-50 max-h-[88vh] w-[min(30rem,calc(100vw-2rem))] origin-top -translate-x-1/2 overflow-y-auto overscroll-contain app-overlay rounded-[28px] p-6 outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in"
         >
           <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">{edit ? "Edit objective" : "New objective"}</Dialog.Title>
-          <Dialog.Description className="mt-1 font-mono text-sm text-[#71717A]">status = velocity vs required velocity</Dialog.Description>
+          <Dialog.Description className="mt-1 font-mono text-sm text-[#4F5565]">status = velocity vs required velocity</Dialog.Description>
 
           <form
             ref={formRef}
@@ -162,7 +162,7 @@ function ObjectiveDialog({ projects, edit }: { projects: { id: string; name: str
             </div>
 
             <fieldset className="space-y-1.5" disabled={Boolean(edit)} hidden={Boolean(edit)}>
-              <legend className="text-sm font-medium text-[#52525B]">Measure</legend>
+              <legend className="text-sm font-medium text-[#3A3F4B]">Measure</legend>
               <div className="app-field grid grid-cols-2 gap-1 rounded-[14px] p-1">
                 {(
                   [
@@ -172,14 +172,14 @@ function ObjectiveDialog({ projects, edit }: { projects: { id: string; name: str
                 ).map(([value, text]) => (
                   <label
                     key={value}
-                    className={`flex h-9 cursor-pointer items-center justify-center rounded-[10px] text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-accent ${values.measure === value ? "bg-[#0A0A0A] text-white" : "text-[#52525B] hover:text-[#0A0A0A]"}`}
+                    className={`flex h-9 cursor-pointer items-center justify-center rounded-[10px] text-sm font-medium has-[:focus-visible]:outline has-[:focus-visible]:outline-1 has-[:focus-visible]:outline-accent ${values.measure === value ? "bg-[#0A0A0A] text-white" : "text-[#3A3F4B] hover:text-[#0A0A0A]"}`}
                   >
                     <input type="radio" name="measure" value={value} checked={values.measure === value} onChange={() => set("measure", value)} className="sr-only" />
                     {text}
                   </label>
                 ))}
               </div>
-              <p className="font-mono text-sm text-[#71717A]">{values.measure === "execution" ? "current = Σ commit execution since today" : "current = the count you enter"}</p>
+              <p className="font-mono text-sm text-[#4F5565]">{values.measure === "execution" ? "current = Σ commit execution since today" : "current = the count you enter"}</p>
             </fieldset>
 
             <div className="grid grid-cols-2 gap-3">
@@ -222,7 +222,7 @@ function ObjectiveDialog({ projects, edit }: { projects: { id: string; name: str
               {errors.form}
             </p>
             <div className="flex justify-end gap-2">
-              <Dialog.Close className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#52525B] hover:text-[#0A0A0A]">Cancel</Dialog.Close>
+              <Dialog.Close className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#3A3F4B] hover:text-[#0A0A0A]">Cancel</Dialog.Close>
               <button type="submit" disabled={pending} className="app-btn inline-flex h-11 items-center gap-1.5 rounded-[14px] px-5 text-base font-semibold disabled:opacity-60">
                 {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
                 {edit ? "Save" : "Create objective"}

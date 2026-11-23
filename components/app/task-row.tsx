@@ -35,18 +35,18 @@ export function TaskRow({
         className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 rounded-[12px] py-2.5 pr-3 sm:flex-nowrap"
       >
         <span className="min-w-0 flex-1 basis-full sm:basis-auto">
-          <span className={cn("block truncate text-base font-medium", done ? "text-[#52525B]" : "text-[#0A0A0A]")}>
+          <span className={cn("block truncate text-base font-medium", done ? "text-[#3A3F4B]" : "text-[#0A0A0A]")}>
             {task.title}
             {done && <span className="sr-only"> (done)</span>}
           </span>
-          {task.projectName && <span className="block truncate text-sm text-[#71717A]">{task.projectName}</span>}
+          {task.projectName && <span className="block truncate text-sm text-[#4F5565]">{task.projectName}</span>}
         </span>
         <span className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1">
           {task.dueAt && !done && <DueLabel due={dueState(task.dueAt, now, tz)} />}
           <PriorityMark priority={task.priority} />
           <WeightMark weight={task.weight} />
           {age && (
-            <span title="Time since capture" className="w-8 text-right font-mono text-[12px] tabular-nums text-[#71717A]">
+            <span title="Time since capture" className="w-8 text-right font-mono text-[12px] tabular-nums text-[#4F5565]">
               {age}
             </span>
           )}

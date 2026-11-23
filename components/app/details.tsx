@@ -25,8 +25,8 @@ export function PanelSection({ title, aside, children }: { title: string; aside?
   return (
     <section>
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <h3 className={cn(TICK, "text-[11px] text-[#71717A]")}>{title}</h3>
-        {aside && <span className="font-mono text-[12px] tabular-nums text-[#71717A]">{aside}</span>}
+        <h3 className={cn(TICK, "text-[12px] text-[#4F5565]")}>{title}</h3>
+        {aside && <span className="font-mono text-[12px] tabular-nums text-[#4F5565]">{aside}</span>}
       </div>
       {children}
     </section>
@@ -37,8 +37,8 @@ export function PanelSection({ title, aside, children }: { title: string; aside?
 function Prop({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: React.ReactNode }) {
   return (
     <div className="-mx-2 grid grid-cols-[8.5rem_minmax(0,1fr)] items-start gap-3 rounded-[12px] px-2 py-1 transition-colors duration-150 hover:bg-[#FAFAFA]">
-      <dt className="flex min-h-9 items-center gap-2 text-sm text-[#52525B]">
-        <Icon aria-hidden="true" className="size-4 shrink-0 text-[#71717A]" />
+      <dt className="flex min-h-9 items-center gap-2 text-sm text-[#3A3F4B]">
+        <Icon aria-hidden="true" className="size-4 shrink-0 text-[#4F5565]" />
         {label}
       </dt>
       <dd className="flex min-h-9 min-w-0 flex-col justify-center break-words text-[15px] font-medium text-[#0A0A0A]">{children}</dd>
@@ -46,7 +46,7 @@ function Prop({ icon: Icon, label, children }: { icon: LucideIcon; label: string
   );
 }
 
-const None = () => <span className="font-normal text-[#71717A]">—</span>;
+const None = () => <span className="font-normal text-[#4F5565]">—</span>;
 
 /** Three numbers across the top: the first is the object's value, in the accent. */
 function Stats({ items }: { items: { label: string; value: React.ReactNode }[] }) {
@@ -54,8 +54,8 @@ function Stats({ items }: { items: { label: string; value: React.ReactNode }[] }
     <dl className="app-panel grid grid-cols-3 divide-x divide-black/[0.06] rounded-[20px]">
       {items.map((s, i) => (
         <div key={s.label} className="min-w-0 px-4 py-3.5">
-          <dt className={cn(TICK, "truncate text-[11px] text-[#71717A]")}>{s.label}</dt>
-          <dd className={cn(DISPLAY, "mt-1.5 truncate tabular-nums leading-none", i === 0 ? "text-[2.25rem] text-[#D92B74]" : "pt-1.5 text-xl text-[#0A0A0A]")}>{s.value}</dd>
+          <dt className={cn(TICK, "truncate text-[12px] text-[#4F5565]")}>{s.label}</dt>
+          <dd className={cn(DISPLAY, "mt-1.5 truncate tabular-nums leading-none", i === 0 ? "text-[2.25rem] text-accent" : "pt-1.5 text-xl text-[#0A0A0A]")}>{s.value}</dd>
         </div>
       ))}
     </dl>
@@ -72,11 +72,11 @@ function Timeline({ steps, tz }: { steps: { label: string; at: Date | null; fina
             aria-hidden="true"
             className={cn(
               "absolute -left-[5.5px] top-[13px] size-2.5 rounded-full",
-              !s.at ? "border border-black/20 bg-white" : s.final ? "bg-accent" : "bg-[#0A0A0A]"
+              !s.at ? "border border-black/20 bg-white" : s.final ? "bg-accent" : "bg-[#1E2129]"
             )}
           />
-          <span className={cn("text-[15px] font-medium", s.at ? "text-[#0A0A0A]" : "text-[#71717A]")}>{s.label}</span>
-          <span className="font-mono text-[13px] tabular-nums text-[#71717A]">{s.at ? formatDateTime(s.at, tz) : "not yet"}</span>
+          <span className={cn("text-[15px] font-medium", s.at ? "text-[#0A0A0A]" : "text-[#4F5565]")}>{s.label}</span>
+          <span className="font-mono text-[13px] tabular-nums text-[#4F5565]">{s.at ? formatDateTime(s.at, tz) : "not yet"}</span>
         </li>
       ))}
     </ol>
@@ -113,7 +113,7 @@ function StatusPill({ state, done, started }: { state: string; done: boolean; st
 }
 
 const linkCard =
-  "mi-row group flex min-h-14 items-center gap-3 rounded-[16px] border border-black/[0.10] bg-white px-4 py-3 transition-colors duration-150 hover:border-black/[0.18] hover:bg-[#FAFAFA]";
+  "mi-row group flex min-h-14 items-center gap-3 app-card px-4 py-3";
 
 // ------------------------------------------------------------------ task
 
@@ -185,7 +185,7 @@ export function TaskDetail({
               <TaskWeight taskId={task.id} weight={task.weight} />
             ) : (
               <span>
-                {weightLabel(task.weight)} <span className="font-mono text-sm tabular-nums text-[#71717A]">+{task.weight}</span>
+                {weightLabel(task.weight)} <span className="font-mono text-sm tabular-nums text-[#4F5565]">+{task.weight}</span>
               </span>
             )}
           </Prop>
@@ -228,10 +228,10 @@ export function TaskDetail({
           ]}
         />
         {history.length > 0 && (
-          <ol aria-label="Changes" className="mt-3 space-y-1 border-t border-black/[0.05] pt-3 font-mono text-[12px] tabular-nums text-[#71717A]">
+          <ol aria-label="Changes" className="mt-3 space-y-1 border-t border-black/[0.05] pt-3 font-mono text-[12px] tabular-nums text-[#4F5565]">
             {history.map((h, i) => (
               <li key={i} className="truncate">
-                {formatDate(h.at, tz, { day: "numeric", month: "short" })} {formatTime(h.at, tz)} · <span className="text-[#52525B]">{h.text}</span>
+                {formatDate(h.at, tz, { day: "numeric", month: "short" })} {formatTime(h.at, tz)} · <span className="text-[#3A3F4B]">{h.text}</span>
               </li>
             ))}
           </ol>
@@ -244,14 +244,14 @@ export function TaskDetail({
             <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-accent" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[15px] font-medium text-[#0A0A0A]">{task.commit.message}</span>
-              <span className="block font-mono text-[12px] tabular-nums text-[#71717A]">{formatDateTime(task.commit.createdAt, tz)}</span>
+              <span className="block font-mono text-[12px] tabular-nums text-[#4F5565]">{formatDateTime(task.commit.createdAt, tz)}</span>
             </span>
             <span className="font-mono text-sm font-semibold tabular-nums text-accent">+{task.commit.executionValue}</span>
-            <ArrowUpRight aria-hidden="true" className="size-4 shrink-0 text-[#71717A] group-hover:text-[#0A0A0A]" />
+            <ArrowUpRight aria-hidden="true" className="size-4 shrink-0 text-[#4F5565] group-hover:text-[#0A0A0A]" />
             <span className="sr-only">Open commit</span>
           </PanelLink>
         ) : (
-          <p className="rounded-[16px] border border-dashed border-black/[0.14] px-4 py-3.5 font-mono text-[13px] text-[#71717A]">auto-logged on Done · +{task.weight}</p>
+          <p className="rounded-[16px] border border-dashed border-black/[0.14] px-4 py-3.5 font-mono text-[13px] text-[#4F5565]">auto-logged on Done · +{task.weight}</p>
         )}
       </PanelSection>
     </div>
@@ -276,7 +276,7 @@ export function CommitDetail({ commit, tz, projects }: { commit: Commit; tz: str
   return (
     <div className="app-stagger space-y-8">
       <div>
-        <p className="mb-3 font-mono text-[13px] tabular-nums text-[#71717A]">{formatDateTime(commit.createdAt, tz)}</p>
+        <p className="mb-3 font-mono text-[13px] tabular-nums text-[#4F5565]">{formatDateTime(commit.createdAt, tz)}</p>
         <h2 className={cn(DISPLAY, "break-words text-[1.75rem] leading-[1.08] text-[#0A0A0A]")}>{commit.message}</h2>
         {commit.tags.length > 0 && (
           <p className="mt-3 flex flex-wrap gap-2">
@@ -308,9 +308,9 @@ export function CommitDetail({ commit, tz, projects }: { commit: Commit; tz: str
           <PanelLink from="commit" to="task" id={commit.taskId} className={linkCard}>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[15px] font-medium text-[#0A0A0A]">{commit.taskTitle}</span>
-              {commit.taskDescription && <span className="block truncate text-[13px] text-[#71717A]">{commit.taskDescription}</span>}
+              {commit.taskDescription && <span className="block truncate text-[13px] text-[#4F5565]">{commit.taskDescription}</span>}
             </span>
-            <ArrowUpRight aria-hidden="true" className="size-4 shrink-0 text-[#71717A] group-hover:text-[#0A0A0A]" />
+            <ArrowUpRight aria-hidden="true" className="size-4 shrink-0 text-[#4F5565] group-hover:text-[#0A0A0A]" />
             <span className="sr-only">Open task</span>
           </PanelLink>
         </PanelSection>
@@ -330,7 +330,7 @@ export function CommitDetail({ commit, tz, projects }: { commit: Commit; tz: str
       )}
 
       <div>
-        <p className="flex items-center gap-2 font-mono text-[12px] text-[#71717A]">
+        <p className="flex items-center gap-2 font-mono text-[12px] text-[#4F5565]">
           <Lock aria-hidden="true" className="size-3.5" />
           time + value locked · message, project, tags fixable
         </p>

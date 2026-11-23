@@ -51,7 +51,7 @@ export function TaskActions({
 
   return (
     <section aria-labelledby="task-actions-heading" className="mt-8 border-t border-black/[0.06] pt-6">
-      <h3 id="task-actions-heading" className={cn(TICK, "text-[11px] text-[#71717A]")}>
+      <h3 id="task-actions-heading" className={cn(TICK, "text-[12px] text-[#4F5565]")}>
         Actions
       </h3>
 
@@ -72,7 +72,7 @@ export function TaskActions({
             });
           }}
         >
-          <label htmlFor="task-move-column" className={cn(TICK, "text-[11px] text-[#71717A]")}>
+          <label htmlFor="task-move-column" className={cn(TICK, "text-[12px] text-[#4F5565]")}>
             Move to board
           </label>
           <div className="flex gap-2">
@@ -139,7 +139,7 @@ export function TaskActions({
       </div>
 
       {task.completed ? (
-        <p className="mt-3 font-mono text-[12px] text-[#71717A]">done = history · move out of Done to delete</p>
+        <p className="mt-3 font-mono text-[12px] text-[#4F5565]">done = history · move out of Done to delete</p>
       ) : (
         <button
           type="button"

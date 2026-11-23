@@ -55,7 +55,7 @@ export function PreferenceSelect<K extends Key>({
           </option>
         ))}
       </select>
-      {pending && <Loader2 aria-label="Saving…" className="size-4 animate-spin text-[#52525B]" />}
+      {pending && <Loader2 aria-label="Saving…" className="size-4 animate-spin text-[#3A3F4B]" />}
     </span>
   );
 }

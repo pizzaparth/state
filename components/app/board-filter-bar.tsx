@@ -27,7 +27,7 @@ export function BoardFilterBar({
   return (
     <div role="search" aria-label="Filter the board" className="grid min-w-0 flex-[1_1_46rem] grid-cols-2 gap-2 md:grid-cols-4 xl:flex xl:items-center">
       <label className="app-field col-span-full flex h-10 min-w-0 items-center gap-2 rounded-full px-3 xl:flex-[1_1_12rem]">
-        <Search aria-hidden="true" className="size-4 shrink-0 text-[#71717A]" />
+        <Search aria-hidden="true" className="size-4 shrink-0 text-[#4F5565]" />
         <span className="sr-only">Text</span>
         <input
           ref={textRef}
@@ -43,9 +43,9 @@ export function BoardFilterBar({
           }}
           placeholder="Find a card…"
           autoComplete="off"
-          className="h-full min-w-0 flex-1 bg-transparent text-base text-[#0A0A0A] placeholder:text-[#71717A] focus:outline-none"
+          className="h-full min-w-0 flex-1 bg-transparent text-base text-[#0A0A0A] placeholder:text-[#4F5565] focus:outline-none"
         />
-        <kbd aria-hidden="true" className="hidden rounded-[6px] bg-black/[0.05] px-1.5 font-mono text-[12px] text-[#71717A] [@media(pointer:fine)]:inline">
+        <kbd aria-hidden="true" className="hidden rounded-[6px] bg-black/[0.05] px-1.5 font-mono text-[12px] text-[#4F5565] [@media(pointer:fine)]:inline">
           F
         </kbd>
       </label>
@@ -86,7 +86,7 @@ export function BoardFilterBar({
         ))}
       </select>
       {isFiltered(filter) && (
-        <button type="button" onClick={() => onChange({})} className="mi-press inline-flex h-10 items-center justify-center gap-1 rounded-full px-3 text-[15px] text-[#52525B] hover:bg-black/[0.05] hover:text-[#0A0A0A]">
+        <button type="button" onClick={() => onChange({})} className="mi-press inline-flex h-10 items-center justify-center gap-1 rounded-full px-3 text-[15px] text-[#3A3F4B] hover:bg-black/[0.05] hover:text-[#0A0A0A]">
           <X aria-hidden="true" className="size-4" />
           Clear
         </button>

@@ -55,11 +55,11 @@ export function HistoryFilters({
   const value = (k: string) => params.get(k) ?? "";
   return (
     <div role="search" aria-label="Filter commits" className="app-panel flex flex-wrap items-center gap-2 rounded-[20px] p-2">
-      <span className={cn(TICK, "px-2 text-[11px] text-[#71717A]")}>Filter</span>
+      <span className={cn(TICK, "px-2 text-[12px] text-[#4F5565]")}>Filter</span>
       <label className="app-field flex h-10 min-w-0 flex-1 basis-40 items-center gap-2 rounded-full px-3">
-        <Search aria-hidden="true" className="size-4 shrink-0 text-[#71717A]" />
+        <Search aria-hidden="true" className="size-4 shrink-0 text-[#4F5565]" />
         <span className="sr-only">Message</span>
-        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find in messages…" autoComplete="off" className="h-full min-w-0 flex-1 bg-transparent text-base placeholder:text-[#71717A] focus:outline-none" />
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find in messages…" autoComplete="off" className="h-full min-w-0 flex-1 bg-transparent text-base placeholder:text-[#4F5565] focus:outline-none" />
       </label>
       <select aria-label="Project" value={value("project")} onChange={(e) => set({ project: e.target.value })} className={select}>
         <option value="">All projects</option>
@@ -71,7 +71,7 @@ export function HistoryFilters({
         {archived.length > 0 && (
           <optgroup label="Archived">
             {archived.map((p) => (
-              <option key={p.slug} value={p.slug} className="text-[#71717A]">
+              <option key={p.slug} value={p.slug} className="text-[#4F5565]">
                 {p.name}
               </option>
             ))}
@@ -102,14 +102,14 @@ export function HistoryFilters({
           </option>
         ))}
       </select>
-      <label className="flex items-center gap-1 text-sm text-[#52525B]">
+      <label className="flex items-center gap-1 text-sm text-[#3A3F4B]">
         <span className="sr-only">From</span>
         <input type="date" aria-label="From" value={value("from") || value("day")} onChange={(e) => set({ from: e.target.value, to: value("to") || value("day") || null })} className="app-input h-10 rounded-full px-3 text-[15px]" />
         <span aria-hidden="true">–</span>
         <input type="date" aria-label="To" value={value("to") || value("day")} onChange={(e) => set({ to: e.target.value, from: value("from") || value("day") || null })} className="app-input h-10 rounded-full px-3 text-[15px]" />
       </label>
       {any && (
-        <button type="button" onClick={() => router.replace(pathname as Route, { scroll: false })} className="mi-press inline-flex h-10 items-center gap-1 rounded-full px-3 text-[15px] text-[#52525B] hover:bg-black/[0.05] hover:text-[#0A0A0A]">
+        <button type="button" onClick={() => router.replace(pathname as Route, { scroll: false })} className="mi-press inline-flex h-10 items-center gap-1 rounded-full px-3 text-[15px] text-[#3A3F4B] hover:bg-black/[0.05] hover:text-[#0A0A0A]">
           <X aria-hidden="true" className="size-4" />
           Clear
         </button>

@@ -199,7 +199,7 @@ export function CommandPalette({
         >
           <Dialog.Title className="sr-only">Command palette</Dialog.Title>
           <div className="flex items-center gap-3 border-b border-black/[0.06] px-5">
-            <Search className="size-4 text-[#52525B]" aria-hidden="true" />
+            <Search className="size-4 text-[#3A3F4B]" aria-hidden="true" />
             <input
               autoFocus
               value={query}
@@ -228,19 +228,19 @@ export function CommandPalette({
               aria-controls="palette-results"
               aria-activedescendant={results[index] ? `cmd-${index}` : undefined}
               placeholder="Search, or > commands, # projects…"
-              className="h-14 flex-1 bg-transparent text-base text-[#0A0A0A] placeholder:text-[#71717A] focus:outline-none"
+              className="h-14 flex-1 bg-transparent text-base text-[#0A0A0A] placeholder:text-[#4F5565] focus:outline-none"
             />
-            {search.loading && <Loader2 className="size-4 animate-spin text-[#71717A]" aria-hidden="true" />}
-            <kbd className="rounded-[6px] bg-black/[0.06] px-1.5 py-0.5 font-mono text-[12px] text-[#52525B]">esc</kbd>
+            {search.loading && <Loader2 className="size-4 animate-spin text-[#4F5565]" aria-hidden="true" />}
+            <kbd className="rounded-[6px] bg-black/[0.06] px-1.5 py-0.5 font-mono text-[12px] text-[#3A3F4B]">esc</kbd>
           </div>
           <p role="status" className="sr-only">
             {q.length >= 2 && !search.loading ? `${results.length} results` : ""}
           </p>
           <div id="palette-results" role="listbox" aria-label="Results" className="max-h-[50vh] overflow-y-auto overscroll-contain p-2">
-            {results.length === 0 && <p className="px-3 py-6 text-center text-base text-[#52525B]">{search.loading ? "Searching…" : "No matches"}</p>}
+            {results.length === 0 && <p className="px-3 py-6 text-center text-base text-[#3A3F4B]">{search.loading ? "Searching…" : "No matches"}</p>}
             {groups.map((g) => (
               <div key={g.name} role="group" aria-label={g.name} className="pb-1">
-                <p aria-hidden="true" className="px-3 pb-1 pt-2 font-mono text-[11px] uppercase tracking-[0.16em] text-[#71717A]">
+                <p aria-hidden="true" className="px-3 pb-1 pt-2 font-mono text-[12px] uppercase tracking-[0.16em] text-[#4F5565]">
                   {g.name}
                 </p>
                 {g.items.map(({ c, i }) => (
@@ -251,18 +251,18 @@ export function CommandPalette({
                     aria-selected={i === index}
                     onPointerMove={() => setIndex(i)}
                     onClick={() => run(c)}
-                    className={cn("flex cursor-pointer items-center gap-3 rounded-[12px] px-3 py-2.5 text-base", i === index ? "bg-black/[0.05] text-[#0A0A0A]" : "text-[#27272A]")}
+                    className={cn("flex cursor-pointer items-center gap-3 rounded-[12px] px-3 py-2.5 text-base", i === index ? "bg-black/[0.05] text-[#0A0A0A]" : "text-[#1E2129]")}
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate">{c.label}</span>
-                      {c.detail && <span className="block truncate text-sm text-[#71717A]">{c.detail}</span>}
+                      {c.detail && <span className="block truncate text-sm text-[#4F5565]">{c.detail}</span>}
                     </span>
                     {i === index && c.taskId && !actionsFor ? (
-                      <span className="hidden font-mono text-[11px] text-[#71717A] sm:inline">tab actions{c.done ? "" : " · ⌘↵ done"}</span>
+                      <span className="hidden font-mono text-[12px] text-[#4F5565] sm:inline">tab actions{c.done ? "" : " · ⌘↵ done"}</span>
                     ) : (
-                      c.hint && <kbd className="font-mono text-[12px] text-[#71717A]">{c.hint}</kbd>
+                      c.hint && <kbd className="font-mono text-[12px] text-[#4F5565]">{c.hint}</kbd>
                     )}
-                    {i === index && <CornerDownLeft aria-hidden="true" className="size-3.5 text-[#71717A]" />}
+                    {i === index && <CornerDownLeft aria-hidden="true" className="size-3.5 text-[#4F5565]" />}
                   </div>
                 ))}
               </div>

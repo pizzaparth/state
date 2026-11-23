@@ -67,7 +67,7 @@ export function TimezoneField({ timezone, zones }: { timezone: string; zones: st
             </option>
           ))}
         </select>
-        {pending && <Loader2 className="size-4 animate-spin text-[#52525B]" aria-label="Saving…" />}
+        {pending && <Loader2 className="size-4 animate-spin text-[#3A3F4B]" aria-label="Saving…" />}
       </div>
       {device && device !== value && (
         <button type="button" onClick={() => save(device)} disabled={pending} className="app-btn mi-press inline-flex h-10 items-center rounded-[12px] px-3 text-sm font-medium disabled:opacity-60">

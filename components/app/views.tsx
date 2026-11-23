@@ -99,7 +99,7 @@ export function ProjectView({
               <div className="space-y-4">
                 {[...byColumn].map(([column, list]) => (
                   <section key={column} aria-label={column}>
-                    <h3 className="px-0 pb-1 font-mono text-[11px] uppercase tracking-[0.16em] text-[#71717A]">
+                    <h3 className="px-0 pb-1 font-mono text-[12px] uppercase tracking-[0.16em] text-[#4F5565]">
                       {column} · {list.length}
                     </h3>
                     <ul className="app-stagger -mx-3">
@@ -120,7 +120,7 @@ export function ProjectView({
                   <TaskRow key={t.id} task={t} tz={tz} now={now} href={taskHref(t.id)} />
                 ))}
               </ul>
-              <div className="mt-3 flex justify-between text-sm font-medium text-[#52525B]">
+              <div className="mt-3 flex justify-between text-sm font-medium text-[#3A3F4B]">
                 {page > 0 ? <Link href={tabHref("done", page - 1) as Route} className="hover:text-[#0A0A0A]">← Newer</Link> : <span />}
                 {done.more && <Link href={tabHref("done", page + 1) as Route} className="hover:text-[#0A0A0A]">Older →</Link>}
               </div>
@@ -164,7 +164,7 @@ export function ProjectTable({
     <div className="-mx-2 overflow-x-auto">
       <table className="w-full min-w-[40rem] border-collapse text-base">
         <thead>
-          <tr className="text-left text-[12px] font-semibold uppercase tracking-[0.12em] text-[#52525B]">
+          <tr className="text-left text-[12px] font-semibold uppercase tracking-[0.12em] text-[#3A3F4B]">
             <th scope="col" className="px-2 pb-2 font-semibold">Project</th>
             <th scope="col" className="px-2 pb-2 font-semibold">Status</th>
             <th scope="col" className="px-2 pb-2 text-right font-semibold">Open</th>
@@ -189,7 +189,7 @@ export function ProjectTable({
               <td className="px-2 py-3 text-right tabular-nums">{p.completedTasks}</td>
               <td className="px-2 py-3 text-right tabular-nums">{p.commits7d}</td>
               <td className="px-2 py-3 text-right font-semibold tabular-nums">{p.execution30d}</td>
-              <td className="px-2 py-3 text-right text-[#52525B] tabular-nums">{p.lastCommitAt ? formatDate(p.lastCommitAt, tz) : "—"}</td>
+              <td className="px-2 py-3 text-right text-[#3A3F4B] tabular-nums">{p.lastCommitAt ? formatDate(p.lastCommitAt, tz) : "—"}</td>
             </tr>
           ))}
         </tbody>
@@ -201,7 +201,7 @@ export function ProjectTable({
 /** Shown on an archived project's page: what archiving means and when it happened. */
 export function ArchivedNotice({ archivedAt, tz }: { archivedAt: Date; tz: string }) {
   return (
-    <p className="app-panel px-5 py-3 text-base text-[#52525B]">
+    <p className="app-panel px-5 py-3 text-base text-[#3A3F4B]">
       Archived {formatDate(archivedAt, tz, { day: "numeric", month: "short", year: "numeric" })}. Its history stays here, but it is not offered for{" "}
       <span className="font-mono">#capture</span> or new commits.
     </p>
@@ -221,14 +221,14 @@ export function ArchivedProjects({
   if (projects.length === 0) return null;
   return (
     <div className="mt-5 border-t border-black/[0.05] pt-4">
-      <h3 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#52525B]">Archived</h3>
+      <h3 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#3A3F4B]">Archived</h3>
       <ul className="mt-2">
         {projects.map((p) => (
           <li key={p.id} className="flex min-w-0 items-baseline justify-between gap-4 py-1.5 text-base">
-            <Link href={hrefFor(p.slug) as Route} className="min-w-0 truncate rounded-[6px] text-[#52525B] hover:text-[#0A0A0A] hover:underline">
+            <Link href={hrefFor(p.slug) as Route} className="min-w-0 truncate rounded-[6px] text-[#3A3F4B] hover:text-[#0A0A0A] hover:underline">
               {p.name}
             </Link>
-            {p.archivedAt && <span className="shrink-0 text-sm tabular-nums text-[#71717A]">{formatDate(p.archivedAt, tz)}</span>}
+            {p.archivedAt && <span className="shrink-0 text-sm tabular-nums text-[#4F5565]">{formatDate(p.archivedAt, tz)}</span>}
           </li>
         ))}
       </ul>

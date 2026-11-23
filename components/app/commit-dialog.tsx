@@ -113,7 +113,7 @@ export function CommitDialog({
         <Dialog.Overlay className="app-scrim fixed inset-0 z-50 data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content className="app-overlay fixed left-1/2 top-[10vh] z-50 max-h-[85vh] w-[min(30rem,calc(100vw-2rem))] origin-top -translate-x-1/2 overflow-y-auto overscroll-contain rounded-[28px] p-6 outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in">
           <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">Log work</Dialog.Title>
-          <Dialog.Description className="mt-1 font-mono text-[12px] text-[#71717A]">finished work that never was a task</Dialog.Description>
+          <Dialog.Description className="mt-1 font-mono text-[12px] text-[#4F5565]">finished work that never was a task</Dialog.Description>
           <form
             className="mt-5 space-y-4"
             noValidate
@@ -147,7 +147,7 @@ export function CommitDialog({
             }}
           >
             <div className="relative space-y-1.5">
-              <label htmlFor="commit-message" className="text-sm font-medium text-[#52525B]">
+              <label htmlFor="commit-message" className="text-sm font-medium text-[#3A3F4B]">
                 What did you do?
               </label>
               <textarea
@@ -196,7 +196,7 @@ export function CommitDialog({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label htmlFor="commit-project" className="text-sm font-medium text-[#52525B]">
+                <label htmlFor="commit-project" className="text-sm font-medium text-[#3A3F4B]">
                   Project
                 </label>
                 <select id="commit-project" name="project" className="app-select" value={draft.projectId} onChange={(e) => update({ projectId: e.target.value })}>
@@ -209,7 +209,7 @@ export function CommitDialog({
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="commit-weight" className="text-sm font-medium text-[#52525B]">
+                <label htmlFor="commit-weight" className="text-sm font-medium text-[#3A3F4B]">
                   Weight
                 </label>
                 <select
@@ -228,11 +228,11 @@ export function CommitDialog({
                 </select>
               </div>
             </div>
-            <p id="commit-weight-hint" className="-mt-1 text-sm leading-relaxed text-[#52525B]">
+            <p id="commit-weight-hint" className="-mt-1 text-sm leading-relaxed text-[#3A3F4B]">
               {weightHint(draft.weight)}
             </p>
             <div className="relative space-y-1.5">
-              <label htmlFor="commit-tags" className="text-sm font-medium text-[#52525B]">
+              <label htmlFor="commit-tags" className="text-sm font-medium text-[#3A3F4B]">
                 Tags
               </label>
               <input
@@ -261,7 +261,7 @@ export function CommitDialog({
               )}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-              <p className="font-mono text-[12px] text-[#71717A]">
+              <p className="font-mono text-[12px] text-[#4F5565]">
                 <kbd>⌘&nbsp;↵</kbd> commit
               </p>
               <div className="flex gap-2">
@@ -278,7 +278,7 @@ export function CommitDialog({
                 </button>
               </div>
             </div>
-            {dirty && <p className="-mt-2 font-mono text-[12px] text-[#71717A]">draft kept if you close</p>}
+            {dirty && <p className="-mt-2 font-mono text-[12px] text-[#4F5565]">draft kept if you close</p>}
           </form>
         </Dialog.Content>
       </Dialog.Portal>

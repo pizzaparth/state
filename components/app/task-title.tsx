@@ -132,14 +132,14 @@ export function TaskTitle({ taskId, title, editable }: { taskId: string; title: 
           }}
           className="app-input h-12 w-full rounded-[14px] px-3 pr-10 text-xl font-semibold tracking-[-0.01em]"
         />
-        {pending && <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-[#52525B]" aria-label="Saving…" />}
+        {pending && <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-[#3A3F4B]" aria-label="Saving…" />}
       </div>
       {error ? (
         <p id="task-title-error" aria-live="polite" className="mt-1.5 text-sm text-danger">
           {error}
         </p>
       ) : (
-        <p id="task-title-hint" className="mt-1.5 font-mono text-[12px] text-[#71717A]">
+        <p id="task-title-hint" className="mt-1.5 font-mono text-[12px] text-[#4F5565]">
           enter or click away saves · esc cancels
         </p>
       )}

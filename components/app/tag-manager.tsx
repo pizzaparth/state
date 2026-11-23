@@ -12,7 +12,7 @@ export function TagManager({ tags }: { tags: TagRow[] }) {
   const notify = useNotice();
   const [dialog, setDialog] = React.useState<{ kind: "rename" | "merge"; tag: TagRow } | null>(null);
   const [pending, startTransition] = React.useTransition();
-  if (tags.length === 0) return <p className="font-mono text-sm text-[#71717A]">No tags</p>;
+  if (tags.length === 0) return <p className="font-mono text-sm text-[#4F5565]">No tags</p>;
   return (
     <>
       <ul className="divide-y divide-black/[0.05]">
@@ -20,7 +20,7 @@ export function TagManager({ tags }: { tags: TagRow[] }) {
           <li key={t.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
             <span className="min-w-0">
               <span className="block truncate font-medium">{t.name}</span>
-              <span className="block font-mono text-[12px] tabular-nums text-[#71717A]">
+              <span className="block font-mono text-[12px] tabular-nums text-[#4F5565]">
                 {t.tasks} tasks · {t.commits} commits
               </span>
             </span>

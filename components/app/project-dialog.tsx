@@ -102,10 +102,10 @@ function ProjectDialog({
             // Desktop: focus the name field; leave mobile keyboards closed
             if (!window.matchMedia("(pointer: fine)").matches) e.preventDefault();
           }}
-          className="fixed left-1/2 top-[10vh] z-50 max-h-[85vh] w-[min(30rem,calc(100vw-2rem))] origin-top -translate-x-1/2 overflow-y-auto overscroll-contain rounded-[28px] border border-black/[0.06] bg-white p-6 outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in"
+          className="fixed left-1/2 top-[10vh] z-50 max-h-[85vh] w-[min(30rem,calc(100vw-2rem))] origin-top -translate-x-1/2 overflow-y-auto overscroll-contain app-overlay rounded-[28px] p-6 outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in"
         >
           <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">{title}</Dialog.Title>
-          <Dialog.Description className="mt-1 text-base text-[#52525B]">{description}</Dialog.Description>
+          <Dialog.Description className="mt-1 text-base text-[#3A3F4B]">{description}</Dialog.Description>
 
           <form
             ref={formRef}
@@ -141,7 +141,7 @@ function ProjectDialog({
             }}
           >
             <div className="space-y-1.5">
-              <label htmlFor="project-name" className="text-sm font-medium text-[#52525B]">
+              <label htmlFor="project-name" className="text-sm font-medium text-[#3A3F4B]">
                 Name
               </label>
               <input
@@ -160,11 +160,11 @@ function ProjectDialog({
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="project-slug" className="text-sm font-medium text-[#52525B]">
+              <label htmlFor="project-slug" className="text-sm font-medium text-[#3A3F4B]">
                 Slug
               </label>
               <div className="app-input flex h-11 items-center rounded-[14px] pl-3 focus-within:border-black/40">
-                <span aria-hidden="true" className="font-mono text-base text-[#71717A]">
+                <span aria-hidden="true" className="font-mono text-base text-[#4F5565]">
                   #
                 </span>
                 <input
@@ -180,13 +180,13 @@ function ProjectDialog({
                   }}
                   placeholder="relay-db…"
                   translate="no"
-                  className="h-full min-w-0 flex-1 bg-transparent pr-3 font-mono text-base text-[#0A0A0A] placeholder:text-[#71717A] focus:outline-none"
+                  className="h-full min-w-0 flex-1 bg-transparent pr-3 font-mono text-base text-[#0A0A0A] placeholder:text-[#4F5565] focus:outline-none"
                 />
               </div>
               {errors.slug ? (
                 fieldError("slug")
               ) : (
-                <p className="text-sm text-[#71717A]">
+                <p className="text-sm text-[#4F5565]">
                   {showStatus && values.slug.trim().toLowerCase() !== initial.slug
                     ? `Captures will use #${values.slug.trim().toLowerCase() || "…"} and the project's link changes.`
                     : "Lowercase letters, numbers and hyphens."}
@@ -196,7 +196,7 @@ function ProjectDialog({
 
             {showStatus && (
               <div className="space-y-1.5">
-                <label htmlFor="project-status" className="text-sm font-medium text-[#52525B]">
+                <label htmlFor="project-status" className="text-sm font-medium text-[#3A3F4B]">
                   Status
                 </label>
                 <select {...fieldProps("status")} value={values.status} onChange={(e) => set("status", e.target.value)} className="app-select">
@@ -211,8 +211,8 @@ function ProjectDialog({
             )}
 
             <div className="space-y-1.5">
-              <label htmlFor="project-description" className="text-sm font-medium text-[#52525B]">
-                Description <span className="text-[#71717A]">(optional)</span>
+              <label htmlFor="project-description" className="text-sm font-medium text-[#3A3F4B]">
+                Description <span className="text-[#4F5565]">(optional)</span>
               </label>
               <textarea
                 {...fieldProps("description")}
@@ -228,7 +228,7 @@ function ProjectDialog({
               />
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">{fieldError("description")}</div>
-                <p id="project-description-count" className="shrink-0 text-sm tabular-nums text-[#71717A]">
+                <p id="project-description-count" className="shrink-0 text-sm tabular-nums text-[#4F5565]">
                   <span className="sr-only">Characters used: </span>
                   {values.description.length}/{PROJECT_DESCRIPTION_MAX}
                 </p>
@@ -240,7 +240,7 @@ function ProjectDialog({
             </p>
 
             <div className="flex justify-end gap-2">
-              <Dialog.Close className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#52525B] hover:text-[#0A0A0A]">Cancel</Dialog.Close>
+              <Dialog.Close className="inline-flex h-11 items-center rounded-[14px] px-4 text-base text-[#3A3F4B] hover:text-[#0A0A0A]">Cancel</Dialog.Close>
               <button type="submit" disabled={pending} className="app-btn inline-flex h-11 items-center gap-1.5 rounded-[14px] px-5 text-base font-semibold disabled:opacity-60">
                 {pending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
                 {submitLabel}

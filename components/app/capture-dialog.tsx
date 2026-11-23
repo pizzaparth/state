@@ -36,12 +36,12 @@ export function CaptureDialog({
         >
           <div className="mb-3 flex items-center justify-between">
             <Dialog.Title className="text-lg font-semibold tracking-[-0.01em]">Add task</Dialog.Title>
-            <Dialog.Close aria-label="Close" className="mi-press grid size-9 place-items-center rounded-full text-[#52525B] hover:bg-black/[0.05]">
+            <Dialog.Close aria-label="Close" className="mi-press grid size-9 place-items-center rounded-full text-[#3A3F4B] hover:bg-black/[0.05]">
               <X aria-hidden="true" className="size-4" />
             </Dialog.Close>
           </div>
           <QuickCapture projects={projects} tz={tz} draftKey="state:draft:capture-dialog" inputRef={inputRef} onCaptured={(close) => close && onOpenChange(false)} />
-          <p className="mt-1 px-2 font-mono text-[12px] text-[#71717A]">
+          <p className="mt-1 px-2 font-mono text-[12px] text-[#4F5565]">
             <kbd>↵</kbd> inbox · <kbd>⇧&nbsp;↵</kbd> queued · <kbd>⌘&nbsp;↵</kbd> save &amp; close
           </p>
         </Dialog.Content>

@@ -80,12 +80,12 @@ function InlineSelect<T extends string | number>({
               </option>
             ))}
           </select>
-          <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-[#71717A] transition-colors duration-150 peer-hover:text-[#0A0A0A]" />
+          <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-[#4F5565] transition-colors duration-150 peer-hover:text-[#0A0A0A]" />
         </div>
-        {pending && <Loader2 className="size-4 shrink-0 animate-spin text-[#52525B]" aria-label="Saving…" />}
+        {pending && <Loader2 className="size-4 shrink-0 animate-spin text-[#3A3F4B]" aria-label="Saving…" />}
       </div>
       {describe && (
-        <p id={hintId} className="mt-1.5 text-sm leading-relaxed text-[#52525B]">
+        <p id={hintId} className="mt-1.5 text-sm leading-relaxed text-[#3A3F4B]">
           {describe(value)}
         </p>
       )}
@@ -232,7 +232,7 @@ export function TaskStatus({ taskId, columnId, columns }: { taskId: string; colu
             }}
             className={cn(
               "mi-press inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-semibold transition-colors duration-150 disabled:cursor-default [@media(pointer:coarse)]:h-11",
-              active ? (c.stateType === "done" ? "bg-accent text-white" : "bg-[#0A0A0A] text-white") : "text-[#52525B] hover:bg-black/[0.05] hover:text-[#0A0A0A]"
+              active ? (c.stateType === "done" ? "bg-accent text-white" : "app-selected") : "text-[#3A3F4B] hover:bg-black/[0.05] hover:text-[#0A0A0A]"
             )}
           >
             {active && pending && <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />}
@@ -292,11 +292,11 @@ export function TaskDue({ taskId, due }: { taskId: string; due: string | null })
           className="app-focus -ml-2 h-9 min-w-0 rounded-[10px] border border-transparent bg-white px-[7px] text-base font-medium text-[#0A0A0A] hover:border-black/[0.10]"
         />
         {value && (
-          <button type="button" onClick={() => save(null)} disabled={pending} className="h-9 rounded-[10px] px-2 text-sm text-[#52525B] hover:bg-black/[0.04] hover:text-[#0A0A0A] disabled:opacity-50">
+          <button type="button" onClick={() => save(null)} disabled={pending} className="h-9 rounded-[10px] px-2 text-sm text-[#3A3F4B] hover:bg-black/[0.04] hover:text-[#0A0A0A] disabled:opacity-50">
             Clear
           </button>
         )}
-        {pending && <Loader2 className="size-4 shrink-0 animate-spin text-[#52525B]" aria-label="Saving…" />}
+        {pending && <Loader2 className="size-4 shrink-0 animate-spin text-[#3A3F4B]" aria-label="Saving…" />}
       </div>
       {error && (
         <p id="task-due-error" aria-live="polite" className="mt-1.5 text-sm text-danger">
@@ -390,7 +390,7 @@ export function TaskDescription({ taskId, description, editable }: { taskId: str
           placeholder={"Notes…\n- [ ] a step"}
           className="app-input w-full resize-none rounded-[14px] px-3 py-2.5 text-[15px] leading-relaxed"
         />
-        <p className="mt-1 font-mono text-[12px] text-[#71717A]" aria-live="polite">
+        <p className="mt-1 font-mono text-[12px] text-[#4F5565]" aria-live="polite">
           {state === "saving" ? "saving…" : error ? <span className="text-danger">{error}</span> : "- [ ] makes a checkbox · ⌘↵ or click away saves"}
         </p>
       </div>
@@ -399,7 +399,7 @@ export function TaskDescription({ taskId, description, editable }: { taskId: str
 
   if (!text.trim()) {
     return editable ? (
-      <button type="button" onClick={() => setEditing(true)} className="mt-3 rounded-[10px] px-0 font-mono text-[13px] text-[#71717A] hover:text-[#0A0A0A]">
+      <button type="button" onClick={() => setEditing(true)} className="mt-3 rounded-[10px] px-0 font-mono text-[13px] text-[#4F5565] hover:text-[#0A0A0A]">
         + Add notes…
       </button>
     ) : null;
@@ -409,11 +409,11 @@ export function TaskDescription({ taskId, description, editable }: { taskId: str
   return (
     <div className="mt-3">
       {count && (
-        <p className="mb-1.5 font-mono text-[12px] tabular-nums text-[#71717A]">
+        <p className="mb-1.5 font-mono text-[12px] tabular-nums text-[#4F5565]">
           checklist {count.done}/{count.total}
         </p>
       )}
-      <div className="space-y-1 text-[15px] leading-relaxed text-[#52525B]">
+      <div className="space-y-1 text-[15px] leading-relaxed text-[#3A3F4B]">
         {lines.map((line, i) => {
           const item = items.find((x) => x.line === i);
           if (item) {
@@ -428,9 +428,9 @@ export function TaskDescription({ taskId, description, editable }: { taskId: str
                     setText(next);
                     if (!(await save(next))) setText(text);
                   }}
-                  className="mt-1 size-4 shrink-0 accent-[#D92B74]"
+                  className="mt-1 size-4 shrink-0 accent-[#3D4FE6]"
                 />
-                <span className={cn("break-words", item.done && "text-[#71717A] line-through")}>{item.text || " "}</span>
+                <span className={cn("break-words", item.done && "text-[#4F5565] line-through")}>{item.text || " "}</span>
               </label>
             );
           }
@@ -442,7 +442,7 @@ export function TaskDescription({ taskId, description, editable }: { taskId: str
         })}
       </div>
       {editable && (
-        <button type="button" onClick={() => setEditing(true)} className="mt-2 font-mono text-[12px] text-[#71717A] hover:text-[#0A0A0A]">
+        <button type="button" onClick={() => setEditing(true)} className="mt-2 font-mono text-[12px] text-[#4F5565] hover:text-[#0A0A0A]">
           edit notes{state === "saved" ? " · saved" : ""}
         </button>
       )}
@@ -503,7 +503,7 @@ export function TaskTags({ taskId, tags, suggestions }: { taskId: string; tags: 
           placeholder="reading, deep-work…"
           className="app-focus h-9 w-full min-w-0 rounded-[10px] border border-transparent bg-white px-[7px] text-base font-medium hover:border-black/[0.10]"
         />
-        {pending && <Loader2 className="size-4 shrink-0 animate-spin text-[#52525B]" aria-label="Saving…" />}
+        {pending && <Loader2 className="size-4 shrink-0 animate-spin text-[#3A3F4B]" aria-label="Saving…" />}
       </div>
       {hints.length > 0 && (
         <p className="mt-1 flex flex-wrap gap-1.5 pl-[7px]">
@@ -561,15 +561,15 @@ export function TaskDefer({ taskId, until, today }: { taskId: string; until: str
           className="app-focus -ml-2 h-9 rounded-[10px] border border-transparent bg-white px-[7px] text-base font-medium hover:border-black/[0.10]"
         />
         {value ? (
-          <button type="button" onClick={() => save(null)} disabled={pending} className="h-9 rounded-[10px] px-2 text-sm text-[#52525B] hover:bg-black/[0.04]">
+          <button type="button" onClick={() => save(null)} disabled={pending} className="h-9 rounded-[10px] px-2 text-sm text-[#3A3F4B] hover:bg-black/[0.04]">
             Clear
           </button>
         ) : (
-          <button type="button" onClick={() => save(tomorrow)} disabled={pending} className="h-9 rounded-[10px] px-2 text-sm text-[#52525B] hover:bg-black/[0.04]">
+          <button type="button" onClick={() => save(tomorrow)} disabled={pending} className="h-9 rounded-[10px] px-2 text-sm text-[#3A3F4B] hover:bg-black/[0.04]">
             Tomorrow
           </button>
         )}
-        {pending && <Loader2 className="size-4 animate-spin text-[#52525B]" aria-label="Saving…" />}
+        {pending && <Loader2 className="size-4 animate-spin text-[#3A3F4B]" aria-label="Saving…" />}
       </div>
       {error && <p className="mt-1.5 text-sm text-danger">{error}</p>}
     </div>
@@ -604,7 +604,7 @@ export function RepeatCustom({ taskId, rule }: { taskId: string; rule: string | 
     });
   return (
     <details className="mt-1.5 text-sm">
-      <summary className="cursor-pointer font-mono text-[12px] text-[#71717A] hover:text-[#0A0A0A]">custom…</summary>
+      <summary className="cursor-pointer font-mono text-[12px] text-[#4F5565] hover:text-[#0A0A0A]">custom…</summary>
       <div className="mt-2 space-y-2">
         <form
           className="flex flex-wrap items-center gap-1.5"
@@ -635,7 +635,7 @@ export function RepeatCustom({ taskId, rule }: { taskId: string; rule: string | 
                 aria-pressed={days.includes(d)}
                 aria-label={WEEKDAY_NAMES[d]}
                 onClick={() => setDays((list) => (list.includes(d) ? list.filter((x) => x !== d) : [...list, d]))}
-                className={cn("grid size-8 place-items-center rounded-full text-[12px] font-semibold [@media(pointer:coarse)]:size-10", days.includes(d) ? "bg-[#0A0A0A] text-white" : "app-btn")}
+                className={cn("grid size-8 place-items-center rounded-full text-[12px] font-semibold [@media(pointer:coarse)]:size-10", days.includes(d) ? "app-selected" : "app-btn")}
               >
                 {letter}
               </button>
@@ -668,7 +668,7 @@ export function SkipNext({ taskId }: { taskId: string }) {
           notify(r.ok ? `Skipped. Next due ${r.data.dueDay}.` : r.error);
         })
       }
-      className="mt-1.5 font-mono text-[12px] text-[#71717A] hover:text-[#0A0A0A] disabled:opacity-50"
+      className="mt-1.5 font-mono text-[12px] text-[#4F5565] hover:text-[#0A0A0A] disabled:opacity-50"
     >
       skip next →
     </button>

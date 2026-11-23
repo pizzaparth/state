@@ -11,15 +11,16 @@ import { CountUp } from "./count-up";
 import { TabLinks } from "./tab-links";
 
 /**
- * Product-surface primitives on three flat layers (styles/product.css), with the accent
- * (#D92B74) as the focal layer on top:
- *   Layer 0 page    #FFFFFF: rows, labels, ledgers sit directly on it
- *   Layer 1 Panel   #F5F5F5 + hairline (columns, metric panels, toolbars)
- *   Layer 2 card    #FFFFFF + stronger hairline (task cards, buttons, menus)
- *   Field / Rail    #FFFFFF inset + stronger hairline (inputs, progress rails, segmented controls)
+ * Product-surface primitives on the `.app-*` layers (styles/product.css). Inside the
+ * product the `.platform` tokens make them soft raised tiles on a grey page with a blue
+ * gradient accent as the focal layer:
+ *   Layer 0 page    #E4E9F0: rows, labels, ledgers sit directly on it
+ *   Layer 1 Panel   raised tile (columns, metric panels, toolbars)
+ *   Layer 2 card    lighter raised tile (task cards, buttons, menus)
+ *   Field / Rail    pressed in (inputs, progress rails, segmented controls)
  *
  * Type: titles and big numbers use DISPLAY, labels TICK (lib/type.ts). Copy stays to a
- * few words.
+ * few words; nothing below 12px.
  */
 export { DISPLAY, TICK };
 
@@ -45,7 +46,7 @@ export function PageHeader({
         <h1 data-depth="0.04" suppressHydrationWarning className={cn(DISPLAY, "mt-2 scroll-mt-24 break-words text-[clamp(2.25rem,6vw,4.25rem)] leading-[0.9] text-[#0A0A0A] text-balance")}>
           {title}
         </h1>
-        {description && <p className="mt-3 max-w-[56ch] text-base leading-relaxed text-[#52525B]">{description}</p>}
+        {description && <p className="mt-3 max-w-[56ch] text-base leading-relaxed text-[#3A3F4B]">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </header>
@@ -57,7 +58,7 @@ export function BackLink({ href, children }: { href: string; children: React.Rea
   return (
     <Link
       href={href as Route}
-      className="-ml-2 inline-flex min-h-9 items-center gap-1.5 rounded-[10px] px-2 text-base text-[#52525B] transition-colors hover:bg-black/[0.03] hover:text-[#0A0A0A]"
+      className="-ml-2 inline-flex min-h-9 items-center gap-1.5 rounded-[10px] px-2 text-base text-[#3A3F4B] transition-colors hover:bg-black/[0.03] hover:text-[#0A0A0A]"
     >
       <ArrowLeft className="size-4" aria-hidden="true" />
       {children}
@@ -84,12 +85,12 @@ export function Panel({
       {(title || aside) && (
         <div className="mb-4 flex items-baseline justify-between gap-4">
           {title && (
-            <h2 className={cn(TICK, "flex items-center gap-2 text-[#27272A]")}>
+            <h2 className={cn(TICK, "flex items-center gap-2 text-[#1E2129]")}>
               <span aria-hidden="true" className="panel-mark size-1.5 shrink-0 rounded-[2px] bg-accent" />
               {title}
             </h2>
           )}
-          {aside && <div className="font-mono text-sm tabular-nums text-[#71717A]">{aside}</div>}
+          {aside && <div className="font-mono text-sm tabular-nums text-[#4F5565]">{aside}</div>}
         </div>
       )}
       {children}
@@ -121,7 +122,7 @@ export function SegmentedLinks({ label, items }: { label: string; items: { href:
 
 export function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="app-field inline-flex max-w-full items-center truncate rounded-full px-2 py-0.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#52525B]">
+    <span className="app-field inline-flex max-w-full items-center truncate rounded-full px-2 py-0.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#3A3F4B]">
       {children}
     </span>
   );
@@ -142,7 +143,7 @@ export function PriorityMark({ priority }: { priority: string }) {
   return (
     <span
       title={`${p.label} priority`}
-      className={cn("inline-flex items-center gap-1 text-[13px]", critical ? "font-semibold text-danger" : "text-[#52525B]")}
+      className={cn("inline-flex items-center gap-1 text-[13px]", critical ? "font-semibold text-danger" : "text-[#3A3F4B]")}
     >
       <svg viewBox="0 0 12 14" aria-hidden="true" className="h-3.5 w-3">
         {[0, 1, 2].map((i) => (
@@ -171,7 +172,7 @@ export function DueLabel({ due }: { due: DueState }) {
     <span
       className={cn(
         "inline-flex items-center gap-1 text-[13px] tabular-nums",
-        due.tone === "overdue" ? "font-semibold text-danger" : due.tone === "today" ? "font-semibold text-[#0A0A0A]" : "text-[#52525B]"
+        due.tone === "overdue" ? "font-semibold text-danger" : due.tone === "today" ? "font-semibold text-[#0A0A0A]" : "text-[#3A3F4B]"
       )}
     >
       {due.tone === "overdue" && (
@@ -188,8 +189,8 @@ export function DueLabel({ due }: { due: DueState }) {
 export function EmptyState({ title, children, action }: { title: string; children?: React.ReactNode; action?: React.ReactNode }) {
   return (
     <div className="px-4 py-10 text-center">
-      <p className={cn(DISPLAY, "text-xl text-[#71717A]")}>{title}</p>
-      {children && <p className="mx-auto mt-2 max-w-[36ch] text-sm text-[#71717A]">{children}</p>}
+      <p className={cn(DISPLAY, "text-xl text-[#4F5565]")}>{title}</p>
+      {children && <p className="mx-auto mt-2 max-w-[36ch] text-sm text-[#4F5565]">{children}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
   );
@@ -220,18 +221,18 @@ export function Measure({
   const body = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <p className={cn(TICK, inverse ? "text-accent-muted" : "text-[#52525B]")}>{label}</p>
+        <p className={cn(TICK, inverse ? "text-accent-muted" : "text-[#3A3F4B]")}>{label}</p>
         {spark && <Sparkline values={spark} inverse={inverse} />}
       </div>
       <p className="mt-4 flex items-baseline gap-1.5">
         <span className={cn(DISPLAY, "text-[2.5rem] leading-none tabular-nums", inverse ? "text-accent-ink" : "text-[#0A0A0A]")}>
           <CountUp value={value} />
         </span>
-        {unit && <span className={cn("font-mono text-sm", inverse ? "text-accent-muted" : "text-[#52525B]")}>{unit}</span>}
+        {unit && <span className={cn("font-mono text-sm", inverse ? "text-accent-muted" : "text-[#3A3F4B]")}>{unit}</span>}
       </p>
       {delta && <p className="mt-2 font-mono text-sm tabular-nums">{delta}</p>}
       {formula && (
-        <p className={cn("mt-3 font-mono text-[12px] leading-relaxed", inverse ? "text-accent-muted" : "text-[#71717A]")}>{formula}</p>
+        <p className={cn("mt-3 font-mono text-[12px] leading-relaxed", inverse ? "text-accent-muted" : "text-[#4F5565]")}>{formula}</p>
       )}
     </>
   );

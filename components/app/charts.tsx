@@ -22,8 +22,8 @@ export function CycleHistogram({ durationsMs }: { durationsMs: number[] }) {
     <ul className="space-y-2" aria-label="Cycle time distribution">
       {BUCKETS.map((b, i) => (
         <li key={b.label} className="grid grid-cols-[3.5rem_minmax(0,1fr)_2rem] items-center gap-3 text-sm">
-          <span className="tabular-nums text-[#52525B]">{b.label}</span>
-          <span className="app-field h-2.5 overflow-hidden rounded-full">
+          <span className="tabular-nums text-[#3A3F4B]">{b.label}</span>
+          <span className="app-field h-3 overflow-hidden rounded-full">
             <span className="block h-full origin-left animate-grow-x rounded-full bg-accent" style={{ transform: `scaleX(${counts[i] / max})` }} />
           </span>
           <span className="text-right font-mono tabular-nums text-[#0A0A0A]">{counts[i]}</span>
@@ -43,44 +43,54 @@ export function Sparkline({ values, inverse }: { values: number[]; inverse?: boo
   const max = Math.max(...values);
   const span = max - min || 1;
   const points = values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - 2 - ((v - min) / span) * (h - 4)).toFixed(1)}`);
-  const color = inverse ? "#FFFFFF" : "#D92B74";
+  // var(--accent): pink on the landing page, blue in the product
+  const color = inverse ? "#FFFFFF" : "var(--accent)";
+  const ring = inverse ? "var(--accent)" : "var(--app-panel)";
+  const fadeId = `${clipId}-fade`.replace(/[^a-zA-Z0-9-]/g, "");
+  const lastY = points.at(-1)!.split(",")[1];
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="h-7 w-24 shrink-0" preserveAspectRatio="none" aria-hidden="true">
-      {/* The line draws in left to right; the end dot lands after it */}
+    <svg viewBox={`0 -2 ${w + 4} ${h + 4}`} className="h-8 w-24 shrink-0 overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+      {/* The line draws in left to right over a wash that fades to the baseline */}
       <defs>
         <clipPath id={clipId}>
-          <rect x={-3} y={-3} width={w + 6} height={h + 6} className="app-mark origin-left animate-grow-x" />
+          <rect x={-3} y={-5} width={w + 10} height={h + 10} className="app-mark origin-left animate-grow-x" />
         </clipPath>
+        <linearGradient id={fadeId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" style={{ stopColor: color, stopOpacity: inverse ? 0.35 : 0.28 }} />
+          <stop offset="100%" style={{ stopColor: color, stopOpacity: 0 }} />
+        </linearGradient>
       </defs>
       <g clipPath={`url(#${clipId})`}>
-        <polyline points={points.join(" ")} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <circle cx={w} cy={points.at(-1)!.split(",")[1]} r="2.5" fill={color} />
+        <polygon points={`0,${h} ${points.join(" ")} ${w},${h}`} fill={`url(#${fadeId})`} />
+        <polyline points={points.join(" ")} fill="none" style={{ stroke: color }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        <circle cx={w} cy={lastY} r="3.5" style={{ fill: color, stroke: ring }} strokeWidth="2" vectorEffect="non-scaling-stroke" />
       </g>
     </svg>
   );
 }
 
-const MIX_FILL = ["#D92B74", "#0A0A0A", "#A1A1AA", "#E4E4E7"];
+// Lightness steps: accent gradient, navy, slate, pale slate
+const MIX_FILL = ["linear-gradient(90deg, #5466F7, #2C3BC9)", "#2B3150", "#7C88AD", "#BCC4D6"];
 
 /** 100% stacked bar with a labelled row per part, so share never relies on fill alone. */
 export function MixBar({ label, parts }: { label: string; parts: { name: string; value: number; detail?: string }[] }) {
   const total = parts.reduce((s, p) => s + p.value, 0);
-  if (total === 0) return <p className="font-mono text-sm text-[#71717A]">No data</p>;
+  if (total === 0) return <p className="font-mono text-sm text-[#4F5565]">No data</p>;
   return (
     <div>
-      <div className="flex h-3 gap-[2px] overflow-hidden rounded-full" role="img" aria-label={`${label}: ${parts.map((p) => `${p.name} ${formatNumber((p.value / total) * 100)}%`).join(", ")}`}>
+      <div className="flex h-3 gap-[3px]" role="img" aria-label={`${label}: ${parts.map((p) => `${p.name} ${formatNumber((p.value / total) * 100)}%`).join(", ")}`}>
         {parts.map((p, i) =>
           p.value > 0 ? (
-            <span key={p.name} className="h-full origin-left animate-grow-x first:rounded-l-full last:rounded-r-full" style={{ flexGrow: p.value, backgroundColor: MIX_FILL[i % MIX_FILL.length] }} />
+            <span key={p.name} className="h-full min-w-[3px] origin-left animate-grow-x rounded-full" style={{ flexGrow: p.value, background: MIX_FILL[i % MIX_FILL.length] }} />
           ) : null
         )}
       </div>
       <ul className="mt-3 space-y-1.5">
         {parts.map((p, i) => (
           <li key={p.name} className="grid grid-cols-[0.75rem_minmax(0,1fr)_auto_3.5rem] items-center gap-2.5 text-sm">
-            <span className="size-2.5 rounded-[2px] border border-black/10" style={{ backgroundColor: MIX_FILL[i % MIX_FILL.length] }} aria-hidden="true" />
+            <span className="size-2.5 rounded-full" style={{ background: MIX_FILL[i % MIX_FILL.length] }} aria-hidden="true" />
             <span className="truncate text-[#0A0A0A]">{p.name}</span>
-            <span className="font-mono text-[12px] tabular-nums text-[#71717A]">{p.detail}</span>
+            <span className="font-mono text-[12px] tabular-nums text-[#4F5565]">{p.detail}</span>
             <span className="text-right font-mono tabular-nums text-[#0A0A0A]">{formatNumber((p.value / total) * 100)}%</span>
           </li>
         ))}
@@ -92,12 +102,12 @@ export function MixBar({ label, parts }: { label: string; parts: { name: string;
 /** Dense grid of named statistics, each with its formula. */
 export function StatGrid({ stats }: { stats: { label: string; value: string; formula: string }[] }) {
   return (
-    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-black/[0.05] bg-black/[0.05] sm:grid-cols-3 xl:grid-cols-4">
+    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
       {stats.map((s) => (
-        <div key={s.label} className="min-w-0 bg-white px-4 py-3.5">
-          <dt className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-[#52525B]">{s.label}</dt>
+        <div key={s.label} className="app-card min-w-0 px-4 py-3.5">
+          <dt className="font-mono text-[12px] font-medium uppercase tracking-[0.16em] text-[#3A3F4B]">{s.label}</dt>
           <dd className="mt-1.5 font-sans text-xl font-semibold tabular-nums tracking-[-0.02em] text-[#0A0A0A]">{s.value}</dd>
-          <dd className="mt-1 truncate font-mono text-[11px] text-[#71717A]" title={s.formula}>
+          <dd className="mt-1 truncate font-mono text-[12px] text-[#4F5565]" title={s.formula}>
             {s.formula}
           </dd>
         </div>

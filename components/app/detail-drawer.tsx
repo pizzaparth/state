@@ -123,10 +123,10 @@ export function DetailDrawer({
         <Dialog.Overlay className="fixed inset-0 z-50 app-scrim data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content
           className={cn(
-            "fixed inset-y-0 right-0 z-50 flex w-full max-w-[34rem] flex-col overflow-hidden bg-white outline-none",
+            "fixed inset-y-0 right-0 z-50 flex w-full max-w-[34rem] flex-col overflow-hidden outline-none app-overlay border-0",
             "pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]",
             "data-[state=closed]:animate-drawer-out data-[state=open]:animate-drawer-in",
-            "sm:inset-y-2 sm:right-2 sm:rounded-[24px] sm:border sm:border-black/[0.08] sm:pb-0 sm:pt-0"
+            "sm:inset-y-2 sm:right-2 sm:rounded-[24px] sm:border sm:pb-0 sm:pt-0"
           )}
           aria-describedby={undefined}
           data-panel={param}
@@ -148,16 +148,16 @@ export function DetailDrawer({
               scrolled ? "border-black/[0.08]" : "border-transparent"
             )}
           >
-            <Dialog.Title className={cn(TICK, "inline-flex shrink-0 items-center gap-2 rounded-full bg-[#F5F5F5] py-1 pl-2.5 pr-3 text-[11px] text-[#0A0A0A]")}>
+            <Dialog.Title className={cn(TICK, "inline-flex shrink-0 items-center gap-2 rounded-full bg-[#F5F5F5] py-1 pl-2.5 pr-3 text-[12px] text-[#0A0A0A]")}>
               <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" />
               {title}
             </Dialog.Title>
             {crumbs.length > 0 && (
               <nav aria-label="Location" className="min-w-0 flex-1">
-                <ol className="flex min-w-0 items-center gap-1 text-sm text-[#71717A]">
+                <ol className="flex min-w-0 items-center gap-1 text-sm text-[#4F5565]">
                   {crumbs.map((c, i) => (
                     <li key={`${c}-${i}`} className={cn("flex min-w-0 items-center gap-1", i === crumbs.length - 1 && "text-[#0A0A0A]")}>
-                      {i > 0 && <ChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-[#A1A1AA]" />}
+                      {i > 0 && <ChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-[#7D8394]" />}
                       <span className="truncate">{c}</span>
                     </li>
                   ))}
@@ -167,19 +167,19 @@ export function DetailDrawer({
             <div className="ml-auto flex shrink-0 items-center gap-1">
               {nav && (
                 <>
-                  <button type="button" disabled={!nav.prevId} onClick={() => goTo(nav.prevId)} aria-label="Previous (K)" title="Previous (K)" className="mi-press grid size-9 place-items-center rounded-full text-[#52525B] hover:bg-black/[0.05] disabled:opacity-30">
+                  <button type="button" disabled={!nav.prevId} onClick={() => goTo(nav.prevId)} aria-label="Previous (K)" title="Previous (K)" className="mi-press grid size-9 place-items-center rounded-full text-[#3A3F4B] hover:bg-black/[0.05] disabled:opacity-30">
                     <ChevronUp className="size-4" aria-hidden="true" />
                   </button>
-                  <button type="button" disabled={!nav.nextId} onClick={() => goTo(nav.nextId)} aria-label="Next (J)" title="Next (J)" className="mi-press grid size-9 place-items-center rounded-full text-[#52525B] hover:bg-black/[0.05] disabled:opacity-30">
+                  <button type="button" disabled={!nav.nextId} onClick={() => goTo(nav.nextId)} aria-label="Next (J)" title="Next (J)" className="mi-press grid size-9 place-items-center rounded-full text-[#3A3F4B] hover:bg-black/[0.05] disabled:opacity-30">
                     <ChevronDown className="size-4" aria-hidden="true" />
                   </button>
                 </>
               )}
               <CopyLinkButton />
-              <kbd aria-hidden="true" className="mx-1 hidden rounded-[6px] border border-black/[0.10] px-1.5 py-0.5 font-mono text-[11px] text-[#71717A] [@media(pointer:fine)]:inline">
+              <kbd aria-hidden="true" className="mx-1 hidden rounded-[6px] border border-black/[0.10] px-1.5 py-0.5 font-mono text-[12px] text-[#4F5565] [@media(pointer:fine)]:inline">
                 Esc
               </kbd>
-              <Dialog.Close className="mi-press grid size-9 place-items-center rounded-full text-[#52525B] transition-colors hover:bg-black/[0.05] hover:text-[#0A0A0A]" aria-label={`Close ${title.toLowerCase()}`}>
+              <Dialog.Close className="mi-press grid size-9 place-items-center rounded-full text-[#3A3F4B] transition-colors hover:bg-black/[0.05] hover:text-[#0A0A0A]" aria-label={`Close ${title.toLowerCase()}`}>
                 <X className="size-[18px]" aria-hidden="true" />
               </Dialog.Close>
             </div>
@@ -211,7 +211,7 @@ function CopyLinkButton() {
           notify("Could not copy the link.");
         }
       }}
-      className="mi-press grid size-9 place-items-center rounded-full text-[#52525B] transition-colors hover:bg-black/[0.05] hover:text-[#0A0A0A]"
+      className="mi-press grid size-9 place-items-center rounded-full text-[#3A3F4B] transition-colors hover:bg-black/[0.05] hover:text-[#0A0A0A]"
     >
       {copied ? <Check className="mi-pop size-4 text-accent" aria-hidden="true" /> : <Link2 className="size-4" aria-hidden="true" />}
     </button>

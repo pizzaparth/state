@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { TICK } from "./primitives";
 
 const iconBtn =
-  "mi-press grid size-8 shrink-0 place-items-center rounded-full [@media(pointer:coarse)]:size-11 text-[#52525B] transition-colors duration-150 hover:bg-black/[0.05] hover:text-[#0A0A0A] focus-visible:outline-2";
+  "mi-press grid size-8 shrink-0 place-items-center rounded-full [@media(pointer:coarse)]:size-11 text-[#3A3F4B] transition-colors duration-150 hover:bg-black/[0.05] hover:text-[#0A0A0A] focus-visible:outline-2";
 
 /**
  * Sort keys for the board, in priority order: each key flips direction, moves earlier or
@@ -25,8 +25,8 @@ export function BoardSortBar({ sort, onChange }: { sort: SortKey[]; onChange: (n
   return (
     <>
       <div className="flex w-full min-w-0 flex-wrap items-center gap-2 xl:ml-auto xl:w-auto xl:justify-end xl:pl-2">
-        <span className={cn(TICK, "px-1 text-[11px] text-[#71717A]")}>Sort</span>
-        {sort.length === 0 && <span className="px-1 text-[15px] text-[#52525B]">Manual</span>}
+        <span className={cn(TICK, "px-1 text-[12px] text-[#4F5565]")}>Sort</span>
+        {sort.length === 0 && <span className="px-1 text-[15px] text-[#3A3F4B]">Manual</span>}
         <ol className="contents">
           {sort.map((key, i) => {
             const meta = SORT_FIELDS[key.field];
@@ -34,7 +34,7 @@ export function BoardSortBar({ sort, onChange }: { sort: SortKey[]; onChange: (n
             return (
               <li key={key.field} className="app-card mi-pop inline-flex h-10 min-w-0 items-center gap-0.5 rounded-full pl-3 pr-1">
                 {sort.length > 1 && (
-                  <span aria-hidden="true" className="mr-1.5 font-mono text-[12px] tabular-nums text-[#71717A]">
+                  <span aria-hidden="true" className="mr-1.5 font-mono text-[12px] tabular-nums text-[#4F5565]">
                     {i + 1}
                   </span>
                 )}
@@ -43,7 +43,7 @@ export function BoardSortBar({ sort, onChange }: { sort: SortKey[]; onChange: (n
                   type="button"
                   onClick={() => flip(i)}
                   aria-label={`${meta.label}: ${meta[key.dir].toLowerCase()}. Switch to ${meta[nextDir].toLowerCase()}`}
-                  className="mi-press ml-1 inline-flex h-8 items-center [@media(pointer:coarse)]:h-11 gap-1 rounded-full px-2 text-sm text-[#52525B] transition-colors duration-150 hover:bg-black/[0.05] hover:text-[#0A0A0A] focus-visible:outline-2"
+                  className="mi-press ml-1 inline-flex h-8 items-center [@media(pointer:coarse)]:h-11 gap-1 rounded-full px-2 text-sm text-[#3A3F4B] transition-colors duration-150 hover:bg-black/[0.05] hover:text-[#0A0A0A] focus-visible:outline-2"
                 >
                   {key.dir === "asc" ? <ArrowUp aria-hidden="true" className="size-3.5" /> : <ArrowDown aria-hidden="true" className="size-3.5" />}
                   <span className="whitespace-nowrap">{meta[key.dir]}</span>
@@ -79,7 +79,7 @@ export function BoardSortBar({ sort, onChange }: { sort: SortKey[]; onChange: (n
                     className="flex cursor-pointer items-baseline justify-between gap-4 rounded-[10px] px-3 py-2 text-[#0A0A0A] outline-none data-[highlighted]:bg-black/[0.05]"
                   >
                     {SORT_FIELDS[field].label}
-                    <span className="font-mono text-[12px] text-[#71717A]">{SORT_FIELDS[field][SORT_FIELDS[field].defaultDir]}</span>
+                    <span className="font-mono text-[12px] text-[#4F5565]">{SORT_FIELDS[field][SORT_FIELDS[field].defaultDir]}</span>
                   </Menu.Item>
                 ))}
               </Menu.Content>
@@ -90,13 +90,13 @@ export function BoardSortBar({ sort, onChange }: { sort: SortKey[]; onChange: (n
           <button
             type="button"
             onClick={() => onChange([])}
-            className="mi-press inline-flex h-10 items-center rounded-full px-3 text-[15px] font-medium text-[#52525B] transition-colors duration-150 hover:bg-black/[0.05] hover:text-[#0A0A0A] focus-visible:outline-2"
+            className="mi-press inline-flex h-10 items-center rounded-full px-3 text-[15px] font-medium text-[#3A3F4B] transition-colors duration-150 hover:bg-black/[0.05] hover:text-[#0A0A0A] focus-visible:outline-2"
           >
             Manual order
           </button>
         )}
       </div>
-      {sort.length > 0 && <p className="basis-full px-2 font-mono text-[12px] text-[#71717A] xl:text-right">drag moves across columns · order follows sort</p>}
+      {sort.length > 0 && <p className="basis-full px-2 font-mono text-[12px] text-[#4F5565] xl:text-right">drag moves across columns · order follows sort</p>}
       <p aria-live="polite" className="sr-only">
         {describeBoardSort(sort)}
       </p>

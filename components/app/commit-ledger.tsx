@@ -40,10 +40,10 @@ export function CommitLedger({
         return (
           <section key={group.key} aria-label={grouped ? dayLabel(group.key, today) : undefined}>
             {grouped && (
-              <h3 className="mb-1 flex items-baseline justify-between px-3 text-[13px] font-semibold uppercase tracking-[0.12em] text-[#52525B]">
+              <h3 className="mb-1 flex items-baseline justify-between px-3 text-[13px] font-semibold uppercase tracking-[0.12em] text-[#3A3F4B]">
                 <span>
                   {dayLabel(group.key, today)}
-                  <span className="ml-2 font-mono text-[11px] font-normal tracking-normal text-[#71717A]" title={`Times in ${tz}`}>
+                  <span className="ml-2 font-mono text-[12px] font-normal tracking-normal text-[#4F5565]" title={`Times in ${tz}`}>
                     {zoneAbbreviation(tz, group.rows[0].createdAt)}
                   </span>
                 </span>
@@ -58,7 +58,7 @@ export function CommitLedger({
               {group.rows.map((c) => (
                 <li key={c.id}>
                   <Row href={hrefFor?.(c.id)}>
-                    <time dateTime={c.createdAt.toISOString()} className="font-mono text-sm tabular-nums text-[#52525B]">
+                    <time dateTime={c.createdAt.toISOString()} className="font-mono text-sm tabular-nums text-[#3A3F4B]">
                       {formatTime(c.createdAt, tz)}
                     </time>
                     <span
@@ -67,7 +67,7 @@ export function CommitLedger({
                     />
                     <span className="min-w-0">
                       <span className="block truncate text-base font-medium text-[#0A0A0A]">{c.message}</span>
-                      <span className="block truncate text-sm text-[#71717A]">
+                      <span className="block truncate text-sm text-[#4F5565]">
                         {[c.projectName, c.source === "manual" ? "manual" : null].filter(Boolean).join(", ")}
                       </span>
                     </span>

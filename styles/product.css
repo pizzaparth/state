@@ -1,6 +1,7 @@
 /* ==========================================================================
-   State product surfaces: white #FFFFFF with #F5F5F5 panels, flat.
-   Depth comes from tonal steps and 1px hairlines, never from shadows.
+   State product surfaces. Every recipe reads its fill, edge and shadow from
+   styles/tokens.css: flat white/grey on marketing (the landing page's app pictures),
+   soft raised tiles with a blue accent inside the product (`.platform`).
      .app-panel    Level 1: board columns, metric panels, toolbars
      .app-card     Level 2: cards and draggable tasks
      .app-btn      Level 2: secondary controls; pressed sinks to the page
@@ -15,46 +16,58 @@
 /* Opaque, no backdrop-filter: a blurred panel inside the scrolling content is re-blurred
    on every scroll frame, which made scrolling janky on Safari and low-power GPUs */
 .app-panel {
-  background-color: #F5F5F5;
-  border: 1px solid var(--app-line);
+  background: var(--app-panel-bg);
+  border: 1px solid;
+  border-color: var(--app-panel-border);
   border-radius: var(--radius-card);
+  box-shadow: var(--app-panel-shadow);
 }
 
 .app-card {
-  background-color: var(--app-raised);
-  border: 1px solid var(--app-line-strong);
+  background: var(--app-card-bg);
+  border: 1px solid;
+  border-color: var(--app-card-border);
   border-radius: var(--radius-task);
+  box-shadow: var(--app-card-shadow);
   transition:
     border-color var(--duration-fast) var(--ease-restrained),
     background-color var(--duration-fast) var(--ease-restrained),
+    box-shadow var(--duration-normal) var(--ease-restrained),
     transform var(--duration-normal) var(--ease-restrained);
 }
 
 .app-btn {
-  background-color: var(--app-raised);
-  border: 1px solid var(--app-line-strong);
+  background: var(--app-card-bg);
+  border: 1px solid;
+  border-color: var(--app-card-border);
   border-radius: var(--radius-control);
+  box-shadow: var(--app-btn-shadow);
   color: var(--app-text-primary);
   transition:
     border-color var(--duration-fast) var(--ease-restrained),
     background-color var(--duration-fast) var(--ease-restrained),
+    box-shadow var(--duration-fast) var(--ease-restrained),
     transform var(--duration-fast) var(--ease-restrained);
 }
 
 .app-btn:hover {
-  background-color: var(--app-raised-hover);
+  background: var(--app-raised-hover);
   border-color: rgba(0, 0, 0, 0.18);
 }
 
-/* Press: fill drops to the page and the control gives slightly under the pointer */
+/* Press: the control sinks into the surface and gives slightly under the pointer */
 .app-btn:active {
-  background-color: var(--app-bg);
+  background: var(--app-bg);
+  box-shadow: var(--app-btn-shadow-active);
   transform: scale(0.97);
 }
 
 /* Inverse buttons (+ COMMIT) share the same press response */
 button.app-inverse {
-  transition: transform var(--duration-fast) var(--ease-restrained), background-color var(--duration-fast) var(--ease-restrained);
+  transition:
+    transform var(--duration-fast) var(--ease-restrained),
+    background-color var(--duration-fast) var(--ease-restrained),
+    box-shadow var(--duration-fast) var(--ease-restrained);
 }
 
 button.app-inverse:active {
@@ -62,13 +75,15 @@ button.app-inverse:active {
 }
 
 .app-field {
-  background-color: var(--app-field);
+  background-color: var(--app-field-bg);
   border: 1px solid var(--app-line-strong);
   border-radius: var(--radius-control);
+  box-shadow: var(--app-field-shadow);
 }
 
 .app-input {
-  background-color: var(--app-field);
+  background-color: var(--app-field-bg);
+  box-shadow: var(--app-field-shadow);
   border: 1px solid var(--app-line-strong);
   border-radius: var(--radius-input);
   color: var(--app-text-primary);
@@ -89,13 +104,22 @@ button.app-inverse:active {
 }
 
 .app-inverse {
+  background: var(--accent-fill);
   background-color: var(--app-inverse);
+  box-shadow: var(--app-inverse-shadow);
   color: var(--app-inverse-text);
 }
 
 button.app-inverse:hover,
 a.app-inverse:hover {
   background-color: var(--accent-hover);
+}
+
+/* Selected state of segmented controls, tabs, toggles and the phone column switcher:
+   black on marketing, the accent gradient in the product */
+.app-selected {
+  background: #0A0A0A;
+  color: #FFFFFF;
 }
 
 .app-accent-panel {
@@ -111,14 +135,15 @@ a.app-inverse:hover {
 }
 
 .app-overlay {
-  background-color: var(--app-bg);
+  background: var(--app-overlay-bg);
   border: 1px solid var(--app-line-strong);
+  box-shadow: var(--app-overlay-shadow);
 }
 
 /* Scrim under dialogs, drawers and the palette. Opaque tint only: a backdrop-filter blur
    re-renders the page under it on every frame. */
 .app-scrim {
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: var(--app-scrim-bg);
 }
 
 .app-select {
@@ -127,8 +152,8 @@ a.app-inverse:hover {
   min-width: 0;
   padding-left: 0.75rem;
   font-size: 1rem;
-  border-radius: 14px;
-  background-color: var(--app-field);
+  background-color: var(--app-field-bg);
+  box-shadow: var(--app-field-shadow);
   border: 1px solid var(--app-line-strong);
   border-radius: var(--radius-control);
   color: var(--app-text-primary);
@@ -178,4 +203,87 @@ select.app-field:disabled {
 /* SVG chart marks: scale from their own box (bars from the baseline, reveals from the left) */
 .app-mark {
   transform-box: fill-box;
+}
+
+/* ==========================================================================
+   Product theme extras (`.platform`, see styles/tokens.css)
+   ========================================================================== */
+:root:has(.platform) {
+  background-color: var(--app-bg);
+}
+
+/* Beats the root layout's bg-white and lifts body copy to medium weight, so every line
+   reads boldly on the grey page */
+:root:has(.platform) body {
+  background-color: var(--app-bg);
+  color: var(--app-text-primary);
+  font-weight: 500;
+}
+
+/* Accent fills become the blue gradient: progress rails, bars, chips, dots, + COMMIT */
+:root:has(.platform) .bg-accent,
+:root:has(.platform) .app-selected {
+  background: var(--accent-fill);
+}
+
+:root:has(.platform) .app-selected {
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(61, 79, 230, 0.3);
+}
+
+/* Raised tile behind the active sidebar item (slides between items) */
+.app-nav-pill {
+  background: #0A0A0A;
+}
+
+:root:has(.platform) .app-nav-pill {
+  background: var(--app-card-bg);
+  border: 1px solid;
+  border-color: var(--app-card-border);
+  box-shadow: var(--app-card-shadow);
+}
+
+/* Inside panels, bare white blocks (stat cells, inline fields) take the tile fill */
+:root:has(.platform) .app-panel .bg-white {
+  background-color: var(--app-raised);
+}
+
+:root:has(.platform) .app-card:hover,
+:root:has(.platform) .app-card:focus-within {
+  background: var(--app-raised-hover);
+  box-shadow: var(--app-card-shadow-hover);
+}
+
+:root:has(.platform) button.app-inverse:hover,
+:root:has(.platform) a.app-inverse:hover {
+  filter: brightness(0.92);
+}
+
+:root:has(.platform) .app-btn:hover {
+  border-color: var(--neu-edge);
+}
+
+:root:has(.platform) .app-input:focus-visible,
+:root:has(.platform) .app-select:focus-visible,
+:root:has(.platform) .app-focus:focus-visible {
+  outline: 3px solid var(--accent-soft);
+}
+
+:root:has(.platform) select.app-select,
+:root:has(.platform) select.app-field {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%233A3F4B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+}
+
+:root:has(.platform) ::selection {
+  background-color: var(--accent);
+  color: #FFFFFF;
+}
+
+/* Active sidebar item: dark label on the raised tile, icon in the accent */
+.platform-nav-active {
+  color: var(--app-text-primary);
+}
+
+.platform-nav-active svg {
+  color: var(--accent);
 }

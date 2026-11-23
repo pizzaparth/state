@@ -76,14 +76,14 @@ const CTX: Kit = Ctx;
 export const menuContent =
   "app-overlay z-50 min-w-48 rounded-[16px] p-1.5 text-base origin-[var(--radix-dropdown-menu-content-transform-origin)] data-[state=closed]:animate-menu-out data-[state=open]:animate-menu-in";
 export const menuItem =
-  "flex cursor-pointer items-center gap-2 rounded-[10px] px-3 py-2 text-[#0A0A0A] outline-none data-[highlighted]:bg-black/[0.05] data-[disabled]:cursor-default data-[disabled]:text-[#A1A1AA] [@media(pointer:coarse)]:min-h-11";
+  "flex cursor-pointer items-center gap-2 rounded-[10px] px-3 py-2 text-[#0A0A0A] outline-none data-[highlighted]:bg-black/[0.05] data-[disabled]:cursor-default data-[disabled]:text-[#7D8394] [@media(pointer:coarse)]:min-h-11";
 
 function CardMenuItems({ kit: K, card, columns, done, onCommand }: { kit: Kit; card: BoardCard; columns: BoardColumn[]; done: boolean; onCommand: (c: CardCommand) => void }) {
   const sub = (label: string, children: React.ReactNode) => (
     <K.Sub>
       <K.SubTrigger className={cn(menuItem, "justify-between data-[state=open]:bg-black/[0.05]")}>
         {label}…
-        <ChevronRight aria-hidden="true" className="size-4 text-[#71717A]" />
+        <ChevronRight aria-hidden="true" className="size-4 text-[#4F5565]" />
       </K.SubTrigger>
       <K.Portal>
         <K.SubContent sideOffset={4} className={menuContent}>
@@ -127,7 +127,7 @@ function CardMenuItems({ kit: K, card, columns, done, onCommand }: { kit: Kit; c
           "Weight",
           WEIGHT_LEVELS.map((w) => (
             <K.Item key={w.value} onSelect={() => onCommand({ type: "weight", weight: w.value })} className={menuItem}>
-              {w.label} <span className="font-mono text-sm text-[#71717A]">+{w.value}</span>
+              {w.label} <span className="font-mono text-sm text-[#4F5565]">+{w.value}</span>
               {current(card.weight === w.value)}
             </K.Item>
           ))
@@ -233,7 +233,7 @@ export function SortableCard({
             <Menu.Root>
               <Menu.Trigger
                 aria-label={`Actions for “${card.title}”`}
-                className="absolute right-2 top-2 z-[2] grid size-7 place-items-center rounded-full text-[#52525B] transition-colors hover:bg-black/[0.05] hover:text-[#0A0A0A] data-[state=open]:bg-black/[0.05] [@media(pointer:coarse)]:size-11 [@media(pointer:coarse)]:right-0 [@media(pointer:coarse)]:top-0"
+                className="absolute right-2 top-2 z-[2] grid size-7 place-items-center rounded-full text-[#3A3F4B] transition-colors hover:bg-black/[0.05] hover:text-[#0A0A0A] data-[state=open]:bg-black/[0.05] [@media(pointer:coarse)]:size-11 [@media(pointer:coarse)]:right-0 [@media(pointer:coarse)]:top-0"
               >
                 <MoreHorizontal className="size-4" aria-hidden="true" />
               </Menu.Trigger>
@@ -277,7 +277,7 @@ export function CardFace({
   onLinkClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }) {
   const title = (
-    <span className={cn("block text-base font-medium leading-snug", done ? "text-[#52525B] line-through decoration-black/30" : "text-[#0A0A0A]")}>{card.title}</span>
+    <span className={cn("block text-base font-medium leading-snug", done ? "text-[#3A3F4B] line-through decoration-black/30" : "text-[#0A0A0A]")}>{card.title}</span>
   );
   return (
     <div
@@ -302,10 +302,10 @@ export function CardFace({
           title="Mark done"
           className="group/done absolute left-1.5 top-1.5 z-[2] grid size-7 place-items-center rounded-full [@media(pointer:coarse)]:left-0 [@media(pointer:coarse)]:top-0 [@media(pointer:coarse)]:size-11"
         >
-          <span aria-hidden="true" className="app-field size-3 rounded-full border border-black/[0.10] transition-transform duration-150 group-hover/done:scale-125 group-hover/done:border-accent" />
+          <span aria-hidden="true" className="app-field size-3.5 rounded-full border-[1.5px] border-[#4F5565]/60 transition-transform duration-150 group-hover/done:scale-125 group-hover/done:border-accent" />
         </button>
       ) : (
-        <span aria-hidden="true" className="app-field absolute left-3.5 top-[17px] size-3 rounded-full border border-black/[0.10]" />
+        <span aria-hidden="true" className="app-field absolute left-3.5 top-[17px] size-3.5 rounded-full border-[1.5px] border-[#4F5565]/60" />
       )}
       {selected && (
         <span className="absolute -left-1.5 -top-1.5 z-[3] grid size-5 place-items-center rounded-full bg-[#0A0A0A] text-white">
@@ -329,42 +329,42 @@ export function CardFace({
           title
         )}
       </div>
-      {card.projectName && <p className={cn(TICK, "mt-1.5 truncate text-[11px] text-[#71717A]")}>{card.projectName}</p>}
+      {card.projectName && <p className={cn(TICK, "mt-1.5 truncate text-[12px] text-[#4F5565]")}>{card.projectName}</p>}
       {card.tags.length > 0 && (
         <p className="mt-2 flex min-w-0 flex-wrap gap-1">
           {card.tags.slice(0, 2).map((t) => (
-            <span key={t} className="app-field max-w-[8rem] truncate rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#52525B]">
+            <span key={t} className="app-field max-w-[8rem] truncate rounded-full px-2 py-0.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-[#3A3F4B]">
               {t}
             </span>
           ))}
-          {card.tags.length > 2 && <span className="px-1 font-mono text-[11px] text-[#71717A]">+{card.tags.length - 2}</span>}
+          {card.tags.length > 2 && <span className="px-1 font-mono text-[12px] text-[#4F5565]">+{card.tags.length - 2}</span>}
         </p>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        {card.deferLabel && !done && <span className="font-mono text-[12px] text-[#52525B]">from {card.deferLabel}</span>}
+        {card.deferLabel && !done && <span className="font-mono text-[12px] text-[#3A3F4B]">from {card.deferLabel}</span>}
         {card.due && !done && <DueLabel due={card.due} />}
         <PriorityMark priority={card.priority} />
         {card.recurring && (
-          <span title="Repeats" className="text-[#71717A]">
+          <span title="Repeats" className="text-[#4F5565]">
             <Repeat aria-hidden="true" className="size-3.5" />
             <span className="sr-only">Repeats</span>
           </span>
         )}
         {card.checklist ? (
-          <span title="Checklist" className="inline-flex items-center gap-1 font-mono text-[12px] tabular-nums text-[#52525B]">
+          <span title="Checklist" className="inline-flex items-center gap-1 font-mono text-[12px] tabular-nums text-[#3A3F4B]">
             <ListChecks aria-hidden="true" className="size-3.5" />
             {card.checklist.done}/{card.checklist.total}
           </span>
         ) : (
           card.hasNote && (
-            <span title="Has notes" className="text-[#71717A]">
+            <span title="Has notes" className="text-[#4F5565]">
               <StickyNote aria-hidden="true" className="size-3.5" />
               <span className="sr-only">Has notes</span>
             </span>
           )
         )}
         {!done && card.daysInColumn > 2 && (
-          <span title={`${card.daysInColumn} days in this column`} className="font-mono text-[12px] tabular-nums text-[#71717A]">
+          <span title={`${card.daysInColumn} days in this column`} className="font-mono text-[12px] tabular-nums text-[#4F5565]">
             {card.daysInColumn}d
           </span>
         )}

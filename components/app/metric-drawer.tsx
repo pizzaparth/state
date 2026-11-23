@@ -33,7 +33,7 @@ function Equation({ lines }: { lines: [string, string][] }) {
     <dl className="app-panel space-y-2 rounded-[20px] p-4 font-mono text-[14px] tabular-nums">
       {lines.map(([k, v], i) => (
         <div key={k} className={cn("flex items-baseline justify-between gap-4", i === lines.length - 1 && "border-t border-black/[0.08] pt-2 font-semibold")}>
-          <dt className="text-[#52525B]">{k}</dt>
+          <dt className="text-[#3A3F4B]">{k}</dt>
           <dd className={i === lines.length - 1 ? "text-accent" : "text-[#0A0A0A]"}>{v}</dd>
         </div>
       ))}
@@ -87,15 +87,15 @@ export function MetricDrawer({ data, tz, range, commitHref }: { data: Awaited<Re
     <DetailDrawer param="metric" title="Metric" crumbs={[TITLES[key]]}>
       <div className="app-stagger space-y-8">
         <div>
-          <p className="mb-2 font-mono text-[13px] text-[#71717A]">{span}</p>
+          <p className="mb-2 font-mono text-[13px] text-[#4F5565]">{span}</p>
           <h2 className={cn(DISPLAY, "text-[1.75rem] leading-none")}>{TITLES[key]}</h2>
         </div>
         <Equation lines={lines} />
         {key === "consistency" && (
           <PanelSection title="Days" aside={`${m.activeDays} active`}>
-            <ol className="grid grid-cols-7 gap-1 font-mono text-[11px] tabular-nums">
+            <ol className="grid grid-cols-7 gap-1 font-mono text-[12px] tabular-nums">
               {m.daily.slice(-m.eligibleDays).map((d) => (
-                <li key={d.day} title={`${d.day}: ${d.commits} commits`} className={cn("rounded-[6px] px-1 py-1.5 text-center", d.commits > 0 ? "bg-accent text-white" : "app-field text-[#71717A]")}>
+                <li key={d.day} title={`${d.day}: ${d.commits} commits`} className={cn("rounded-[6px] px-1 py-1.5 text-center", d.commits > 0 ? "bg-accent text-white" : "app-field text-[#4F5565]")}>
                   {d.day.slice(8)}
                 </li>
               ))}
@@ -114,9 +114,9 @@ export function MetricDrawer({ data, tz, range, commitHref }: { data: Awaited<Re
                 <li key={t.id} className="flex items-baseline justify-between gap-3 py-2">
                   <span className="min-w-0">
                     <span className="block truncate text-[15px] font-medium">{t.title}</span>
-                    <span className="block font-mono text-[12px] text-[#71717A]">{[t.projectName, t.completedAt ? `done ${formatDateTime(t.completedAt, tz)}` : "open"].filter(Boolean).join(" · ")}</span>
+                    <span className="block font-mono text-[12px] text-[#4F5565]">{[t.projectName, t.completedAt ? `done ${formatDateTime(t.completedAt, tz)}` : "open"].filter(Boolean).join(" · ")}</span>
                   </span>
-                  <span className="shrink-0 font-mono text-[13px] tabular-nums text-[#52525B]">
+                  <span className="shrink-0 font-mono text-[13px] tabular-nums text-[#3A3F4B]">
                     {key === "cycle" ? (t.startedAt && t.completedAt ? formatDuration(t.completedAt.getTime() - t.startedAt.getTime()) : "no start") : `+${t.weight}`}
                   </span>
                 </li>
@@ -168,9 +168,9 @@ export function ObjectiveDrawer({ data, tz }: { data: Awaited<ReturnType<typeof 
     <DetailDrawer param="objective" title="Objective" crumbs={[o.projectName ?? "Workspace"]}>
       <div className="app-stagger space-y-8">
         <div>
-          <p className={cn(TICK, "mb-2 text-[11px] text-[#71717A]")}>{pos.status}{pos.status === "overdue" ? ` · ${pos.daysOver}d past` : ""}</p>
+          <p className={cn(TICK, "mb-2 text-[12px] text-[#4F5565]")}>{pos.status}{pos.status === "overdue" ? ` · ${pos.daysOver}d past` : ""}</p>
           <h2 className={cn(DISPLAY, "text-[1.75rem] leading-none")}>{o.name}</h2>
-          <p className="mt-2 font-mono text-[14px] tabular-nums text-[#52525B]">
+          <p className="mt-2 font-mono text-[14px] tabular-nums text-[#3A3F4B]">
             {formatNumber(o.currentValue)} / {formatNumber(o.targetValue)} {o.unit}
           </p>
         </div>
@@ -192,7 +192,7 @@ export function ObjectiveDrawer({ data, tz }: { data: Awaited<ReturnType<typeof 
               { label: "On pace", kind: "line", tone: "mid", dashed: true, values: ideal },
             ]}
           />
-          {o.measure === "manual" && <p className="mt-2 font-mono text-[12px] text-[#71717A]">hand-counted: start and now only</p>}
+          {o.measure === "manual" && <p className="mt-2 font-mono text-[12px] text-[#4F5565]">hand-counted: start and now only</p>}
         </PanelSection>
       </div>
     </DetailDrawer>

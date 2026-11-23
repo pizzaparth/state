@@ -8,8 +8,8 @@ import type { DailyExecution } from "@/db/queries";
 import { cn } from "@/lib/utils";
 import { currentLocale } from "@/lib/locale";
 
-// Lightness ramp from the card layer to the accent: readable without colour vision
-const FILL = ["#EBEBEB", "#F5C6D9", "#EC94B8", "#E25F96", "#D92B74"] as const;
+// Lightness ramp from the panel to the accent blue: readable without colour vision
+const FILL = ["#D5DBE6", "#BAC3F6", "#8F9CF4", "#6173EE", "#3344DB"] as const;
 
 function level(execution: number): 0 | 1 | 2 | 3 | 4 {
   if (execution === 0) return 0;
@@ -84,7 +84,7 @@ export function ExecutionGraph({ days, linkDays = true, weekStart = "monday" }: 
           className="relative pl-8 pt-5"
           style={{ minWidth: `calc(${weeks} * 0.8rem + 2rem)`, maxWidth: `calc(${weeks} * 2rem + 2rem)` }}
         >
-          <div aria-hidden="true" className="absolute left-8 right-0 top-0 h-4 text-[12px] text-[#52525B]">
+          <div aria-hidden="true" className="absolute left-8 right-0 top-0 h-4 text-[12px] text-[#3A3F4B]">
             {months.map((m) => (
               <span key={`${m.week}-${m.text}`} className="absolute" style={{ left: `${(m.week / weeks) * 100}%` }}>
                 {m.text}
@@ -93,7 +93,7 @@ export function ExecutionGraph({ days, linkDays = true, weekStart = "monday" }: 
           </div>
 
           <div className="flex gap-2">
-            <div aria-hidden="true" className="-ml-8 grid w-6 py-2 text-[12px] leading-none text-[#52525B]" style={{ gridTemplateRows: "repeat(7, 1fr)", rowGap: gap }}>
+            <div aria-hidden="true" className="-ml-8 grid w-6 py-2 text-[12px] leading-none text-[#3A3F4B]" style={{ gridTemplateRows: "repeat(7, 1fr)", rowGap: gap }}>
               {(weekStart === "sunday" ? ["", "Mon", "", "Wed", "", "Fri", ""] : ["Mon", "", "Wed", "", "Fri", "", ""]).map((d, i) => (
                 <span key={i} className="flex items-center">
                   {d}
@@ -115,9 +115,9 @@ export function ExecutionGraph({ days, linkDays = true, weekStart = "monday" }: 
               {cells.map((d, i) => {
                 if (!d) return <span key={`pad-${i}`} className="aspect-square" />;
                 const className = cn(
-                  "relative block aspect-square animate-cell-in rounded-[3px]",
-                  d.day === today && "outline outline-1 outline-offset-1 outline-[#0A0A0A]",
-                  active === i && "z-[1] outline outline-2 outline-offset-1 outline-[#0A0A0A]"
+                  "relative block aspect-square animate-cell-in rounded-[4px] transition-transform duration-150",
+                  d.day === today && "outline outline-[1.5px] outline-offset-1 outline-accent",
+                  active === i && "z-[1] scale-125 outline outline-2 outline-offset-1 outline-[#0B0D12]"
                 );
                 const style = { backgroundColor: FILL[level(d.execution)], animationDelay: `${Math.floor(i / 7) * Math.min(14, 420 / weeks)}ms` };
                 // Active day: a crisp ring in the 3px gap, raised above its neighbours
@@ -131,16 +131,18 @@ export function ExecutionGraph({ days, linkDays = true, weekStart = "monday" }: 
               {shown && (
                 <div
                   aria-hidden="true"
-                  className="app-inverse pointer-events-none absolute z-10 w-max rounded-[12px] px-3 py-2 text-sm"
+                  className="app-overlay pointer-events-none absolute z-10 w-max rounded-[14px] px-3.5 py-2 text-[13px] text-[#0B0D12]"
                   style={{
                     left: `calc(0.5rem + (100% - 1rem) * ${(col + 0.5) / weeks})`,
-                    top: `calc(0.5rem + (100% - 1rem) * ${row / 7} - 6px)`,
+                    top: `calc(0.5rem + (100% - 1rem) * ${row / 7} - 10px)`,
                     transform: "translate(-50%, -100%)",
                   }}
                 >
                   <p className="font-mono tabular-nums">
                     <span className="font-semibold">{label(shown.day, { weekday: "short", day: "numeric", month: "short" })}</span>
-                    {shown.day === today ? " (today)" : ""} · +{shown.execution} · {shown.commits} {shown.commits === 1 ? "commit" : "commits"}
+                    <span className="text-[#3A3F4B]">{shown.day === today ? " (today)" : ""} · </span>
+                    <span className="font-semibold text-accent">+{shown.execution}</span>
+                    <span className="text-[#3A3F4B]"> · {shown.commits} {shown.commits === 1 ? "commit" : "commits"}</span>
                   </p>
                 </div>
               )}
@@ -150,7 +152,7 @@ export function ExecutionGraph({ days, linkDays = true, weekStart = "monday" }: 
       </div>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm">
-        <p aria-live="polite" className="tabular-nums text-[#52525B]">
+        <p aria-live="polite" className="tabular-nums text-[#3A3F4B]">
           {shown ? (
             <>
               <span className="font-semibold text-[#0A0A0A]">{label(shown.day, { weekday: "long", day: "numeric", month: "long" })}</span>
@@ -160,10 +162,10 @@ export function ExecutionGraph({ days, linkDays = true, weekStart = "monday" }: 
             "Hover a day · or ← → keys"
           )}
         </p>
-        <span className="flex items-center gap-1.5 text-[#52525B]" aria-hidden="true">
+        <span className="flex items-center gap-1.5 text-[#3A3F4B]" aria-hidden="true">
           0
           {FILL.map((f) => (
-            <span key={f} className="size-2.5 rounded-[2px]" style={{ backgroundColor: f }} />
+            <span key={f} className="size-3 rounded-[4px]" style={{ backgroundColor: f }} />
           ))}
           17+ execution
         </span>
