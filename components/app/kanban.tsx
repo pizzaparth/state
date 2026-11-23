@@ -12,10 +12,13 @@ import {
   MouseSensor,
   TouchSensor,
   closestCorners,
+  pointerWithin,
+  rectIntersection,
   useDroppable,
   useSensor,
   useSensors,
   type Announcements,
+  type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
@@ -225,6 +228,26 @@ export function Kanban({
 
   const columnOf = (id: string) => (columns.some((c) => c.id === id) ? id : cards.find((c) => c.id === id)?.columnId);
   const columnName = (id: string | undefined) => columns.find((c) => c.id === id)?.name ?? "column";
+
+  /**
+   * The column under the pointer decides where a card goes. closestCorners alone measures
+   * corner distances, so over a tall empty column a card in the next column scored closer
+   * and the drop landed back there. Inside the column, the card under the pointer (or the
+   * nearest one) sets the position; an empty column is its own target.
+   */
+  const collision: CollisionDetection = (args) => {
+    const isColumn = (id: string | number) => columns.some((c) => c.id === id);
+    const pointer = pointerWithin(args);
+    // Keyboard drags have no pointer: fall back to the dragged card's rectangle
+    const hits = pointer.length > 0 ? pointer : rectIntersection(args);
+    const column = hits.find((h) => isColumn(h.id));
+    if (!column) return hits.length > 0 ? hits : closestCorners(args);
+    const inColumn = (id: string | number) => !isColumn(id) && columnOf(String(id)) === column.id;
+    const onCard = hits.filter((h) => inColumn(h.id));
+    if (onCard.length > 0) return onCard;
+    const cardsHere = args.droppableContainers.filter((d) => inColumn(d.id));
+    return cardsHere.length > 0 ? closestCorners({ ...args, droppableContainers: cardsHere }) : [column];
+  };
 
   /** Persists a move already shown on screen; puts that card back if the server refuses it. */
   const persist = async (card: BoardCard, fromColumn: string | null, toColumn: string, next: BoardCard[]) => {
@@ -483,7 +506,7 @@ export function Kanban({
       // Stable id: dnd-kit's own counter differs between server and client and breaks hydration
       id={dndId}
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collision}
       accessibility={{ announcements, screenReaderInstructions }}
       onDragStart={onDragStart}
       onDragOver={onDragOver}

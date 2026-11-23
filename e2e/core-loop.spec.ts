@@ -44,6 +44,8 @@ test("a task's commit comes and goes with Done", async ({ page }, info) => {
 
   // Reopen from the board's Done card: the commit is withdrawn
   await page.goto("/platform/board");
+  // Phones show one column at a time: switch to Done first
+  if ((page.viewportSize()?.width ?? 1024) < 768) await page.getByRole("tab", { name: /^Done/ }).click();
   await page.locator("[data-card-id]", { hasText: title }).getByRole("link", { name: new RegExp(title) }).click();
   const panel = page.getByRole("dialog");
   await panel.getByRole("radio", { name: "Queued" }).click();
